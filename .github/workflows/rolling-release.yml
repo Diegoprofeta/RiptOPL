@@ -1144,7 +1144,7 @@ jobs:
             cat .github/rolling-release-notes-intro.md
 
             printf '\n## Download\n\n'
-            printf -- '- **New install:** the `RIPTOPL-<version>.zip` package contains `APPS/APP_RIPTOPL/`, `ART/`, `APP_RIPTOPL.psu`, `POPS/`, `EMBER/`, `neutrino/` and companion shortcuts. The ready app uses the %s build. The PSU contains only the app files; install the other folders separately. [Install guide](https://github.com/NathanNeurotic/Open-PS2-Loader#quick-start)\n' "${INSTALL_FLAVOUR:-OFFICIALROLLING}"
+            printf -- '- **New install:** the `RIPTOPL-<version>.zip` package contains `APPS/APP_RIPTOPL/`, `ART/`, `APP_RIPTOPL.psu`, `POPS/`, `EMBER/`, `neutrino/` and companion shortcuts. The ready app uses the %s build. The PSU contains only the app files; install the other folders separately. [Install guide](https://github.com/NathanNeurotic/RiptOPL#quick-start)\n' "${INSTALL_FLAVOUR:-OFFICIALROLLING}"
             if [ -f rolling/RIPTOPL.ELF ]; then
               printf -- '- **Updating:** download **[RIPTOPL.ELF](%s/%s/releases/download/%s/RIPTOPL.ELF)** and overwrite yours. It is the %s flavour and the link never changes, but it does not bring `POPS/`, `EMBER/`, `neutrino/` or languages.\n' \
                 "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$REL_TAG" "${ONECLICK_FLAVOUR:-OFFICIALROLLING}"
@@ -1348,6 +1348,8 @@ jobs:
       # old lineage must not archive over the new one's history either.
       - name: Build all-in-one MEGA archive
         if: github.ref == 'refs/heads/rebuild/main' && env.USERNAME != '' && env.PASSWORD != ''
+        # Never fail the publish over MEGA: the GitHub release above is the source of truth.
+        continue-on-error: true
         run: |
           set -eu
           # Validate the payload BEFORE archiving so a broken publish fails loudly instead of pushing
@@ -1431,6 +1433,8 @@ jobs:
 
       - name: Upload archive and regular ELFs in all 4 flavours to MEGA
         if: github.ref == 'refs/heads/rebuild/main' && env.USERNAME != '' && env.PASSWORD != ''
+        # Never fail the publish over MEGA: purely additive archival.
+        continue-on-error: true
         # Pinned to a full commit SHA rather than @master: this third-party action runs with the
         # MEGA credentials, so freeze it to a reviewed snapshot instead of trusting whatever is on
         # its master branch at build time. bf698c6 == the action's v1.4.0 release == the master HEAD

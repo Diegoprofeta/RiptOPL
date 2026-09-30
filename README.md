@@ -1,5 +1,5 @@
 
-<p align="center"><img alt="RiptOPL" src="https://raw.githubusercontent.com/NathanNeurotic/Open-PS2-Loader/rebuild/main/docs/assets/riptopl.png" /></p>
+<p align="center"><img alt="RiptOPL" src="https://raw.githubusercontent.com/NathanNeurotic/RiptOPL/rebuild/main/docs/assets/riptopl.png" /></p>
 
 
 
@@ -16,26 +16,26 @@ Based on Open PS2 Loader · Copyright 2013, Ifcaro & jimmikaelkael<br>
 Licensed under Academic Free License version 3.0<br>
 Review the LICENSE file for further details.<br><br>
 
-[![CI](https://github.com/NathanNeurotic/Open-PS2-Loader/actions/workflows/flavours.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/Open-PS2-Loader/actions/workflows/flavours.yml)
-[![Format](https://github.com/NathanNeurotic/Open-PS2-Loader/actions/workflows/check-format.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/Open-PS2-Loader/actions/workflows/check-format.yml)
-[![Rolling Release](https://github.com/NathanNeurotic/Open-PS2-Loader/actions/workflows/rolling-release.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/Open-PS2-Loader/actions/workflows/rolling-release.yml)
-[![Latest release](https://img.shields.io/github/v/release/NathanNeurotic/Open-PS2-Loader?style=plastic&logo=github&label=Latest%20Release&labelColor=navy&color=skyblue&include_prereleases)](https://github.com/NathanNeurotic/Open-PS2-Loader/releases)
-![Released](https://img.shields.io/github/release-date-pre/NathanNeurotic/Open-PS2-Loader?style=plastic&logo=github&label=Released&labelColor=navy&color=skyblue)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NathanNeurotic/Open-PS2-Loader/total?style=plastic&logo=github&logoSize=auto&label=Total%20Downloads&labelColor=navy&color=skyblue)
+[![CI](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/flavours.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/flavours.yml)
+[![Format](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/check-format.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/check-format.yml)
+[![Rolling Release](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/rolling-release.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/rolling-release.yml)
+[![Latest release](https://img.shields.io/github/v/release/NathanNeurotic/RiptOPL?style=plastic&logo=github&label=Latest%20Release&labelColor=navy&color=skyblue&include_prereleases)](https://github.com/NathanNeurotic/RiptOPL/releases)
+![Released](https://img.shields.io/github/release-date-pre/NathanNeurotic/RiptOPL?style=plastic&logo=github&label=Released&labelColor=navy&color=skyblue)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NathanNeurotic/RiptOPL/total?style=plastic&logo=github&logoSize=auto&label=Total%20Downloads&labelColor=navy&color=skyblue)
 [![MEGA Archive](https://img.shields.io/badge/MEGA-Rolling%20Archive-%23D90007?style=flat&logo=mega&logoColor=white)](https://mega.nz/folder/74pRHKRB#9SLDkrkvZAbeKO4Qvxg9LQ)
 
-[![License](https://img.shields.io/github/license/NathanNeurotic/Open-PS2-Loader?style=flat&labelColor=navy&color=skyblue&logo=opensourceinitiative&logoColor=white&label=License)](LICENSE)
+[![License](https://img.shields.io/github/license/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=opensourceinitiative&logoColor=white&label=License)](LICENSE)
 ![Written in C](https://img.shields.io/badge/Written%20in-C-skyblue?style=flat&logo=c&logoColor=white&labelColor=navy)
 ![Platform](https://img.shields.io/badge/Platform-PlayStation%202-skyblue?style=flat&logo=playstation2&logoColor=white&labelColor=navy)
 ![Toolchain](https://img.shields.io/badge/Toolchain-ps2dev%20%2F%20PS2SDK-skyblue?style=flat&logo=docker&logoColor=white&labelColor=navy)
 ![Translations](https://img.shields.io/badge/Translations-31%20languages-skyblue?style=flat&logo=googletranslate&logoColor=white&labelColor=navy)
-![Repo Size](https://img.shields.io/github/repo-size/NathanNeurotic/Open-PS2-Loader?style=flat&labelColor=navy&color=skyblue&logo=github&label=Repo%20Size)
+![Repo Size](https://img.shields.io/github/repo-size/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=github&label=Repo%20Size)
 
-![Last Commit](https://img.shields.io/github/last-commit/NathanNeurotic/Open-PS2-Loader/rebuild/main?style=flat&labelColor=navy&color=skyblue&logo=git&logoColor=white&label=Last%20Commit)
-![Commits per month](https://img.shields.io/github/commit-activity/m/NathanNeurotic/Open-PS2-Loader/rebuild/main?style=flat&labelColor=navy&color=skyblue&logo=github&label=Commits%2FMonth)
-![Contributors](https://img.shields.io/github/contributors/NathanNeurotic/Open-PS2-Loader?style=flat&labelColor=navy&color=skyblue&logo=github&label=Contributors)
-[![Open Issues](https://img.shields.io/github/issues/NathanNeurotic/Open-PS2-Loader?style=flat&labelColor=navy&color=skyblue&logo=github&label=Open%20Issues)](https://github.com/NathanNeurotic/Open-PS2-Loader/issues)
-[![Stars](https://img.shields.io/github/stars/NathanNeurotic/Open-PS2-Loader?style=flat&labelColor=navy&color=skyblue&logo=github&label=Stars)](https://github.com/NathanNeurotic/Open-PS2-Loader/stargazers)
+![Last Commit](https://img.shields.io/github/last-commit/NathanNeurotic/RiptOPL/rebuild/main?style=flat&labelColor=navy&color=skyblue&logo=git&logoColor=white&label=Last%20Commit)
+![Commits per month](https://img.shields.io/github/commit-activity/m/NathanNeurotic/RiptOPL/rebuild/main?style=flat&labelColor=navy&color=skyblue&logo=github&label=Commits%2FMonth)
+![Contributors](https://img.shields.io/github/contributors/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=github&label=Contributors)
+[![Open Issues](https://img.shields.io/github/issues/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=github&label=Open%20Issues)](https://github.com/NathanNeurotic/RiptOPL/issues)
+[![Stars](https://img.shields.io/github/stars/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=github&label=Stars)](https://github.com/NathanNeurotic/RiptOPL/stargazers)
 
 ![Storage](https://img.shields.io/badge/Storage-USB%20%C2%B7%20MX4SIO%20%C2%B7%20iLink%20%C2%B7%20MMCE%20%C2%B7%20HDD-2ea043?style=flat&labelColor=0b3d18)
 ![Network](https://img.shields.io/badge/Network-SMB%20%C2%B7%20UDPBD%20%C2%B7%20UDPFS%20%C2%B7%20HTTP-2ea043?style=flat&labelColor=0b3d18)
@@ -100,8 +100,8 @@ Choose the current development build or a preserved snapshot:
 
 | Channel | What it is |
 | --- | --- |
-| **[Rolling (Latest)](https://github.com/NathanNeurotic/Open-PS2-Loader/releases/tag/rolling)** | Updated from `rebuild/main` by successful publishing runs. A full, non-pre-release GitHub release that remains a **development build**, with compatibility depending on the game and hardware. |
-| **[Current Fan Favorite Build](https://github.com/NathanNeurotic/Open-PS2-Loader/releases/tag/current-fan-favorite)** | A preserved development snapshot selected after positive user feedback. Use it as a fixed comparison point; it is not a universal compatibility guarantee. |
+| **[Rolling (Latest)](https://github.com/NathanNeurotic/RiptOPL/releases/tag/rolling)** | Updated from `rebuild/main` by successful publishing runs. A full, non-pre-release GitHub release that remains a **development build**, with compatibility depending on the game and hardware. |
+| **[Current Fan Favorite Build](https://github.com/NathanNeurotic/RiptOPL/releases/tag/current-fan-favorite)** | A preserved development snapshot selected after positive user feedback. Use it as a fixed comparison point; it is not a universal compatibility guarantee. |
 
 Download the **normal installable package**, `RIPTOPL-<version>.zip`. Separate archives serve
 different purposes: `RetroAchievements` for the experimental achievements loader, `VARIANTS` for alternate
@@ -117,10 +117,10 @@ Neutrino bundle is unavailable.
 
 **Already have RiptOPL installed?** The rolling release carries a loose loader asset,
 `RIPTOPL.ELF`, for exactly that case: download it and overwrite the `RIPTOPL.ELF` you already have. Its name never changes, so
-<https://github.com/NathanNeurotic/Open-PS2-Loader/releases/download/rolling/RIPTOPL.ELF> is a
+<https://github.com/NathanNeurotic/RiptOPL/releases/download/rolling/RIPTOPL.ELF> is a
 permanent link. It is the `-OFFICIALROLLING` flavour, and it is not a first install — the bare loader
 does not bring `POPS/`, `EMBER/`, `neutrino/` or the language files. `RIPTOPL-RA.ELF`
-(<https://github.com/NathanNeurotic/Open-PS2-Loader/releases/download/rolling/RIPTOPL-RA.ELF>) does the
+(<https://github.com/NathanNeurotic/RiptOPL/releases/download/rolling/RIPTOPL-RA.ELF>) does the
 same for the RetroAchievements app: replace `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF` with it. Both are
 copied from `-OFFICIALROLLING` builds, so a run in which that build failed publishes neither; update
 from the matching package then. Apart from those two files, GitHub does not publish bare loader ELFs
@@ -882,7 +882,7 @@ Menu recovery does not clear game video settings. Open that game’s settings an
 GSM override, or its Neutrino video options if that is the selected core. Check inherited global
 video defaults too. Retry with the game's normal video mode before adding overrides again.
 
-Report RiptOPL regressions in [this repository’s issue tracker](https://github.com/NathanNeurotic/Open-PS2-Loader/issues).
+Report RiptOPL regressions in [this repository’s issue tracker](https://github.com/NathanNeurotic/RiptOPL/issues).
 Include the version/SHA, SDK flavour, console model, game ID, storage/protocol, loader core,
 reproduction steps, relevant settings and any known-good build comparison. For upstream/community
 discussion, the [OPL forum](https://www.psx-place.com/forums/open-ps2-loader-opl.77/) remains available.

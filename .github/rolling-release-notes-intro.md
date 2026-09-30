@@ -7,11 +7,11 @@
 **Before you install**
 
 - **Rolling ships every merge, ahead of hardware testing.** That is how testing happens. For a fixed
-  build, use the **[Current Fan Favorite Build](https://github.com/NathanNeurotic/Open-PS2-Loader/releases/tag/current-fan-favorite)**,
+  build, use the **[Current Fan Favorite Build](https://github.com/NathanNeurotic/RiptOPL/releases/tag/current-fan-favorite)**,
   a preserved snapshot of this line.
 - **This is the rebuild lineage.** RiptOPL was rebuilt from official OPL and is still working toward
   parity with the pre-rebuild build, whose final release stays archived as
-  **[Rolling Alpha](https://github.com/NathanNeurotic/Open-PS2-Loader/releases/tag/rolling-alpha)** (and on MEGA).
+  **[Rolling Alpha](https://github.com/NathanNeurotic/RiptOPL/releases/tag/rolling-alpha)** (and on MEGA).
 - **Report everything, even something you saw fixed before.** Reports are tracked against this
   lineage, regressions happen, and a duplicate costs nothing. Name your flavour: *Start menu → About*
   shows it.
