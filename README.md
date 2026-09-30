@@ -52,9 +52,20 @@ Review the LICENSE file for further details.<br><br>
 
 > 🌙 **Our #1 recommended alternative: [LUNA](https://github.com/dnunezx/LUNA) by [darkladark](https://github.com/dnunezx).** *Lightweight Unified Neutrino Access* is a visual loader built on NHDDL and Neutrino for **lightweight, customized Neutrino gameplay**. If RiptOPL is more loader than you need, start there. darkladark also contributes to RiptOPL itself; see [Acknowledgements](#acknowledgements).
 
+## Community Contributors
+
+A heartfelt thank you to developers who have contributed pull requests directly to this fork:
+
+### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
+- **[#789](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/789)** (`fix(fntsys)`): **Font Lock Concurrency Fix** — Held the font semaphore lock across draw, measure, and load operations in `src/fntsys.c`. This resolved a critical boot-freeze race condition where background font/theme loading on the IO worker thread freed glyph caches and texture atlases while the GUI rendering thread was actively drawing text. Tested across 111 consecutive clean boots on real hardware (SCPH-50001 with SD2PSX and exFAT BDM HDD).
+- **[#705](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/705)** (`dialogs`): **RetroAchievements Settings UI** — Restored the RetroAchievements configuration rows to the Network settings dialog page where they are displayed, configured, and persisted.
+- **[#704](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/704)** (`RA`): **Menu Network Telemetry Initialization** — Safely initialized and brought the networking stack up from the menu prior to cold telemetry game launches.
+- **[#703](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/703)** (`Makefile`): **MMCE DEV9 Integration** — Linked MMCE's CDVD driver with the in-game DEV9 network stack in RetroAchievements builds.
+- **[#702](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/702)** (`ee_core`): **EE Core Stack Protection** — Relocated RetroAchievements buffers out of `.bss` to protect the EE stack from memory pressure and instability during game execution.
+
 ## Contents
 
-[Releases](#releases) · [Quick Start](#quick-start) · [Sources and cores](#introduction) ·
+[Community Contributors](#community-contributors) · [Releases](#releases) · [Quick Start](#quick-start) · [Sources and cores](#introduction) ·
 [Features](#major-features-overview) · [Fork additions](#this-forks-additions) ·
 [PS1](#ps1-games-two-cores-one-list) · [HTTP](docs/HTTP.md) · [RetroAchievements](docs/RETROACHIEVEMENTS.md) ·
 [Controls & IGR](#controls-and-in-game-reset) · [GSM](docs/GSM.md) · [PADEMU](docs/PADEMU.md) ·
@@ -932,11 +943,13 @@ With special and sincere thanks to:
   game and streams the memory addresses its achievements watch; xeRAbora handles rcheevos, the
   RetroAchievements service, and login. RiptOPL implements the published wire protocol in its
   `RIPTOPL-RetroAchievements-*.zip` build, which includes a shortcut to xeRAbora.
-- **[oMrRexD](https://github.com/oMrRexD)** — for the decisive **real-hardware RetroAchievements
-  stabilization pass** behind PRs #702–#705: tracing the ee_core stack corruption, restoring MMCE's
-  in-game DEV9 dependency, making cold telemetry launches bring networking up safely, and putting
-  the RA controls back where they are actually read and saved. The fixes were narrow, well-tested,
-  and explicitly kept from contaminating normal build behavior.
+- **[oMrRexD](https://github.com/oMrRexD)** — for the critical **thread-safe font subsystem fix**
+  ([#789](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/789)) eliminating the boot-freeze
+  race condition on real hardware (111 consecutive clean boots verified), and the decisive **real-hardware
+  RetroAchievements stabilization pass** behind PRs [#702](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/702)–[#705](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/705):
+  tracing the ee_core stack corruption, restoring MMCE's in-game DEV9 dependency, making cold telemetry launches
+  bring networking up safely, and putting the RA controls back where they are actually read and saved. The fixes were
+  narrow, well-tested, and explicitly kept from contaminating normal build behavior.
 - **[darkladark](https://github.com/dnunezx)** — creator of **[LUNA](https://github.com/dnunezx/LUNA)**
   (*Lightweight Unified Neutrino Access*), his own visual loader built on NHDDL and Neutrino, with a
   PS2-inspired glass interface and four switchable library views. LUNA is **our #1 recommended
