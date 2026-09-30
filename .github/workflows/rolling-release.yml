@@ -51,6 +51,10 @@ on:
       # around for history, and a push to it must never republish the rolling channel with
       # pre-rebuild code. Deliberately not a trigger.
       - rebuild/main
+      # The Korium test line (PR #687): the same build with the Korium built-in theme, published to its
+      # own "rolling-korium" release. korium-sync.yml keeps it merged with rebuild/main and dispatches
+      # this workflow on it (a push made by a workflow's GITHUB_TOKEN starts no workflow by itself).
+      - test/korium-audit-remediation
     tags:
       - 'v*'
   workflow_dispatch:
@@ -111,6 +115,8 @@ jobs:
       - name: Mark workspace safe and fetch history
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Resolve release channel (rolling / rolling-korium)
+        run: sh .github/scripts/release_channel.sh >> "$GITHUB_ENV"
       - name: Install menu-coherent mmceman (#254)
         run: sh .github/scripts/install_coherent_mmce.sh
 
@@ -221,6 +227,8 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --prune --unshallow || true
+      - name: Resolve release channel (rolling / rolling-korium)
+        run: sh .github/scripts/release_channel.sh >> "$GITHUB_ENV"
 
       - name: Refuse a dirty checkout before versioning
         run: |
@@ -337,6 +345,8 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --prune --unshallow || true
+      - name: Resolve release channel (rolling / rolling-korium)
+        run: sh .github/scripts/release_channel.sh >> "$GITHUB_ENV"
 
       - name: Install menu-coherent mmceman (#254)
         run: sh .github/scripts/install_coherent_mmce.sh
@@ -442,6 +452,8 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --prune --unshallow || true
+      - name: Resolve release channel (rolling / rolling-korium)
+        run: sh .github/scripts/release_channel.sh >> "$GITHUB_ENV"
 
       - name: Install menu-coherent mmceman (#254)
         run: sh .github/scripts/install_coherent_mmce.sh
@@ -500,12 +512,18 @@ jobs:
     # withholding only the publish. master is excluded on purpose: it is the abandoned lineage, and
     # a push to it publishing over the rolling channel would ship pre-rebuild code as Latest. This
     # gate is belt-and-braces with the push trigger above, which no longer lists master either.
-    if: ${{ github.ref == 'refs/heads/rebuild/main' || startsWith(github.ref, 'refs/tags/v') }}
+    # The Korium test line publishes too, but only to its own rolling-korium release (ROLLING_TAG below).
+    if: ${{ github.ref == 'refs/heads/rebuild/main' || github.ref == 'refs/heads/test/korium-audit-remediation' || startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # The rolling channel this ref publishes: rebuild/main -> "rolling" (GitHub's Latest); the Korium
+      # test line -> "rolling-korium", identical but for the built-in theme, and never Latest.
+      ROLLING_TAG: ${{ github.ref == 'refs/heads/test/korium-audit-remediation' && 'rolling-korium' || 'rolling' }}
+      ROLLING_TITLE: ${{ github.ref == 'refs/heads/test/korium-audit-remediation' && 'Rolling (Korium)' || 'Rolling' }}
+      ROLLING_LATEST: ${{ github.ref == 'refs/heads/test/korium-audit-remediation' && '--latest=false' || '--latest' }}
       OPL_VERSION: ${{ needs.build-rolling-ps2dev-latest.outputs.version }}
       # Human-readable label for the FALLBACK (-PS2DEVPINNED) build, shown in the release notes.
       # This flavour is a DIGEST PIN of ps2dev:latest, so the label is the date the pin was taken.
@@ -521,7 +539,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Download ps2dev-latest rolling assets
         # The required version-authority build (its job failing already failed the workflow).
@@ -1118,107 +1136,14 @@ jobs:
 
       - name: Build release notes
         run: |
-          set -eu
-          # Same tag the Publish step below resolves, needed here to print a working download URL
-          # for the one-click ELF. Keep the two in step if either is ever changed.
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then REL_TAG="${GITHUB_REF_NAME}"; else REL_TAG="rolling"; fi
-          HAS_PS2DEVPINNED=no
-          [ -f "rolling/${VERSIONED_BASE}-PS2DEVPINNED.ELF" ] && HAS_PS2DEVPINNED=yes
-          HAS_OFFICIALROLLING=no
-          [ -f "rolling/${VERSIONED_BASE}-OFFICIALROLLING.ELF" ] && HAS_OFFICIALROLLING=yes
-          [ -f "rolling/${VERSIONED_BASE}-OFFICIALPINNED.ELF" ] && HAS_OFFICIALPINNED=yes
-          {
-            # THE NOTES ARE ASSEMBLED FROM FOUR PLACES, each owning different facts (details in
-            # .github/rolling-release-notes-block.md): this step generates what changes per run --
-            # header, Download, Recently merged; the two tracked .md files carry the evergreen text;
-            # normalize_release_notes.py later adds the banners and External Tools & Services. Edit
-            # those files, never a release body. set -eu makes a missing file fail the publish.
-            if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-              printf '**RiptOPL %s**: tagged release.\n\n' "$OPL_VERSION"
-            else
-              printf '**RiptOPL Rolling**: rebuilt on every merge to `%s`. A development build, not a stable release.\n\n' "$GITHUB_REF_NAME"
-            fi
-            printf '`%s` · [commit %s](%s/%s/commit/%s) · built %s UTC · [build run](%s/%s/actions/runs/%s)\n\n' \
-              "$OPL_VERSION" "${GITHUB_SHA:0:8}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_SHA" \
-              "$(date -u '+%Y-%m-%d %H:%M')" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
-            cat .github/rolling-release-notes-intro.md
-
-            printf '\n## Download\n\n'
-            printf -- '- **New install:** the `RIPTOPL-<version>.zip` package contains `APPS/APP_RIPTOPL/`, `ART/`, `APP_RIPTOPL.psu`, `POPS/`, `EMBER/`, `neutrino/` and companion shortcuts. The ready app uses the %s build. The PSU contains only the app files; install the other folders separately. [Install guide](https://github.com/NathanNeurotic/RiptOPL#quick-start)\n' "${INSTALL_FLAVOUR:-OFFICIALROLLING}"
-            if [ -f rolling/RIPTOPL.ELF ]; then
-              printf -- '- **Updating:** download **[RIPTOPL.ELF](%s/%s/releases/download/%s/RIPTOPL.ELF)** and overwrite yours. It is the %s flavour and the link never changes, but it does not bring `POPS/`, `EMBER/`, `neutrino/` or languages.\n' \
-                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$REL_TAG" "${ONECLICK_FLAVOUR:-OFFICIALROLLING}"
-            fi
-            if [ -f rolling/RIPTOPL-RA.ELF ]; then
-              printf -- '- **RetroAchievements update:** **[RIPTOPL-RA.ELF](%s/%s/releases/download/%s/RIPTOPL-RA.ELF)** is the OFFICIALROLLING PADEMU1 RA loader as a stable standalone download. When updating the packaged RA app, replace `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF` with this file (rename it to `RIPTOPL-RA.ELF`).\n' \
-                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$REL_TAG"
-            fi
-            if [ -f rolling/APP_RIPTOPL.psu ]; then
-              printf -- '- **PSU install:** **[APP_RIPTOPL.psu](%s/%s/releases/download/%s/APP_RIPTOPL.psu)** installs the standard ready app directly to a memory card.\n' \
-                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$REL_TAG"
-            fi
-            if [ -f rolling/APP_RIPTOPL-RA.psu ]; then
-              printf -- '- **RA PSU install:** **[APP_RIPTOPL-RA.psu](%s/%s/releases/download/%s/APP_RIPTOPL-RA.psu)** installs the RetroAchievements ready app directly to a memory card.\n' \
-                "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$REL_TAG"
-            fi
-            # neutrino-watch.yml reads the bundled version back from "Included build: <ver> " -- keep
-            # that exact phrase, followed by a space.
-            if [ -z "${NEUTRINO_VER:-}" ]; then
-              echo 'ERROR: full installable ZIP was built without a Neutrino version' >&2
-              exit 1
-            fi
-            printf -- '- **Neutrino:** Included build: %s (official, as the `neutrino/` folder).\n' "$NEUTRINO_VER"
-            if ls rolling/RIPTOPL-RetroAchievements-*.zip >/dev/null 2>&1; then
-              printf -- '- `RIPTOPL-RetroAchievements-*.zip`: the complete RA kit with `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF`, matching artwork and `APP_RIPTOPL-RA.psu`, plus the shared cores and shortcuts. PC client: [xeRAbora GitHub](https://github.com/hacan359/xerabora) · [required v0.1.0-alpha.10 download](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10). A development build, not hardware-tested.\n'
-            fi
-            if [ -f "rolling/RIPTOPL-VARIANTS-${ASSET_VERSION:-rolling}.zip" ]; then
-              printf -- '- `RIPTOPL-VARIANTS-*.zip`: EXTRA_FEATURES (IGS, RTL), PADEMU and DualSense (DS5, USB) loaders. For DS5, prefer `-PS2DEVPINNED-ds5`.\n'
-            fi
-            if [ -f "rolling/RIPTOPL-DEBUG-${ASSET_VERSION:-rolling}.zip" ]; then
-              printf -- '- `RIPTOPL-DEBUG-*.zip`: debug builds (iopcore, ingame, eesio, ppctty, DTL-T10000) for diagnosing a problem.\n'
-            fi
-            if ls rolling/RIPTOPL-LANGS-*.zip >/dev/null 2>&1; then
-              printf -- '- `RIPTOPL-LANGS-*.zip`: extra UI languages and fonts. Delete any `lang_*.lng` from a pre-rebuild build first: those number their strings differently and show the wrong text. Packs from this line stay compatible.\n'
-            fi
-            printf -- '- `*-src.zip`: the source snapshot of this commit.\n'
-
-            printf '\n**Which flavour?** Every `APPS/APP_RIPTOPL-*` folder holds the same RiptOPL code, built with a different SDK toolchain:\n\n'
-            printf '| Folder | Toolchain | Use it for |\n'
-            printf '| --- | --- | --- |\n'
-            if [ "$HAS_PS2DEVPINNED" = yes ]; then
-              printf '| `APP_RIPTOPL-PS2DEVPINNED` | %s, by digest | **Recommended.** Reproducible |\n' "$SDK_VER"
-            fi
-            if [ "${HAS_OFFICIALPINNED:-}" = yes ]; then
-              printf '| `APP_RIPTOPL-OFFICIALPINNED` | official OPL CI container, by digest | Reproducible, second SDK lineage |\n'
-            fi
-            printf '| `APP_RIPTOPL-PS2DEVROLLING` | `ps2dev:latest` | Triage: newest SDK, can regress (#102) |\n'
-            if [ "$HAS_OFFICIALROLLING" = yes ]; then
-              printf '| `APP_RIPTOPL-OFFICIALROLLING` | `ps2homebrew:main` | Triage against official OPL'"'"'s toolchain |\n'
-            fi
-            printf '\nA failure on only a rolling flavour points at the SDK; a failure on both a PS2DEV and an OFFICIAL flavour points at RiptOPL.\n'
-            if [ "$HAS_PS2DEVPINNED" != yes ]; then
-              printf '\nThe pinned PS2DEVPINNED build failed this run, so its folder is missing.\n'
-            fi
-            printf '\n'
-
-            cat .github/rolling-release-notes-block.md
-
-            # The newest merged PRs, so "what changed" is never hand-maintained and never stale.
-            # Best-effort: an API hiccup drops the section rather than failing the publish.
-            if [[ "${GITHUB_REF}" != refs/tags/v* ]]; then
-              MERGED="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=closed&base=${GITHUB_REF_NAME}&sort=updated&direction=desc&per_page=50" \
-                --jq '[.[] | select(.merged_at != null)] | sort_by(.merged_at) | reverse | .[:8] | .[] | "- #\(.number) \(.title)"' 2>/dev/null || true)"
-              if [ -n "$MERGED" ]; then
-                printf '\n## Recently merged\n\n'
-                printf '%s\n' "$MERGED"
-                printf '\nFull history: [commits on %s](%s/%s/commits/%s)\n' "$GITHUB_REF_NAME" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_REF_NAME"
-              fi
-            fi
-          } > notes.md
-          echo "PS2DEVPINNED flavour present: $HAS_PS2DEVPINNED"
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then REL_TAG="${GITHUB_REF_NAME}"; else REL_TAG="$ROLLING_TAG"; fi
+          python3 .github/scripts/test_release_notes.py
+          python3 .github/scripts/normalize_release_notes.py \
+            --assets-dir rolling --tag "$REL_TAG" --revision "$GITHUB_SHA" \
+            --repository "$GITHUB_REPOSITORY" --server "$GITHUB_SERVER_URL" \
+            --version "$OPL_VERSION" --neutrino-version "$NEUTRINO_VER" > notes.md
           cat notes.md
-          echo "Assets to publish:"
-          ls -la rolling
 
       - name: Publish (rolling on the publishing branch, curated release on a v* tag)
         run: |
@@ -1236,7 +1161,7 @@ jobs:
               *) RELEASE_FLAGS="--prerelease=false --latest=false";;
             esac
           else
-            TAG="rolling"; TITLE="Rolling"; RELEASE_FLAGS="--prerelease=false --latest"; TARGET="--target $GITHUB_SHA"
+            TAG="$ROLLING_TAG"; TITLE="$ROLLING_TITLE"; RELEASE_FLAGS="--prerelease=false $ROLLING_LATEST"; TARGET="--target $GITHUB_SHA"
           fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Updating existing release: $TAG"
@@ -1279,7 +1204,7 @@ jobs:
             # afterwards -- still-draft fails the job loudly rather than leaving users with an
             # invisible download page. promote-rolling-latest.yml re-asserts it again after this
             # workflow finishes.
-            if [ "$TAG" = "rolling" ]; then
+            if [ "$TAG" = "$ROLLING_TAG" ] && [[ "${GITHUB_REF}" != refs/tags/v* ]]; then
               RELEASE_ID=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" --jq .id 2>/dev/null || echo "")
               if [ -n "$RELEASE_ID" ]; then
                 # Compare against the value BEFORE the flip, not against today's date. A rolling
@@ -1289,11 +1214,11 @@ jobs:
                 # set -eu is active in this step, so a failed draft=true aborts the script: this
                 # trap is what puts the channel back. INT/TERM are covered too, because a cancelled
                 # job does not run a bare EXIT trap.
-                trap 'gh release edit "rolling" --draft=false --prerelease=false --latest >/dev/null 2>&1 || true' EXIT INT TERM
+                trap 'gh release edit "$TAG" --draft=false --prerelease=false $ROLLING_LATEST >/dev/null 2>&1 || true' EXIT INT TERM
                 gh release edit "$TAG" --draft=true >/dev/null
                 # Re-assert the channel's intended state on the way back up: a draft cannot hold the
                 # Latest marker, so it has to be claimed again as part of republishing.
-                gh release edit "$TAG" --draft=false --prerelease=false --latest >/dev/null
+                gh release edit "$TAG" --draft=false --prerelease=false $ROLLING_LATEST >/dev/null
                 trap - EXIT INT TERM
                 GOT=$(gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" --jq .published_at 2>/dev/null || echo "")
                 # Only a comparison between two SUCCESSFUL reads proves anything. A failed read
@@ -1310,7 +1235,7 @@ jobs:
                 DRAFT=$(gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" --jq .draft 2>/dev/null || echo "")
                 if [ "$DRAFT" = "true" ]; then
                   echo "WARNING: rolling is still a draft after the refresh; republishing" >&2
-                  gh release edit "$TAG" --draft=false --prerelease=false --latest >/dev/null 2>&1 || true
+                  gh release edit "$TAG" --draft=false --prerelease=false $ROLLING_LATEST >/dev/null 2>&1 || true
                   DRAFT=$(gh api "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" --jq .draft 2>/dev/null || echo "")
                 fi
                 if [ "$DRAFT" = "true" ]; then
@@ -1347,7 +1272,7 @@ jobs:
       # forks skip it cleanly. master was dropped 2026-09-02 along with its publish trigger: the
       # old lineage must not archive over the new one's history either.
       - name: Build all-in-one MEGA archive
-        if: github.ref == 'refs/heads/rebuild/main' && env.USERNAME != '' && env.PASSWORD != ''
+        if: (github.ref == 'refs/heads/rebuild/main' || github.ref == 'refs/heads/test/korium-audit-remediation') && env.USERNAME != '' && env.PASSWORD != ''
         # Never fail the publish over MEGA: the GitHub release above is the source of truth.
         continue-on-error: true
         run: |
@@ -1432,7 +1357,7 @@ jobs:
           ls -la mega-out
 
       - name: Upload archive and regular ELFs in all 4 flavours to MEGA
-        if: github.ref == 'refs/heads/rebuild/main' && env.USERNAME != '' && env.PASSWORD != ''
+        if: (github.ref == 'refs/heads/rebuild/main' || github.ref == 'refs/heads/test/korium-audit-remediation') && env.USERNAME != '' && env.PASSWORD != ''
         # Never fail the publish over MEGA: purely additive archival.
         continue-on-error: true
         # Pinned to a full commit SHA rather than @master: this third-party action runs with the
@@ -1446,3 +1371,33 @@ jobs:
           # and the regular ELFs for all four SDK flavours. Credentials come from the job-level
           # USERNAME/PASSWORD env, which this action reads by those exact names.
           args: put -c ${{ env.MEGA_UPLOAD_FILES }} ${{ env.MEGA_REMOTE_DIR }}
+
+  # Normalize Release Assets normally follows this workflow through `workflow_run`. That event is not raised
+  # for a run that a workflow itself started with GITHUB_TOKEN -- which is how korium-sync.yml starts every
+  # Korium build -- so the first rolling-korium release was left with its raw 24-asset set. Start it
+  # directly in that one case; a person's push or dispatch still gets the workflow_run pass.
+  #
+  # A job of its own so `actions: write` never reaches publish-rolling, which holds the MEGA credentials and
+  # runs a third-party action (CodeRabbit #812). It follows publish-rolling but must not depend on the MEGA
+  # archive succeeding, hence !cancelled(); the release tag having moved to this run's commit is the proof
+  # that the publish itself completed.
+  normalize-workflow-published:
+    needs: publish-rolling
+    if: ${{ !cancelled() && github.actor == 'github-actions[bot]' && (github.ref == 'refs/heads/rebuild/main' || github.ref == 'refs/heads/test/korium-audit-remediation') }}
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ROLLING_TAG: ${{ github.ref == 'refs/heads/test/korium-audit-remediation' && 'rolling-korium' || 'rolling' }}
+    steps:
+      - name: Normalize the release this run published
+        run: |
+          set -eu
+          AT=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$ROLLING_TAG" --jq .object.sha 2>/dev/null || echo none)
+          if [ "$AT" != "$GITHUB_SHA" ]; then
+            echo "$ROLLING_TAG is at ${AT:0:8}, not this run's ${GITHUB_SHA:0:8}: nothing was published, nothing to normalize."
+            exit 0
+          fi
+          gh workflow run release-normalize.yml --repo "$GITHUB_REPOSITORY" --ref rebuild/main -f tag="$ROLLING_TAG"
+          echo "Dispatched Normalize Release Assets for $ROLLING_TAG."

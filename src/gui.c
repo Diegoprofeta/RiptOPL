@@ -29,7 +29,6 @@
 #include "include/hddsupport.h" // staged normal APA OPL-home selector
 #include "include/vcdsupport.h" // POPStarter pages: BDMA equip, list options, POPS net config
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
-#include "include/compatupd.h"
 #include "include/pggsm.h"
 #include "include/cheatman.h"
 #include "include/sound.h"
@@ -78,7 +77,27 @@ static int guiSettingsCurrentPage;
 static int guiSettingsSavePending;
 static char guiSettingsPageIndicator[32];
 
+// Settings pages apply their values live while the shell stays open. Keep the source-selection half
+// of that live state transactional: "Exit without saving" must restore the device/network state that
+// was active when Settings opened instead of leaving a Manual/disabled source empty until X starts it
+// again (#806, zackcage6). This is intentionally limited to source activation/routing; page-specific
+// visual/audio edits keep their established live-preview behaviour until a broader transaction model
+// replaces it.
+typedef struct
+{
+    int defaultDevice;
+    int bdmStartMode, hddStartMode, appStartMode, mmceStartMode, favStartMode;
+    int enableUSB, enableILK, enableMX4SIO, enableBdmHDD;
+    int networkProtocol, netStartMode, netProtocolPick;
+    int ethStartMode, enableUDPBD, netBootProtocol;
+    int mmceSlot, mmceIgrSlot, mmceEnableGameID, mmceAckWaitCycles, mmceUseAlarms;
+    char mmcePrefix[sizeof(gMMCEPrefix)];
+} gui_settings_source_state_t;
+
+static gui_settings_source_state_t guiSettingsSourceState;
+
 static int guiSettingsIsShellResult(int result);
+static int guiSettingsLeftUntouched(struct UIItem *ui, int result, const char *pathEdit, const char *pathValue);
 static int guiSettingsPageResult(int result);
 static int guiSettingsPromptSave(void);
 static void guiSettingsBeginDialog(struct UIItem *ui);
@@ -504,125 +523,6 @@ void guiShowRANotices(void)
     guiRenderRANotices(10, 35);
 }
 #endif
-
-static int guiNetCompatUpdRefresh(int modified)
-{
-    int result;
-    unsigned int done, total;
-
-    if ((result = oplGetUpdateGameCompatStatus(&done, &total)) == OPL_COMPAT_UPDATE_STAT_WIP) {
-        diaSetInt(diaNetCompatUpdate, NETUPD_PROGRESS, (done == 0 || total == 0) ? 0 : (int)((float)done / total * 100.0f));
-    }
-
-    return result;
-}
-
-static void guiShowNetCompatUpdateResult(int result)
-{
-    switch (result) {
-        case OPL_COMPAT_UPDATE_STAT_DONE:
-            // Completed with no errors.
-            guiMsgBox(_l(_STR_NET_UPDATE_DONE), 0, NULL);
-            break;
-        case OPL_COMPAT_UPDATE_STAT_ERROR:
-            // Completed with errors.
-            guiMsgBox(_l(_STR_NET_UPDATE_FAILED), 0, NULL);
-            break;
-        case OPL_COMPAT_UPDATE_STAT_CONN_ERROR:
-            // Completed with errors.
-            guiMsgBox(_l(_STR_NET_UPDATE_CONN_FAILED), 0, NULL);
-            break;
-        case OPL_COMPAT_UPDATE_STAT_ABORTED:
-            // User-aborted.
-            guiMsgBox(_l(_STR_NET_UPDATE_CANCELLED), 0, NULL);
-            break;
-    }
-}
-
-void guiShowNetCompatUpdate(void)
-{
-    int ret, UpdateAll;
-    u8 done, started;
-    void *UpdateFunction;
-
-    diaSetVisible(diaNetCompatUpdate, NETUPD_BTN_START, 1);
-    diaSetVisible(diaNetCompatUpdate, NETUPD_BTN_CANCEL, 0);
-    diaSetVisible(diaNetCompatUpdate, NETUPD_PROGRESS_LBL, 0);
-    diaSetVisible(diaNetCompatUpdate, NETUPD_PROGRESS_PERC_LBL, 0);
-    diaSetVisible(diaNetCompatUpdate, NETUPD_PROGRESS, 0);
-    diaSetInt(diaNetCompatUpdate, NETUPD_OPT_UPD_ALL, 0);
-    diaSetEnabled(diaNetCompatUpdate, NETUPD_OPT_UPD_ALL, 1);
-
-    done = 0;
-    started = 0;
-    UpdateFunction = NULL;
-    while (!done) {
-        ret = diaExecuteDialog(diaNetCompatUpdate, -1, 1, UpdateFunction);
-        switch (ret) {
-            case NETUPD_BTN_START:
-                if (guiMsgBox(_l(_STR_CONFIRMATION_SETTINGS_UPDATE), 1, NULL)) {
-                    guiRenderTextScreen(_l(_STR_PLEASE_WAIT));
-
-                    if ((ret = ethLoadInitModules()) == 0) {
-                        diaSetVisible(diaNetCompatUpdate, NETUPD_BTN_START, 0);
-                        diaSetVisible(diaNetCompatUpdate, NETUPD_BTN_CANCEL, 1);
-                        diaSetVisible(diaNetCompatUpdate, NETUPD_PROGRESS_LBL, 1);
-                        diaSetVisible(diaNetCompatUpdate, NETUPD_PROGRESS_PERC_LBL, 1);
-                        diaSetVisible(diaNetCompatUpdate, NETUPD_PROGRESS, 1);
-                        diaSetEnabled(diaNetCompatUpdate, NETUPD_OPT_UPD_ALL, 0);
-
-                        diaGetInt(diaNetCompatUpdate, NETUPD_OPT_UPD_ALL, &UpdateAll);
-                        oplUpdateGameCompat(UpdateAll);
-                        UpdateFunction = &guiNetCompatUpdRefresh;
-                        started = 1;
-                    } else {
-                        ethDisplayErrorStatus();
-                    }
-                }
-                break;
-            case UIID_BTN_CANCEL: // If the user pressed the cancel button.
-            case NETUPD_BTN_CANCEL:
-                if (started) {
-                    if (guiMsgBox(_l(_STR_CONFIRMATION_CANCEL_UPDATE), 1, NULL)) {
-                        guiRenderTextScreen(_l(_STR_PLEASE_WAIT));
-                        oplAbortUpdateGameCompat();
-                        // The process truly ends when the UI callback gets the update from the worker thread that the process has ended.
-                    }
-                } else {
-                    done = 1;
-                    started = 0;
-                }
-                break;
-            default:
-                guiShowNetCompatUpdateResult(ret);
-                done = 1;
-                started = 0;
-                UpdateFunction = NULL;
-                break;
-        }
-    }
-}
-
-void guiShowNetCompatUpdateSingle(int id, item_list_t *support, config_set_t *configSet)
-{
-    int ConfigSource, result;
-
-    ConfigSource = CONFIG_SOURCE_DEFAULT;
-    configGetInt(configSet, CONFIG_ITEM_CONFIGSOURCE, &ConfigSource);
-
-    if (guiMsgBox(_l(_STR_CONFIRMATION_SETTINGS_UPDATE), 1, NULL)) {
-        guiRenderTextScreen(_l(_STR_PLEASE_WAIT));
-
-        if ((ethLoadInitModules()) == 0) {
-            if ((result = oplUpdateGameCompatSingle(id, support, configSet)) == OPL_COMPAT_UPDATE_STAT_DONE) {
-                configSetInt(configSet, CONFIG_ITEM_CONFIGSOURCE, CONFIG_SOURCE_DLOAD);
-            }
-            guiShowNetCompatUpdateResult(result);
-        } else {
-            ethDisplayErrorStatus();
-        }
-    }
-}
 
 static int guiUpdater(int modified)
 {
@@ -1393,9 +1293,49 @@ static int netConfigUpdater(int modified)
     return 0;
 }
 
+// Everything a live SMB session depends on. The Network page snapshots it before the dialog so that
+// an exit which changed none of it -- Back, or L1/R1 past the page -- does not drop and redo the
+// session; only OK/Reconnect or a real change does. Strings are copied as strings into a zeroed
+// struct, so bytes past a terminator can never read as a change.
+typedef struct
+{
+    int dhcp, ps2Ip[4], netmask[4], gateway[4], dns[4], pcIp[4], pcPort, pcNetBIOS, opMode, protocol;
+    char pcNBAddress[17], shareName[32], userName[32], password[32];
+} gui_smb_link_t;
+
+static void guiSmbLinkCapture(gui_smb_link_t *link)
+{
+    memset(link, 0, sizeof(*link));
+    link->dhcp = ps2_ip_use_dhcp;
+    memcpy(link->ps2Ip, ps2_ip, sizeof(link->ps2Ip));
+    memcpy(link->netmask, ps2_netmask, sizeof(link->netmask));
+    memcpy(link->gateway, ps2_gateway, sizeof(link->gateway));
+    memcpy(link->dns, ps2_dns, sizeof(link->dns));
+    memcpy(link->pcIp, pc_ip, sizeof(link->pcIp));
+    link->pcPort = gPCPort;
+    link->pcNetBIOS = gPCShareAddressIsNetBIOS;
+    link->opMode = gETHOpMode;
+    link->protocol = gNetworkProtocol;
+    snprintf(link->pcNBAddress, sizeof(link->pcNBAddress), "%s", gPCShareNBAddress);
+    snprintf(link->shareName, sizeof(link->shareName), "%s", gPCShareName);
+    snprintf(link->userName, sizeof(link->userName), "%s", gPCUserName);
+    snprintf(link->password, sizeof(link->password), "%s", gPCPassword);
+}
+
+static int guiSmbLinkChanged(const gui_smb_link_t *before)
+{
+    gui_smb_link_t now;
+
+    guiSmbLinkCapture(&now);
+    return memcmp(before, &now, sizeof(now)) != 0;
+}
+
 int guiShowNetConfig(void)
 {
     size_t i;
+    // What the live SMB session was built from, before this page changes anything.
+    gui_smb_link_t smbBefore;
+    guiSmbLinkCapture(&smbBefore);
     const char *ethOpModes[] = {_l(_STR_AUTO), _l(_STR_ETH_100MFDX), _l(_STR_ETH_100MHDX), _l(_STR_ETH_10MFDX), _l(_STR_ETH_10MHDX), NULL};
     const char *addrConfModes[] = {_l(_STR_ADDR_TYPE_IP), _l(_STR_ADDR_TYPE_NETBIOS), NULL};
     const char *ipAddrConfModes[] = {_l(_STR_IP_ADDRESS_TYPE_STATIC), _l(_STR_IP_ADDRESS_TYPE_DHCP), NULL};
@@ -1510,7 +1450,7 @@ reshow_network:
         guiShowPopsNetConfig();
         goto reshow_network;
     }
-    if (result) {
+    if (result && !guiSettingsLeftUntouched(diaNetConfig, result, NULL, NULL)) {
         int netProtoVal2, netAccessVal2;
         diaGetInt(diaNetConfig, CFG_NETPROTOCOL, &netProtoVal2);
         diaGetInt(diaNetConfig, CFG_UDPFSMODE, &netAccessVal2);
@@ -1562,12 +1502,16 @@ reshow_network:
 
         applyConfig(-1, -1, 0);
 
-        // OK is an Apply action for the live SMB stack, not merely a RAM/config edit. A failed
-        // startup may already have queued this through initAllSupport(); ethRequestReconnect
-        // coalesces the duplicate. Protocol changes that disagree with the resident NIC remain
-        // restart-only and are deliberately excluded here.
+        // OK is an Apply action for the live SMB stack, not merely a RAM/config edit -- and after a
+        // failed connect it is labelled Reconnect, so it reconnects even with nothing changed. Any
+        // other way off the page (Back, L1/R1) keeps the edits too, but reconnects only when the SMB
+        // link actually changed: backing out of a page untouched must not drop the session. A
+        // failed startup may already have queued this through initAllSupport();
+        // ethRequestReconnect coalesces the duplicate. Protocol changes that disagree with the
+        // resident NIC remain restart-only and are deliberately excluded here.
         if (gNetworkProtocol == NET_PROTO_SMB && gETHStartMode != START_MODE_DISABLED &&
-            !guiNetProtocolNeedsRestart())
+            !guiNetProtocolNeedsRestart() &&
+            (result == NETCFG_OK || result == NETCFG_RECONNECT || guiSmbLinkChanged(&smbBefore)))
             ethRequestReconnect();
     }
 
@@ -1865,7 +1809,7 @@ static int guiReadPopsNet(int source, vcd_popsnet_t *out)
         guiEndFrame();
 
         readPads();
-        if (getKeyOn(KEY_CIRCLE)) {
+        if (getKeyOn(guiCancelKey())) {
             guiPopsNetReadAbandoned = 1;
             return GUI_POPSNET_READ_ABORTED;
         }
@@ -2628,6 +2572,27 @@ static int guiSettingsIsShellResult(int result)
     return guiSettingsIsPeerResult(result) || result == DIA_RESULT_INDEX;
 }
 
+// Back / L1 / R1 off a page whose rows the user did not change. Such an exit applies nothing, as
+// Back did before #793 made it keep edits. Since then every Back ran the page's apply block, and on
+// Game Sources, General, Launch, PS1 and Network that block is a full device re-apply
+// (applyConfig(..., 0), plus bdmForceDeviceRefresh on Game Sources) -- so merely opening Settings,
+// entering a page and backing out re-applied every source and left the USB page blank (#806,
+// zackcage6, Beta-3338). With nothing changed there is nothing to apply; an explicit OK or an edited
+// row still applies exactly as before.
+//
+// A long-path row (IGR/Exit path on General, Neutrino path on Launch, POPSTARTER path on PS1) shows
+// only a 31-character preview; the value lives in a full-size edit buffer that THAT page seeds from
+// its global when it opens, so an edit past the preview is caught by comparing the page's own buffer.
+// Only its own: the other pages' buffers stay empty until their page first opens, and comparing them
+// would make every other page look edited (pathEdit/pathValue are NULL on pages without such a row).
+static int guiSettingsLeftUntouched(struct UIItem *ui, int result, const char *pathEdit, const char *pathValue)
+{
+    if (!guiSettingsIsShellResult(result) || diaHasChanges(ui))
+        return 0;
+
+    return pathEdit == NULL || strcmp(pathEdit, pathValue) == 0;
+}
+
 static int guiSettingsPageResult(int result)
 {
     // L1/R1 peer paging and an explicit Index request pass straight back to the shell loop.
@@ -2724,7 +2689,7 @@ reshow_general:
         goto reshow_general;
     }
 
-    if (result != UIID_BTN_CANCEL && result != -1) {
+    if (result != UIID_BTN_CANCEL && result != -1 && !guiSettingsLeftUntouched(ui, result, exitPathEdit, gExitPath)) {
         diaGetInt(ui, UICFG_LANG, &langID);
         snprintf(gExitPath, sizeof(gExitPath), "%s", exitPathEdit);
         diaGetString(ui, CFG_CUSTOMCFGPATH, gCustomSettingsPath, sizeof(gCustomSettingsPath));
@@ -2806,7 +2771,7 @@ reshow_sources:
         result = UIID_BTN_OK;
     }
 
-    if (result != UIID_BTN_CANCEL && result != -1) {
+    if (result != UIID_BTN_CANCEL && result != -1 && !guiSettingsLeftUntouched(ui, result, NULL, NULL)) {
         diaGetInt(ui, CFG_DEFDEVICE, &deviceModeIndex);
         gDefaultDevice = guiDeviceTypeToIoMode(deviceModeIndex);
         diaGetInt(ui, CFG_BDMMODE, &gBDMStartMode);
@@ -3036,7 +3001,7 @@ reshow_launch:
         goto reshow_launch;
     }
 
-    if (result != UIID_BTN_CANCEL && result != -1) {
+    if (result != UIID_BTN_CANCEL && result != -1 && !guiSettingsLeftUntouched(ui, result, neutrinoPathEdit, gNeutrinoPath)) {
         diaGetInt(ui, CFG_DEFAULT_CORE, &gDefaultCoreLoader);
         diaGetInt(ui, CFG_PS2LOGO, &gPS2Logo);
         if (strcmp(gNeutrinoPath, neutrinoPathEdit) != 0)
@@ -3092,6 +3057,7 @@ static int guiSettingsShowPopstarter(void)
     const int skipIDs[] = {VCD_BDMA_BUTTON};
     // "480" is 480i to Ember -- it always was; this row used to call it 480p.
     const char *emberDisplayStrs[] = {_l(_STR_DEFAULT), "240p", "480i", "480p", NULL};
+    const char *emberTimingStrs[] = {_l(_STR_DEFAULT), _l(_STR_AUTO), "NTSC", "PAL", NULL};
     const char *emberDitherStrs[] = {_l(_STR_DEFAULT), _l(_STR_ON), _l(_STR_OFF), NULL};
     const char *emberShadingStrs[] = {_l(_STR_DEFAULT), "15-bit", _l(_STR_EMBER_SHADING_24), NULL};
     const char *emberControllerStrs[] = {_l(_STR_DEFAULT), _l(_STR_AUTO), "Analog", "D2A", NULL};
@@ -3099,6 +3065,7 @@ static int guiSettingsShowPopstarter(void)
     // A setting never changed in RiptOPL is UNSET and shows as Default; it only becomes stored when
     // the user actually picks something else (see emberSettingFromRow).
     int emberDisplayShown = emberSettingShown(gEmberDisplay);
+    int emberTimingShown = emberSettingShown(gEmberTiming);
     int emberDitherShown = emberSettingShown(gEmberDither);
     int emberShadingShown = emberSettingShown(gEmberShading);
     int emberControllerShown = emberSettingShown(gEmberController);
@@ -3113,6 +3080,8 @@ static int guiSettingsShowPopstarter(void)
     // change, which is exactly the bug this line replaced.
     diaSetEnum(ui, CFG_EMBER_DISPLAY, emberDisplayStrs);
     diaSetInt(ui, CFG_EMBER_DISPLAY, emberDisplayShown);
+    diaSetEnum(ui, CFG_EMBER_TIMING, emberTimingStrs);
+    diaSetInt(ui, CFG_EMBER_TIMING, emberTimingShown);
     diaSetEnum(ui, CFG_EMBER_DITHER, emberDitherStrs);
     diaSetInt(ui, CFG_EMBER_DITHER, emberDitherShown);
     diaSetEnum(ui, CFG_EMBER_SHADING, emberShadingStrs);
@@ -3139,7 +3108,7 @@ reshow_popstarter:
         goto reshow_popstarter;
     }
 
-    if (result != UIID_BTN_CANCEL && result != -1) {
+    if (result != UIID_BTN_CANCEL && result != -1 && !guiSettingsLeftUntouched(ui, result, popstarterPathEdit, gPopstarterPath)) {
         int gameViewChanged = guiReadGameViewPicker(ui);
 
         diaGetInt(ui, CFG_POPSTARTER_RETROGEM_GAMEID, &gPopstarterRetroGemGameID);
@@ -3149,6 +3118,7 @@ reshow_popstarter:
         if (emberDisplay == EMBER_DISPLAY_480P && gEmberDisplay != EMBER_DISPLAY_480P && !guiMsgBox(_l(_STR_EMBER_480P_CONFIRM), 1, NULL))
             emberDisplay = gEmberDisplay;
         gEmberDisplay = emberDisplay;
+        gEmberTiming = emberSettingFromRow(ui, CFG_EMBER_TIMING, emberTimingShown, gEmberTiming);
         gEmberDither = emberSettingFromRow(ui, CFG_EMBER_DITHER, emberDitherShown, gEmberDither);
         gEmberShading = emberSettingFromRow(ui, CFG_EMBER_SHADING, emberShadingShown, gEmberShading);
         gEmberController = emberSettingFromRow(ui, CFG_EMBER_CONTROLLER, emberControllerShown, gEmberController);
@@ -3186,10 +3156,91 @@ enum gui_settings_prompt_result {
     SETTINGS_PROMPT_CONTINUE
 };
 
+static void guiSettingsReadSourceState(gui_settings_source_state_t *state)
+{
+    memset(state, 0, sizeof(*state));
+    state->defaultDevice = gDefaultDevice;
+    state->bdmStartMode = gBDMStartMode;
+    state->hddStartMode = gHDDStartMode;
+    state->appStartMode = gAPPStartMode;
+    state->mmceStartMode = gMMCEStartMode;
+    state->favStartMode = gFAVStartMode;
+    state->enableUSB = gEnableUSB;
+    state->enableILK = gEnableILK;
+    state->enableMX4SIO = gEnableMX4SIO;
+    state->enableBdmHDD = gEnableBdmHDD;
+    state->networkProtocol = gNetworkProtocol;
+    state->netStartMode = gNetStartMode;
+    state->netProtocolPick = gNetProtocolPick;
+    state->ethStartMode = gETHStartMode;
+    state->enableUDPBD = gEnableUDPBD;
+    state->netBootProtocol = gNetBootProtocol;
+    state->mmceSlot = gMMCESlot;
+    state->mmceIgrSlot = gMMCEIGRSlot;
+    state->mmceEnableGameID = gMMCEEnableGameID;
+    state->mmceAckWaitCycles = gMMCEAckWaitCycles;
+    state->mmceUseAlarms = gMMCEUseAlarms;
+    snprintf(state->mmcePrefix, sizeof(state->mmcePrefix), "%s", gMMCEPrefix);
+}
+
+static void guiSettingsCaptureSourceState(void)
+{
+    guiSettingsReadSourceState(&guiSettingsSourceState);
+}
+
+static int guiSettingsSourceStateChanged(void)
+{
+    gui_settings_source_state_t current;
+
+    guiSettingsReadSourceState(&current);
+    return memcmp(&current, &guiSettingsSourceState, sizeof(current)) != 0;
+}
+
+static void guiSettingsRestoreSourceState(void)
+{
+    // Most Settings pages are not source pages. Avoid a full device refresh on a discard that only
+    // changed visual/audio/launch options; doing so would manufacture exactly the kind of storage
+    // churn this path exists to prevent.
+    if (!guiSettingsSourceStateChanged())
+        return;
+
+    gDefaultDevice = guiSettingsSourceState.defaultDevice;
+    gBDMStartMode = guiSettingsSourceState.bdmStartMode;
+    gHDDStartMode = guiSettingsSourceState.hddStartMode;
+    gAPPStartMode = guiSettingsSourceState.appStartMode;
+    gMMCEStartMode = guiSettingsSourceState.mmceStartMode;
+    gFAVStartMode = guiSettingsSourceState.favStartMode;
+    gEnableUSB = guiSettingsSourceState.enableUSB;
+    gEnableILK = guiSettingsSourceState.enableILK;
+    gEnableMX4SIO = guiSettingsSourceState.enableMX4SIO;
+    gEnableBdmHDD = guiSettingsSourceState.enableBdmHDD;
+    gNetworkProtocol = guiSettingsSourceState.networkProtocol;
+    gNetStartMode = guiSettingsSourceState.netStartMode;
+    gNetProtocolPick = guiSettingsSourceState.netProtocolPick;
+    gETHStartMode = guiSettingsSourceState.ethStartMode;
+    gEnableUDPBD = guiSettingsSourceState.enableUDPBD;
+    gNetBootProtocol = guiSettingsSourceState.netBootProtocol;
+    gMMCESlot = guiSettingsSourceState.mmceSlot;
+    gMMCEIGRSlot = guiSettingsSourceState.mmceIgrSlot;
+    gMMCEEnableGameID = guiSettingsSourceState.mmceEnableGameID;
+    gMMCEAckWaitCycles = guiSettingsSourceState.mmceAckWaitCycles;
+    gMMCEUseAlarms = guiSettingsSourceState.mmceUseAlarms;
+    snprintf(gMMCEPrefix, sizeof(gMMCEPrefix), "%s", guiSettingsSourceState.mmcePrefix);
+
+    // Game Sources can have already forced a BDM re-enumeration and every Settings page that calls
+    // applyConfig(..., 0) can have rebuilt source visibility. Re-apply the captured routing now so
+    // the list/menu state matches the values we just restored. This is the programmatic equivalent
+    // of the X press zackcage6 needed to recover the blank page, but it restores the original source
+    // instead of merely starting whichever page happens to be selected.
+    bdmForceDeviceRefresh();
+    applyConfig(-1, -1, 0);
+    menuReinitMainMenu();
+}
+
 static int guiSettingsPromptSave(void)
 {
     int promptHints[3] = {_STR_SETTINGS_SAVE, _STR_SETTINGS_EXIT_WITHOUT_SAVING, _STR_SETTINGS_CONTINUE_EDITING};
-    int promptIcons[3] = {CROSS_ICON, CIRCLE_ICON, TRIANGLE_ICON};
+    int promptIcons[3] = {guiConfirmIcon(), guiCancelIcon(), TRIANGLE_ICON};
 
     sfxPlay(SFX_MESSAGE);
     while (1) {
@@ -3219,11 +3270,11 @@ static int guiSettingsPromptSave(void)
         guiEndFrame();
 
         readPads();
-        if (getKeyOn(KEY_CROSS)) {
+        if (getKeyOn(guiConfirmKey())) {
             sfxPlay(SFX_CONFIRM);
             return SETTINGS_PROMPT_SAVE;
         }
-        if (getKeyOn(KEY_CIRCLE)) {
+        if (getKeyOn(guiCancelKey())) {
             sfxPlay(SFX_CANCEL);
             return SETTINGS_PROMPT_EXIT;
         }
@@ -3237,7 +3288,7 @@ static int guiSettingsPromptSave(void)
 static void guiDrawSettingsIndexHints(void)
 {
     int hints[2] = {_STR_SELECT, _STR_BACK};
-    int icons[2] = {CROSS_ICON, CIRCLE_ICON};
+    int icons[2] = {guiConfirmIcon(), guiCancelIcon()};
     int x = guiAlignSubMenuHints(2, hints, icons, gTheme->fonts[0], 12, 2);
     int y = gTheme->usedHeight - 32;
 
@@ -3276,6 +3327,13 @@ static int guiSettingsShowIndex(int *page)
 
         fntRenderString(gTheme->fonts[0], screenWidth >> 1, 50, ALIGN_CENTER, 0, 0, _l(_STR_SETTINGS), gTheme->textColor);
 
+        // Keep the exact running build visible on the Settings hub so bug reports do not require
+        // opening About/Credits just to discover the version. OPL_VERSION already includes the
+        // release/revision/hash/toolchain suffix used everywhere else in the build.
+        char versionLine[80];
+        snprintf(versionLine, sizeof(versionLine), "RiptOPL %s", OPL_VERSION);
+        fntRenderString(gTheme->fonts[0], screenWidth >> 1, 72, ALIGN_CENTER, 0, 0, versionLine, gTheme->textColor);
+
         y = (gTheme->usedHeight >> 1) - (spacing * (itemCount >> 1));
         for (int i = 0; i < itemCount; i++) {
             fntRenderString(gTheme->fonts[0], screenWidth >> 1, y, ALIGN_CENTER, 0, 0, labels[i], (i == selected) ? gTheme->selTextColor : gTheme->textColor);
@@ -3294,16 +3352,22 @@ static int guiSettingsShowIndex(int *page)
         } else if (getKey(KEY_DOWN)) {
             sfxPlay(SFX_CURSOR);
             selected = (selected + 1) % itemCount;
-        } else if (getKeyOn(KEY_CROSS)) {
+        } else if (getKeyOn(guiConfirmKey())) {
             sfxPlay(SFX_CONFIRM);
             if (selected == SETTINGS_PAGE_COUNT) {
-                if (menuSaveSettings() > 0)
+                if (menuSaveSettings() > 0) {
+                    // A successful in-shell save becomes the new discard baseline. Otherwise,
+                    // saving once and later choosing "Exit without saving" would wrongly restore
+                    // the source state from before Settings was opened, undoing a state that is
+                    // already persisted on disk.
+                    guiSettingsCaptureSourceState();
                     guiSettingsSavePending = 0;
+                }
             } else {
                 *page = selected;
                 return 1;
             }
-        } else if (getKeyOn(KEY_START) || getKeyOn(KEY_CIRCLE)) {
+        } else if (getKeyOn(KEY_START) || getKeyOn(guiCancelKey())) {
             sfxPlay(SFX_CANCEL);
             if (!guiSettingsSavePending)
                 return 0;
@@ -3316,6 +3380,7 @@ static int guiSettingsShowIndex(int *page)
                 }
             } else if (promptResult == SETTINGS_PROMPT_EXIT) {
                 hddDiscardOplHomeSelection();
+                guiSettingsRestoreSourceState();
                 guiSettingsSavePending = 0;
                 return 0;
             }
@@ -3332,6 +3397,7 @@ static void guiShowSettingsFromPage(int page, int showIndexFirst)
 
     guiSettingsShellActive = 1;
     guiSettingsSavePending = 0;
+    guiSettingsCaptureSourceState();
     if (showIndexFirst && !guiSettingsShowIndex(&page)) {
         hddDiscardOplHomeSelection();
         guiSettingsShellActive = 0;
@@ -3416,34 +3482,57 @@ static int emberGameSettingGet(config_set_t *configSet, const char *key, int cou
     return value;
 }
 
-// PS1 Triangle -> Ember Game Settings (Controller only -- see diaEmberGameConfig). The same rule as
-// the global rows: a row never changed here
-// stays out of the CFG (the game's settings.txt keeps whatever it has); a changed row is stored, and
-// Default stored means "remove it from the game's file", so the global row applies again. The CFG is
-// the one the launch reads (menuLoadConfig -> cueApplySettings); on a favourite it is its source
-// row's CFG, so both places show and edit the same values.
+// PS1 Triangle -> Ember Game Settings. Ember accepts timing, dither, shading and controller in
+// a game's settings.txt; display is deliberately global-only. In this editor Default means inherit
+// the global Ember setting. Confirming Default stores 0 in the game's CFG so cueApplySettings removes
+// that per-game key at launch instead of preserving a stale hand-written override.
 void guiShowEmberGameSettings(void)
 {
+    const char *timingStrs[] = {_l(_STR_DEFAULT), _l(_STR_AUTO), "NTSC", "PAL", NULL};
+    const char *ditherStrs[] = {_l(_STR_DEFAULT), _l(_STR_ON), _l(_STR_OFF), NULL};
+    const char *shadingStrs[] = {_l(_STR_DEFAULT), "15-bit", _l(_STR_EMBER_SHADING_24), NULL};
     const char *controllerStrs[] = {_l(_STR_DEFAULT), _l(_STR_AUTO), "Analog", "D2A", NULL};
     config_set_t *configSet = gameMenuLoadConfig(NULL);
-    int controller, controllerShown;
+    int timing, dither, shading, controller;
+    int newTiming, newDither, newShading, newController;
 
     if (configSet == NULL)
         return;
 
+    timing = emberGameSettingGet(configSet, CONFIG_ITEM_EMBER_TIMING, EMBER_TIMING_COUNT);
+    dither = emberGameSettingGet(configSet, CONFIG_ITEM_EMBER_DITHER, EMBER_DITHER_COUNT);
+    shading = emberGameSettingGet(configSet, CONFIG_ITEM_EMBER_SHADING, EMBER_SHADING_COUNT);
     controller = emberGameSettingGet(configSet, CONFIG_ITEM_EMBER_CONTROLLER, EMBER_CONTROLLER_COUNT);
-    controllerShown = emberSettingShown(controller);
 
+    diaSetEnum(diaEmberGameConfig, CFG_EMBER_TIMING, timingStrs);
+    diaSetInt(diaEmberGameConfig, CFG_EMBER_TIMING, emberSettingShown(timing));
+    diaSetEnum(diaEmberGameConfig, CFG_EMBER_DITHER, ditherStrs);
+    diaSetInt(diaEmberGameConfig, CFG_EMBER_DITHER, emberSettingShown(dither));
+    diaSetEnum(diaEmberGameConfig, CFG_EMBER_SHADING, shadingStrs);
+    diaSetInt(diaEmberGameConfig, CFG_EMBER_SHADING, emberSettingShown(shading));
     diaSetEnum(diaEmberGameConfig, CFG_EMBER_CONTROLLER, controllerStrs);
-    diaSetInt(diaEmberGameConfig, CFG_EMBER_CONTROLLER, controllerShown);
+    diaSetInt(diaEmberGameConfig, CFG_EMBER_CONTROLLER, emberSettingShown(controller));
 
     if (diaExecuteDialog(diaEmberGameConfig, -1, 1, NULL) != UIID_BTN_OK)
         return;
 
-    int newController = emberSettingFromRow(diaEmberGameConfig, CFG_EMBER_CONTROLLER, controllerShown, controller);
-    if (newController == controller)
+    newTiming = 0;
+    newDither = 0;
+    newShading = 0;
+    newController = 0;
+    diaGetInt(diaEmberGameConfig, CFG_EMBER_TIMING, &newTiming);
+    diaGetInt(diaEmberGameConfig, CFG_EMBER_DITHER, &newDither);
+    diaGetInt(diaEmberGameConfig, CFG_EMBER_SHADING, &newShading);
+    diaGetInt(diaEmberGameConfig, CFG_EMBER_CONTROLLER, &newController);
+
+    // An absent CFG key is displayed as Default, but OK makes that inheritance explicit. This is
+    // intentional: Ember defines a missing game key as "use the global settings.txt value".
+    if (newTiming == timing && newDither == dither && newShading == shading && newController == controller)
         return;
 
+    configSetInt(configSet, CONFIG_ITEM_EMBER_TIMING, newTiming);
+    configSetInt(configSet, CONFIG_ITEM_EMBER_DITHER, newDither);
+    configSetInt(configSet, CONFIG_ITEM_EMBER_SHADING, newShading);
     configSetInt(configSet, CONFIG_ITEM_EMBER_CONTROLLER, newController);
     menuSaveConfig(); // a failed write raises the usual "error saving settings" message
 }
@@ -4626,6 +4715,29 @@ int guiMsgBox(const char *text, int addAccept, struct UIItem *ui)
     return terminate - 1;
 }
 
+// Settings, its save prompt and the Reboot IOP prompt used to hard-wire Cross = confirm / Circle = back
+// (Settings redesign, #527), so with Circle chosen as the confirm button those screens ran the other way
+// round from the rest of RiptOPL (volventura, PSX-Place). Everything asks here instead.
+int guiConfirmKey(void)
+{
+    return gSelectButton;
+}
+
+int guiCancelKey(void)
+{
+    return gSelectButton == KEY_CIRCLE ? KEY_CROSS : KEY_CIRCLE;
+}
+
+int guiConfirmIcon(void)
+{
+    return gSelectButton == KEY_CIRCLE ? CIRCLE_ICON : CROSS_ICON;
+}
+
+int guiCancelIcon(void)
+{
+    return gSelectButton == KEY_CIRCLE ? CROSS_ICON : CIRCLE_ICON;
+}
+
 int guiPromptRebootIop(void)
 {
     int terminate = 0;
@@ -4637,9 +4749,9 @@ int guiPromptRebootIop(void)
 
         readPads();
 
-        if (getKeyOn(KEY_CROSS))
+        if (getKeyOn(guiConfirmKey()))
             terminate = 1;
-        else if (getKeyOn(KEY_CIRCLE))
+        else if (getKeyOn(guiCancelKey()))
             terminate = 2;
         else if (getKeyOn(KEY_TRIANGLE))
             terminate = 3;
@@ -4653,9 +4765,9 @@ int guiPromptRebootIop(void)
 
         fntRenderString(gTheme->fonts[0], screenWidth >> 1, gTheme->usedHeight >> 1, ALIGN_CENTER, 0, 0, "REBOOT IOP?", gTheme->textColor);
 
-        guiDrawIconAndLiteralText(CROSS_ICON, "YES", gTheme->fonts[0], 70, 417, gTheme->textColor);
+        guiDrawIconAndLiteralText(guiConfirmIcon(), "YES", gTheme->fonts[0], 70, 417, gTheme->textColor);
         guiDrawIconAndLiteralText(TRIANGLE_ICON, _l(_STR_CANCEL), gTheme->fonts[0], 285, 417, gTheme->textColor);
-        guiDrawIconAndLiteralText(CIRCLE_ICON, "NO", gTheme->fonts[0], 500, 417, gTheme->textColor);
+        guiDrawIconAndLiteralText(guiCancelIcon(), "NO", gTheme->fonts[0], 500, 417, gTheme->textColor);
 
         guiEndFrame();
     }

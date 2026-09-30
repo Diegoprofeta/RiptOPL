@@ -17,7 +17,10 @@ permissions:
   contents: write
 
 concurrency:
-  group: release-normalize-${{ github.event_name == 'workflow_run' && 'rolling' || github.event.release.tag_name || inputs.tag }}
+  # One group per RELEASE, whatever started the run: the same mapping as "Resolve release tag" below, so a
+  # manual tag=rolling run and a workflow_run from rebuild/main never normalize the same release at once
+  # (--clobber deletes an asset before re-uploading it), while rolling and rolling-korium stay independent.
+  group: release-normalize-${{ github.event_name == 'release' && github.event.release.tag_name || github.event_name == 'workflow_run' && (startsWith(github.event.workflow_run.head_branch, 'v') && github.event.workflow_run.head_branch || github.event.workflow_run.head_branch == 'test/korium-audit-remediation' && 'rolling-korium' || 'rolling') || inputs.tag }}
   cancel-in-progress: false
 
 jobs:
@@ -31,7 +34,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Resolve release tag
         shell: bash
@@ -43,6 +46,8 @@ jobs:
             REF="${{ github.event.workflow_run.head_branch }}"
             if [[ "$REF" == v* ]]; then
               TAG="$REF"
+            elif [[ "$REF" == "test/korium-audit-remediation" ]]; then
+              TAG="rolling-korium" # the Korium edition of rolling (see rolling-release.yml)
             else
               TAG="rolling"
             fi
@@ -53,9 +58,18 @@ jobs:
           printf 'Normalizing release: %s\n' "$TAG"
 
       - name: Download release assets
+        id: download
         shell: bash
         run: |
           set -euo pipefail
+          # Releases with no assets (hand-cut placeholders, draft channels not yet populated)
+          # have nothing to normalize -- skip cleanly instead of failing the download retry loop.
+          if [ -z "$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>/dev/null)" ]; then
+            echo "Release $TAG has no assets; nothing to normalize."
+            echo "has_assets=no" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_assets=yes" >> "$GITHUB_OUTPUT"
           # GitHub's release API returns the odd transient HTTP 500; one of those on 48537d39 killed this
           # job at the download and left rolling with its raw, un-normalized asset set. Retry instead.
           retry() { for n in 1 2 3 4; do "$@" && return 0; echo "Attempt $n failed: $*"; sleep $((n * 15)); done; return 1; }
@@ -66,6 +80,7 @@ jobs:
           find release-work -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Add external-tool shortcuts to the unified package
+        if: steps.download.outputs.has_assets == 'yes'
         shell: bash
         run: |
           set -euo pipefail
@@ -99,6 +114,7 @@ jobs:
           echo "Rebuilt $(basename "$MAIN_ZIP") with all five companion-tool shortcuts."
 
       - name: Add all DS5 loaders to the variants archive
+        if: steps.download.outputs.has_assets == 'yes'
         shell: bash
         run: |
           set -euo pipefail
@@ -131,6 +147,7 @@ jobs:
           echo "Rebuilt $(basename "$VARIANT_ZIP") with DS5 loaders."
 
       - name: Upload rebuilt unified and variants packages
+        if: steps.download.outputs.has_assets == 'yes'
         shell: bash
         run: |
           set -euo pipefail
@@ -146,6 +163,7 @@ jobs:
           done
 
       - name: Remove floating build files and manifests
+        if: steps.download.outputs.has_assets == 'yes'
         shell: bash
         run: |
           set -euo pipefail
@@ -165,20 +183,23 @@ jobs:
             gh release delete-asset "$TAG" "$asset" --repo "$GITHUB_REPOSITORY" --yes || true
           done
 
-      - name: Rewrite release notes with standard header and external tools
+      - name: Rewrite compact release notes with final assets and changelog
+        if: steps.download.outputs.has_assets == 'yes'
         shell: bash
         run: |
           set -euo pipefail
-          BODY="release-work/original-notes.md"
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq '.body' > "$BODY"
-
-          # The Download section is written by rolling-release.yml from the archives that actually
-          # built; this pass only adds the banners and External Tools & Services (from README).
-          python3 .github/scripts/normalize_release_notes.py "$BODY" > release-work/notes.md
-
+          # Read the final API asset list after cleanup, not the stale download directory.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body,assets > release-work/release.json
+          # The moving tag can have changed since checkout. Pin the notes to its actual commit.
+          git fetch --force origin "refs/tags/$TAG:refs/tags/$TAG"
+          python3 .github/scripts/test_release_notes.py
+          python3 .github/scripts/normalize_release_notes.py \
+            --release-json release-work/release.json --tag "$TAG" --revision "refs/tags/$TAG" \
+            --repository "$GITHUB_REPOSITORY" --server "$GITHUB_SERVER_URL" > release-work/notes.md
           gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file release-work/notes.md
 
       - name: Verify final release asset set
+        if: steps.download.outputs.has_assets == 'yes'
         shell: bash
         run: |
           set -euo pipefail
