@@ -71,7 +71,7 @@ Asset script (`tools/assets.py`, replaces the non-compile Makefile parts), run B
 - fetch `download_lng`, `download_lwNBD` (pinned + sha256)
 - `lang_compiler.py` -> `.lng` + internal language C/H
 - version header (`oplversion`), changelog
-- bin2c of resources (gfx, audio, fonts, lng_tmpl) into generated `.c`
+- bin2c of resources (gfx, audio, fonts, lng/tmpl) into generated `.c`
 - release zip / VPKD bundle
 Generated `.c` files are listed in `sources` (globs, so the script must run first).
 ps2build has no pre-build hook: CI and the dev wrapper call `assets.py && ps2build build`.
