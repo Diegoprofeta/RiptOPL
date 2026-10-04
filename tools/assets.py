@@ -166,7 +166,7 @@ def embed():
 # ------------------------------------------------------------------ version
 def opl_version():
     dirty = ""
-    if subprocess.run(["git", "diff", "--quiet"]).returncode == 1 or not os.path.isdir(".git"):
+    if subprocess.run(["git", "diff", "--quiet"]).returncode == 1 or not os.path.exists(".git"):
         dirty = "-dirty"
     tag = out("git", "describe", "--exact-match", "--tags", "--match", "v*")
     local = os.environ.get("LOCALVERSION", "")
