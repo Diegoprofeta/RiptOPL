@@ -14,7 +14,7 @@ now reports `visibility: public`. Earlier notes call it the private migration re
   of this work.
 - Continue [PR #19](https://github.com/NathanNeurotic/RiptOPL/pull/19), stacked on
   [PR #18](https://github.com/NathanNeurotic/RiptOPL/pull/18), base
-  `build-with-clang` at `28e535cdfc9b0fe2467849b29d4f9f374721f02b` when checked.
+  `rebuild/main` after PR #18 merged as `7a760cf9c1d45cbca9c6cc9a7df86dced221ad41`.
   Refresh remote refs and actual reviews before updating or retargeting it.
   `techwritescode` is the requested reviewer; no submitted reviews were present.
 - Other local migration checkouts/worktrees contain unrelated uncommitted work.
@@ -107,12 +107,18 @@ this checkpoint or from the repository visibility alone.
    services; do not replace converted backends with legacy C files.
 3. Compare pending migration PRs #13–#17 before duplicating their Ember,
    Neutrino, documentation or site work. Refresh their state; this is a snapshot.
-4. Restore SDK flavour definitions and standard/RA package isolation, then port
+4. Validate the three ps2build release editions and standard/RA package isolation, then port
    the remaining RA runtime/browser/client/ORBIT behavior. The current
-   `ps2.yaml` only builds main (GSM1080P + PADEMU); host RA tests are not a full
-   RA ELF build. `IGR_RequestReset` is absent from the older private runtime.
-5. Port `rolling-release.yml` away from the unusable legacy Makefile. Validate
-   staged packages and provenance before publishing anything.
+   `tools/build_edition.py` now overlays the base `ps2.yaml` for Korium, RA and
+   IncebtIon. A dirty RA probe passed all 913 native SDK build steps; packaging
+   and clean exact-commit edition builds are the next gates. `IGR_RequestReset`
+   is absent from the older private runtime.
+5. The release workflow now uses only ps2build and builds three complete kits.
+   Publication is explicit manual dispatch; validate staged packages, provenance
+   and all exact-head CI jobs before publishing. Old normalizer/promote/Korium
+   branch-sync publishers are removed to prevent conflicting release contracts.
+   See `ROLLING_RELEASE.md`. Fixing README badges and importing the latest Pages
+   site/wiki is in progress in separate documentation checkouts.
 6. Work through earlier feature/config differences and console acceptance in
    the parity ledger. LLVM ignores `-fsingle-precision-constant`; precision,
    performance, audio, storage/network behavior and game/IGR compatibility need

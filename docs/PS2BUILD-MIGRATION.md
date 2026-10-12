@@ -1,5 +1,11 @@
 # Migration plan: Makefile + ps2sdk -> ps2build
 
+> **Current release contract (2026-10-12):** this repository uses only ps2build.
+> Build Korium, RetroAchievements and IncebtIon with `tools/build_edition.py`;
+> see [ROLLING_RELEASE.md](../ROLLING_RELEASE.md). The planning sections below
+> describe earlier migration choices, including configurations still awaiting
+> parity. They are not the supported release build commands.
+
 Status: MAIN FLAVOUR PORTED (GSM1080P + PADEMU, no debug/RA/IGS/RTL/DTL). Other flavours still
 need SDK definitions; the legacy Makefile cannot compile the converted C++ sources. Build:
 

@@ -12,18 +12,20 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def build(toolchain, out_dir):
+def build(toolchain, out_dir, definition=None):
     config = ROOT / "ps2.yaml"
     command = ["ps2build", "build", "--toolchain", toolchain, "--out-dir", out_dir]
-    if toolchain == "gcc":
+    if toolchain == "gcc" and definition is None:
         return subprocess.call([*command, "--config", str(config)], cwd=ROOT)
 
     # ps2build currently emits project paths as -isystem under LLVM. Its -MMD
     # therefore misses project headers. Clang gives -MMD precedence over -MD,
     # so request system-header dependencies explicitly through its cc1 option.
-    definition = yaml.safe_load(config.read_text(encoding="utf-8"))
-    for target in definition["targets"]:
-        target.setdefault("cflags", []).extend(["-Xclang", "-sys-header-deps"])
+    if definition is None:
+        definition = yaml.safe_load(config.read_text(encoding="utf-8"))
+    if toolchain == "llvm":
+        for target in definition["targets"]:
+            target.setdefault("cflags", []).extend(["-Xclang", "-sys-header-deps"])
     temporary = None
     try:
         # Keep the config beside ps2.yaml so relative project paths resolve alike.

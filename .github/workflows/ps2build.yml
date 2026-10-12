@@ -1,6 +1,6 @@
 name: ps2build
 
-# Main flavour only (GSM1080P + PADEMU). Other flavours still build through the Makefile.
+# Compiler validation with the single ps2build SDK. Releases are Korium, RA and IncebtIon.
 on:
   push:
     branches: [ps2build, rebuild/main, "claude/**"]

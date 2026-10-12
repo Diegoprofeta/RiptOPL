@@ -14,9 +14,13 @@ PS2BUILD_HOME (default: the directory containing ps2build on PATH, then
 ~/.local/share/ps2build). Windows fetch steps use Git for Windows' shell.
 """
 import os
+import hashlib
+import json
 import shutil
 import subprocess
 import sys
+import zipfile
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
@@ -117,12 +121,44 @@ def embed():
     for stale in os.listdir(ASM_DIR):  # asm/*.c is globbed by ps2.yaml: drop leftovers
         if stale.endswith(".c"):
             os.remove(os.path.join(ASM_DIR, stale))
-    for a in PNG_ASSETS:
-        bin2c(f"gfx/{a}.png", f"{a}_png", f"{a}_png")
+    edition = os.environ.get("RIPTOPL_EDITION", "incebtion")
+    if edition not in ("korium", "ra", "incebtion"):
+        sys.exit(f"unknown RIPTOPL_EDITION: {edition}")
+    theme_dir = None
+    if edition in ("korium", "ra"):
+        vendor = Path(ROOT) / "third_party/korium"
+        archive = vendor / "assets.zip"
+        manifest = json.loads((vendor / "UPSTREAM.json").read_text(encoding="utf-8"))
+        if hashlib.sha256(archive.read_bytes()).hexdigest() != manifest["archive_sha256"]:
+            sys.exit("Korium asset archive digest mismatch")
+        theme_dir = Path(ROOT) / "build/theme-assets/korium"
+        with zipfile.ZipFile(archive) as package:
+            # Do not trust archive paths even when refreshing a vendored pin.
+            for name, digest in manifest["files"].items():
+                destination = (theme_dir / name).resolve()
+                if not destination.is_relative_to(theme_dir.resolve()):
+                    sys.exit(f"unsafe Korium asset path: {name}")
+                data = package.read(name)
+                if hashlib.sha256(data).hexdigest() != digest:
+                    sys.exit(f"Korium asset digest mismatch: {name}")
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+    pngs = list(PNG_ASSETS)
+    if theme_dir:
+        pngs += ["apps_case", "case_ps1", "disc_ps1", "Players_1", "Players_2", "Players_3", "Players_4"]
+    if edition == "ra":
+        pngs += ["ra_mark"]
+    for a in pngs:
+        name = {"incebtion": "background", "ip": "background_info"}.get(a, a) if theme_dir else a
+        themed = theme_dir / f"gfx/{name}.png" if theme_dir else None
+        source = str(themed) if themed and themed.is_file() else f"gfx/{a}.png"
+        bin2c(source, f"{a}_png", f"{a}_png")
     bin2c("third_party/fonts/PoeVeticaNew.ttf", "poeveticanew", "poeveticanew_raw")
     for a in AUDIO:
         bin2c(f"audio/{a}.adp", a, f"{a}_adp")
     for name, src, sym in MISC:
+        if theme_dir and name in ("conf_theme_OPL", "theme_coverflow"):
+            src = str(theme_dir / src)
         bin2c(src, name, sym)
     bin2c("modules/iopcore/IOPRP.img", "IOPRP_img", "IOPRP_img")
 

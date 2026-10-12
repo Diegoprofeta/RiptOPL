@@ -1,8 +1,8 @@
 
-<p align="center"><a href="#"><img alt="RiptOPL" src="https://raw.githubusercontent.com/NathanNeurotic/RiptOPL/rebuild/main/docs/assets/riptopl.png" /></p></a>
+<p align="center"><a href="#"><img alt="RiptOPL" src="https://raw.githubusercontent.com/NathanNeurotic/RiptOPL/rebuild/main/docs/assets/riptopl.png" /></a></p>
 
 <p align="center">
-  <a href="#"><img width="400" height="92" alt="AI-Assisted-Software-Lovers-Only" src="https://github.com/user-attachments/assets/71335775-9fe3-4507-ac2c-caa851abb24c" /></p></a>
+  <a href="#"><img width="400" height="92" alt="AI-Assisted-Software-Lovers-Only" src="https://github.com/user-attachments/assets/71335775-9fe3-4507-ac2c-caa851abb24c" /></a>
 </p>
 
 ## Community Contributors
@@ -21,24 +21,26 @@ A heartfelt thank you to developers who have contributed pull requests directly 
 - **[#733](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/733)** (`Cover art flow`): **LUNA Collection View** — Brought LUNA's Collection cover-art screen into RiptOPL's renderer, adapting it to RiptOPL's existing game lists, settings, and launch callbacks. Added R3 access to Collection, moved the existing favorite shortcut to L2 + R3, fixed artwork handling while scrolling, and built/tested the result in PCSX2.
 
 # RiptOPL
+
+> **C++ / ps2build transition:** This repository is the migration home of RiptOPL. It uses **one SDK: ps2build**, with **Korium**, **RetroAchievements** and **IncebtIon** release editions. GCC builds release kits; GCC and LLVM are both validated in CI. Channel links become available after deliberate publication; until then use the workflow artifacts. See the [release contract](ROLLING_RELEASE.md), [migration checkpoint](docs/MIGRATION-CHECKPOINT-2026-10-12.md), [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md) and [wiki](https://github.com/NathanNeurotic/RiptOPL/wiki). Imported production guides do not establish feature or hardware parity for the new SDK.
+
 **An opinionated [Open PS2 Loader](https://github.com/ps2homebrew/Open-PS2-Loader) fork — aiming to be the "definitive build."**
 <br>
 Based on Open PS2 Loader · Copyright 2013, Ifcaro & jimmikaelkael<br>
 Licensed under Academic Free License version 3.0<br>
 Review the LICENSE file for further details.<br><br>
 
-[![CI](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/flavours.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/flavours.yml)
+[![CI](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/ps2build.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/ps2build.yml)
 [![Format](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/check-format.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/check-format.yml)
 [![Rolling Release](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/rolling-release.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/rolling-release.yml)
-[![Latest release](https://img.shields.io/github/v/release/NathanNeurotic/RiptOPL?style=plastic&logo=github&label=Latest%20Release&labelColor=navy&color=skyblue&include_prereleases)](https://github.com/NathanNeurotic/RiptOPL/releases)
-![Released](https://img.shields.io/github/release-date-pre/NathanNeurotic/RiptOPL?style=plastic&logo=github&label=Released&labelColor=navy&color=skyblue)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/NathanNeurotic/RiptOPL/total?style=plastic&logo=github&logoSize=auto&label=Total%20Downloads&labelColor=navy&color=skyblue)
-[![MEGA Archive](https://img.shields.io/badge/MEGA-Rolling%20Archive-%23D90007?style=flat&logo=mega&logoColor=white)](https://mega.nz/folder/74pRHKRB#9SLDkrkvZAbeKO4Qvxg9LQ)
+[![Korium](https://img.shields.io/badge/Release-Korium-skyblue)](https://github.com/NathanNeurotic/RiptOPL/releases/tag/rolling-korium)
+[![RetroAchievements](https://img.shields.io/badge/Release-RetroAchievements-skyblue)](https://github.com/NathanNeurotic/RiptOPL/releases/tag/rolling-ra)
+[![IncebtIon](https://img.shields.io/badge/Release-IncebtIon-skyblue)](https://github.com/NathanNeurotic/RiptOPL/releases/tag/rolling-incebtion)
 
 [![License](https://img.shields.io/github/license/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=opensourceinitiative&logoColor=white&label=License)](LICENSE)
-![Written in C](https://img.shields.io/badge/Written%20in-C-skyblue?style=flat&logo=c&logoColor=white&labelColor=navy)
+![Written in C++](https://img.shields.io/badge/Written%20in-C%2B%2B-skyblue?style=flat&logo=cplusplus&logoColor=white&labelColor=navy)
 ![Platform](https://img.shields.io/badge/Platform-PlayStation%202-skyblue?style=flat&logo=playstation2&logoColor=white&labelColor=navy)
-![Toolchain](https://img.shields.io/badge/Toolchain-ps2dev%20%2F%20PS2SDK-skyblue?style=flat&logo=docker&logoColor=white&labelColor=navy)
+![Toolchain](https://img.shields.io/badge/SDK-ps2build-skyblue?style=flat&logo=llvm&logoColor=white&labelColor=navy)
 ![Translations](https://img.shields.io/badge/Translations-31%20languages-skyblue?style=flat&logo=googletranslate&logoColor=white&labelColor=navy)
 ![Repo Size](https://img.shields.io/github/repo-size/NathanNeurotic/RiptOPL?style=flat&labelColor=navy&color=skyblue&logo=github&label=Repo%20Size)
 
@@ -55,11 +57,11 @@ Review the LICENSE file for further details.<br><br>
 ![RetroAchievements](https://img.shields.io/badge/RetroAchievements-dev%20build%2C%20untested-orange?style=flat&labelColor=7a3e00)
 
 [![Discord](https://img.shields.io/discord/1275875800318476381?style=flat&logo=Discord)](https://tinyurl.com/PS2SPACE)
-[![Documentation](https://img.shields.io/badge/Documentation-RiptOPL-skyblue?style=flat&logo=githubpages&logoColor=white&labelColor=navy)](https://nathanneurotic.github.io/Open-PS2-Loader/)
+[![Documentation](https://img.shields.io/badge/Documentation-RiptOPL-skyblue?style=flat&logo=githubpages&logoColor=white&labelColor=navy)](https://nathanneurotic.github.io/RiptOPL/)
 
 > **What is RiptOPL?** A downstream fork of Open PS2 Loader with a built-in cover-art **Coverflow** theme (default), a **Favorites** tab, per-game **Neutrino** external-core launching, a reorganized category **settings layout**, DualSense support, and ready-to-use opinionated defaults. Its settings live in their own **`settings_riptopl.cfg`** to keep its master settings separate from official OPL and wOPL. Other files, including network and per-game settings, can still be shared. Favorites import from uOPL/wOPL is **one-way**: the next save writes RiptOPL’s own format to `favourites.bin`. See [Where your files live](#where-your-files-live). See **[This Fork's Additions](#this-forks-additions)**. For the canonical project, use [ps2homebrew/Open-PS2-Loader](https://github.com/ps2homebrew/Open-PS2-Loader).
 
-> 📖 **Full documentation & guides:** **<https://nathanneurotic.github.io/Open-PS2-Loader/>** — searchable setup and reference guides covering storage backends, the Neutrino core, PS1/VCD, the Theme Engine (with worked examples and an annotated sample theme), a full settings reference, and troubleshooting.
+> 📖 **Full documentation & guides:** **<https://nathanneurotic.github.io/RiptOPL/>** — searchable setup and reference guides covering storage backends, the Neutrino core, PS1/VCD, the Theme Engine (with worked examples and an annotated sample theme), a full settings reference, and troubleshooting.
 
 > 🌙 **Our #1 recommended alternative: [LUNA](https://github.com/dnunezx/LUNA) by [darkladark](https://github.com/dnunezx).** *Lightweight Unified Neutrino Access* is a visual loader built on NHDDL and Neutrino for **lightweight, customized Neutrino gameplay**. If RiptOPL is more loader than you need, start there. darkladark also contributes to RiptOPL itself; see [Acknowledgements](#acknowledgements).
 
@@ -87,72 +89,20 @@ A heartfelt thank you to developers who have contributed pull requests directly 
 
 ## Releases
 
-RiptOPL ships **one full-feature build** — GSM video-mode handling (including 1080p), DS3/DS4 pad
-emulation (PADEMU), VMC, PS2RD cheats and parental controls are all included in the
-standard ELF (no upstream-style per-feature variants). The two upstream `EXTRA_FEATURES`
-extras — in-game screenshots (IGS) and right-to-left (RTL) language support — are **not**
-compiled into any published main ELF (`EXTRA_FEATURES ?= 0`); they ship in the
-`EXTRA_FEATURES=1` builds inside the VARIANTS zip.
-DualSense / DualShock 5 (USB) support is available prebuilt in the `RIPTOPL-VARIANTS-*.zip`
-bundle, or build your own with `make DUALSENSE=1`.
+This repository builds **Korium**, **RetroAchievements** and **IncebtIon** on the
+single **ps2build SDK**. Korium and IncebtIon are standard loaders with distinct
+built-in themes; RetroAchievements uses Korium and enables the RA runtime.
+GCC produces release kits, while GCC and LLVM are both compiler validation gates.
 
-**RetroAchievements** ships as its own complete package, `RIPTOPL-RetroAchievements-*.zip` (or build it with
-`make RETROACHIEVEMENTS=1`). It is laid out like the main archive — same `POPS/`, `EMBER/`,
-`neutrino/` and shortcuts — with `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF`, matching `ART/` files and
-`APP_RIPTOPL-RA.psu` in place of the standard app, plus a shortcut to
-**xeRAbora**, the PC client the feature talks to. It is a **development build, not a finished
-feature** — telemetry has run end to end on one real console, launched from MMCE and USB
-(oMrRexD, #702–#705), but most launch paths and edge cases are still unvalidated — and the standard
-ELF is completely unaffected by it. See
-**[docs/RETROACHIEVEMENTS.md](docs/RETROACHIEVEMENTS.md)** for what it does, which launch paths can
-ever support it, and why.
+The [Rolling Release workflow](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/rolling-release.yml)
+builds full install ZIPs, standalone loaders, app PSU saves, exact source snapshots,
+build manifests and checksums for all three editions. Channels are published only
+by an explicit dispatch after verification. Until their first publication, use the
+Actions artifacts. See [release channels and packaging](ROLLING_RELEASE.md).
 
-Choose the current development build or a preserved snapshot:
-
-| Channel | What it is |
-| --- | --- |
-| **[Rolling (Latest)](https://github.com/NathanNeurotic/RiptOPL/releases/tag/rolling)** | Updated from `rebuild/main` by successful publishing runs. A full, non-pre-release GitHub release that remains a **development build**, with compatibility depending on the game and hardware. |
-| **[Current Fan Favorite Build](https://github.com/NathanNeurotic/RiptOPL/releases/tag/current-fan-favorite)** | A preserved development snapshot selected after positive user feedback. Use it as a fixed comparison point; it is not a universal compatibility guarantee. |
-
-Download the **normal installable package**, `RIPTOPL-<version>.zip`. Separate archives serve
-different purposes: `RetroAchievements` for the experimental achievements loader, `VARIANTS` for alternate
-configurations including DualSense, `DEBUG` for diagnostics, `LANGS` for translations, and `src`
-for the exact source snapshot. Optional archives or SDK flavours can be omitted; read the release notes.
-
-The standard and RetroAchievements ZIPs each contain a ready app under `APPS/`, matching `ART/`
-files, `POPS/`, `EMBER/`, `neutrino/`, companion shortcuts and a `.psu` memory-card save. The
-standard app is `APP_RIPTOPL` with `RIPTOPL.ELF`; the RA app is `APP_RIPTOPL-RA` with
-`RIPTOPL-RA.ELF`. Each PSU contains only the direct files in its app folder. Install the other
-folders separately where you use those features. A release fails packaging if a required
-Neutrino bundle is unavailable.
-
-**Already have RiptOPL installed?** The rolling release carries a loose loader asset,
-`RIPTOPL.ELF`, for exactly that case: download it and overwrite the `RIPTOPL.ELF` you already have. Its name never changes, so
-<https://github.com/NathanNeurotic/RiptOPL/releases/download/rolling/RIPTOPL.ELF> is a
-permanent link. It is the `-OFFICIALROLLING` flavour, and it is not a first install — the bare loader
-does not bring `POPS/`, `EMBER/`, `neutrino/` or the language files. `RIPTOPL-RA.ELF`
-(<https://github.com/NathanNeurotic/RiptOPL/releases/download/rolling/RIPTOPL-RA.ELF>) does the
-same for the RetroAchievements app: replace `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF` with it. Both are
-copied from `-OFFICIALROLLING` builds, so a run in which that build failed publishes neither; update
-from the matching package then. Apart from those two files, GitHub does not publish bare loader ELFs
-or separate checksum/SDK manifests in the normalized asset set.
-The workflow can also publish `v*` tags, but no such stable release is currently offered here.
-
-
-See **[ROLLING_RELEASE.md](ROLLING_RELEASE.md)** for exactly what the rolling release
-contains and how to pull it.
-
-> **Which rolling build?** The rolling zip ships four loader ELFs that differ only by build
-> toolchain — the RiptOPL code in each is identical. Start with a pinned SDK for reproducible comparisons:
-> 1. **`APP_RIPTOPL-PS2DEVPINNED/`** (`-PS2DEVPINNED`) — **recommended primary download.** Built on the
->    `ps2dev/ps2dev` SDK pinned by image digest for reproducible toolchain selection; pinning alone does not prove hardware compatibility.
-> 2. **`APP_RIPTOPL-OFFICIALPINNED/`** (`-OFFICIALPINNED`) — **recommended official pin.** Built on the
->    `ps2homebrew/ps2homebrew` official SDK, pinned by image digest.
-> 3. **`APP_RIPTOPL-PS2DEVROLLING/`** (`-PS2DEVROLLING`) — **bleeding-edge canary.** Tracks `ps2dev/ps2dev:latest`.
-> 4. **`APP_RIPTOPL-OFFICIALROLLING/`** (`-OFFICIALROLLING`) — **bleeding-edge official canary.** Tracks `ps2homebrew:main`.
-> See [Which build should I use?](ROLLING_RELEASE.md#which-build-should-i-use).
-
-> Older published builds may be available in the [MEGA archive](#opl-archive).
+Imported feature and hardware documentation describes production behavior and
+still needs parity validation on this C++/ps2build migration. The newer RA browser,
+client and ORBIT integration remain in the [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md).
 
 ## Quick Start
 
@@ -770,7 +720,7 @@ or `pfs-shell`. This is different from UDPBD/UDPFS, which serve game data from a
 Configure the console's IP (static or DHCP), choose **Start NBD server**, and connect only after
 the console reports that it is running. Disconnect the PC client before leaving the server screen.
 
-See the [NBD client setup guide](https://nathanneurotic.github.io/Open-PS2-Loader/nbd.html) for
+See the [NBD client setup guide](https://nathanneurotic.github.io/RiptOPL/nbd.html) for
 Linux, WSL and Windows examples. The implementation uses [lwNBD](https://github.com/bignaux/lwNBD)
 and the [NBD protocol](https://github.com/NetworkBlockDevice/nbd/blob/master/doc/proto.md).
 
@@ -808,23 +758,15 @@ To run OPL, you need an entry point for running PS2 titles. You can use everythi
 
 ## Some notes for DEVS
 
-Repository scripts live in `tools/`; run them from the repository root. Existing
-Makefile targets retain their names and output locations.
+Use [ps2build](docs/PS2BUILD-MIGRATION.md) for this C++ source tree. The legacy
+Makefile and container instructions belong to the production C lineage and are
+not supported here. Run assets and matching audio-package setup, then
+`python tools/build_edition.py korium`, `ra` or `incebtion`; see the complete
+commands and manifest contract in [ROLLING_RELEASE.md](ROLLING_RELEASE.md).
 
-Use one of the toolchain images in [the CI matrix](.github/workflows/flavours.yml). Both pinned
-and rolling SDK images are supported; the latest SDK is not required. For a reproducible baseline,
-use the `PS2DEVPINNED` image digest from that matrix. From the repository root with Docker available:
-
-```sh
-docker run --rm -v "${PWD}:/src" -w /src ps2dev/ps2dev@sha256:8fba50ecc2229acd7f8da63d34302f12939b7d4fa6848dda1e6a0ce083321a11 make -j4
-```
-
-Use a clean checkout/build directory when changing SDK images. See the Makefile for flags such as
-`DUALSENSE=1` and `EXTRA_FEATURES=1`; build success does not establish console compatibility.
-
-`src/xparam.c` holds a hardcoded table of special disc titles whose EE parameters are taken from
-`SYSTEM.CNF`. It is applied automatically and has no setting, dialog row or language string — it is
-deliberately internal and is not user-facing documentation.
+Run `sh tools/run_tests.sh -k` on a host with the required C/C++ compilers and
+Python dependencies. Keep hardware acceptance separate from host and CI results.
+The internal special-disc parameter table now lives in `src/core/xparam.cpp`.
 
 ## OPL Archive
 
@@ -883,7 +825,7 @@ the path it names (the device plus your BDM Prefix Path, if set). Error 5 is an 
 device on a PC), 2 means the folder is missing and couldn't be created, 13 is access denied. An empty
 folder never shows this: RiptOPL creates `CD` and `DVD` itself and simply lists nothing. It scans once
 and does not retry in the background; press **Select** on that page to scan again. Details:
-[Troubleshooting](https://nathanneurotic.github.io/Open-PS2-Loader/troubleshooting.html#ps2-folders-unreadable).
+[Troubleshooting](https://nathanneurotic.github.io/RiptOPL/troubleshooting.html#ps2-folders-unreadable).
 
 ### The menu works, but launching a game loses the picture
 
