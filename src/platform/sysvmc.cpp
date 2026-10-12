@@ -12,8 +12,8 @@
 #include <time.h>        // clock()/CLOCKS_PER_SEC -- the disc waits are budgeted by wall clock
 
 // Disc-probe budgets (issue #465). All are TOTAL wall-clock caps, not per-poll ones.
-constexpr int SYS_DISC_DETECT_MS = 1000;  // first "still identifying" settle
-constexpr int SYS_DISC_REDETECT_MS = 4000;  // spin-up + re-detect after a NODISC report
+constexpr int SYS_DISC_DETECT_MS = 1000;   // first "still identifying" settle
+constexpr int SYS_DISC_REDETECT_MS = 4000; // spin-up + re-detect after a NODISC report
 // Empty-tray shortcut inside the re-detect budget above. A drive that is actually working on a
 // disc reports SCECdDETCT ("identifying") while it spins up; a drive with nothing in it only ever
 // answers NODISC. So NODISC that has never once been punctuated by DETCT means an empty tray, and
@@ -139,7 +139,6 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
 {
     int size = -1;
     char path[256];
-    snprintf(path, sizeof(path), "%sVMC%s%s.bin", prefix, sep, name);
 
     // Invalidate the completion probe up front on any create request. The creation below is
     // CONDITIONAL -- a file already at the requested size is left alone -- while the GUI arms its
@@ -148,6 +147,9 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
     // only where genvmc is actually invoked, so "no creation" reads as unknown and stays silent.
     if (createSize > 0)
         gVMCCreatePath[0] = '\0';
+
+    if ((unsigned int)snprintf(path, sizeof(path), "%sVMC%s%s.bin", prefix, sep, name) >= sizeof(path))
+        return SYS_VMC_CREATE_FAILED;
 
     if (createSize == -1)
         unlink(path);
@@ -182,12 +184,37 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
 
             close(fd);
 
-            if (createSize && (createSize != size))
-                unlink(path);
+            if (createSize > 0 && createSize != size) {
+                /* Never destroy a VMC containing saves to resize/recreate it.
+                 * genvmc opens O_TRUNC asynchronously and can fail later;
+                 * explicit Delete (which has UI confirmation) is required. */
+                LOG("SYSTEM refusing implicit VMC replacement: %s (%d -> %d MB)\n", path, size, createSize);
+                return SYS_VMC_REPLACE_REQUIRES_DELETE;
+            }
+        } else if (createSize > 0) {
+            // BDM FatFs errors are not POSIX errno values. A completed parent
+            // directory scan, rather than an open error number, proves absence.
+            char folder[256], filename[64];
+            iox_dirent_t entry;
+            int result;
+            if ((unsigned int)snprintf(folder, sizeof(folder), "%sVMC", prefix) >= sizeof(folder) ||
+                (unsigned int)snprintf(filename, sizeof(filename), "%s.bin", name) >= sizeof(filename))
+                return SYS_VMC_CREATE_FAILED;
+            int dir = fileXioDopen(folder);
+            if (dir < 0)
+                return SYS_VMC_CREATE_FAILED;
+            while ((result = fileXioDread(dir, &entry)) > 0) {
+                if (!strcasecmp(entry.name, filename)) {
+                    fileXioDclose(dir);
+                    return SYS_VMC_CREATE_FAILED;
+                }
+            }
+            fileXioDclose(dir);
+            if (result < 0)
+                return SYS_VMC_CREATE_FAILED;
         }
 
-
-        if (createSize && (createSize != size)) {
+        if (createSize > 0 && createSize != size) {
             createVMCparam_t createParam;
             // Remember what is being built so the GUI can ask about its layout when genvmc finishes.
             snprintf(gVMCCreatePath, sizeof(gVMCCreatePath), "%s", path);
@@ -196,7 +223,10 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
             createParam.VMC_blocksize = 16;
             createParam.VMC_thread_priority = 0x0f;
             createParam.VMC_card_slot = -1;
-            fileXioDevctl("genvmc:", 0xC0DE0001, (void *)&createParam, sizeof(createParam), NULL, 0);
+            if (fileXioDevctl("genvmc:", 0xC0DE0001, (void *)&createParam, sizeof(createParam), NULL, 0) < 0) {
+                gVMCCreatePath[0] = '\0';
+                return SYS_VMC_CREATE_FAILED;
+            }
         }
     }
     return size;

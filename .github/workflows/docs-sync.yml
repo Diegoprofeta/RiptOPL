@@ -9,7 +9,7 @@ on:
       # has since published there. Dropped 2026-09-02 alongside the rolling-release publish trigger.
       - rebuild/main
   # Daily as well: gh-pages PRs merge without touching rebuild/main, and the search index and the
-  # RetroAchievements page regenerated below must catch up with them (a scheduled run always uses
+  # navigation must catch up with them (a scheduled run always uses
   # the default branch, rebuild/main). Nothing is committed when nothing changed.
   schedule:
     - cron: '23 4 * * *'
@@ -39,6 +39,8 @@ jobs:
           git fetch origin gh-pages:gh-pages
           git worktree add ../gh-pages gh-pages
 
+      # Keep the imported production RA guide until its Markdown port is complete.
+      # Regenerating it from the older migration Markdown would erase newer guidance.
       - name: Update README and GitHub Pages links
         shell: python
         run: |
@@ -59,7 +61,7 @@ jobs:
           popstarter = "https://www.psx-place.com/resources/popstarter.683/"
           neutrino = "https://github.com/rickgaiser/neutrino"
           psumanager = "https://git.techwritescode.dev/techwritescode/PSUManager"
-          badge = "[![CI](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/flavours.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/flavours.yml)"
+          badge = "[![CI](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/ps2build.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/ps2build.yml)"
 
           readme = Path("README.md")
           text = readme.read_text(encoding="utf-8")
@@ -177,7 +179,7 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/site-sync"
           "$RUNNER_TEMP/site-sync/bin/pip" install --quiet beautifulsoup4==4.15.0 markdown-it-py==4.0.0
           "$RUNNER_TEMP/site-sync/bin/python" .github/scripts/site_sync.py \
-            --site ../gh-pages --ra-md docs/RETROACHIEVEMENTS.md | tee "$RUNNER_TEMP/site-sync.log"
+            --site ../gh-pages | tee "$RUNNER_TEMP/site-sync.log"
 
       - name: Commit regenerated site files
         shell: bash

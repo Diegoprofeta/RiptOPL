@@ -93,4 +93,9 @@ typedef struct
 
 #define NB_PADOPEN_PATTERN 7
 
+#ifdef RETROACHIEVEMENTS
+/* Mode 6 retains snapshots without installing IGR hooks. */
+void Install_RA_Vblank(void);
+#endif
+
 #endif

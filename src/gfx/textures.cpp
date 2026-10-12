@@ -106,6 +106,15 @@ extern void *logo1_png;
 extern void *logo2_png;
 extern void *logo3_png;
 extern void *case_png;
+#ifdef BUILTIN_KORIUM
+extern void *apps_case_png;
+extern void *case_ps1_png;
+extern void *disc_ps1_png;
+extern void *Players_1_png;
+extern void *Players_2_png;
+extern void *Players_3_png;
+extern void *Players_4_png;
+#endif
 extern void *PS1_png;
 extern void *PS2_png;
 extern void *case_overlay_png;
@@ -198,8 +207,13 @@ static texture_t internalDefault[TEXTURES_COUNT] = {
     {COVER_DEFAULT, "cover", &cover_png},
     {DISC_DEFAULT, "disc", &disc_png},
     {SCREEN_DEFAULT, "screen", &screen_png},
+#ifdef BUILTIN_KORIUM
+    {INCEBTION_PICTURE, "background", &incebtion_png},
+    {IP_PICTURE, "background_info", &ip_png},
+#else
     {INCEBTION_PICTURE, "incebtion", &incebtion_png}, // default theme background (conf_theme_OPL.cfg: default=incebtion)
     {IP_PICTURE, "ip", &ip_png},
+#endif
     {COVERAPP_DEFAULT, "coverapp", &coverapp_png},
     {MISSING_PICTURE, "missing", &missing_png},
     // no_Device fallback dropped with the device indicator; not embedded.
@@ -264,15 +278,27 @@ static texture_t internalDefault[TEXTURES_COUNT] = {
     {LOGO5_PICTURE, "logo5", &logo2_png},
     {LOGO6_PICTURE, "logo6", &logo1_png},
     {CASE_OVERLAY, "case", &case_png},
-    // apps_case retired -- both built-in themes now use case + case_overlay; aliased to case so an
-    // external theme that still names overlay=apps_case keeps a frame (no separate bitmap embedded).
+// apps_case retired -- both built-in themes now use case + case_overlay; aliased to case so an
+// external theme that still names overlay=apps_case keeps a frame (no separate bitmap embedded).
+#ifdef BUILTIN_KORIUM
+    {APPS_CASE_OVERLAY, "apps_case", &apps_case_png},
+#else
     {APPS_CASE_OVERLAY, "apps_case", &case_png},
+#endif
     {PS1_SYSTEM, "PS1", &PS1_png}, // #System console glyphs (FR #49); names match the #System values
     {PS2_SYSTEM, "PS2", &PS2_png},
     {CASE_OVERLAY2, "case_overlay", &case_overlay_png}, // b2 foliage layer (two-layer frame)
     {UDPFS_ICON, "udp_fs", &udp_fs_png},
     {L1_ICON, "L1", &L1_png},
     {R1_ICON, "R1", &R1_png},
+#ifdef BUILTIN_KORIUM
+    {CASE_PS1, "case_ps1", &case_ps1_png},
+    {DISC_PS1, "disc_ps1", &disc_ps1_png},
+    {PLAYERS_1, "Players_1", &Players_1_png},
+    {PLAYERS_2, "Players_2", &Players_2_png},
+    {PLAYERS_3, "Players_3", &Players_3_png},
+    {PLAYERS_4, "Players_4", &Players_4_png},
+#endif
 #ifdef RETROACHIEVEMENTS
     // Positional: guarded by the same #ifdef as RA_MARK in enum INTERNAL_TEXTURE. Without
     // this row TEXTURES_COUNT grows but the initialiser does not, leaving the last slot
@@ -602,7 +628,7 @@ static int texStageExternalFileIntoMemory(int fd, void **buffer, u32 *stagedSize
     // (the reason this path exists: MMCE streaming reads during decode are unreliable, and USB
     // streaming pays one read() RPC per chunk -- #296) -- only the size probe changes.
     capacity = TEX_MMCE_STAGE_READ_SIZE * 2; // 64 KB; doubles on demand for larger covers
-    fileBuffer = static_cast<unsigned char*>(malloc(capacity));
+    fileBuffer = static_cast<unsigned char *>(malloc(capacity));
     if (fileBuffer == NULL)
         return ERR_FILE_IO;
 
@@ -624,7 +650,7 @@ static int texStageExternalFileIntoMemory(int fd, void **buffer, u32 *stagedSize
                 return ERR_BAD_FILE;
             }
 
-            grown = static_cast<unsigned char*>(realloc(fileBuffer, capacity * 2));
+            grown = static_cast<unsigned char *>(realloc(fileBuffer, capacity * 2));
             if (grown == NULL) {
                 free(fileBuffer);
                 return ERR_FILE_IO;
@@ -742,7 +768,7 @@ static int texReadData(GSTEXTURE *texture, png_structp pngPtr, png_infop infoPtr
     size_t size = gsKit_texture_size_ee(texture->Width, texture->Height, texture->PSM);
     png_bytep rowBuffer;
 
-    texture->Mem = static_cast<u32*>(memalign(128, size));
+    texture->Mem = static_cast<u32 *>(memalign(128, size));
 
     if (!texture->Mem) {
         texFree(texture); // free the already-allocated paletted-PNG Clut before bailing (Gemini review);
@@ -1019,7 +1045,7 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId, const
 
             if (bitDepth == 4) {
                 texture->PSM = GS_PSM_T4;
-                texture->Clut = static_cast<u32*>(memalign(128, gsKit_texture_size_ee(8, 2, GS_PSM_CT32)));
+                texture->Clut = static_cast<u32 *>(memalign(128, gsKit_texture_size_ee(8, 2, GS_PSM_CT32)));
                 if (texture->Clut == NULL)
                     return texEnd(pngPtr, infoPtr, pFileBuffer, fd, ERR_FILE_IO); // Clut OOM: file present -> transient, not absent
                 memset(texture->Clut, 0, gsKit_texture_size_ee(8, 2, GS_PSM_CT32));
@@ -1027,7 +1053,7 @@ static int texLoadAll(GSTEXTURE *texture, const char *filePath, int texId, const
                 texPngReadRow = &texReadPixels4Row;
             } else if (bitDepth == 8) {
                 texture->PSM = GS_PSM_T8;
-                texture->Clut = static_cast<u32*>(memalign(128, gsKit_texture_size_ee(16, 16, GS_PSM_CT32)));
+                texture->Clut = static_cast<u32 *>(memalign(128, gsKit_texture_size_ee(16, 16, GS_PSM_CT32)));
                 if (texture->Clut == NULL)
                     return texEnd(pngPtr, infoPtr, pFileBuffer, fd, ERR_FILE_IO); // Clut OOM: file present -> transient, not absent
                 memset(texture->Clut, 0, gsKit_texture_size_ee(16, 16, GS_PSM_CT32));

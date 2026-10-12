@@ -30,6 +30,11 @@ int disable_padOpen_hook = 1;
 
 extern void *_end;
 
+#ifdef RETROACHIEVEMENTS
+/* Set only after the IOP snapshot buffer and RAUDP module are ready. */
+extern unsigned int ra_snap_iop;
+#endif
+
 // Global data
 u32 (*Old_SifSetDma)(SifDmaTransfer_t *sdd, s32 len);
 int (*Old_SifSetReg)(u32 register_num, int register_value);
@@ -55,7 +60,19 @@ u32 New_SifSetDma(SifDmaTransfer_t *sdd, s32 len)
     disable_padOpen_hook = 1;
 
     // does IOP reset
-    New_Reset_Iop(reset_pkt->arg, reset_pkt->arglen);
+    int reset_ok = New_Reset_Iop(reset_pkt->arg, reset_pkt->arglen);
+    if (!reset_ok) {
+        disable_padOpen_hook = 0;
+        return 0;
+    }
+
+#ifdef RETROACHIEVEMENTS
+    /* Mode 6 suppresses Install_IGR. Start the independent snapshot tick
+       only after reset/module setup succeeds; failed or disabled telemetry
+       must not introduce a VBLANK handler into the running game. */
+    if ((g_compat_mask & COMPAT_MODE_6) && ra_snap_iop != 0)
+        Install_RA_Vblank();
+#endif
 
     disable_padOpen_hook = 0;
 
@@ -76,8 +93,10 @@ void sysLoadElf(char *filename, int argc, char **argv)
     DPRINTF("t_loadElf: Resetting IOP...\n");
 
     set_reg_disabled = 0;
-    New_Reset_Iop(NULL, 0);
+    int reset_ok = New_Reset_Iop(NULL, 0);
     set_reg_disabled = 1;
+    if (!reset_ok)
+        goto load_failed;
 
     iop_reboot_count = 1;
 
@@ -125,6 +144,7 @@ void sysLoadElf(char *filename, int argc, char **argv)
         CleanExecPS2((void *)elf.epc, (void *)elf.gp, argc, argv);
     }
 
+load_failed:
     DPRINTF(" failed\n");
 
     // Error

@@ -24,6 +24,12 @@ This variant carries a distinct MODNAME "UDPFS_IO" (vs udpfs_bd's "UDPFS") so th
 IRX can never RegisterLibraryEntries-collide even if a future path tried to co-load them.
 
 LOCAL CHANGES vs upstream (re-apply after re-vendoring):
+  - Public parity port from NathanNeurotic/Open-PS2-Loader at
+    6d04b40e8d857368110265a18ec9fc90b7c316c4: shared core/transport (#913),
+    sequence-aware ACKs for both drivers (#908), reconnect reset and stale-ACK
+    waits (#921), and filesystem/watchdog serialization with safe teardown (#904).
+    Canonical implementation lives in ../udpfs_shared/src; the local files include it.
+    WaitEventFlag outputs use the new SDK's u32 type.
   - udpfs_ioman.c: AddDrv registration never fails on a missed first discovery, and a
     lazy-connect/reconnect watchdog thread (the udpfs_bd pattern) re-discovers the server
     forever -- upstream's connect-once wrapper left 'udpfs:' permanently dead when the server

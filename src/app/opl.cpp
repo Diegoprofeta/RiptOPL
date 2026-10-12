@@ -616,6 +616,8 @@ int oplPath2Mode(const char *path)
         listSupport = list_support[i].support;
         if ((listSupport != NULL) && (gsOf(listSupport)->hasPrefix())) {
             char *prefix = gsOf(listSupport)->prefix(listSupport);
+            if (prefix == NULL || prefix[0] == '\0')
+                continue;
             snprintf(appsPath, sizeof(appsPath), "%sAPPS", prefix);
 
             blkdevnameend = strchr(appsPath, ':');
@@ -788,7 +790,7 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
 
 void menuDeferredUpdate(void *data)
 {
-    short int *mode = static_cast<short int*>(data);
+    short int *mode = static_cast<short int *>(data);
 
     opl_io_module_t *mod = &list_support[*mode];
     if (!mod->support)
@@ -857,7 +859,7 @@ constexpr int MENU_GENERAL_UPDATE_DELAY = 60;
 // ~2 s this drops the steady SIO2/mass enumeration rate well below the old every-60-frames cadence,
 // cutting MX4SIO bus contention, while a real device change still refreshes immediately
 // (BdmGeneration bypass below). clock() = microseconds.
-#define MENU_BG_RESCAN_MIN_INTERVAL_TICKS  (2 * CLOCKS_PER_SEC)
+#define MENU_BG_RESCAN_MIN_INTERVAL_TICKS (2 * CLOCKS_PER_SEC)
 /*
   Idle time required before STEADY-STATE background probes may run at all, in frames (~1 s NTSC).
 
@@ -1147,8 +1149,8 @@ int gArtAbandoned = 0;
 // bound in any sense that mattered; a launch pressed with covers queued simply waited for all of
 // them. Values below are the ORIGINAL INTENT expressed in real ticks. If delay() is ever given a
 // real time base, convert these with it -- do not just scale the numbers again.
-constexpr int EXIT_IO_DRAIN_TICKS = 4;  // ~1 s
-constexpr int LAUNCH_IO_DRAIN_TICKS = 40;  // ~10 s, as the paragraph above always meant
+constexpr int EXIT_IO_DRAIN_TICKS = 4;    // ~1 s
+constexpr int LAUNCH_IO_DRAIN_TICKS = 40; // ~10 s, as the paragraph above always meant
 
 void deinitEx(int exception, int modeSelected, int modeSelected2)
 {
@@ -1419,7 +1421,7 @@ static void setDefaults(void)
     // resolveBootDirToMass() early-return at its `gBootDir[0] == '\0'` guard every time, and homed
     // every config set on the mc?:OPL default regardless of what OPL actually booted from.
     // setBootDir() already zeroes the buffer at its own entry, so nothing needs a reset here.
-    gEnableUDPBD = 0;                  // the UDPBD BLOCK device stays opt-in
+    gEnableUDPBD = 0; // the UDPBD BLOCK device stays opt-in
     // Unified network selector defaults to OFF. The reason is the NIC latch: every network stack
     // loads its IOP chain ONCE per boot and never unloads (re-binding the UDPRDMA socket bricks
     // UDPFS; smap registers a single SMAP_driver), so whichever protocol is active FIRST owns the

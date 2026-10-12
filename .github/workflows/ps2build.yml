@@ -1,6 +1,6 @@
 name: ps2build
 
-# Main flavour only (GSM1080P + PADEMU). Other flavours still build through the Makefile.
+# Compiler validation with the single ps2build SDK. Releases are Korium, RA and IncebtIon.
 on:
   push:
     branches: [ps2build, rebuild/main, "claude/**"]
@@ -9,9 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [gcc, llvm]
     env:
       PS2BUILD_HOME: ${{ github.workspace }}/.ps2dev
       PS2DEV_INSTALL_DIR: ${{ github.workspace }}/.ps2dev
+      PS2BUILD_TOOLCHAIN: ${{ matrix.toolchain }}
       # Experiment: the toolchain download dies with HTTP/2 "stream error ... INTERNAL_ERROR" / HTTP 521 from the
       # Cloudflare-fronted host on GitHub runners only. Force ps2build (Go) onto HTTP/1.1 to see whether it is the
       # h2 stream that gets reset.
@@ -28,8 +33,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.ps2dev
-          key: ps2dev-${{ runner.os }}-v1-${{ github.run_id }}
-          restore-keys: ps2dev-${{ runner.os }}-v1-
+          key: ps2dev-${{ runner.os }}-${{ matrix.toolchain }}-v2-${{ github.run_id }}
+          restore-keys: |
+            ps2dev-${{ runner.os }}-${{ matrix.toolchain }}-v2-
+            ps2dev-${{ runner.os }}-v1-
 
       # Cold cache: up to three attempts with a pause between them (a second attempt a moment later hit the
       # same overloaded host).
@@ -58,7 +65,10 @@ jobs:
         with:
           ps2dev: ${{ github.workspace }}/.ps2dev
 
-      - name: Install the ogg/vorbis packages (not shipped by the SDK)
+      - name: Install the optional LLVM toolchain
+        if: matrix.toolchain == 'llvm'
+        run: $PS2BUILD_HOME/ps2build update llvm-toolchain
+      - name: Install matching ogg/vorbis packages (not shipped by the SDK)
         run: tools/install_ps2build.sh
       - name: Assets (translations, lwNBD, embedded blobs, version)
         run: tools/assets.py all
@@ -66,12 +76,15 @@ jobs:
         run: tools/run_tests.sh -k
       - name: Build
         shell: bash   # -o pipefail, so a failed build is not masked by tee
-        run: $PS2BUILD_HOME/ps2build build 2>&1 | tee build.log
+        run: python3 tools/build.py 2>&1 | tee build.log
       - name: Warning baseline (no new warnings)
+        # The existing baseline was measured with GCC. LLVM has distinct
+        # diagnostics; keep its build mandatory without inventing a baseline.
+        if: matrix.toolchain == 'gcc'
         run: tools/warning_gate.py build.log --check
       - name: Coupling gate (no new upward dependencies between layers)
         run: tools/analyze_coupling.py --check
       - uses: actions/upload-artifact@v4
         with:
-          name: riptopl-ps2build
+          name: riptopl-ps2build-${{ matrix.toolchain }}
           path: build/bin/riptopl-packed.elf

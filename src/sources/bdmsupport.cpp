@@ -1335,7 +1335,7 @@ void bdmLoadModules(void)
     ioPutRequestUnlessWaiting(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&bdmLoadBlockDeviceModules));
 }
 
-class BdmSource : public GameSource
+class BdmSource: public GameSource
 {
 public:
     BdmSource()
@@ -1388,6 +1388,10 @@ void BdmSource::init(item_list_t *itemList)
     LOG("BDMSUPPORT Init\n");
 
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
+    if (pDeviceData == NULL) {
+        itemList->enabled = 0;
+        return;
+    }
     pDeviceData->bdmULSizePrev = -2;
     pDeviceData->bdmModifiedCDPrev = 0;
     pDeviceData->bdmModifiedDVDPrev = 0;
@@ -1852,6 +1856,8 @@ void BdmSource::cleanUp(item_list_t *itemList, int exception)
         LOG("BDMSUPPORT CleanUp\n");
 
         bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
+        if (pDeviceData == NULL)
+            return;
         free(pDeviceData->bdmGames);
         free(pDeviceData->bdmPs1Games); // #120: free the separate VCD store too
         free(pDeviceData);
@@ -1900,13 +1906,13 @@ void BdmSource::shutdown(item_list_t *itemList)
 int BdmSource::checkVmc(item_list_t *itemList, char *name, int createSize)
 {
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
-    return sysCheckVMC(pDeviceData->bdmPrefix, "/", name, createSize, NULL);
+    return pDeviceData != NULL ? sysCheckVMC(pDeviceData->bdmPrefix, "/", name, createSize, NULL) : -1;
 }
 
 char *BdmSource::prefix(item_list_t *itemList)
 {
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
-    return pDeviceData->bdmPrefix;
+    return pDeviceData != NULL ? pDeviceData->bdmPrefix : NULL;
 }
 
 // The launch and row-view entry points live in bdmlaunch.cpp / below as free functions other code calls directly;
@@ -1930,7 +1936,6 @@ int BdmSource::rowView(item_list_t *itemList, int id)
 {
     return bdmGetItemView(itemList, id);
 }
-
 
 
 

@@ -1,44 +1,12 @@
 name: build-flavours
 
-# FOUR FLAVOURS, along two independent axes: WHICH toolchain, and PINNED vs ROLLING.
-#
-#                      pinned (reproducible)          rolling (early warning)
-#   ps2dev             PS2DEVPINNED                   PS2DEVROLLING
-#   official OPL CI    OFFICIALPINNED                 OFFICIALROLLING
-#
-# WHY THIS SPLIT EXISTS. Issue #382: one tester ran the same build in three flavours and got three
-# different results -- official worked, ps2dev-latest started the game then black-screened, the
-# pinned build failed outright. Identical source. There was then no way to tell whether that spread
-# was our bug or the toolchain moving underneath us, because "latest" means something different every
-# day: a report from last week was not comparable to a report from today, and neither could be
-# reproduced on demand.
-#
-# The two columns answer two different questions and should be read that way:
-#   PINNED  -- what testers should use. Reproducible, comparable across weeks, and the only builds a
-#              bug report can meaningfully name. If a pinned build breaks, it is us.
-#   ROLLING -- early warning. Tracks upstream so a toolchain regression surfaces here rather than in
-#              a release. If a rolling build breaks while its pinned twin does not, it is upstream,
-#              and that is a different bug with a different owner.
-#
-# ⚠ EVERY BUG REPORT MUST NAME ITS FLAVOUR. Each artifact carries BUILD-MANIFEST.txt recording the
-# image, the resolved digest where known, the compiler version and the source commit -- so a report
-# identifies exactly what ran. Without that this is four names and the same ambiguity as before.
-#
-# ⚠ THE PINS ARE A DELIBERATE, DATED DECISION, not a snapshot to refresh casually. Moving one
-# invalidates comparability with every report gathered against it. Bump them on purpose, note the
-# date, and expect to re-baseline.
-#
-# Each ELF also self-identifies via LOCALVERSION ("-<FLAVOUR>" suffix), so a stray ELF with no zip
-# around it is still identifiable.
 
-# push is restricted to the two INTEGRATION branches on purpose. Adding pull_request while leaving
-# push on 'rebuild/**' made every PR build TWICE (once for the branch push, once for the PR event) --
-# observed on PR #410. Feature branches are covered by their PR; these two are covered by the merge
-# that lands on them.
+# Migration host checks and a ps2build smoke build. Release editions live in
+# rolling-release.yml; compiler validation lives in ps2build.yml.
+
 on:
   push:
     branches:
-      - master
       - rebuild/main
   pull_request:
   workflow_dispatch:
@@ -47,6 +15,31 @@ permissions:
   contents: read
 
 jobs:
+  migration-parity-host-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Install release-definition dependency
+        run: python3 -m pip install -r requirements.txt
+      - name: Check reset argument bounds and failure lifecycle
+        run: |
+          python3 .github/scripts/test_reset_arg_bounds.py
+          python3 .github/scripts/test_release_editions.py
+          python3 .github/scripts/test_reset_failure_lifecycle.py
+      - name: Check RA-only Mode 6 snapshot handler and registration retries
+        run: python3 .github/scripts/test_ra_mode6.py
+      - name: Check VMC preservation and BDM allocation recovery
+        run: |
+          python3 .github/scripts/test_vmc_preserve_existing.py
+          python3 .github/scripts/test_bdm_private_allocation.py
+      - name: Check image cache, menu allocation and queue lifetime failures
+        run: |
+          python3 .github/scripts/test_cache_allocation.py
+          python3 .github/scripts/test_menu_allocation.py
+          python3 .github/scripts/test_io_menu_lifetime.py
+
   apa-safety-host-tests:
     runs-on: ubuntu-24.04
     steps:
@@ -143,6 +136,12 @@ jobs:
         run: |
           cc -std=c99 -Wall -Wextra -Werror -pedantic modules/network/udpfs_ioman/tests/test_ack_sequence.c -o /tmp/test_udpfs_ack
           /tmp/test_udpfs_ack
+      - name: Check both SDK driver variants use the canonical UDPFS transport
+        run: python3 .github/scripts/test_udpfs_shared_transport.py
+      - name: Check reconnects, stale ACKs and discovery ARP packets
+        run: python3 .github/scripts/test_udpfs_transport.py
+      - name: Check overlapping file callers and watchdog operations are serialized
+        run: python3 .github/scripts/test_udpfs_serialization.py
       - name: Check UDPFS themes are registered only after the server answers
         run: python3 .github/scripts/test_udpfs_themes.py
 

@@ -43,32 +43,49 @@ void cacheClearItem(cache_entry_t *item, int freeTxt)
 
 image_cache_t *cacheInitCache(int userId, const char *prefix, int isPrefixRelative, const char *suffix, int count)
 {
-    image_cache_t *cache = static_cast<image_cache_t *>(malloc(sizeof(image_cache_t)));
+    image_cache_t *cache;
+    int i;
+
+    // Theme-controlled counts must not wrap the allocation size or allocate no entries.
+    if (suffix == NULL || count <= 0 || (size_t)count > (size_t)-1 / sizeof(cache_entry_t))
+        return NULL;
+
+    cache = (image_cache_t *)malloc(sizeof(image_cache_t));
     if (cache == NULL)
         return NULL;
     new (cache) image_cache_t();
+
     cache->userId_ = userId;
     cache->count_ = count;
-    cache->prefix_ = NULL;
-    int length;
-    if (prefix) {
-        length = strlen(prefix) + 1;
-        cache->prefix_ = (char *)malloc(length * sizeof(char));
-        memcpy(cache->prefix_, prefix, length);
+    if (prefix != NULL) {
+        cache->prefix_ = (char *)malloc(strlen(prefix) + 1);
+        if (cache->prefix_ == NULL)
+            goto allocation_failed;
+        strcpy(cache->prefix_, prefix);
     }
     cache->isPrefixRelative_ = isPrefixRelative;
-    length = strlen(suffix) + 1;
-    cache->suffix_ = (char *)malloc(length * sizeof(char));
-    memcpy(cache->suffix_, suffix, length);
+    cache->suffix_ = (char *)malloc(strlen(suffix) + 1);
+    if (cache->suffix_ == NULL)
+        goto allocation_failed;
+    strcpy(cache->suffix_, suffix);
     cache->nextUID_ = 1;
-    cache->activeRequests_ = 0;
-    cache->content_ = (cache_entry_t *)malloc(count * sizeof(cache_entry_t));
 
-    int i;
+    cache->content_ = (cache_entry_t *)malloc((size_t)count * sizeof(cache_entry_t));
+    if (cache->content_ == NULL)
+        goto allocation_failed;
     for (i = 0; i < count; ++i)
         cacheClearItem(&cache->content_[i], 0);
 
     return cache;
+
+allocation_failed:
+    // Nothing has been queued or uploaded yet; release only the partial constructor.
+    free(cache->content_);
+    free(cache->suffix_);
+    free(cache->prefix_);
+    cache->~ImageCache();
+    free(cache);
+    return NULL;
 }
 
 void cacheDestroyCache(image_cache_t *cache)
@@ -415,7 +432,7 @@ GSTEXTURE *cacheGetTextureEx(image_cache_t *cache, item_list_t *list, int *cache
             }
         }
 
-        load_image_request_t *req = static_cast<load_image_request_t*>(malloc(sizeof(load_image_request_t) + valueLen + 1 + (archiveLen ? archiveLen + 1 : 0)));
+        load_image_request_t *req = static_cast<load_image_request_t *>(malloc(sizeof(load_image_request_t) + valueLen + 1 + (archiveLen ? archiveLen + 1 : 0)));
         if (!req) {
             *cacheId = -1; // nothing cleared yet at this point, so the slot is untouched
             return NULL;

@@ -1,11 +1,69 @@
 # Migration plan: Makefile + ps2sdk -> ps2build
 
+> **Current release contract (2026-10-12):** this repository uses only ps2build.
+> Build Korium, RetroAchievements and IncebtIon with `tools/build_edition.py`;
+> see [ROLLING_RELEASE.md](../ROLLING_RELEASE.md). The planning sections below
+> describe earlier migration choices, including configurations still awaiting
+> parity. They are not the supported release build commands.
+
 Status: MAIN FLAVOUR PORTED (GSM1080P + PADEMU, no debug/RA/IGS/RTL/DTL). Other flavours still
-build through the Makefile. Build:
+need SDK definitions; the legacy Makefile cannot compile the converted C++ sources. Build:
 
     tools/install_ps2build.sh      # ps2build + ogg/vorbis packages (not shipped by the SDK)
     tools/assets.py all            # translations, lwNBD, bin2c blobs, asm/opl_version.h
-    ps2build build                 # -> build/bin/riptopl-packed.elf
+    python3 tools/build.py         # -> build/bin/riptopl-packed.elf
+
+### GCC and LLVM setup (PR #18 and follow-up)
+
+The LLVM source compatibility changes are in PR #18. Use ps2build, sdk-core and sdk-world
+`v2026.10.12.1` or newer, and the separately installed `llvm-toolchain v0.3.2` or newer.
+The default suite update does not install the optional LLVM compiler:
+
+```sh
+ps2build update
+ps2build update llvm-toolchain
+python tools/install_ports.py --toolchain all
+python tools/assets.py all
+python tools/build.py --toolchain gcc --out-dir build/gcc
+python tools/build.py --toolchain llvm --out-dir build/llvm
+```
+
+Use `python3` instead of `python` on Linux hosts that expose only that command.
+`install_ports.py` finds the SDK beside `ps2build` on PATH, or accepts `--sdk PATH`.
+It installs the matching released ogg/vorbis archives into `packages/world` for GCC and
+`packages-llvm/world` for LLVM. It preserves each archive's license and reports the downloaded
+archive's SHA-256. `OGG_VERSION` and `VORBIS_VERSION` can pin release tags. The existing Linux
+bootstrap script delegates to it, with `PS2BUILD_TOOLCHAIN` selecting the compiler (default GCC).
+
+Native Windows asset preparation needs Git for Windows, Python with PyYAML, and the installed
+SDK. It uses Git's own shell for the existing download scripts, the running Python interpreter
+for translations, and the SDK's native `bin2c.exe`; WSL is not needed for this build step.
+
+The warning gate accepts UTF-8 and PowerShell UTF-16 logs, and Unix and Windows source paths.
+Its existing baseline is for GCC; passing a build or a warning check does not establish console
+acceptance, LLVM/GCC runtime equivalence, or full parity with the public repository.
+The `ps2build` CI workflow builds both compilers and uploads separately named artifacts. The
+existing GCC warning ratchet remains mandatory; LLVM needs its own reviewed warning policy.
+Clang currently reports that `-fsingle-precision-constant` is unsupported, so floating-point code
+still needs a precision/performance audit before assuming the GCC and LLVM results are equivalent.
+Use `tools/build.py` for LLVM incremental builds: the current SDK emits project include
+directories as `-isystem`, so its generated `-MMD` omits those headers from Ninja's dependency
+database. Clang gives `-MMD` precedence over `-MD` regardless of their order. The wrapper adds
+`-Xclang -sys-header-deps` to each target in a temporary configuration beside `ps2.yaml`, then
+calls ps2build and removes the temporary file. The checked-in configuration stays unchanged.
+Without this workaround, changing `asm/opl_version.h` left the LLVM ELF at its old version while
+Ninja reported no work. Header dependency tracking must be checked alongside clean builds.
+
+The native Windows LLVM `v0.3.2` linker also crashed once in its winpthreads thread pool
+with exception `0xC0000008` during the October 12 parity build. An unchanged retry linked
+successfully. This is an observed intermittent tool failure, not a source diagnostic or a
+confirmed fix; retain the failed log and check the final link result before packaging.
+
+The current parity ports and remaining work are tracked in
+[`UPSTREAM-PARITY-2026-10-12.md`](UPSTREAM-PARITY-2026-10-12.md). The host suite now also
+exercises VMC preservation, BDM private allocation recovery, C++ image/menu allocations,
+queue/GUI lifetime failures, reset packet bounds and failure propagation, and the RA-only
+Mode 6 snapshot handler. Host RA coverage does not establish a complete RA SDK flavour.
 
 Emulator-tested through the C++ conversion (builds up to IoQueue/ArtQueue confirmed working); not hardware-tested.
 Sources under src/ are now C++ (see CPP-CONVERSION-PLAN.md), so the Makefile can no longer build them.
