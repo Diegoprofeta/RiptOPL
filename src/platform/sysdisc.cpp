@@ -12,8 +12,8 @@
 #include <time.h>        // clock()/CLOCKS_PER_SEC -- the disc waits are budgeted by wall clock
 
 // Disc-probe budgets (issue #465). All are TOTAL wall-clock caps, not per-poll ones.
-constexpr int SYS_DISC_DETECT_MS = 1000;  // first "still identifying" settle
-constexpr int SYS_DISC_REDETECT_MS = 4000;  // spin-up + re-detect after a NODISC report
+constexpr int SYS_DISC_DETECT_MS = 1000;   // first "still identifying" settle
+constexpr int SYS_DISC_REDETECT_MS = 4000; // spin-up + re-detect after a NODISC report
 // Empty-tray shortcut inside the re-detect budget above. A drive that is actually working on a
 // disc reports SCECdDETCT ("identifying") while it spins up; a drive with nothing in it only ever
 // answers NODISC. So NODISC that has never once been punctuated by DETCT means an empty tray, and
@@ -59,9 +59,9 @@ constexpr int SYS_DISC_NODISC_MS = 2000;
 #endif
 
 #define NEWLIB_PORT_AWARE
-#include <fileXio_rpc.h>     // fileXioInit, fileXioExit, fileXioDevctl
-#include <usbhdfsd-common.h> // USBMASS_IOCTL_GET_LBA / _CHECK_CHAIN -- VMC contiguity probe
-#include "include/ps2sdkapi_compat.h"       // ps2sdk_get_iop_fd -- the ioctls above take the IOP-side fd
+#include <fileXio_rpc.h>              // fileXioInit, fileXioExit, fileXioDevctl
+#include <usbhdfsd-common.h>          // USBMASS_IOCTL_GET_LBA / _CHECK_CHAIN -- VMC contiguity probe
+#include "include/ps2sdkapi_compat.h" // ps2sdk_get_iop_fd -- the ioctls above take the IOP-side fd
 
 // Launching the disc in the drive: boot-path discovery from SYSTEM.CNF and the settle/redetect budget. Split out of system.cpp.
 

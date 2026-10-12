@@ -1273,9 +1273,9 @@ constexpr int POPSNET_READ_TIMEOUT_MS = 15000;
 // returned, so a read that timed out after fifteen seconds and a read the user cancelled were
 // indistinguishable on screen -- both silently dropped you back on the network page with no
 // explanation. Only CANCELLED is the user's own doing and stays quiet.
-constexpr int GUI_POPSNET_READ_ABORTED = (-100);  // user pressed Circle
-constexpr int GUI_POPSNET_READ_TIMEOUT = (-101);  // the worker never finished inside POPSNET_READ_TIMEOUT_MS
-constexpr int GUI_POPSNET_READ_UNAVAIL = (-102);  // the request could not be queued at all (I/O blocked/OOM)
+constexpr int GUI_POPSNET_READ_ABORTED = (-100); // user pressed Circle
+constexpr int GUI_POPSNET_READ_TIMEOUT = (-101); // the worker never finished inside POPSNET_READ_TIMEOUT_MS
+constexpr int GUI_POPSNET_READ_UNAVAIL = (-102); // the request could not be queued at all (I/O blocked/OOM)
 enum gui_popsnet_read_source {
     GUI_POPSNET_READ_LOCAL = 0,
     GUI_POPSNET_READ_SMB,

@@ -6,10 +6,10 @@
 #include "include/system.h"
 #include "include/supportbase.h"
 #include "include/supportbaseint.h" // SupportBase gSupportBase
-#include "include/folderbrowse.h" // FOLDER_SUB_MAX + folder-browse subpath state
-#include "include/vcdsupport.h"   // vcdExtractGameId + VCD_ID_MAX -- VCD per-game CFG keying
-#include "include/cuesupport.h"   // cueIsCueEntry -- Ember rows key their CFG by folder name too
-#include "include/gui.h"          // guiMsgBox (sbCheatsMissingContinue confirm)
+#include "include/folderbrowse.h"   // FOLDER_SUB_MAX + folder-browse subpath state
+#include "include/vcdsupport.h"     // vcdExtractGameId + VCD_ID_MAX -- VCD per-game CFG keying
+#include "include/cuesupport.h"     // cueIsCueEntry -- Ember rows key their CFG by folder name too
+#include "include/gui.h"            // guiMsgBox (sbCheatsMissingContinue confirm)
 #include "include/ioman.h"
 #include "include/extern_irx.h" // usbd_irx + usbhdfsd_irx, written to SYS-CONF for a USB IGR Path
 #include "modules/iopcore/common/cdvd_config.h"
@@ -31,9 +31,9 @@
 #include "include/mmcesupport.h"
 
 #define NEWLIB_PORT_AWARE
-#include <fileXio_rpc.h> // fileXioMount("iso:", ***), fileXioUmount("iso:")
-#include <io_common.h>   // FIO_MT_RDONLY
-#include "include/ps2sdkapi_compat.h"   // lseek64
+#include <fileXio_rpc.h>              // fileXioMount("iso:", ***), fileXioUmount("iso:")
+#include <io_common.h>                // FIO_MT_RDONLY
+#include "include/ps2sdkapi_compat.h" // lseek64
 
 #include "../modules/isofs/zso.h"
 
@@ -178,7 +178,7 @@ static int loadISOGameListCache(const char *path, struct game_cache_list *cache)
 
         count = size / sizeof(base_game_info_t);
         if (count > 0) {
-            games = static_cast<base_game_info_t*>(memalign(64, count * sizeof(base_game_info_t)));
+            games = static_cast<base_game_info_t *>(memalign(64, count * sizeof(base_game_info_t)));
             if (games != NULL) {
                 if (fread(games, sizeof(base_game_info_t), count, file) == count) {
                     LOG("loadISOGameListCache: %d games loaded.\n", count);
@@ -292,7 +292,7 @@ static int updateISOGameList(const char *path, const struct game_cache_list *cac
 // damaged games.bin entry (no terminator) from reading past its own fields.
 static int isoCacheEntryMatches(const base_game_info_t *game, const char *filename)
 {
-    const char *nameEnd = static_cast<const char*>(memchr(game->name, '\0', sizeof(game->name)));
+    const char *nameEnd = static_cast<const char *>(memchr(game->name, '\0', sizeof(game->name)));
     size_t nameLen;
 
     if (nameEnd == NULL || memchr(game->extension, '\0', sizeof(game->extension)) == NULL)
@@ -385,7 +385,7 @@ static int scanForISO(char *path, char type, struct game_list_t **glist, struct 
                         DIR *probe = opendir(fullpath);
                         if (probe != NULL) {
                             closedir(probe);
-                            struct game_list_t *fnode = static_cast<game_list_t*>(malloc(sizeof(struct game_list_t)));
+                            struct game_list_t *fnode = static_cast<game_list_t *>(malloc(sizeof(struct game_list_t)));
                             if (fnode != NULL) {
                                 base_game_info_t *fg = &fnode->gameinfo;
                                 memset(fg, 0, sizeof(base_game_info_t));
@@ -410,7 +410,7 @@ static int scanForISO(char *path, char type, struct game_list_t **glist, struct 
 
             strcpy(fullpath + base_path_len + 1, dirent->d_name);
 
-            struct game_list_t *next = static_cast<game_list_t*>(malloc(sizeof(struct game_list_t)));
+            struct game_list_t *next = static_cast<game_list_t *>(malloc(sizeof(struct game_list_t)));
             if (!next)
                 break; // Out of memory
 
@@ -2524,7 +2524,7 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
             if (q == 0) {
                 raHashStep("7-list-received");
                 host::ui().raNotice(info[0] ? info : _l(_STR_RA_SUPPORTED),
-                                info2[0] ? info2 : _l(_STR_RA_START_TO_TRACK));
+                                    info2[0] ? info2 : _l(_STR_RA_START_TO_TRACK));
             } else if (q == 1) {
                 raHashStep("7-pc-does-not-know-image");
                 host::ui().raNotice(_l(_STR_RA_UNKNOWN_IMAGE), hash);

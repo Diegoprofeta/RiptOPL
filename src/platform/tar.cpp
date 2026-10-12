@@ -406,7 +406,7 @@ int tarLoadFromAnyDevice(TarKind kind)
     if (s_index[kind] && s_dev[kind]) {
         char tarPath[256];
         if (buildTarPath(s_dev[kind], kind, tarPath, sizeof(tarPath)) == 0) {
-            if (raii::UniqueFd probe{open(tarPath, O_RDONLY)})
+            if (raii::UniqueFd probe {open(tarPath, O_RDONLY)})
                 return 0;
         }
         tarCloseInternal(kind);

@@ -75,7 +75,7 @@ int thmParseDeviceList(const char *value, int quiet)
     if (value == NULL)
         return 0;
 
-    buf = static_cast<char*>(malloc(strlen(value) + 1));
+    buf = static_cast<char *>(malloc(strlen(value) + 1));
     if (buf == NULL)
         return 0;
     strcpy(buf, value);
@@ -292,10 +292,10 @@ static mutable_text_t *initMutableText(const char *themePath, config_set_t *them
 // Backdrops are not obstacles: an element the text STARTS inside (a banner or panel the theme draws the
 // text on) is ignored. Only what the text would run INTO counts.
 
-#define THM_TEXT_GAP      4   // keep this much space before the neighbour
-constexpr int THM_TEXT_MIN_ROOM = 40;  // a smaller room is more likely a misread layout than a real one: keep the old draw
-constexpr int THM_COVER_W = 140;  // an image with no declared size and no default image: OPL's cover art size
-#define THM_COVER_H       200
+#define THM_TEXT_GAP 4                // keep this much space before the neighbour
+constexpr int THM_TEXT_MIN_ROOM = 40; // a smaller room is more likely a misread layout than a real one: keep the old draw
+constexpr int THM_COVER_W = 140;      // an image with no declared size and no default image: OPL's cover art size
+#define THM_COVER_H 200
 
 typedef struct
 {
@@ -1475,7 +1475,7 @@ void drawAttributeImage(struct menu_list *menu, struct submenu_list *item, confi
             } else {
                 // Keep the cache identity persistent so a missing optional glyph
                 // is memoized instead of being reopened every frame.
-                GSTEXTURE *texture = cacheGetTexture(attributeImage->cache, static_cast<item_list_t*>(menu->item->userdata), &attributeImage->currentCacheId, &attributeImage->currentUid, attributeImage->currentValue);
+                GSTEXTURE *texture = cacheGetTexture(attributeImage->cache, static_cast<item_list_t *>(menu->item->userdata), &attributeImage->currentCacheId, &attributeImage->currentUid, attributeImage->currentValue);
                 if (texture && texture->Mem) {
                     if (attributeImage->overlayTexture) {
                         rmDrawOverlayPixmap(&attributeImage->overlayTexture->source, elem->posX, elem->posY, elem->aligned, elem->width, elem->height, elem->scaled, gDefaultCol,
@@ -1724,7 +1724,7 @@ void drawMenuText(struct menu_list *menu, struct submenu_list *item, config_set_
 
 void drawBDMIndex(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)
 {
-    item_list_t *itemList = static_cast<item_list_t*>(menu->item->userdata);
+    item_list_t *itemList = static_cast<item_list_t *>(menu->item->userdata);
     // Only render for bdm modes and if current mode is visible
     if (itemList->mode >= ETH_MODE || menu->item->visible == 0)
         return;
@@ -1750,7 +1750,7 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
 
     if (item) {
         items_list_t *itemsList = (items_list_t *)elem->extended;
-        item_list_t *list = static_cast<item_list_t*>(menu->item->userdata);
+        item_list_t *list = static_cast<item_list_t *>(menu->item->userdata);
 
         int posX = elem->posX, posY = elem->posY;
         if (elem->aligned) {
@@ -1913,7 +1913,7 @@ void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *th
 void drawItemText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)
 {
     if (menu != NULL && menu->item != NULL && item != NULL) {
-        item_list_t *support = static_cast<item_list_t*>(menu->item->userdata);
+        item_list_t *support = static_cast<item_list_t *>(menu->item->userdata);
         if (support != NULL) {
             char *startup = gsOf(support)->startup(support, item->item.id);
             if (startup != NULL) {
@@ -1990,4 +1990,3 @@ void drawInfoHintText(struct menu_list *menu, struct submenu_list *item, config_
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-

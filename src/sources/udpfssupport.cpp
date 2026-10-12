@@ -139,7 +139,7 @@ static int udpfsServerAnswers(void)
 
     return stat(udpfsPrefix, &st) == 0;
 }
-class UdpfsSource : public GameSource
+class UdpfsSource: public GameSource
 {
 public:
     UdpfsSource()

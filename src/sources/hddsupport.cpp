@@ -50,7 +50,7 @@ HddSupport gHddSupport;
 // device has been measured at several seconds, and the alternative is remounting under a live reader.
 constexpr int HDD_ART_QUIESCE_MS = 2000;
 
-class HddSource : public GameSource
+class HddSource: public GameSource
 {
 public:
     HddSource()
@@ -485,7 +485,7 @@ void HddSupport::settleSupportRetry()
                 } else {
                     logPfsDiagState("emit-code-222", "settled-retries-exhausted");
                     host::app().setErrorDetail(_STR_HDD_PFS_UNAVAILABLE_ERROR, ERROR_HDD_MODULE_PFS_FAILURE,
-                                                     pfsDiagReasonName(pfsDiagReason));
+                                               pfsDiagReasonName(pfsDiagReason));
                 }
                 supportErrToasted = 1;
             } else {
@@ -1275,7 +1275,7 @@ int HddSupport::buildVcdGameList()
             if (!gVcdShowPpPops)
                 continue;
 
-            base_game_info_t *grownGames = static_cast<base_game_info_t*>(realloc(newGames, (total + 1) * sizeof(base_game_info_t)));
+            base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + 1) * sizeof(base_game_info_t)));
             if (grownGames == NULL) {
                 scanIncomplete = 1;
                 break;
@@ -1340,7 +1340,7 @@ int HddSupport::buildVcdGameList()
             continue;
         }
 
-        base_game_info_t *grownGames = static_cast<base_game_info_t*>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
+        base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
         if (grownGames == NULL) {
             free(vcds);
             scanIncomplete = 1;
@@ -1412,7 +1412,7 @@ int HddSupport::buildVcdGameList()
                 continue;
             }
 
-            base_game_info_t *grownGames = static_cast<base_game_info_t*>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
+            base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
             if (grownGames == NULL) {
                 free(cues);
                 scanIncomplete = 1;
@@ -2242,7 +2242,7 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         irx = &hdd_cdvdman_irx;
     }
 
-    sbPrepare(NULL, configSet, size_irx, static_cast<void**>(irx), &i);
+    sbPrepare(NULL, configSet, size_irx, static_cast<void **>(irx), &i);
     sbEnsureIgrUsbDrivers(compatMode);
 
     if (gHDDPrefix != NULL) {
@@ -2317,7 +2317,7 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // adjust ZSO cache
     settings->common.zso_cache = hddCacheSize;
 
-    sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, static_cast<void**>(irx), size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
+    sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, static_cast<void **>(irx), size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
 }
 
 config_set_t *HddSource::config(item_list_t *itemList, int id)
@@ -2539,7 +2539,7 @@ static int hddLoadGameListCache(hdl_games_list_t *cache)
 
         count = size / sizeof(hdl_game_info_t);
         if (count > 0) {
-            games = static_cast<hdl_game_info_t*>(memalign(64, count * sizeof(hdl_game_info_t)));
+            games = static_cast<hdl_game_info_t *>(memalign(64, count * sizeof(hdl_game_info_t)));
             if (games != NULL) {
                 if (fread(games, sizeof(hdl_game_info_t), count, file) == count) {
                     cache->count = count;

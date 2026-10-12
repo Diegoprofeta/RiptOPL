@@ -58,8 +58,8 @@ constexpr int MMCE_PRESENCE_RETRY_US = (200 * 1000);
 // otherwise the game boots while the card is still mounting and freezes at its MC check (issue #50,
 // cross-device path). A prior change had collapsed the per-poll gap to a sub-ms nopdelay(), which
 // gutted the wait so it returned in well under a second; a real sleep restores it.
-constexpr int MMCE_GAMEID_WAIT_TICKS = 15;  // max polls of the card-switch busy bit
-constexpr int MMCE_GAMEID_POLL_US = (200 * 1000);  // 200 ms between polls -> ~3 s total budget (was 500 ms x 15 = 7.5 s)
+constexpr int MMCE_GAMEID_WAIT_TICKS = 15;        // max polls of the card-switch busy bit
+constexpr int MMCE_GAMEID_POLL_US = (200 * 1000); // 200 ms between polls -> ~3 s total budget (was 500 ms x 15 = 7.5 s)
 /* The MMCE worker checks its abort flag between 32 KB staged reads. A
  * 500 ms wait gives a slow card time to reach the next safe checkpoint. */
 constexpr int MMCE_ART_ABORT_WAIT_TICKS = 500;
@@ -469,7 +469,7 @@ void mmceArmGameIDTransport(void)
 {
     gMmceSupport.armGameIDTransport();
 }
-class MmceSource : public GameSource
+class MmceSource: public GameSource
 {
 public:
     MmceSource()
@@ -1001,7 +1001,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // single guard before any card IO.)
     void *irx = &mmce_cdvdman_irx;
     int irx_size = size_mmce_cdvdman_irx;
-    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void**>(irx), &index);
+    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
     settings = (struct cdvdman_settings_mmce *)((u8 *)irx + index);
     if (settings == NULL)
         return;
@@ -1314,7 +1314,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 
     settings->common.zso_cache = 0;
 
-    sysLaunchLoaderElf(filename, "MMCE_MODE", irx_size, static_cast<void**>(irx), size_mcemu_irx, mmce_mcemu_irx, EnablePS2Logo, compatmask);
+    sysLaunchLoaderElf(filename, "MMCE_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, mmce_mcemu_irx, EnablePS2Logo, compatmask);
 }
 
 config_set_t *MmceSource::config(item_list_t *itemList, int id)
