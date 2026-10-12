@@ -84,6 +84,14 @@ void BootSplash::render(int alpha)
         drawLogo(logo, gGuiScreenWidth >> 1, drawY, alpha);
     }
 
+    // Credit mark, centred between the version line and the status line, faded with the splash.
+    GSTEXTURE *credit = thmGetTexture(TECHWRITESCODE_LOGO);
+    if (credit) {
+        const int cw = credit->Width, ch = credit->Height; // drawn at native size
+        const int creditY = ((logoCenterY + 80) + (gTheme->usedHeight - 40)) >> 1;
+        rmDrawPixmap(credit, gGuiScreenWidth >> 1, creditY, ALIGN_CENTER, cw, ch, SCALING_RATIO, GS_SETREG_RGBA(0x80, 0x80, 0x80, alpha), 0);
+    }
+
     // Boot info: the RiptOPL version + a live status line, faded with the splash.
     // Reuses gTheme->fonts[0] (always-loaded built-in) and the same OPL_VERSION About shows.
     u64 infoColor = GS_SETREG_RGBA(0x80, 0x80, 0x80, alpha);
