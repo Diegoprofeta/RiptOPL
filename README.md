@@ -114,7 +114,7 @@ client and ORBIT integration remain in the [parity ledger](docs/UPSTREAM-PARITY-
 
 ### Minimal startup path
 
-1. Extract the normal installable archive. Copy `APPS/APP_RIPTOPL/` to your device's `APPS/` directory, or import `APP_RIPTOPL.psu` with a PS2 save manager to install that app on a memory card. The supplied app uses `-OFFICIALROLLING` when that build is available; the labelled ELF folders provide [other build choices](ROLLING_RELEASE.md#which-build-should-i-use).
+1. Extract the archive for your edition: Korium, RetroAchievements, or IncebtIon. Copy the supplied app folder under `APPS/` to your device, or import its matching `.psu` with a PS2 save manager. See the [download contract](ROLLING_RELEASE.md#download-contract) for the three ps2build release channels and their contents.
 2. Copy `ART/` to the device's artwork directory. For Neutrino, copy the complete `neutrino/` folder to `mc0:/neutrino/` or `mc1:/neutrino/`. Install the `POPS/` and `EMBER/` companions for PS1 as described in [PS1 games](#ps1-games-two-cores-one-list). The PSU contains the app files only.
 3. Prepare your game's source: `CD/` or `DVD/` for folder-based PS2 libraries, HDLoader partitions for APA, or `games.csv` for HTTP. See [How to use](#how-to-use).
 4. In **Settings → Game Sources**, enable the device and its start mode. For a network source, set **Network Connectivity** to **Manual** or **Auto** and pick the **Protocol** under it, then enter your server's settings in **Network**.
@@ -770,7 +770,7 @@ The internal special-disc parameter table now lives in `src/core/xparam.cpp`.
 
 ## OPL Archive
 
-Successful archive uploads preserve rolling builds on MEGA under run-specific folders (`RiptOPL/Rolling/<version>/run_<number>/`). Uploads depend on publishing success and configured credentials; superseded or failed runs may have no archive. The archive includes installable packages, source and build metadata; VARIANTS and DEBUG bundles are excluded. You can access it by clicking the MEGA badge at the top of this readme or visiting the [MEGA Rolling Archive](https://mega.nz/folder/74pRHKRB#9SLDkrkvZAbeKO4Qvxg9LQ).
+The [MEGA Rolling Archive](https://mega.nz/folder/74pRHKRB#9SLDkrkvZAbeKO4Qvxg9LQ) preserves historical production builds. The C++ migration publishes its three ps2build editions through the GitHub release channels described above; automatic MEGA archival has not been migrated.
 
 ## Frequent Issues
 

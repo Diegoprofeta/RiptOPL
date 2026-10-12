@@ -69,7 +69,9 @@ jobs:
           python tools/assets.py lang
       - name: Build the edition (GCC)
         shell: bash
-        run: python tools/build_edition.py '${{ matrix.edition }}' 2>&1 | tee build-edition.log
+        run: |
+          mkdir -p build
+          python tools/build_edition.py '${{ matrix.edition }}' 2>&1 | tee build/edition.log
       - name: Download the official companion core
         shell: bash
         run: |
@@ -95,7 +97,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-log-${{ matrix.edition }}
-          path: build-edition.log
+          path: build/edition.log
 
   publish:
     needs: build

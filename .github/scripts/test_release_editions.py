@@ -29,7 +29,9 @@ class EditionsTests(unittest.TestCase):
             self.assertEqual("INGAME_UDP" in targets["SMSTCPIP"]["defines"], ra)
             for target in config["targets"]:
                 for source in target.get("sources", []):
-                    if "*" not in source and source != "src/core/lang_internal.c":
+                    # lwNBD is fetched at its declared revision by download_lwNBD.sh;
+                    # host-only CI deliberately validates a plain source checkout.
+                    if "*" not in source and source != "src/core/lang_internal.c" and not source.startswith("modules/network/lwNBD/"):
                         self.assertTrue((ROOT / source).is_file(), source)
         self.assertEqual(first, editions.definition("incebtion"))
 
