@@ -93,6 +93,27 @@ class InstallPortsTests(unittest.TestCase):
                     ports.install(sdk, "ogg", "llvm")
             self.assertEqual((target / "previous.txt").read_text(), "keep")
 
+    def test_failed_rollback_keeps_recoverable_backup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sdk = Path(directory)
+            target = sdk / "packages-llvm/world/ogg"
+            target.mkdir(parents=True)
+            (target / "previous.txt").write_text("keep")
+            metadata = json.dumps(release("ogg-v1-llvm.zip")).encode()
+            rename = Path.rename
+
+            def fail_install_and_restore(path, destination):
+                if path.name in ("new", "previous"):
+                    raise OSError("simulated locked destination")
+                return rename(path, destination)
+
+            with patch.object(ports, "download", side_effect=[metadata, archive()]), patch.object(Path, "rename", fail_install_and_restore):
+                with self.assertRaises(OSError):
+                    ports.install(sdk, "ogg", "llvm")
+            backups = list(target.parent.glob(".ogg-*/previous/previous.txt"))
+            self.assertEqual(len(backups), 1)
+            self.assertEqual(backups[0].read_text(), "keep")
+
 
 if __name__ == "__main__":
     unittest.main()

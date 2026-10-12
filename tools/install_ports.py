@@ -62,11 +62,11 @@ def install(sdk, package, toolchain):
         raise ValueError(f"package destination is not a regular directory: {target}")
     # Stage and validate before replacing anything. The temporary directory and
     # any previous package retained inside it are confined to this packages root.
-    with tempfile.TemporaryDirectory(prefix=f".{package}-", dir=world) as temporary:
-        scratch = Path(temporary).resolve()
+    scratch = Path(tempfile.mkdtemp(prefix=f".{package}-", dir=world)).resolve()
+    staged, backup = scratch / "new", scratch / "previous"
+    try:
         if scratch.parent != world:
             raise ValueError("package staging directory escaped the SDK packages root")
-        staged, backup = scratch / "new", scratch / "previous"
         staged.mkdir()
         unpack(data, staged, package)
         if target.exists():
@@ -77,6 +77,11 @@ def install(sdk, package, toolchain):
             if backup.exists():
                 backup.rename(target)
             raise
+    finally:
+        if backup.exists() and not target.exists():
+            print(f"could not restore previous package; preserved backup at {backup}")
+        else:
+            shutil.rmtree(scratch)
     print(f"installed {package} {release['tag_name']} ({toolchain}) from {url}")
     print(f"  SHA256 {hashlib.sha256(data).hexdigest()}")
 

@@ -5,7 +5,7 @@ build through the Makefile. Build:
 
     tools/install_ps2build.sh      # ps2build + ogg/vorbis packages (not shipped by the SDK)
     tools/assets.py all            # translations, lwNBD, bin2c blobs, asm/opl_version.h
-    ps2build build                 # -> build/bin/riptopl-packed.elf
+    python3 tools/build.py         # -> build/bin/riptopl-packed.elf
 
 ### GCC and LLVM setup (PR #18 and follow-up)
 
@@ -18,8 +18,8 @@ ps2build update
 ps2build update llvm-toolchain
 python tools/install_ports.py --toolchain all
 python tools/assets.py all
-ps2build build --toolchain gcc --out-dir build/gcc
-ps2build build --toolchain llvm --out-dir build/llvm
+python tools/build.py --toolchain gcc --out-dir build/gcc
+python tools/build.py --toolchain llvm --out-dir build/llvm
 ```
 
 Use `python3` instead of `python` on Linux hosts that expose only that command.
@@ -40,6 +40,13 @@ The `ps2build` CI workflow builds both compilers and uploads separately named ar
 existing GCC warning ratchet remains mandatory; LLVM needs its own reviewed warning policy.
 Clang currently reports that `-fsingle-precision-constant` is unsupported, so floating-point code
 still needs a precision/performance audit before assuming the GCC and LLVM results are equivalent.
+Use `tools/build.py` for LLVM incremental builds: the current SDK emits project include
+directories as `-isystem`, so its generated `-MMD` omits those headers from Ninja's dependency
+database. Clang gives `-MMD` precedence over `-MD` regardless of their order. The wrapper adds
+`-Xclang -sys-header-deps` to each target in a temporary configuration beside `ps2.yaml`, then
+calls ps2build and removes the temporary file. The checked-in configuration stays unchanged.
+Without this workaround, changing `asm/opl_version.h` left the LLVM ELF at its old version while
+Ninja reported no work. Header dependency tracking must be checked alongside clean builds.
 
 Emulator-tested through the C++ conversion (builds up to IoQueue/ArtQueue confirmed working); not hardware-tested.
 Sources under src/ are now C++ (see CPP-CONVERSION-PLAN.md), so the Makefile can no longer build them.

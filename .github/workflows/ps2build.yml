@@ -76,7 +76,7 @@ jobs:
         run: tools/run_tests.sh -k
       - name: Build
         shell: bash   # -o pipefail, so a failed build is not masked by tee
-        run: $PS2BUILD_HOME/ps2build build 2>&1 | tee build.log
+        run: python3 tools/build.py 2>&1 | tee build.log
       - name: Warning baseline (no new warnings)
         # The existing baseline was measured with GCC. LLVM has distinct
         # diagnostics; keep its build mandatory without inventing a baseline.
