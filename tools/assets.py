@@ -10,7 +10,8 @@
     tools/assets.py version-string   print OPL_VERSION
 
 Environment: REVISION, RELEASE_CHANNEL, LOCALVERSION (same meaning as the old Makefile),
-PS2BUILD_HOME (default ~/.local/share/ps2build).
+PS2BUILD_HOME (default: the directory containing ps2build on PATH, then
+~/.local/share/ps2build). Windows fetch steps use Git for Windows' shell.
 """
 import os
 import shutil
@@ -22,8 +23,12 @@ os.chdir(ROOT)
 
 VERSION, SUBVERSION, PATCHLEVEL, EXTRAVERSION = 1, 2, 0, "Beta"
 
-PS2BUILD_HOME = os.environ.get("PS2BUILD_HOME", os.path.expanduser("~/.local/share/ps2build"))
-BIN2C = os.path.join(PS2BUILD_HOME, "tools", "bin2c")
+_ps2build = shutil.which("ps2build")
+PS2BUILD_HOME = os.environ.get(
+    "PS2BUILD_HOME",
+    os.path.dirname(os.path.realpath(_ps2build)) if _ps2build else os.path.expanduser("~/.local/share/ps2build"),
+)
+BIN2C = shutil.which("bin2c", path=os.path.join(PS2BUILD_HOME, "tools")) or os.path.join(PS2BUILD_HOME, "tools", "bin2c")
 
 ASM_DIR = "asm"
 GEN_DIR = ASM_DIR  # opl_version.h lives next to the generated sources (ps2.yaml include_dirs: [asm])
@@ -69,13 +74,21 @@ def out(*cmd):
 
 # ------------------------------------------------------------------ fetch
 def fetch():
-    run("./tools/download_lng.sh")
-    run("./tools/download_lwNBD.sh")
+    shell = []
+    if os.name == "nt":
+        # PATH may resolve bash.exe to the WSL launcher. Use the shell belonging
+        # to Git instead; these scripts only need Git and POSIX shell builtins.
+        git_shell = out("git", "var", "GIT_SHELL_PATH")
+        if not os.path.isfile(git_shell):
+            sys.exit("asset downloads on Windows require Git for Windows (git var GIT_SHELL_PATH)")
+        shell = [git_shell]
+    run(*shell, "./tools/download_lng.sh")
+    run(*shell, "./tools/download_lwNBD.sh")
 
 
 # ------------------------------------------------------------------ lang
 def lang():
-    lc = ["python3", "tools/lang_compiler.py"]
+    lc = [sys.executable, "tools/lang_compiler.py"]
     base = "lng/tmpl/_base.yml"
     os.makedirs("lng", exist_ok=True)
     english_yml = "lng_src/English.yml"

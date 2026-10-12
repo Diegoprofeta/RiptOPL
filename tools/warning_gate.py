@@ -10,20 +10,30 @@ Only warnings in this repository's own code are counted (src/, ee_core/, elfldr/
 SDK headers and the downloaded lwNBD tree are ignored. Counts are per (file, flag), so refactors that
 move code between files show up, but unrelated edits do not.
 """
-import collections, json, os, re, sys
+import collections, json, ntpath, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(ROOT, "tools", "warnings_baseline.json")
 OWN = ("src/", "ee_core/", "elfldr/", "modules/", "include/")
 SKIP = ("modules/network/lwNBD/",)
 
-rx = re.compile(r"^(/[^:\s]+):\d+:\d+: warning: .*\[(-W[\w+-]+)\]\s*$")
-rx_plain = re.compile(r"^(/[^:\s]+):\d+:\d+: warning: (.*)$")
+rx = re.compile(r"^(.+?):\d+:\d+: warning: .*\[(-W[\w+-]+)\]\s*$")
+rx_plain = re.compile(r"^(.+?):\d+:\d+: warning: (.*)$")
+
+
+def log_lines(path):
+    # Windows PowerShell's redirection writes UTF-16; native redirects and tee
+    # normally write UTF-8. Both must feed the same warning ratchet.
+    with open(path, "rb") as stream:
+        bom = stream.read(2)
+    encoding = "utf-16" if bom in (b"\xff\xfe", b"\xfe\xff") else "utf-8-sig"
+    with open(path, encoding=encoding, errors="replace") as stream:
+        yield from stream
 
 def parse(path):
     counts = collections.Counter()
     seen = set()
-    for line in open(path, errors="replace"):
+    for line in log_lines(path):
         line = line.rstrip("\n")
         m = rx.match(line)
         flag = None
@@ -32,7 +42,11 @@ def parse(path):
             m = rx_plain.match(line)
             if not m: continue
             f, msg = m.groups(); flag = "(" + re.sub(r"[‘’'].*", "", msg).strip()[:40] + ")"
-        rel = os.path.relpath(f, ROOT)
+        paths = ntpath if ntpath.splitdrive(f)[0] else os.path
+        try:
+            rel = paths.relpath(f, ROOT).replace("\\", "/")
+        except ValueError:  # A diagnostic from another Windows drive is not ours.
+            continue
         if not rel.startswith(OWN) or rel.startswith(SKIP): continue
         # the same header warning repeats once per including TU: count it once per (file, line text)
         key = (rel, flag, line)
@@ -64,4 +78,5 @@ def main():
     print("top files:")
     for f, n in byfile.most_common(12): print(f"  {n:4d} {f}")
 
-main()
+if __name__ == "__main__":
+    main()

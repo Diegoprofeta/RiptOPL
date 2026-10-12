@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Install the released ogg/vorbis packages for the selected ps2build compiler."""
+import argparse
+import hashlib
+import io
+import json
+import os
+from pathlib import Path, PurePosixPath
+import shutil
+import stat
+import tempfile
+import urllib.parse
+import urllib.request
+import zipfile
+
+
+HOST = "https://git.techwritescode.dev"
+LIBRARIES = {"ogg": ("libogg.a",), "vorbis": ("libvorbis.a", "libvorbisfile.a")}
+
+
+def download(url):
+    request = urllib.request.Request(url, headers={"User-Agent": "RiptOPL-build/1.0"})
+    with urllib.request.urlopen(request, timeout=60) as response:
+        return response.read()
+
+
+def select_asset(release, package, toolchain):
+    tag = release["tag_name"]
+    names = [f"{package}-{tag}-{toolchain}.zip"]
+    if toolchain == "gcc":
+        names.append(f"{package}-{tag}.zip")  # Older GCC-only releases.
+    for name in names:
+        matches = [asset for asset in release.get("assets", []) if asset["name"] == name]
+        if len(matches) == 1:
+            return matches[0]["browser_download_url"]
+    raise ValueError(f"{package} {tag} has no unique {toolchain} package archive")
+
+
+def unpack(data, destination, package):
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        required = {"package.yaml", *(f"lib/{lib}" for lib in LIBRARIES[package])}
+        if not required.issubset(archive.namelist()):
+            raise ValueError(f"{package} archive is missing its manifest or libraries")
+        for entry in archive.infolist():
+            path = PurePosixPath(entry.filename.replace("\\", "/"))
+            if path.is_absolute() or ".." in path.parts or ":" in entry.filename or stat.S_ISLNK(entry.external_attr >> 16):
+                raise ValueError(f"unsafe package member: {entry.filename}")
+        archive.extractall(destination)
+
+
+def install(sdk, package, toolchain):
+    version = os.environ.get(f"{package.upper()}_VERSION", "latest")
+    release_path = "latest" if version == "latest" else "tags/" + urllib.parse.quote(version, safe="")
+    release = json.loads(download(f"{HOST}/api/v1/repos/ps2/{package}/releases/{release_path}"))
+    url = select_asset(release, package, toolchain)
+    data = download(url)
+    world = sdk / ("packages-llvm" if toolchain == "llvm" else "packages") / "world"
+    world.mkdir(parents=True, exist_ok=True)
+    world = world.resolve()
+    target = world / package
+    if target.is_symlink() or (target.exists() and not target.is_dir()):
+        raise ValueError(f"package destination is not a regular directory: {target}")
+    # Stage and validate before replacing anything. The temporary directory and
+    # any previous package retained inside it are confined to this packages root.
+    with tempfile.TemporaryDirectory(prefix=f".{package}-", dir=world) as temporary:
+        scratch = Path(temporary).resolve()
+        if scratch.parent != world:
+            raise ValueError("package staging directory escaped the SDK packages root")
+        staged, backup = scratch / "new", scratch / "previous"
+        staged.mkdir()
+        unpack(data, staged, package)
+        if target.exists():
+            target.rename(backup)
+        try:
+            staged.rename(target)
+        except OSError:
+            if backup.exists():
+                backup.rename(target)
+            raise
+    print(f"installed {package} {release['tag_name']} ({toolchain}) from {url}")
+    print(f"  SHA256 {hashlib.sha256(data).hexdigest()}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    executable = shutil.which("ps2build")
+    default_sdk = os.environ.get("PS2BUILD_HOME") or os.environ.get("PS2DEV_INSTALL_DIR")
+    if not default_sdk and executable:
+        default_sdk = str(Path(executable).resolve().parent)
+    parser.add_argument("--sdk", default=default_sdk, help="installed ps2build SDK root")
+    parser.add_argument("--toolchain", choices=("gcc", "llvm", "all"),
+                        default=os.environ.get("PS2BUILD_TOOLCHAIN", "gcc"))
+    args = parser.parse_args()
+    if not args.sdk:
+        parser.error("ps2build is not on PATH; supply --sdk or install the SDK first")
+    sdk = Path(args.sdk).resolve()
+    if not any((sdk / name).is_file() for name in ("ps2build", "ps2build.exe")):
+        parser.error(f"no ps2build executable in {sdk}")
+    compilers = ("gcc", "llvm") if args.toolchain == "all" else (args.toolchain,)
+    for compiler in compilers:
+        for package in LIBRARIES:
+            install(sdk, package, compiler)
+
+
+if __name__ == "__main__":
+    main()
