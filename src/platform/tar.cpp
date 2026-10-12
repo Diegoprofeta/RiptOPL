@@ -10,7 +10,7 @@
 // toggle is off the engine is never called, and even when on a device with no ART/art.tar is marked
 // inactive and costs nothing.
 
-#include <ps2sdkapi.h>
+#include "include/ps2sdkapi_compat.h"
 #include <stdio.h>
 #include <malloc.h>
 #include <fcntl.h>
@@ -406,7 +406,7 @@ int tarLoadFromAnyDevice(TarKind kind)
     if (s_index[kind] && s_dev[kind]) {
         char tarPath[256];
         if (buildTarPath(s_dev[kind], kind, tarPath, sizeof(tarPath)) == 0) {
-            if (raii::UniqueFd probe{open(tarPath, O_RDONLY)})
+            if (raii::UniqueFd probe {open(tarPath, O_RDONLY)})
                 return 0;
         }
         tarCloseInternal(kind);

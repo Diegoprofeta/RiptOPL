@@ -1,4 +1,13 @@
-# Private SDK migration: public parity ledger
+# C++/ps2build migration: production parity ledger
+
+Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+PRs #18/#19 and the full site import #17 are merged; Pages and the independent
+wiki import are published. GCC/LLVM, host gates and all three complete release
+candidate kits pass. Publication and physical-console acceptance remain open.
+The follow-up `codex/merge-migration-queue` branch consolidates PRs #12–#16;
+check its actual PR merge state before repeating those adaptations.
+Production now includes #922 (`9d910fc05796b7bcfb4f00544a55baf73d800a33`),
+whose NIC reservation, DEV9 failure handling and IP-clash notice still need ports.
 
 This ledger records verified ports into the C++/ps2build repository. It does not
 claim that the entire public repository is synchronized. The public source
@@ -17,7 +26,7 @@ snapshot used for the ports below is Open-PS2-Loader commit
 | #914: queue snapshot and append lifetime | `IoQueue::pendingCount()` read its head before taking its semaphore. Failed GUI appends overwrote navigation pointers with NULL. | Lock before reading the C++ queue head; keep tail, cursor, page start and autostart state on failed append. The legacy `submenuRemoveItem` routine is absent from this branch, so its backlink fix is not applicable. |
 | #915: BDM private allocation | Failed per-slot allocation could register a page with NULL private data; settings re-apply never retried it. | Allocate at the registration boundary, hide/disable failed slots, retry later, and fail closed in init/cleanup/VMC/prefix callbacks. Retain `BdmSource`, template lookup, host services and identified-page retention. Skip NULL/empty app prefixes. |
 | #911: IOP reset packet and failure handling | Unbounded outbound copies, unchecked intercepted lengths and a failed IOP heap allocation could corrupt memory or DMA to zero. The MIPS trampoline forced success. | Validate packet/payload/suffix capacities, reject oversized outbound commands, stop on failed allocation, unwind services and counters, prevent ELF loading after failed reset, and preserve C's return value through the assembly trampoline. Standard and RA lifecycle tests execute the production routines. |
-| #906: RA Mode 6 snapshots (partial) | Mode 6 skipped the IGR handler that drove RA snapshots. | Add the RA-only snapshot handler after successful, telemetry-ready reset; failed interrupt registration remains retryable and repeated installation is idempotent. The older private RA runtime has no `IGR_RequestReset` client command, so that part requires the broader RA runtime migration. This is host-tested source coverage; `ps2.yaml` still only defines the standard flavour. |
+| #906: RA Mode 6 snapshots (partial) | Mode 6 skipped the IGR handler that drove RA snapshots. | Add the RA-only snapshot handler after successful, telemetry-ready reset; failed interrupt registration remains retryable and repeated installation is idempotent. The older RA runtime has no `IGR_RequestReset` client command, so that part requires the broader RA runtime migration. The edition overlay now builds/packages RA as well as standard kits; runtime parity and hardware acceptance remain open. |
 
 SDK adaptations retain `u32` for IOP `WaitEventFlag` outputs and add the thread
 imports required by filesystem teardown. The C++ `GameSource` implementation,
@@ -47,11 +56,11 @@ verified port ledger, not a claim that every earlier public change is present.
 | --- | --- |
 | Favorites and POPS UDPFS | Public #904 also changes Favorites routing, PS1 network launch, driver preparation and transactional config writes. These are absent from this port; #909's rollback change depends on that implementation. Audit #903 and the UI/source dispatch together before adapting it to `GameSource`. |
 | RA runtime and standard/RA isolation | Public #894/#899/#906/#916 include newer RA runtime/browser/client behavior and ORBIT handoff. Only the snapshot subset of #906 is covered here. Require explicit standard/RA targets, package isolation and launch/resource validation before claiming RA parity. |
-| Flavour matrix and release packaging | `ps2.yaml` currently builds the main flavour with GSM1080P and PADEMU. The legacy workflow's former container/flavour comments do not establish RA, diagnostic or no-IGR SDK builds. Restore each supported configuration and validate its generated graph and staged package. |
-| Pending private feature branches | Private #13 (Ember/save guidance), #14 (Neutrino preflight/GUI arguments), #15 (docs), #16 (EmberWatch), #17 (site) and #18 (compiler migration) were still open during the audit. Inspect their current diffs and dependencies before reimplementing their work. #19 remains stacked on #18. |
+| Configuration matrix and release packaging | Three complete ps2build edition kits now pass CI. Additional diagnostic, no-IGR, PADEMU-disabled, DS5/extras and debug configurations, language/font packs and actual GitHub publication still require validation. Recover useful variant work from the preserved public-transition worktree. Keep three release channels and one SDK. |
+| Existing feature PRs | #17/#18/#19 are merged. PRs #12–#16 are consolidated in `codex/merge-migration-queue`, preserving useful Ember, Neutrino, docs/evidence, splash and updater work while adapting stale build automation. Verify the consolidated PR's checks/merge state and close superseded originals only after retaining their changes. |
 | Earlier feature/config parity | Public #885 custom core paths, #887 Ember launchability, #889 VMC recovery, #898 SMB refresh, and UI/font/settings changes need individual body-level comparisons. Some private custom path handling already exists; PR names or a test-count difference alone do not prove a gap. |
 | Hardware acceptance | Validate boot, USB/MX4SIO/MMCE/ATA discovery, hotplug, device allocation recovery, existing VMC handling, game launch/IGR, Files/IMG reconnect and other network protocols. LLVM floating-point behavior/performance also remains unproven. |
 
 The new regression tests execute the adapted C++ allocation, queue and GUI
-paths, plus standard/RA reset and snapshot handler variants. Hardware, full RA
-builds and the remaining feature areas are separate acceptance gates.
+paths, plus standard/RA reset and snapshot handler variants. Standard and RA
+builds/packages pass; hardware and full RA behavior remain separate gates.

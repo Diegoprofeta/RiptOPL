@@ -24,7 +24,7 @@
 #include <usbhdfsd-common.h>
 
 #include <kernel.h>
-#include <ps2sdkapi.h>
+#include "include/ps2sdkapi_compat.h"
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h> // fileXioIoctl, fileXioDevctl
 #include <delaythread.h> // DelayThread() -- real-sleep gap in the MMCE card-switch wait
@@ -58,8 +58,8 @@ constexpr int MMCE_PRESENCE_RETRY_US = (200 * 1000);
 // otherwise the game boots while the card is still mounting and freezes at its MC check (issue #50,
 // cross-device path). A prior change had collapsed the per-poll gap to a sub-ms nopdelay(), which
 // gutted the wait so it returned in well under a second; a real sleep restores it.
-constexpr int MMCE_GAMEID_WAIT_TICKS = 15;  // max polls of the card-switch busy bit
-constexpr int MMCE_GAMEID_POLL_US = (200 * 1000);  // 200 ms between polls -> ~3 s total budget (was 500 ms x 15 = 7.5 s)
+constexpr int MMCE_GAMEID_WAIT_TICKS = 15;        // max polls of the card-switch busy bit
+constexpr int MMCE_GAMEID_POLL_US = (200 * 1000); // 200 ms between polls -> ~3 s total budget (was 500 ms x 15 = 7.5 s)
 /* The MMCE worker checks its abort flag between 32 KB staged reads. A
  * 500 ms wait gives a slow card time to reach the next safe checkpoint. */
 constexpr int MMCE_ART_ABORT_WAIT_TICKS = 500;
@@ -469,11 +469,11 @@ void mmceArmGameIDTransport(void)
 {
     gMmceSupport.armGameIDTransport();
 }
-class MmceSource : public GameSource
+class MmceSource: public GameSource
 {
 public:
     MmceSource()
-        : GameSource(MMCE_MODE, 2, 0, MENU_MIN_INACTIVE_FRAMES, MMCE_MODE_UPDATE_DELAY, GameSource::CAP_LAUNCH_VCD | GameSource::CAP_LAUNCH_CUE | GameSource::CAP_ROW_VIEW | GameSource::CAP_SOURCE_ID)
+        : GameSource(MMCE_MODE, 2, 0, MENU_MIN_INACTIVE_FRAMES, MMCE_MODE_UPDATE_DELAY, GameSource::CAP_LAUNCH_VCD | GameSource::CAP_LAUNCH_CUE | GameSource::CAP_ROW_VIEW | GameSource::CAP_SOURCE_ID | GameSource::CAP_SAVE_CUE_SETTINGS)
     {
     }
 
@@ -483,6 +483,7 @@ public:
     int count(item_list_t *itemList) override;
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
+    int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -1000,7 +1001,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // single guard before any card IO.)
     void *irx = &mmce_cdvdman_irx;
     int irx_size = size_mmce_cdvdman_irx;
-    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void**>(irx), &index);
+    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
     settings = (struct cdvdman_settings_mmce *)((u8 *)irx + index);
     if (settings == NULL)
         return;
@@ -1226,6 +1227,10 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             fileXioClose(vmc_fds[0]);
         if (vmc_fds[1] >= 0)
             fileXioClose(vmc_fds[1]);
+        if (sysNeutrinoPreflight("mmce", neutrinoPath, 0, NULL, -1) < 0) // D6 pre-teardown validation
+            return;
+        if (sysNeutrinoArgsPreflight("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0)
+            return;
         // GameID for the NEUTRINO core (issue #68): the native OPL-core launch deliberately does
         // NOT push a launcher GameID (see the issue-#50 note below -- in OPL core the in-game
         // card is OPL's mcemu, and a mid-launch re-switch froze early-MC-probing games). That
@@ -1247,8 +1252,6 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         // Neutrino keep-IOP handoff (sysLoadELFKeepIOP): Neutrino opens the mmce-hosted game through
         // OUR mmceman mount and its config/modules from the neutrino.elf device (-cwd) before its own
         // IOP reset -- keep BOTH mounted. An MC-hosted neutrino needs no exception (-1 second slot).
-        if (sysNeutrinoPreflight("mmce", neutrinoPath, 0, NULL, -1) < 0) // D6 pre-teardown validation
-            return;
         int neutrinoDevMode = host::app().pathToMode(neutrinoPath);
         host::app().deinitEx(sbNeutrinoDeinitException(neutrinoPath), itemList->mode, neutrinoDevMode);
         sysLaunchNeutrino("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0 /* #11: mmce is fileid, no fs layer */, -1, &neutrinoVmc);
@@ -1311,7 +1314,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 
     settings->common.zso_cache = 0;
 
-    sysLaunchLoaderElf(filename, "MMCE_MODE", irx_size, static_cast<void**>(irx), size_mcemu_irx, mmce_mcemu_irx, EnablePS2Logo, compatmask);
+    sysLaunchLoaderElf(filename, "MMCE_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, mmce_mcemu_irx, EnablePS2Logo, compatmask);
 }
 
 config_set_t *MmceSource::config(item_list_t *itemList, int id)
@@ -1388,3 +1391,15 @@ char *MmceSource::prefix(item_list_t *itemList)
     return gMmceSupport.prefix;
 }
 
+
+int MmceSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)
+{
+    char ps1Root[64];
+    (void)itemList;
+    (void)id;
+
+    if (!cacheAbortMmceImageLoadsTimed(MMCE_ART_ABORT_WAIT_TICKS))
+        return 0;
+    gMmceSupport.getDeviceRoot(ps1Root, sizeof(ps1Root));
+    return cueSaveGameSettings(ps1Root, name, configSet);
+}

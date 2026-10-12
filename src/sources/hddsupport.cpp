@@ -50,11 +50,11 @@ HddSupport gHddSupport;
 // device has been measured at several seconds, and the alternative is remounting under a live reader.
 constexpr int HDD_ART_QUIESCE_MS = 2000;
 
-class HddSource : public GameSource
+class HddSource: public GameSource
 {
 public:
     HddSource()
-        : GameSource(HDD_MODE, 0, MODE_FLAG_COMPAT_DMA, MENU_MIN_INACTIVE_FRAMES, HDD_MODE_UPDATE_DELAY, GameSource::OMIT_DELETE | GameSource::CAP_LAUNCH_VCD | GameSource::CAP_ART_ARCHIVE_PATH | GameSource::CAP_LAUNCH_CUE | GameSource::CAP_ROW_VIEW | GameSource::CAP_SOURCE_ID)
+        : GameSource(HDD_MODE, 0, MODE_FLAG_COMPAT_DMA, MENU_MIN_INACTIVE_FRAMES, HDD_MODE_UPDATE_DELAY, GameSource::OMIT_DELETE | GameSource::CAP_LAUNCH_VCD | GameSource::CAP_ART_ARCHIVE_PATH | GameSource::CAP_LAUNCH_CUE | GameSource::CAP_ROW_VIEW | GameSource::CAP_SOURCE_ID | GameSource::CAP_SAVE_CUE_SETTINGS)
     {
     }
 
@@ -64,6 +64,7 @@ public:
     int count(item_list_t *itemList) override;
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
+    int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -484,7 +485,7 @@ void HddSupport::settleSupportRetry()
                 } else {
                     logPfsDiagState("emit-code-222", "settled-retries-exhausted");
                     host::app().setErrorDetail(_STR_HDD_PFS_UNAVAILABLE_ERROR, ERROR_HDD_MODULE_PFS_FAILURE,
-                                                     pfsDiagReasonName(pfsDiagReason));
+                                               pfsDiagReasonName(pfsDiagReason));
                 }
                 supportErrToasted = 1;
             } else {
@@ -1274,7 +1275,7 @@ int HddSupport::buildVcdGameList()
             if (!gVcdShowPpPops)
                 continue;
 
-            base_game_info_t *grownGames = static_cast<base_game_info_t*>(realloc(newGames, (total + 1) * sizeof(base_game_info_t)));
+            base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + 1) * sizeof(base_game_info_t)));
             if (grownGames == NULL) {
                 scanIncomplete = 1;
                 break;
@@ -1339,7 +1340,7 @@ int HddSupport::buildVcdGameList()
             continue;
         }
 
-        base_game_info_t *grownGames = static_cast<base_game_info_t*>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
+        base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
         if (grownGames == NULL) {
             free(vcds);
             scanIncomplete = 1;
@@ -1411,7 +1412,7 @@ int HddSupport::buildVcdGameList()
                 continue;
             }
 
-            base_game_info_t *grownGames = static_cast<base_game_info_t*>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
+            base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
             if (grownGames == NULL) {
                 free(cues);
                 scanIncomplete = 1;
@@ -2020,6 +2021,8 @@ static int hddTryNeutrinoLaunch(hdl_game_info_t *game, config_set_t *configSet)
     // the autolaunch teardown -- aborting here instead would leak gAutoLaunchGame/configSet.
     if (sysNeutrinoPreflight("apa", neutrinoPath, 0, NULL, -1) < 0)
         return 0;
+    if (sysNeutrinoArgsPreflight("apa", apaPart, game->startup, compatMode, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, NULL) < 0)
+        return gAutoLaunchGame == NULL ? 1 : 0; // autolaunch needs the native path to own its teardown
 
     // Honesty toast: the OPL core honors $VMC_N on HDD (mcemu over pfs0:VMC/), but Neutrino has no
     // APA/pfs backing store to open the .bin from post-reset -- its APA support is -bsd=ata
@@ -2239,7 +2242,7 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         irx = &hdd_cdvdman_irx;
     }
 
-    sbPrepare(NULL, configSet, size_irx, static_cast<void**>(irx), &i);
+    sbPrepare(NULL, configSet, size_irx, static_cast<void **>(irx), &i);
     sbEnsureIgrUsbDrivers(compatMode);
 
     if (gHDDPrefix != NULL) {
@@ -2314,7 +2317,7 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // adjust ZSO cache
     settings->common.zso_cache = hddCacheSize;
 
-    sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, static_cast<void**>(irx), size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
+    sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, static_cast<void **>(irx), size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
 }
 
 config_set_t *HddSource::config(item_list_t *itemList, int id)
@@ -2536,7 +2539,7 @@ static int hddLoadGameListCache(hdl_games_list_t *cache)
 
         count = size / sizeof(hdl_game_info_t);
         if (count > 0) {
-            games = static_cast<hdl_game_info_t*>(memalign(64, count * sizeof(hdl_game_info_t)));
+            games = static_cast<hdl_game_info_t *>(memalign(64, count * sizeof(hdl_game_info_t)));
             if (games != NULL) {
                 if (fread(games, sizeof(hdl_game_info_t), count, file) == count) {
                     cache->count = count;
@@ -2724,4 +2727,33 @@ void hddLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
 int hddGetArtArchivePath(item_list_t *itemList, char *out, int outSize)
 {
     return hddInstance()->artArchivePath(itemList, out, outSize);
+}
+
+int HddSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)
+{
+    char mountSrc[APA_IDMAX + 6];
+    int idx, result = 0;
+    (void)itemList;
+    (void)id;
+
+    if (name == NULL || !cueNameLaunchable(name))
+        return 0;
+
+    // The scan and this write share pfs1:. Leave the live pfs0: data-home mount alone.
+    ioBlockOps(1);
+    idx = gHddSupport.findVcdByName(name);
+    if (idx < 0) {
+        gHddSupport.buildVcdGameList();
+        idx = gHddSupport.findVcdByName(name);
+    }
+    if (idx >= 0 && cueIsCueEntry(&gHddSupport.vcdGames[idx])) {
+        snprintf(mountSrc, sizeof(mountSrc), "hdd0:%s", gHddSupport.vcdParts[idx]);
+        fileXioUmount("pfs1:");
+        if (fileXioMount("pfs1:", mountSrc, FIO_MT_RDWR | HDD_PFS_MT_WRITETHROUGH) == 0) {
+            result = cueSaveGameSettings("pfs1:/", name, configSet);
+            fileXioUmount("pfs1:");
+        }
+    }
+    ioBlockOps(0);
+    return result;
 }

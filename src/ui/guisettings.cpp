@@ -1273,9 +1273,9 @@ constexpr int POPSNET_READ_TIMEOUT_MS = 15000;
 // returned, so a read that timed out after fifteen seconds and a read the user cancelled were
 // indistinguishable on screen -- both silently dropped you back on the network page with no
 // explanation. Only CANCELLED is the user's own doing and stays quiet.
-constexpr int GUI_POPSNET_READ_ABORTED = (-100);  // user pressed Circle
-constexpr int GUI_POPSNET_READ_TIMEOUT = (-101);  // the worker never finished inside POPSNET_READ_TIMEOUT_MS
-constexpr int GUI_POPSNET_READ_UNAVAIL = (-102);  // the request could not be queued at all (I/O blocked/OOM)
+constexpr int GUI_POPSNET_READ_ABORTED = (-100); // user pressed Circle
+constexpr int GUI_POPSNET_READ_TIMEOUT = (-101); // the worker never finished inside POPSNET_READ_TIMEOUT_MS
+constexpr int GUI_POPSNET_READ_UNAVAIL = (-102); // the request could not be queued at all (I/O blocked/OOM)
 enum gui_popsnet_read_source {
     GUI_POPSNET_READ_LOCAL = 0,
     GUI_POPSNET_READ_SMB,
@@ -1604,6 +1604,7 @@ void guiShowNeutrinoDefaults(void)
     diaSetEnum(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, neutrinoGsmCompDefStrs);
     diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
     diaSetEnabled(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, gNeutrinoVideoDefault != 0);
+    diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
 
     int ret;
 reshow_neutrino:
@@ -1621,6 +1622,7 @@ reshow_neutrino:
         snprintf(gNeutrinoPath, sizeof(gNeutrinoPath), "%s", neutrinoPathEdit);
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_VIDEO, &gNeutrinoVideoDefault);
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, &gNeutrinoGsmCompDefault);
+        diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
 
         applyConfig(-1, -1, 0);
     }
@@ -1629,10 +1631,35 @@ reshow_neutrino:
 // Neutrino Launch Args sub-screen: edit the user-settable Neutrino flags as structured fields and
 // reassemble them in a Neutrino-accepted order (--b last). Used for both the global args (here) and
 // the per-game args. argsBuf in/out is the stored "Launch Args" string.
-void guiShowNeutrinoArgsConfig(char *argsBuf, int bufSize)
+// UI_STRING holds only a 31-character preview. The callbacks edit the complete backing fields, so
+// a path or argument can be changed on the console without hand-editing a config file.
+static neutrino_args_t neutrinoArgsEdit;
+
+#define NEUTRINO_ARG_HANDLER(name, field)                                             \
+    int guiNeutrinoArgs##name##Handler(char *text, int maxLen)                        \
+    {                                                                                 \
+        if (!guiShowKeyboard(neutrinoArgsEdit.field, sizeof(neutrinoArgsEdit.field))) \
+            return 0;                                                                 \
+        snprintf(text, maxLen, "%s", neutrinoArgsEdit.field);                         \
+        return 1;                                                                     \
+    }
+
+NEUTRINO_ARG_HANDLER(Cwd, cwd)
+NEUTRINO_ARG_HANDLER(Cfg, cfg)
+NEUTRINO_ARG_HANDLER(Elf, elf)
+NEUTRINO_ARG_HANDLER(Ata0, ata0)
+NEUTRINO_ARG_HANDLER(Ata0id, ata0id)
+NEUTRINO_ARG_HANDLER(Ata1, ata1)
+NEUTRINO_ARG_HANDLER(Extra, extra)
+#undef NEUTRINO_ARG_HANDLER
+
+int guiShowNeutrinoArgsConfig(char *argsBuf, int bufSize)
 {
+    if (argsBuf == NULL || bufSize <= 0)
+        return 0;
     neutrino_args_t na;
     neutrinoArgsParse(argsBuf, &na);
+    neutrinoArgsEdit = na;
 
     diaSetInt(diaNeutrinoArgs, NARGS_QB, na.qb ? 1 : 0);
     diaSetInt(diaNeutrinoArgs, NARGS_DBC, na.dbc ? 1 : 0);
@@ -1645,59 +1672,22 @@ void guiShowNeutrinoArgsConfig(char *argsBuf, int bufSize)
     diaSetString(diaNeutrinoArgs, NARGS_ATA1, na.ata1);
     diaSetString(diaNeutrinoArgs, NARGS_EXTRA, na.extra);
 
-    // Baseline = the fields AS POPULATED (the UI caps each string at 31 chars). Comparing the
-    // post-dialog fields against this tells us which fields the user actually edited, so untouched
-    // fields can keep their FULL parsed value instead of the truncated UI copy.
-    neutrino_args_t pop;
-    diaGetInt(diaNeutrinoArgs, NARGS_QB, &pop.qb);
-    diaGetInt(diaNeutrinoArgs, NARGS_DBC, &pop.dbc);
-    diaGetInt(diaNeutrinoArgs, NARGS_LOGO, &pop.logo);
-    diaGetString(diaNeutrinoArgs, NARGS_CWD, pop.cwd, sizeof(pop.cwd));
-    diaGetString(diaNeutrinoArgs, NARGS_CFG, pop.cfg, sizeof(pop.cfg));
-    diaGetString(diaNeutrinoArgs, NARGS_ELF, pop.elf, sizeof(pop.elf));
-    diaGetString(diaNeutrinoArgs, NARGS_ATA0, pop.ata0, sizeof(pop.ata0));
-    diaGetString(diaNeutrinoArgs, NARGS_ATA0ID, pop.ata0id, sizeof(pop.ata0id));
-    diaGetString(diaNeutrinoArgs, NARGS_ATA1, pop.ata1, sizeof(pop.ata1));
-    diaGetString(diaNeutrinoArgs, NARGS_EXTRA, pop.extra, sizeof(pop.extra));
-
-    if (diaExecuteDialog(diaNeutrinoArgs, -1, 1, NULL)) {
-        neutrino_args_t out;
+    while (diaExecuteDialog(diaNeutrinoArgs, -1, 1, NULL)) {
         char after[256];
-        diaGetInt(diaNeutrinoArgs, NARGS_QB, &out.qb);
-        diaGetInt(diaNeutrinoArgs, NARGS_DBC, &out.dbc);
-        diaGetInt(diaNeutrinoArgs, NARGS_LOGO, &out.logo);
-        diaGetString(diaNeutrinoArgs, NARGS_CWD, out.cwd, sizeof(out.cwd));
-        diaGetString(diaNeutrinoArgs, NARGS_CFG, out.cfg, sizeof(out.cfg));
-        diaGetString(diaNeutrinoArgs, NARGS_ELF, out.elf, sizeof(out.elf));
-        diaGetString(diaNeutrinoArgs, NARGS_ATA0, out.ata0, sizeof(out.ata0));
-        diaGetString(diaNeutrinoArgs, NARGS_ATA0ID, out.ata0id, sizeof(out.ata0id));
-        diaGetString(diaNeutrinoArgs, NARGS_ATA1, out.ata1, sizeof(out.ata1));
-        diaGetString(diaNeutrinoArgs, NARGS_EXTRA, out.extra, sizeof(out.extra));
-        // Per-field merge: adopt only the fields the user actually changed; untouched fields keep
-        // their FULL parsed value (na) so editing one field never truncates the others to 31 chars.
-        if (out.qb != pop.qb)
-            na.qb = out.qb;
-        if (out.dbc != pop.dbc)
-            na.dbc = out.dbc;
-        if (out.logo != pop.logo)
-            na.logo = out.logo;
-        if (strcmp(out.cwd, pop.cwd) != 0)
-            snprintf(na.cwd, sizeof(na.cwd), "%s", out.cwd);
-        if (strcmp(out.cfg, pop.cfg) != 0)
-            snprintf(na.cfg, sizeof(na.cfg), "%s", out.cfg);
-        if (strcmp(out.elf, pop.elf) != 0)
-            snprintf(na.elf, sizeof(na.elf), "%s", out.elf);
-        if (strcmp(out.ata0, pop.ata0) != 0)
-            snprintf(na.ata0, sizeof(na.ata0), "%s", out.ata0);
-        if (strcmp(out.ata0id, pop.ata0id) != 0)
-            snprintf(na.ata0id, sizeof(na.ata0id), "%s", out.ata0id);
-        if (strcmp(out.ata1, pop.ata1) != 0)
-            snprintf(na.ata1, sizeof(na.ata1), "%s", out.ata1);
-        if (strcmp(out.extra, pop.extra) != 0)
-            snprintf(na.extra, sizeof(na.extra), "%s", out.extra);
-        neutrinoArgsAssemble(&na, after, sizeof(after));
+        na = neutrinoArgsEdit;
+        diaGetInt(diaNeutrinoArgs, NARGS_QB, &na.qb);
+        diaGetInt(diaNeutrinoArgs, NARGS_DBC, &na.dbc);
+        diaGetInt(diaNeutrinoArgs, NARGS_LOGO, &na.logo);
+        int afterSize = bufSize < (int)sizeof(after) ? bufSize : (int)sizeof(after);
+        if (!neutrinoArgsAssemble(&na, after, afterSize)) {
+            guiMsgBox(_l(_STR_NEUTRINO_ARGS_TOO_LONG), 0, NULL);
+            continue;
+        }
+        int changed = strcmp(argsBuf, after) != 0;
         snprintf(argsBuf, bufSize, "%s", after);
+        return changed;
     }
+    return 0;
 }
 
 
@@ -2492,6 +2482,7 @@ static int guiSettingsShowLaunch(void)
     diaSetEnum(ui, CFG_NEUTRINO_GSMCOMP, neutrinoGsmCompDefStrs);
     diaSetInt(ui, CFG_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
     diaSetEnabled(ui, CFG_NEUTRINO_GSMCOMP, gNeutrinoVideoDefault != 0);
+    diaSetInt(ui, CFG_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
     gSettingsShell.beginDialog(ui);
 
 reshow_launch:
@@ -2506,7 +2497,8 @@ reshow_launch:
         goto reshow_launch;
     }
     if (result == CFG_NEUTRINO_ARGS) {
-        guiShowNeutrinoArgsConfig(gNeutrinoArgs, sizeof(gNeutrinoArgs));
+        if (guiShowNeutrinoArgsConfig(gNeutrinoArgs, sizeof(gNeutrinoArgs)))
+            gSettingsShell.markSavePending();
         goto reshow_launch;
     }
 
@@ -2518,6 +2510,7 @@ reshow_launch:
         snprintf(gNeutrinoPath, sizeof(gNeutrinoPath), "%s", neutrinoPathEdit);
         diaGetInt(ui, CFG_NEUTRINO_VIDEO, &gNeutrinoVideoDefault);
         diaGetInt(ui, CFG_NEUTRINO_GSMCOMP, &gNeutrinoGsmCompDefault);
+        diaGetInt(ui, CFG_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
     }
@@ -2627,10 +2620,21 @@ reshow_popstarter:
         if (emberDisplay == EMBER_DISPLAY_480P && gEmberDisplay != EMBER_DISPLAY_480P && !guiMsgBox(_l(_STR_EMBER_480P_CONFIRM), 1, NULL))
             emberDisplay = gEmberDisplay;
         gEmberDisplay = emberDisplay;
-        gEmberTiming = emberSettingFromRow(ui, CFG_EMBER_TIMING, emberTimingShown, gEmberTiming);
-        gEmberDither = emberSettingFromRow(ui, CFG_EMBER_DITHER, emberDitherShown, gEmberDither);
-        gEmberShading = emberSettingFromRow(ui, CFG_EMBER_SHADING, emberShadingShown, gEmberShading);
-        gEmberController = emberSettingFromRow(ui, CFG_EMBER_CONTROLLER, emberControllerShown, gEmberController);
+        int emberTiming = emberSettingFromRow(ui, CFG_EMBER_TIMING, emberTimingShown, gEmberTiming);
+        int emberDither = emberSettingFromRow(ui, CFG_EMBER_DITHER, emberDitherShown, gEmberDither);
+        int emberShading = emberSettingFromRow(ui, CFG_EMBER_SHADING, emberShadingShown, gEmberShading);
+        int emberController = emberSettingFromRow(ui, CFG_EMBER_CONTROLLER, emberControllerShown, gEmberController);
+        // Global Timing / Dithering / Shading / Controller go into EMBER/settings.txt and reach EVERY PS1
+        // game; some cannot take them (Arcade's Greatest Hits 1, a 2D MAME package, crashed -- FifthFox).
+        // Gageformer: only Display belongs there. Warn when one of these is newly set (not back to
+        // Default), pointing at the per-game menu; the choice itself is kept.
+        if ((emberTiming != gEmberTiming && emberTiming > 0) || (emberDither != gEmberDither && emberDither > 0) ||
+            (emberShading != gEmberShading && emberShading > 0) || (emberController != gEmberController && emberController > 0))
+            guiMsgBox(_l(_STR_EMBER_GLOBAL_WARNING), 0, NULL);
+        gEmberTiming = emberTiming;
+        gEmberDither = emberDither;
+        gEmberShading = emberShading;
+        gEmberController = emberController;
         snprintf(gPopstarterPath, sizeof(gPopstarterPath), "%s", popstarterPathEdit);
         // Runtime ignores the retired picker, but keeping CUSTOM in the persisted compatibility
         // key means a downgrade still honours the full path the user entered here.
@@ -2992,9 +2996,8 @@ static int emberGameSettingGet(config_set_t *configSet, const char *key, int cou
 }
 
 // PS1 Triangle -> Ember Game Settings. Ember accepts timing, dither, shading and controller in
-// a game's settings.txt; display is deliberately global-only. In this editor Default means inherit
-// the global Ember setting. Confirming Default stores 0 in the game's CFG so cueApplySettings removes
-// that per-game key at launch instead of preserving a stale hand-written override.
+// a game's settings.txt; display is deliberately global-only. Untouched Default preserves existing
+// game values; changing a managed value back to Default removes that override before launch.
 void guiShowEmberGameSettings(void)
 {
     const char *timingStrs[] = {_l(_STR_DEFAULT), _l(_STR_AUTO), "NTSC", "PAL", NULL};
@@ -3034,16 +3037,22 @@ void guiShowEmberGameSettings(void)
     diaGetInt(diaEmberGameConfig, CFG_EMBER_SHADING, &newShading);
     diaGetInt(diaEmberGameConfig, CFG_EMBER_CONTROLLER, &newController);
 
-    // An absent CFG key is displayed as Default, but OK makes that inheritance explicit. This is
-    // intentional: Ember defines a missing game key as "use the global settings.txt value".
-    if (newTiming == timing && newDither == dither && newShading == shading && newController == controller)
-        return;
+    // An absent CFG key is displayed as Default and stays unmanaged until a row changes. Once a row
+    // changes, store all four choices so a later return to Default can remove its per-game override.
+    if (newTiming != emberSettingShown(timing) || newDither != emberSettingShown(dither) ||
+        newShading != emberSettingShown(shading) || newController != emberSettingShown(controller)) {
+        configSetInt(configSet, CONFIG_ITEM_EMBER_TIMING, newTiming);
+        configSetInt(configSet, CONFIG_ITEM_EMBER_DITHER, newDither);
+        configSetInt(configSet, CONFIG_ITEM_EMBER_SHADING, newShading);
+        configSetInt(configSet, CONFIG_ITEM_EMBER_CONTROLLER, newController);
+        if (!menuSaveConfig()) // the normal CFG error message includes its path and errno
+            return;
+    }
 
-    configSetInt(configSet, CONFIG_ITEM_EMBER_TIMING, newTiming);
-    configSetInt(configSet, CONFIG_ITEM_EMBER_DITHER, newDither);
-    configSetInt(configSet, CONFIG_ITEM_EMBER_SHADING, newShading);
-    configSetInt(configSet, CONFIG_ITEM_EMBER_CONTROLLER, newController);
-    menuSaveConfig(); // a failed write raises the usual "error saving settings" message
+    if (menuSaveEmberGameSettings(configSet))
+        guiMsgBox(_l(_STR_GAME_SETTINGS_SAVED), 0, NULL);
+    else
+        guiMsgBox(_l(_STR_ERROR_SAVING_SETTINGS), 0, NULL);
 }
 
 static int guiConfirmVideoMode(void)
@@ -3134,4 +3143,3 @@ static int guiConfirmVideoMode(void)
 
     return terminate - 1;
 }
-

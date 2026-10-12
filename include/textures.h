@@ -128,6 +128,7 @@ enum INTERNAL_TEXTURE {
     PLAYERS_3,
     PLAYERS_4,
 #endif
+    TECHWRITESCODE_LOGO, // boot-splash credit mark, embedded techwritescode_png
 #ifdef RETROACHIEVEMENTS
     // RA mark over a tracked game's cover (theme override "ra_mark"). Appended last:
     // texId is positional.

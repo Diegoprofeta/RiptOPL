@@ -22,7 +22,7 @@
 #include "include/mmcesupport.h" // mmceSendGameID() cross-device game-id (#261)
 #include "modules/iopcore/common/cdvd_config.h"
 
-#include <ps2sdkapi.h>
+#include "include/ps2sdkapi_compat.h"
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h>
 #include <delaythread.h>
@@ -139,17 +139,18 @@ static int udpfsServerAnswers(void)
 
     return stat(udpfsPrefix, &st) == 0;
 }
-class UdpfsSource : public GameSource
+class UdpfsSource: public GameSource
 {
 public:
     UdpfsSource()
-        : GameSource(UDPFS_MODE, 1, 0, MENU_MIN_INACTIVE_FRAMES, UDPFS_MODE_UPDATE_DELAY, GameSource::CAP_LAUNCH_CUE | GameSource::CAP_ROW_VIEW | GameSource::CAP_SOURCE_ID)
+        : GameSource(UDPFS_MODE, 1, 0, MENU_MIN_INACTIVE_FRAMES, UDPFS_MODE_UPDATE_DELAY, GameSource::CAP_LAUNCH_CUE | GameSource::CAP_ROW_VIEW | GameSource::CAP_SOURCE_ID | GameSource::CAP_SAVE_CUE_SETTINGS)
     {
     }
 
     void init(item_list_t *itemList) override;
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
+    int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
     int needsUpdate(item_list_t *itemList) override;
     int update(item_list_t *itemList) override;
     int count(item_list_t *itemList) override;
@@ -657,6 +658,8 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // the user back into the menu sitting on the per-game card.
     if (sysNeutrinoPreflight("udpfs", neutrinoPath, 0, NULL, -1) < 0)
         return;
+    if (sysNeutrinoArgsPreflight("udpfs", partname, game->startup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0)
+        return;
 
     // MMCE cross-device game-id (#261): push the disc id to a present MMCE card before teardown frees
     // `game`. Neutrino path forwarded so a Neutrino launch protects the MMCE hand-off timing.
@@ -739,3 +742,10 @@ char *UdpfsSource::prefix(item_list_t *itemList)
     return udpfsPrefix;
 }
 
+
+int UdpfsSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)
+{
+    (void)itemList;
+    (void)id;
+    return cueSaveGameSettings(udpfsPrefix, name, configSet);
+}

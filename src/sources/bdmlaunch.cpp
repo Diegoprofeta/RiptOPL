@@ -30,7 +30,7 @@
 
 #include <usbhdfsd-common.h>
 
-#include <ps2sdkapi.h>
+#include "include/ps2sdkapi_compat.h"
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h> // fileXioIoctl, fileXioDevctl
 #include <delaythread.h>
@@ -272,7 +272,7 @@ int NeutrinoLauncher::fragBudgetOk(const char *isoPath, const neutrino_vmc_args_
     }
 
     if (total > kMaxFrags) { // == is fine: neutrino packs exactly-full tables
-        char msg[256];                    // headroom for the lng/fork overlay's longer translations
+        char msg[256];       // headroom for the lng/fork overlay's longer translations
         LOG("[NEUTRINO] frag budget exceeded: %d/%d across ISO + VMCs\n", total, kMaxFrags);
         // Match the Δ8 abort-message convention: the udp outcome is a consumed launch, the
         // local outcome is a native-core fallback (which usually boots: OPL's own 64-frag
@@ -378,6 +378,8 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
     // Δ6 preflight (driver token + network toml sync) -- abort stays in a live menu.
     if (sysNeutrinoPreflight(bdmCurrentDriver, neutrinoPath, neutrinoBsdfs, neutrinoExtraArgs, bdmDevNr) < 0)
         return abortLaunch(failResult, configSet);
+    if (sysNeutrinoArgsPreflight(bdmCurrentDriver, partname, game->startup, compatmask, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdmDevNr, &neutrinoVmc) < 0)
+        return abortLaunch(1, configSet); // an overfull Neutrino argv must not silently fall back to the native core
     if (gLaunchDiag)
         launchDiagMark(3);
 
@@ -620,7 +622,7 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
         irx_size = size_bdm_cdvdman_irx;
     }
 
-    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void**>(irx), &index);
+    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
     if (compatmask < 0) // sbPrepare failed (patch zone not found): `index` is unset -- bail before using
         return;         // it. (The old `if (settings == NULL)` guard was dead: irx + index is never NULL.)
     sbEnsureIgrUsbDrivers(compatmask);
@@ -797,16 +799,16 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     LOG("bdm pre sysLaunchLoaderElf\n");
     if (bdmDriverIsUSB(bdmCurrentDriver)) {
         settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_USBD;
-        sysLaunchLoaderElf(filename, "BDM_USB_MODE", irx_size, static_cast<void**>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_USB_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
     } else if (bdmDriverIsIlink(bdmCurrentDriver)) {
         settings->common.fakemodule_flags |= 0 /* TODO! fake ilinkman ? */;
-        sysLaunchLoaderElf(filename, "BDM_ILK_MODE", irx_size, static_cast<void**>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_ILK_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
     } else if (bdmDriverIsMx4sio(bdmCurrentDriver)) {
         settings->common.fakemodule_flags |= 0;
-        sysLaunchLoaderElf(filename, "BDM_M4S_MODE", irx_size, static_cast<void**>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_M4S_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
     } else if (bdmDriverIsATA(bdmCurrentDriver)) {
         settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9;
         settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_ATAD;
-        sysLaunchLoaderElf(filename, "BDM_ATA_MODE", irx_size, static_cast<void**>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
+        sysLaunchLoaderElf(filename, "BDM_ATA_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
     }
 }

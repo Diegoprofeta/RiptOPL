@@ -1,5 +1,53 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current merged checkpoint and continuation queue
+
+The authoritative remaining-work tracker is
+[issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20). Start there and
+refresh the integration head before continuing. PR #19 merged to `rebuild/main`
+as `0dae12553672d8c988fe5b038d383e375d287eff`, after PR #18. Its exact PR head
+`c53341a02f74102d6abcf68f50910ac87f46e98f` passed GCC/LLVM, host, format and all
+three complete edition package jobs. Downloaded packages independently passed
+publisher verification against GitHub's PR merge revision
+`b6af86efd7a2e8dc0518048edd4d12e4175e3781`; the final merge has the same tree.
+Fresh integration CI also passed at `0dae1255`. These are separate source
+revisions; do not relabel the PR candidate as a final integration artifact.
+
+Korium, RetroAchievements and IncebtIon now have complete ps2build-only release
+candidate workflows. No GitHub releases were published during this work;
+publication remains an explicit dispatch from the tested integration head.
+The RA edition builds and packages, but newer RA/ORBIT behavior and console
+acceptance are still outstanding. The socket compatibility source is a small
+RA-only fallback inside ps2build, not a second SDK.
+
+PR #17 merged the full production site history as
+`acdb961d8c36a2da33f3a7c8593db378d2feb248`; GitHub Pages reports a successful
+deployment. All 33 HTML pages and 1,669 local links/resources pass validation;
+the generated search index is current. The separate wiki import preserves the
+production history and destination initialization at
+`50a4053a267295977d3c146f82450b5f19a1364a`, with 53 content pages plus sidebar
+and footer and 651 verified internal links/anchors. The imported guides retain
+their production evidence and explicitly qualify migration/hardware coverage.
+
+The follow-up branch `codex/merge-migration-queue` consolidates useful work from
+the older PRs: #13 Ember saves (`e5ff4ae0`), #14 Neutrino editing/preflight
+(`ffc9867a`), #15 docs/evidence (`44661659`), #12 splash artwork (`4efe9d46`),
+and #16 Ember Watch (`8f3f02bf`). It retains the newer warning parser, VMC strings,
+edition texture ordering and release contract. Ember Watch builds all three
+candidates with `publish=false`; it does not invoke removed Korium automation.
+All combined host tests, HTTP tests and seven sanitizer suites pass locally.
+The consolidated PR's checks and actual merge state determine its final status.
+
+Production advanced to `9d910fc05796b7bcfb4f00544a55baf73d800a33`, adding #922
+NIC reservation/DEV9/IP-clash hardening after the original ledger audit. That
+port remains open in issue #20 along with Favorites/POPS UDPFS, full RA/ORBIT,
+additional configurations, language packages, publication and console testing.
+Other dirty worktrees are preserved; the public-transition worktree contains
+useful uncommitted variant work and must be inspected before duplicating it.
+
+The following sections retain the earlier build and artifact evidence for
+provenance; their older PR/setup status is superseded by this checkpoint.
+
 This is a continuation record, not a declaration of full public parity or console
 acceptance. Read this and `UPSTREAM-PARITY-2026-10-12.md` before repeating setup or
 starting another port. RiptOPL was made public during this session; GitHub's API
@@ -100,25 +148,25 @@ this checkpoint or from the repository visibility alone.
 
 ## Continue from here
 
-1. Check the latest PR #19 head, reviews and Actions runs. Resolve actual CI
-   failures and retain a source commit for every tested artifact.
+1. Read issue #20, refresh `rebuild/main`, and inspect the consolidated queue
+   PR's exact head, reviews, CI and merge state. PR #19 is already merged.
 2. Audit and adapt public Favorites/POPS UDPFS (#903/#904 plus #909 rollback) as
    a coherent source/launch/config/package change. Preserve `GameSource` and host
    services; do not replace converted backends with legacy C files.
-3. Compare pending migration PRs #13–#17 before duplicating their Ember,
-   Neutrino, documentation or site work. Refresh their state; this is a snapshot.
+3. Reuse the committed queue consolidation before duplicating PRs #12–#16.
+   The full site and wiki imports are published; PR #17 is merged.
 4. Validate the three ps2build release editions and standard/RA package isolation, then port
    the remaining RA runtime/browser/client/ORBIT behavior. The current
    `tools/build_edition.py` now overlays the base `ps2.yaml` for Korium, RA and
-   IncebtIon. A dirty RA probe passed all 913 native SDK build steps; packaging
-   and clean exact-commit edition builds are the next gates. `IGR_RequestReset`
+   IncebtIon. Clean edition CI builds and complete packages now pass;
+   runtime/hardware parity remains a separate gate. `IGR_RequestReset`
    is absent from the older private runtime.
 5. The release workflow now uses only ps2build and builds three complete kits.
    Publication is explicit manual dispatch; validate staged packages, provenance
    and all exact-head CI jobs before publishing. Old normalizer/promote/Korium
    branch-sync publishers are removed to prevent conflicting release contracts.
-   See `ROLLING_RELEASE.md`. Fixing README badges and importing the latest Pages
-   site/wiki is in progress in separate documentation checkouts.
+   See `ROLLING_RELEASE.md`. README badges and full Pages/wiki imports are done;
+   keep their generated content and migration-status claims synchronized.
 6. Work through earlier feature/config differences and console acceptance in
    the parity ledger. LLVM ignores `-fsingle-precision-constant`; precision,
    performance, audio, storage/network behavior and game/IGR compatibility need
