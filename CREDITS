@@ -170,6 +170,19 @@ Contributor, and our #1 recommended alternative loader:
     contributes to RiptOPL directly: PR #733 brings LUNA's Collection cover-art
     screen to RiptOPL's renderer. Thank you for sharing your work with us.
 
+Our daughter project:
+
+  - RIPPS2, by Akilluminati47
+    https://github.com/akilluminati47/RIPPS2
+    Web-theme beta: https://akilluminati47.github.io/RIPPS2/
+    PS2-inspired front end; the custom OPL theme and RIPPS2.elf are planned next.
+    The project is still alpha.
+
+ps2build C++ edition:
+
+  - This repository, built on ps2build in collaboration with techwritescode.
+    https://git.techwritescode.dev/techwritescode/PSUManager
+
 Special and sincere thanks to:
 
   - KrahJohlito - the legend, and the single biggest influence on this fork.
@@ -198,8 +211,8 @@ Special and sincere thanks to:
     contributor across OPL's long history, all named above in this file.
 
 Testing, bug reports and real-hardware feedback:
-by eliminator1403, lucaslmgv, AndrewBento, AcidReach, bodvenomz, nuno6573, Blade1984
-and zackcage6
+by eliminator1403, lucaslmgv, AndrewBento, AcidReach, bodvenomz, nuno6573, Blade1984,
+zackcage6 and Aislinn🏳️‍⚧️
 
 The RiptOPL name:
 by Akilluminati47 (https://github.com/akilluminati47)
