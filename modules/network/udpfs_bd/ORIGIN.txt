@@ -19,6 +19,11 @@ they never co-load (their MODNAMEs "SMAP"/"ministack"/"UDPFS" vs UDPBD's "SMAP_d
 never collide for that reason).
 
 LOCAL CHANGES vs upstream (re-apply after re-vendoring):
+  - Public parity port from NathanNeurotic/Open-PS2-Loader at
+    6d04b40e8d857368110265a18ec9fc90b7c316c4 (#908, #913, #921): compile
+    ../udpfs_shared/src through local wrappers, reset session sequence state
+    after discovery, and wait through stale ACKs without spending retries.
+    WaitEventFlag outputs retain the new SDK's u32 type.
   - udpfs_bd.c: lazy-connect + reconnect watchdog thread (a UDPFS server is typically
     hand-started after the PS2 boots), and the read/write callbacks no longer
     bdm_disconnect_bd() from INSIDE the callback (re-entrant teardown of the calling

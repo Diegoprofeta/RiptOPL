@@ -8,6 +8,10 @@ IOP_OBJS = main.o udprdma.o udpfs_core.o udpfs_ioman.o imports.o exports.o
 
 all:: $(IOP_BIN)
 
+# Invalidate the per-variant objects when the canonical implementation changes.
+$(IOP_OBJS_DIR)udpfs_core.o: ../udpfs_shared/src/udpfs_core.c
+$(IOP_OBJS_DIR)udprdma.o: ../udpfs_shared/src/udprdma.c
+
 clean::
 	rm -f -r $(IOP_BIN) $(IOP_OBJS_DIR)
 

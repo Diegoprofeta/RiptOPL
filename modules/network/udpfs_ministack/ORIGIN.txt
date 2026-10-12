@@ -8,3 +8,9 @@ and _retonly is defined AFTER the export table in src/exports.tab, so iopfixup d
 _retonly as a value-0 .text symbol. Same fix as udpfs_smap / smap_udpbd (commit 2139bcde). The
 export table stays POPULATED -- udpfs_bd imports its udp_* functions -- so it must NOT be emptied.
 Keep both on re-vendor.
+
+Public parity port (#921), Open-PS2-Loader commit
+6d04b40e8d857368110265a18ec9fc90b7c316c4: announce our IP/MAC with a gratuitous
+ARP before broadcasts from bound sockets, so discovery's unicast reply can reach
+the PS2 after a stale server ARP entry. Unbound udptty and unicast do not announce.
+No export-table change; arp_announce is internal to the ministack module.
