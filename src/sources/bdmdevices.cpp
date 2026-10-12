@@ -67,18 +67,33 @@ void bdmInitDevicesData()
             memcpy(pDeviceSupport, bdmTemplateList(), sizeof(item_list_t));
             pDeviceSupport->mode = i;
 
-            // Setup the per-device data.
-            bdm_device_data_t *pDeviceData = (bdm_device_data_t *)malloc(sizeof(bdm_device_data_t));
-            if (pDeviceData != NULL) // guard the memset on OOM; bdmShutdown tolerates a NULL priv
-                memset(pDeviceData, 0, sizeof(bdm_device_data_t));
-            pDeviceSupport->priv = pDeviceData;
+            // The per-slot data is allocated at the registration boundary below.
+            // This lets a failed allocation be retried on the next settings/apply pass.
+            pDeviceSupport->priv = NULL;
         }
     }
 
     // Refresh the visibility of the menu.
     for (int i = 0; i < MAX_BDM_DEVICES; i++) {
-        // Register the device structure into the UI.
-        host::app().initSupport(&bdmDeviceList[i], i, 0);
+        item_list_t *slot = &bdmDeviceList[i];
+        if (slot->priv == NULL) {
+            bdm_device_data_t *data = (bdm_device_data_t *)malloc(sizeof(bdm_device_data_t));
+            if (data == NULL) {
+                // A registered-but-uninitialized page would dereference NULL in
+                // bdmInit/bdmNeedsUpdate. Hide it and retry allocation next time.
+                slot->enabled = 0;
+                if (slot->owner != NULL)
+                    ((opl_io_module_t *)slot->owner)->menuItem.visible = 0;
+                LOG("BDMSUPPORT: no memory for slot %d, retry on next init\n", i);
+                continue;
+            }
+            memset(data, 0, sizeof(bdm_device_data_t));
+            slot->priv = data;
+            slot->enabled = 0; // force initialization after allocation or teardown
+        }
+
+        // Register only a slot with valid private storage.
+        host::app().initSupport(slot, i, 0);
 
         // If bdm support is set to auto then make the page invisible and reset the bdm tick counter, when a bdm device is mounted it will dynamically be made visible.
         // If bdm support is set to manual then only make the first page visible.
@@ -175,7 +190,7 @@ int bdmUpdateDeviceData(item_list_t *itemList)
     // LOG("bdmUpdateDeviceData: %d\n", itemList->mode);
 
     // Get the per-device data and check if the menu item is currently visible.
-    bdm_device_data_t *pDeviceData = static_cast<bdm_device_data_t*>(itemList->priv);
+    bdm_device_data_t *pDeviceData = static_cast<bdm_device_data_t *>(itemList->priv);
     int visible = itemList->owner != NULL ? ((opl_io_module_t *)itemList->owner)->menuItem.visible : 0;
 
     // Format the device path and try to open the device.

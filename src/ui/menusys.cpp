@@ -166,7 +166,7 @@ static void menuRenameGame(submenu_list_t **submenu)
     if (!gEnableWrite)
         return;
 
-    item_list_t *support = static_cast<item_list_t*>(selected_item->item->userdata);
+    item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
 
     if (support && support->mode == FAV_MODE) {
         char text[128];
@@ -211,7 +211,7 @@ static void menuDeleteGame(submenu_list_t **submenu)
     if (!gEnableWrite)
         return;
 
-    item_list_t *support = static_cast<item_list_t*>(selected_item->item->userdata);
+    item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
 
     if (support && support->mode == FAV_MODE) {
         char text[128];
@@ -248,7 +248,7 @@ static void _menuLoadConfig()
 {
     WaitSema(menuSemaId);
     if (!itemConfig) {
-        item_list_t *list = static_cast<item_list_t*>(selected_item->item->userdata);
+        item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
         itemConfig = gsOf(list)->config(list, itemConfigId);
         if (itemConfig != NULL)
             itemConfigList = list;
@@ -273,7 +273,7 @@ static void _menuLoadConfigAsync()
 
     WaitSema(menuSemaId);
     if (itemConfig == NULL && selected_item != NULL && selected_item->item != NULL && itemConfigId >= 0) {
-        list = static_cast<item_list_t*>(selected_item->item->userdata);
+        list = static_cast<item_list_t *>(selected_item->item->userdata);
         configId = itemConfigId;
     }
     SignalSema(menuSemaId);
@@ -394,7 +394,7 @@ void menuRequestInfoSize(void)
         return;
     }
 
-    item_list_t *list = static_cast<item_list_t*>(selected_item->item->userdata);
+    item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
     int configId = selected_item->item->current->item.id;
 
     if (infoSizeWorkerPending && infoSizeRequestList == list && infoSizeRequestId == configId) {
@@ -482,7 +482,7 @@ static void _menuRequestConfig()
             configFree(itemConfig);
             itemConfig = NULL;
         }
-        item_list_t *list = static_cast<item_list_t*>(selected_item->item->userdata);
+        item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
         if (itemConfigId == -1 || guiInactiveFrames >= list->delay) {
             itemConfigId = selected_item->item->current->item.id;
             itemConfigList = list;
@@ -534,7 +534,7 @@ config_set_t *menuLoadConfig()
     // that can pin the UI at "Loading config..." before the game-side IOP reset is even reached.
     WaitSema(menuSemaId);
     if (selected_item != NULL && selected_item->item != NULL && selected_item->item->current != NULL) {
-        list = static_cast<item_list_t*>(selected_item->item->userdata);
+        list = static_cast<item_list_t *>(selected_item->item->userdata);
         configId = selected_item->item->current->item.id;
 
         if (itemConfig != NULL && itemConfigId == configId && itemConfigList == list) {
@@ -824,7 +824,9 @@ static menu_list_t *AllocMenuItem(menu_item_t *item)
 {
     menu_list_t *it;
 
-    it = static_cast<menu_list_t*>(malloc(sizeof(menu_list_t)));
+    it = static_cast<menu_list_t *>(malloc(sizeof(menu_list_t)));
+    if (it == NULL)
+        return NULL;
 
     it->prev = NULL;
     it->next = NULL;
@@ -835,7 +837,7 @@ static menu_list_t *AllocMenuItem(menu_item_t *item)
 
 static int menuDevicePageRank(const menu_item_t *item)
 {
-    item_list_t *support = item != NULL ? static_cast<item_list_t*>(item->userdata) : NULL;
+    item_list_t *support = item != NULL ? static_cast<item_list_t *>(item->userdata) : NULL;
     if (support == NULL)
         return 6;
 
@@ -862,6 +864,10 @@ void menuAppendItem(menu_item_t *item)
     WaitSema(menuListSemaId);
 
     menu_list_t *newitem = AllocMenuItem(item);
+    if (newitem == NULL) {
+        SignalSema(menuListSemaId);
+        return;
+    }
     if (menu == NULL) {
         menu = newitem;
         selected_item = menu;
@@ -920,17 +926,33 @@ static void refreshMenuPosition(void)
 void submenuRebuildCache(submenu_list_t *submenu)
 {
     while (submenu) {
-        if (submenu->item.cache_id)
-            free(submenu->item.cache_id);
-        if (submenu->item.cache_uid)
-            free(submenu->item.cache_uid);
+        int *newId = NULL;
+        int *newUid = NULL;
+        int count = gTheme != NULL ? gTheme->gameCacheCount : 0;
 
-        int size = gTheme->gameCacheCount * sizeof(int);
-        submenu->item.cache_id = static_cast<int*>(malloc(size));
-        memset(submenu->item.cache_id, -1, size);
-        submenu->item.cache_uid = static_cast<int*>(malloc(size));
-        memset(submenu->item.cache_uid, -1, size);
+        if (count > 0 && (size_t)count <= (size_t)-1 / sizeof(int)) {
+            size_t bytes = (size_t)count * sizeof(int);
+            newId = static_cast<int *>(malloc(bytes));
+            if (newId != NULL)
+                newUid = static_cast<int *>(malloc(bytes));
+            if (newId != NULL && newUid != NULL) {
+                memset(newId, -1, bytes);
+                memset(newUid, -1, bytes);
+            } else {
+                // A half-allocated pair cannot be indexed safely by the renderer.
+                free(newId);
+                free(newUid);
+                newId = NULL;
+                newUid = NULL;
+            }
+        }
 
+        // Drop arrays from the previous theme size even after allocation failure:
+        // retaining them could let the new theme index beyond their old capacity.
+        free(submenu->item.cache_id);
+        free(submenu->item.cache_uid);
+        submenu->item.cache_id = newId;
+        submenu->item.cache_uid = newUid;
         submenu = submenu->next;
     }
 }
@@ -946,6 +968,8 @@ int menuHasRegisteredItems(void)
 static submenu_list_t *submenuAllocItem(int icon_id, char *text, int id, int text_id)
 {
     submenu_list_t *it = (submenu_list_t *)malloc(sizeof(submenu_list_t));
+    if (it == NULL)
+        return NULL;
 
     it->prev = NULL;
     it->next = NULL;
@@ -977,6 +1001,8 @@ submenu_list_t *submenuAppendItem(submenu_list_t **submenu, int icon_id, char *t
 
     // create new item
     submenu_list_t *newitem = submenuAllocItem(icon_id, text, id, text_id);
+    if (newitem == NULL)
+        return NULL;
 
     // link
     cur->next = newitem;
@@ -1011,7 +1037,9 @@ void submenuDestroy(submenu_list_t **submenu)
 void menuAddHint(menu_item_t *menu, int text_id, int icon_id)
 {
     // allocate a new hint item
-    menu_hint_item_t *hint = static_cast<menu_hint_item_t*>(malloc(sizeof(menu_hint_item_t)));
+    menu_hint_item_t *hint = static_cast<menu_hint_item_t *>(malloc(sizeof(menu_hint_item_t)));
+    if (hint == NULL)
+        return;
 
     hint->text_id = text_id;
     hint->icon_id = icon_id;
@@ -1577,7 +1605,7 @@ static void menuRenderElements(theme_elems_t *elems)
 {
     // selected_item can't be NULL here as we only allow to switch to "Main" rendering when there is at least one device activated
     theme_element_t *elem = elems->first;
-    item_list_t *list = (selected_item != NULL && selected_item->item != NULL) ? static_cast<item_list_t*>(selected_item->item->userdata) : NULL;
+    item_list_t *list = (selected_item != NULL && selected_item->item != NULL) ? static_cast<item_list_t *>(selected_item->item->userdata) : NULL;
 
     // ONLY IF SOMETHING ON SCREEN ACTUALLY READS IT. This was unconditional: every settled row
     // enqueued an IO_CUSTOM_SIMPLEACTION that opens CFG/<game>.cfg on the game device, whether or not
@@ -1679,7 +1707,7 @@ static theme_elems_t *menuGetMainElems(item_list_t *list)
 
 void menuRenderMain(void)
 {
-    item_list_t *list = static_cast<item_list_t*>(selected_item->item->userdata);
+    item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
     theme_elems_t *kindElems = menuGetMainElems(list);
 
     if (kindElems == &gTheme->favsVcdMainElems || kindElems == &gTheme->favsAppsMainElems) {
@@ -1748,7 +1776,7 @@ static void menuNavigateDown()
 
 void menuHandleInputMain()
 {
-    item_list_t *support = selected_item != NULL && selected_item->item != NULL ? static_cast<item_list_t*>(selected_item->item->userdata) : NULL;
+    item_list_t *support = selected_item != NULL && selected_item->item != NULL ? static_cast<item_list_t *>(selected_item->item->userdata) : NULL;
     int viewPending = support != NULL && libViewPending(support->mode);
 
     if (getKey(KEY_LEFT)) {
@@ -1806,7 +1834,7 @@ void menuHandleInputMain()
 
 void menuRenderInfo(void)
 {
-    item_list_t *list = static_cast<item_list_t*>(selected_item->item->userdata);
+    item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
     theme_elems_t *kindElems = menuGetInfoElems(list);
 
     if (kindElems == &gTheme->favsVcdInfoElems || kindElems == &gTheme->favsAppsInfoElems) {
@@ -1939,7 +1967,7 @@ static int gameMenuCoreIsNeutrino(void)
     }
     // UDPBD games are Neutrino-only even while $CoreLoader is still its OPL default.
     if (!coreLoader && selected_item != NULL && selected_item->item != NULL)
-        coreLoader = bdmSupportIsUDPBD(static_cast<const item_list_t*>(selected_item->item->userdata));
+        coreLoader = bdmSupportIsUDPBD(static_cast<const item_list_t *>(selected_item->item->userdata));
     return coreLoader;
 }
 
@@ -2016,7 +2044,7 @@ void menuHandleInputGameMenu()
         } else
 #endif
             if (menuID == GAME_COMPAT_SETTINGS) {
-            guiGameShowCompatConfig(selected_item->item->current->item.id, static_cast<item_list_t*>(selected_item->item->userdata), itemConfig);
+            guiGameShowCompatConfig(selected_item->item->current->item.id, static_cast<item_list_t *>(selected_item->item->userdata), itemConfig);
         } else if (menuID == GAME_CHEAT_SETTINGS) {
             if (gameMenuCoreIsNeutrino())
                 guiMsgBox(_l(_STR_NEUTRINO_SETTING_NA), 0, NULL);
@@ -2028,7 +2056,7 @@ void menuHandleInputGameMenu()
             else
                 guiGameShowGSConfig(0);
         } else if (menuID == GAME_VMC_SETTINGS) {
-            guiGameShowVMCMenu(selected_item->item->current->item.id, static_cast<item_list_t*>(selected_item->item->userdata));
+            guiGameShowVMCMenu(selected_item->item->current->item.id, static_cast<item_list_t *>(selected_item->item->userdata));
 #ifdef PADEMU
         } else if (menuID == GAME_PADEMU_SETTINGS) {
             if (gameMenuCoreIsNeutrino())
@@ -2047,7 +2075,7 @@ void menuHandleInputGameMenu()
             else
                 guiGameShowOSDLanguageConfig(0);
         } else if (menuID == GAME_SAVE_CHANGES) {
-            if (guiGameSaveConfig(itemConfig, static_cast<item_list_t*>(selected_item->item->userdata)))
+            if (guiGameSaveConfig(itemConfig, static_cast<item_list_t *>(selected_item->item->userdata)))
                 configSetInt(itemConfig, CONFIG_ITEM_CONFIGSOURCE, CONFIG_SOURCE_USER);
             int okItem = menuSaveConfig();           // per-game CFG/<id>.cfg (itemConfig)
             int okGame = saveConfig(CONFIG_GAME, 0); // the global game config set
@@ -2058,12 +2086,12 @@ void menuHandleInputGameMenu()
             // lie that it saved.
             if (okItem && okGame)
                 guiMsgBox(_l(_STR_GAME_SETTINGS_SAVED), 0, NULL);
-            guiGameLoadConfig(static_cast<item_list_t*>(selected_item->item->userdata), gameMenuLoadConfig(NULL));
+            guiGameLoadConfig(static_cast<item_list_t *>(selected_item->item->userdata), gameMenuLoadConfig(NULL));
         } else if (menuID == GAME_TEST_CHANGES) {
-            guiGameTestSettings(selected_item->item->current->item.id, static_cast<item_list_t*>(selected_item->item->userdata), itemConfig);
+            guiGameTestSettings(selected_item->item->current->item.id, static_cast<item_list_t *>(selected_item->item->userdata), itemConfig);
         } else if (menuID == GAME_REMOVE_CHANGES) {
             if (guiGameShowRemoveSettings(itemConfig, configGetByType(CONFIG_GAME))) {
-                guiGameLoadConfig(static_cast<item_list_t*>(selected_item->item->userdata), gameMenuLoadConfig(NULL));
+                guiGameLoadConfig(static_cast<item_list_t *>(selected_item->item->userdata), gameMenuLoadConfig(NULL));
             }
         } else if (menuID == GAME_RENAME_GAME) {
             menuRenameGame(&gameMenu);

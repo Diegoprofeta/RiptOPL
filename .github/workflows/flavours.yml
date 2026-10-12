@@ -47,6 +47,28 @@ permissions:
   contents: read
 
 jobs:
+  migration-parity-host-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - name: Check reset argument bounds and failure lifecycle
+        run: |
+          python3 .github/scripts/test_reset_arg_bounds.py
+          python3 .github/scripts/test_reset_failure_lifecycle.py
+      - name: Check RA-only Mode 6 snapshot handler and registration retries
+        run: python3 .github/scripts/test_ra_mode6.py
+      - name: Check VMC preservation and BDM allocation recovery
+        run: |
+          python3 .github/scripts/test_vmc_preserve_existing.py
+          python3 .github/scripts/test_bdm_private_allocation.py
+      - name: Check image cache, menu allocation and queue lifetime failures
+        run: |
+          python3 .github/scripts/test_cache_allocation.py
+          python3 .github/scripts/test_menu_allocation.py
+          python3 .github/scripts/test_io_menu_lifetime.py
+
   apa-safety-host-tests:
     runs-on: ubuntu-24.04
     steps:

@@ -1377,3 +1377,9 @@ gui_strings:
   string: Ember Timing
 - label: HINT_EMBER_TIMING
   string: "Ember video timing: Auto follows the disc region, NTSC forces 60 Hz, PAL forces 50 Hz. Written to the launched device's EMBER/settings.txt."
+
+- label: VMC_REPLACE_REQUIRES_DELETE
+  string: "Changing the VMC size would erase its saved games. Back up the existing VMC and use Delete before creating a new size."
+
+- label: VMC_CREATE_FAILED
+  string: "Could not create the VMC. Check the device, connection and write access. Existing saves were not replaced."

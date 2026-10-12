@@ -377,9 +377,9 @@ int IoQueue::pendingCount()
 {
     int count = 0;
 
-    Request *req = head_;
-
+    // The worker can free the head while we wait. Sample only under the lock.
     WaitSema(procSema_);
+    Request *req = head_;
 
     while (req) {
         count++;

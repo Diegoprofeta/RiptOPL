@@ -1,7 +1,7 @@
 # Migration plan: Makefile + ps2sdk -> ps2build
 
 Status: MAIN FLAVOUR PORTED (GSM1080P + PADEMU, no debug/RA/IGS/RTL/DTL). Other flavours still
-build through the Makefile. Build:
+need SDK definitions; the legacy Makefile cannot compile the converted C++ sources. Build:
 
     tools/install_ps2build.sh      # ps2build + ogg/vorbis packages (not shipped by the SDK)
     tools/assets.py all            # translations, lwNBD, bin2c blobs, asm/opl_version.h
@@ -47,6 +47,17 @@ database. Clang gives `-MMD` precedence over `-MD` regardless of their order. Th
 calls ps2build and removes the temporary file. The checked-in configuration stays unchanged.
 Without this workaround, changing `asm/opl_version.h` left the LLVM ELF at its old version while
 Ninja reported no work. Header dependency tracking must be checked alongside clean builds.
+
+The native Windows LLVM `v0.3.2` linker also crashed once in its winpthreads thread pool
+with exception `0xC0000008` during the October 12 parity build. An unchanged retry linked
+successfully. This is an observed intermittent tool failure, not a source diagnostic or a
+confirmed fix; retain the failed log and check the final link result before packaging.
+
+The current parity ports and remaining work are tracked in
+[`UPSTREAM-PARITY-2026-10-12.md`](UPSTREAM-PARITY-2026-10-12.md). The host suite now also
+exercises VMC preservation, BDM private allocation recovery, C++ image/menu allocations,
+queue/GUI lifetime failures, reset packet bounds and failure propagation, and the RA-only
+Mode 6 snapshot handler. Host RA coverage does not establish a complete RA SDK flavour.
 
 Emulator-tested through the C++ conversion (builds up to IoQueue/ArtQueue confirmed working); not hardware-tested.
 Sources under src/ are now C++ (see CPP-CONVERSION-PLAN.md), so the Makefile can no longer build them.

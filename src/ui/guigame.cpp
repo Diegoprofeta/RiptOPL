@@ -262,13 +262,18 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, char *VMCName, int
                     sizeUI = 8;
 
                 if (sizeUI != size) {
-                    gsOf(support)->checkVmc(support, vmc, sizeUI);
-
-                    diaSetEnabled(diaVMC, VMC_NAME, 0);
-                    diaSetEnabled(diaVMC, VMC_SIZE, 0);
-                    diaSetLabel(diaVMC, VMC_BUTTON_CREATE, _l(_STR_ABORT));
-                    vmc_operation = OPERATION_CREATING;
-                    vmc_check_layout = 1;
+                    int createResult = gsOf(support)->checkVmc(support, vmc, sizeUI);
+                    if (createResult == SYS_VMC_REPLACE_REQUIRES_DELETE) {
+                        guiMsgBox(_l(_STR_VMC_REPLACE_REQUIRES_DELETE), 0, diaVMC);
+                    } else if (createResult == SYS_VMC_CREATE_FAILED) {
+                        guiMsgBox(_l(_STR_VMC_CREATE_FAILED), 0, diaVMC);
+                    } else {
+                        diaSetEnabled(diaVMC, VMC_NAME, 0);
+                        diaSetEnabled(diaVMC, VMC_SIZE, 0);
+                        diaSetLabel(diaVMC, VMC_BUTTON_CREATE, _l(_STR_ABORT));
+                        vmc_operation = OPERATION_CREATING;
+                        vmc_check_layout = 1;
+                    }
                 } else
                     break;
             } else if (vmc_operation == OPERATION_ENDING) {
