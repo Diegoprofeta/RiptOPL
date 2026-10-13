@@ -1,5 +1,6 @@
 """SDK version gate, compiler path preservation and overlay cleanup."""
 import importlib.util
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -18,7 +19,14 @@ SPEC.loader.exec_module(driver)
 
 class BuildDriverTests(unittest.TestCase):
     def setUp(self):
-        version = patch.object(driver.subprocess, "check_output", return_value="ps2build v2026.10.12.2\n")
+        sdk = tempfile.TemporaryDirectory(dir=TEMP_DIR)
+        self.addCleanup(sdk.cleanup)
+        self.sdk = Path(sdk.name)
+        (self.sdk / "versions.yaml").write_text("components: {sdk-core: v2026.10.13}\n")
+        environment = patch.dict(os.environ, {"PS2BUILD_HOME": str(self.sdk)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        version = patch.object(driver.subprocess, "check_output", return_value="ps2build v2026.10.13\n")
         version.start()
         self.addCleanup(version.stop)
 
@@ -47,13 +55,27 @@ class BuildDriverTests(unittest.TestCase):
             self.assertEqual(run.call_args.args[0][-2:], ["--config", str(ROOT / "ps2.yaml")])
 
     def test_old_or_unknown_sdk_fails_before_compiling(self):
-        for version in ("ps2build v2026.10.12.1", "ps2build v2026.10.12", "ps2build dev"):
+        for version in ("ps2build v2026.10.12.2", "ps2build v2026.10.12.1", "ps2build v2026.10.12", "ps2build dev"):
             with patch.object(driver.subprocess, "check_output", return_value=version), patch.object(driver.subprocess, "call") as run:
                 with self.assertRaisesRegex(RuntimeError, "run ps2build update"):
                     driver.build("llvm", "build/llvm")
                 run.assert_not_called()
         with patch.object(driver.subprocess, "check_output", return_value="ps2build v2026.10.13"):
             driver.require_supported_sdk()
+
+    def test_new_cli_with_missing_old_or_invalid_core_refuses_before_compiling(self):
+        metadata = self.sdk / "versions.yaml"
+        for value in ("components: {sdk-core: v2026.10.12.2}", "components: {}", "[]", "components: [", ""):
+            metadata.write_text(value)
+            with patch.object(driver.subprocess, "call") as compile_project:
+                with self.assertRaisesRegex(RuntimeError, "sdk-core v2026.10.13"):
+                    driver.build("gcc", "build/gcc")
+                compile_project.assert_not_called()
+        metadata.unlink()
+        with self.assertRaisesRegex(RuntimeError, "run ps2build update"):
+            driver.require_supported_sdk()
+        metadata.write_text("components: {sdk-core: v2026.10.14}")
+        driver.require_supported_sdk()
 
     def test_launch_failure_removes_temporary_configuration(self):
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:

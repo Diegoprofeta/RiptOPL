@@ -24,7 +24,8 @@ class EditionsTests(unittest.TestCase):
                 self.assertEqual("RETROACHIEVEMENTS" in target["defines"], ra)
             self.assertEqual("BUILTIN_KORIUM" in loader["defines"], name != "incebtion")
             self.assertEqual("raudp" in loader["embed_irx"], ra)
-            self.assertEqual("ps2sdk_socket_compat" in loader["libs"], ra)
+            self.assertNotIn("ps2sdk_socket_compat", loader["libs"])
+            self.assertNotIn("ps2sdk_socket_compat", targets)
             self.assertEqual("ee_core/src/ra.c" in core["sources"], ra)
             self.assertEqual("INGAME_UDP" in targets["SMSTCPIP"]["defines"], ra)
             for target in config["targets"]:

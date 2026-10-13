@@ -19,8 +19,12 @@ PR #24 merged as `7bcb77b3`; its 32-build GCC/LLVM configuration matrix and
 three standard kits pass fresh CI and independent artifact verification.
 PR #25 merged POPS #904/#909 and UL bounds/recovery as `4157d5a2`; all final
 integration gates, 32 configuration artifacts and three kits pass verification.
-The current branch adapts older feature gaps #885/#887/#889/#898 and consumes
-released SDK fixes; see the latest checkpoint for validation still pending.
+PR #27 merged older feature gaps #885/#887/#889/#898; PR #29 merged automatic
+VMC creation and newer Ember missing-core behavior; PR #30 handles truncated
+port downloads. Final integration `39eda4b8` passes compiler/host/32-configuration
+and three-kit checks, including independent downloaded package verification.
+The current branch hardens Favorites read/write failure handling and consumes
+sdk-core v2026.10.13 native sockets. See the checkpoint for pending validation.
 
 This ledger records verified ports into the C++/ps2build repository. It does not
 claim that the entire public repository is synchronized. The public source
@@ -80,7 +84,7 @@ newer changes are not implied by the individual ports above.
 | RA runtime and standard/RA isolation | Public #894/#899/#906/#916/#923 include newer RA runtime/browser/client behavior and ORBIT handoff. Only the snapshot subset of #906 is covered here. Require explicit standard/RA targets, package isolation and launch/resource validation before claiming RA parity. |
 | Configuration matrix and release packaging | Three complete ps2build edition kits pass CI. The recovered PADEMU-disabled, DS5/extras, DTL, diagnostic, debug and UART definitions are adapted through the edition builder with isolated configuration stages and release rejection guards. PR #24 passed all 32 GCC/LLVM configuration builds and artifact verification. No-IGR is runtime Mode 6 (`0x20`), whose current hook gates and host reset/snapshot tests agree with production; no separate compile-time flavour was found. DECI2, language/font/debug distribution bundles and publication remain open. Keep three release channels and one SDK. |
 | Existing feature PRs | #17/#18/#19/#21/#22/#23/#24 are merged. #21 retained the useful Ember, Neutrino, docs/evidence, splash and updater work from #12–#16; those originals are closed as superseded. Exact CI/artifact refs and local recovery are recorded in the checkpoint. |
-| Earlier feature/config parity | #885/#887/#889/#898 bodies are adapted above and need final compiler/configuration/kit verification. Automatic VMC creation, newer Ember missing-core behavior, and remaining UI/font/settings changes require individual body-level comparisons. PR titles or test-count differences alone do not establish parity. |
+| Earlier feature/config parity | #885/#887/#889/#898, automatic VMC and newer Ember missing-core behavior are merged and verified through final integration `39eda4b8`. Remaining UI/font/settings changes require individual body-level comparisons. PR titles or test-count differences alone do not establish parity. |
 | Hardware acceptance | Validate boot, USB/MX4SIO/MMCE/ATA discovery, hotplug, device allocation recovery, existing VMC handling, game launch/IGR, Files/IMG reconnect and other network protocols. LLVM floating-point behavior/performance also remains unproven. |
 
 The new regression tests execute the adapted C++ allocation, queue and GUI

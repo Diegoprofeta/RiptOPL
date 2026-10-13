@@ -36,7 +36,8 @@ class ConfigurationTests(unittest.TestCase):
                     loader = targets["riptopl"]
                     self.assertEqual("BUILTIN_KORIUM" in loader["defines"], edition != "incebtion")
                     self.assertEqual("raudp" in loader["embed_irx"], edition == "ra")
-                    self.assertEqual("ps2sdk_socket_compat" in loader["libs"], edition == "ra")
+                    self.assertNotIn("ps2sdk_socket_compat", loader["libs"])
+                    self.assertNotIn("ps2sdk_socket_compat", targets)
                     self.assertEqual("INGAME_UDP" in targets["SMSTCPIP"]["defines"], edition == "ra")
                     for target in targets.values():
                         for field in ("sources", "defines", "embed_irx", "libs"):
