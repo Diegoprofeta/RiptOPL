@@ -2,6 +2,7 @@
 """Install the released ogg/vorbis packages for the selected ps2build compiler."""
 import argparse
 import hashlib
+import http.client
 import io
 import json
 import os
@@ -26,7 +27,7 @@ def download(url):
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 return response.read()
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
             if isinstance(error, urllib.error.HTTPError) and error.code not in (408, 429, 500, 502, 503, 504):
                 raise
             if attempt == 2:
