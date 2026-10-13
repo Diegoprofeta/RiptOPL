@@ -9,6 +9,7 @@ import pathlib
 import re
 
 HOST_TO_OLD = {
+    'host::ui().missingFile': 'guiMsgBoxMissing',
     'host::ui().msgBox': 'guiMsgBox', 'host::ui().warning': 'guiWarning', 'host::ui().raNotice': 'guiShowRANotice',
     'host::ui().bootStatusStickyCopy': 'guiSetBootStatusStickyCopy', 'host::ui().bootStatusSticky': 'guiSetBootStatusSticky',
     'host::ui().renderTextScreen': 'guiRenderTextScreen', 'host::ui().manageCheats': 'guiManageCheats',

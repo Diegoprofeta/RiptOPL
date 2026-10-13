@@ -737,29 +737,38 @@ int cueFillGameList(const char *devPrefix, base_game_info_t **outGames)
     return count;
 }
 
+static int ps1ScanIncomplete; // queried immediately by the serialized IO scanner
+
+int ps1GameListNeedsRetry(void)
+{
+    return ps1ScanIncomplete;
+}
+
 int ps1FillGameList(const char *devPrefix, base_game_info_t **outGames)
 {
     base_game_info_t *vcdGames = NULL, *cueGames = NULL, *merged = NULL;
     int vcdCount, cueCount, total;
 
+    ps1ScanIncomplete = 0;
     if (outGames == NULL)
         return 0;
 
     vcdCount = vcdFillGameList(devPrefix, &vcdGames);
     cueCount = cueFillGameListUnsorted(devPrefix, &cueGames);
+    ps1ScanIncomplete = vcdCount < 0 || cueCount < 0;
 
-    // ONLY BOTH halves failing means the device could not be read. This used to fail the whole scan
+    // An error plus an empty half cannot prove the device has no PS1 titles. This used to fail the whole scan
     // when EITHER half did, on the reasoning that publishing half a list looks like a user's titles
     // disappearing. That reasoning was wrong in the direction that matters: one half failing then
     // hid the OTHER half too, so a device holding a perfectly readable POPS library showed NOTHING
     // because its (absent) Ember half reported a failure. Hardware-reported on iLink.
     //
-    // Half a list beats no list. A half that failed contributes no rows this pass and is retried on
-    // the next refresh; the half that succeeded is published, because it is real.
-    if (vcdCount < 0 && cueCount < 0) {
+    // A successful nonempty half is still published. The serialized caller can query
+    // ps1GameListNeedsRetry immediately afterward to schedule bounded recovery.
+    if ((vcdCount < 0 && cueCount <= 0) || (cueCount < 0 && vcdCount <= 0)) {
         free(vcdGames);
         free(cueGames);
-        LOG("[PS1] both scans failed -- keeping last-good list\n");
+        LOG("[PS1] incomplete empty scan -- keeping last-good list\n");
         return -1;
     }
     if (vcdCount < 0) {

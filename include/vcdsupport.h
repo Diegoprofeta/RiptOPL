@@ -65,6 +65,8 @@ int vcdResolvePopstarterMcElf(char *out, int outSize);
 
 // Resolve POPSTARTER.ELF in the normal order: custom path -> game device -> memory card.
 int vcdResolvePopstarter(const char *devPrefix, char *out, int outSize);
+// Describe the first intended lookup location for a failed launch diagnostic.
+void vcdDescribePopstarterLookup(const char *devPrefix, char *out, int outSize);
 
 // Build the POPSTARTER argv[0] selector "<devPrefix>POPS/<prefix><name>.ELF" into out.
 void vcdBuildSelector(const char *devPrefix, const char *prefix, const char *name, char *out, int outSize);
@@ -124,6 +126,7 @@ enum {
     VCD_BDMA_MMCE,      // MMCE exFAT
     VCD_BDMA_ATA,       // internal ATA HDD exFAT (BDMAssault)
     VCD_BDMA_ILINK,     // iLink / IEEE 1394 (appended so persisted mode values stay stable)
+    VCD_BDMA_UDPFS,     // read-only network VCD fallback through the POPSTARTER USB driver
     VCD_BDMA_MODE_COUNT
 };
 // "BDMA SOURCE": which device holds the user-provided variant files in its POPS/ folder. The equip
@@ -146,8 +149,12 @@ enum {
 int vcdEquipBdma(int source, int mode, char *diag, int diagSize);
 // Read the equipped variant from mc?:/POPSTARTER/bdma_config.txt (VCD_BDMA_FAT32 if absent).
 int vcdReadBdmaMode(void);
+// Marked or matching unmarked driver pair, required for network VCD handoff.
+int vcdBdmaLaunchReady(int mode);
+// Refuse the known USB-only RA module (or an unreadable module) on every live USB volume.
+int vcdPopsUdpfsCleanModules(void);
 // Auto-equip the BDMA variant matching the game's device (source/mode) before a VCD launch.
-// BDMA prep is card preparation, never a POPSTARTER launch gate: failure toasts in passing, never blocks.
+// Local launches keep best-effort preparation; UDPFS callers require vcdBdmaLaunchReady before handoff.
 void vcdEnsureBdmaForLaunch(int source, int mode);
 // Explicit per-launch USB mode pick (the fat32/exFAT dialog on USB VCD launches).
 // BDMA prep is card preparation, never a POPSTARTER launch gate: failure toasts in passing, never blocks.
@@ -224,6 +231,22 @@ int vcdPopsNetValuesValid(const vcd_popsnet_t *cfg, int validateSmb, int validat
 // failure, or -4 when the requested values are invalid.
 int vcdWritePopstarterNetFiles(const vcd_popsnet_t *cfg, int writeSmb, int writeIp);
 
+// Explicit readable POPS folder (including a temporarily mounted APA __common).
+int vcdEquipBdmaFromPops(const char *popsDir, int mode, char *diag, int diagSize);
+
+// Interim BDM-UDPFS Assault configuration: the IRXs may come from any POPS source,
+// but this release reads these two DAT files only from USB mass:/POPS/ after reset.
+typedef struct
+{
+    int ps2Ip[4], mask[4], gateway[4], server[4]; // server 0.0.0.0 = broadcast discovery
+    int ipExists, serverExists, invalid;
+    char home[96];
+} vcd_pops_udpfs_t;
+int vcdReadPopsUdpfsNet(vcd_pops_udpfs_t *out);
+int vcdPopsUdpfsNetValid(const vcd_pops_udpfs_t *cfg);
+int vcdWritePopsUdpfsNet(const vcd_pops_udpfs_t *cfg);
+int vcdPreparePopsUdpfsLaunch(char *usbRoot, int rootSize);
+
 // ---- POPStarter SMB auto-provisioning (RiptOPL launch helper) ----
 // Ensures the two required network files for SMB VCD launches exist at the validated resolved
 // POPSTARTER home. Existing valid files are preserved; only a missing peer is generated from the
@@ -277,7 +300,7 @@ public:
 
     // Equip the chosen BDMA variant (copy from SOURCE's POPS/, or remove for FAT32) + write the
     // marker. Reads the custom cache above for the adaptive seek-order pre-probe.
-    int equipBdma(int source, int mode, char *diag, int diagSize);
+    int equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir = NULL);
 
 private:
     // The io-worker body behind requestDisplayId; ioPutRequest(IO_CUSTOM_SIMPLEACTION, ...) takes

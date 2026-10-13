@@ -206,6 +206,9 @@ Special and sincere thanks to:
     game subfolders came from seeing it there.
   - Irfanlesnar - creator of PS2-Launcher, for UI and feature ideas across the OPL
     fork ecosystem.
+  - Okeanos (Okeanos86) - for BDM-UDPFS Assault Alpha, the read-only POPSTARTER
+    network VCD fallback. The unchanged driver pair, archive hash and complete
+    upstream license/credit notices are preserved under ship/POPS/UDPFS-NOTICES/.
   - pcm720 - for udpfsd and nhddl, key foundations for modern PS2 streaming.
   - Ifcaro and jimmikaelkael - the original Open PS2 Loader authors - and every
     contributor across OPL's long history, all named above in this file.

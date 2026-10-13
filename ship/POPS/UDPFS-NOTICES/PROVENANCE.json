@@ -1,0 +1,47 @@
+{
+  "release": "https://github.com/Okeanos86/BDMAssault/releases/tag/Alpha",
+  "archive_url": "https://github.com/Okeanos86/BDMAssault/releases/download/Alpha/BDM-UDPFS_Assault-ALPHA.zip",
+  "archive_sha256": "532bcf85b5beff90df9ff51da02b690b0bdee82ed3372e40b4f2c36de5eaf5ce",
+  "files": {
+    "usbd.irx.udpfs": {
+      "archive_member": "READY_TO_USE/POPSTARTER/usbd.irx",
+      "sha256": "f0a42084ff8841022228033ddfa8add8809275bb55ab29323e1c89f10f898344"
+    },
+    "usbhdfsd.irx.udpfs": {
+      "archive_member": "READY_TO_USE/POPSTARTER/usbhdfsd.irx",
+      "sha256": "70a369e47745e7f995fa771edbbfed086727b759fba915a7070c0fbcf061dd34"
+    },
+    "IPCONFIG.DAT": {
+      "archive_member": "config_examples/IPCONFIG.DAT",
+      "sha256": "e04a68aa2107131f04bf6000c24f97154782b8631c422a536feb8295609e9d92"
+    },
+    "UDPFSCONFIG.DAT": {
+      "archive_member": "config_examples/UDPFSCONFIG.DAT",
+      "sha256": "ba174c4ad6e1ba64027c884edea2697bb0b02f88513d275b199a995f57bf7cae"
+    },
+    "UDPFS-NOTICES/LICENSE": {
+      "archive_member": "LICENSE",
+      "sha256": "1ecee940922a6886baccddd9133d17f1ce677d32c5a954fac8e48224f2766fe8"
+    },
+    "UDPFS-NOTICES/AFL-2.0.txt": {
+      "archive_member": "licenses/AFL-2.0.txt",
+      "sha256": "1ecee940922a6886baccddd9133d17f1ce677d32c5a954fac8e48224f2766fe8"
+    },
+    "UDPFS-NOTICES/AFL-3.0.txt": {
+      "archive_member": "licenses/AFL-3.0.txt",
+      "sha256": "65b4868007fb11b77aebc617ede4dd61d0806feb13e8e8c2c387640af7843746"
+    },
+    "UDPFS-NOTICES/README_CONFIG.txt": {
+      "archive_member": "docs/README_CONFIG.txt",
+      "sha256": "7f2d99bf17598ea203646347c5f98c606ca373f3c12932bc0822ffc4d2470439"
+    },
+    "UDPFS-NOTICES/THIRD_PARTY_NOTICES.md": {
+      "archive_member": "docs/THIRD_PARTY_NOTICES.md",
+      "sha256": "471cae7fcdef217398a4e4beffb143bad8af1c1f5fc514bfccad1949f3061be8"
+    },
+    "UDPFS-NOTICES/UPSTREAM-README.md": {
+      "archive_member": "README.MD",
+      "sha256": "24451ab006d713470064024529055d27e3ecd972770f1319803241a71febb74a"
+    }
+  }
+}

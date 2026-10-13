@@ -28,11 +28,17 @@ jobs:
           python3 .github/scripts/test_reset_arg_bounds.py
           python3 .github/scripts/test_release_editions.py
           python3 .github/scripts/test_ps2build_configurations.py
+          python3 .github/scripts/test_install_ports.py
           python3 .github/scripts/test_reset_failure_lifecycle.py
       - name: Check RA-only Mode 6 snapshot handler and registration retries
         run: python3 .github/scripts/test_ra_mode6.py
       - name: Check UDP NIC reservation, DEV9 failure/retry and queued IP conflict notice
         run: python3 .github/scripts/test_network_parity_922.py
+      - name: Check POPS UDPFS configuration and multi-volume rollback failures
+        run: |
+          python3 .github/scripts/test_pops_udpfs.py
+          python3 .github/scripts/test_udpfs_library_launch.py
+          python3 .github/scripts/test_ul_scan_integrity.py
       - name: Check VMC preservation and BDM allocation recovery
         run: |
           python3 .github/scripts/test_vmc_preserve_existing.py

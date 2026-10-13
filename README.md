@@ -312,8 +312,8 @@ This build layers several features on top of upstream OPL:
   for a `.VCD`. Files inside can be named anything; `.cue` is preferred over `.exe` over `.bin`.
   Ember writes its per-game memory cards (`MC1.vmc`, `MC2.vmc`) into that same folder, so it must be
   on writable media. Available on USB, MX4SIO, iLink, exFAT-ATA, MMCE, SMB, the internal APA/PFS
-  hard drive, UDPFS and UDPBD. The two UDP network pages list Ember only; ordinary device pages
-  merge Ember and POPSTARTER rows.
+  hard drive, UDPFS and UDPBD. UDPFS Files also lists uppercase VCDs through the
+  BDM-UDPFS Assault POPSTARTER path; UDPBD and UDPFS IMG list Ember only.
 
   **On an internal APA/PFS drive**, where there is no filesystem root to copy a folder to, the
   `EMBER/` folder goes on a partition of its own: **`__.EMBER`**, or `__.EMBER0` … `__.EMBER9` if you
@@ -407,9 +407,11 @@ This build layers several features on top of upstream OPL:
   `POPS/usbhdfsd.irx.ilink`, copies them to the memory card without the `.ilink` suffix, and hands
   POPSTARTER the normal local-device `XX.` selector, but revision 2692 returned to wLaunchELF in all
   four SDK flavours. Every BDMA pair ships as loose files in
-  `POPS/`; none is embedded in `RIPTOPL.ELF`. UDPFS and UDPBD also expose a PS1 view, but those
-  network pages list **Ember titles only**: Ember inherits the live connection, while POPSTARTER's
-  IOP reset cannot restore either network transport. See **[docs/VCD.md](docs/VCD.md)**.
+  `POPS/`; none is embedded in `RIPTOPL.ELF`. **UDPFS Files** also lists uppercase
+  VCDs through the Alpha BDM-UDPFS Assault pair, with USB runtime files and matching
+  USB network configs. Its C++ handoff is implemented and host-tested; console acceptance
+  remains open. **UDPBD and UDPFS IMG** remain Ember-only. See
+  **[POPS UDPFS setup](docs/VCD.md#pops-udpfs-with-bdm-udpfs-assault)**.
 - **Core-aware per-game settings:** the per-game screen adapts to the selected **Loader Core** —
   under Neutrino it greys the panels Neutrino ignores (GSM, Cheats, PADEMU, OSD Language and the
   OPL-only compat modes) and offers a structured **Neutrino Video** picker (Off / 240p / 480p /
