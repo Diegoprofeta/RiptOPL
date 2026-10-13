@@ -1438,3 +1438,14 @@ gui_strings:
 
 - label: POPS_UDPFS_RA_MODULE
   string: "POPS UDPFS cannot use the USB-only RA module, or a module could not be checked. Back up and remove RiptOPL's MODULE_9.IRX from USB POPS folders before retrying."
+
+- label: AUTO_CREATE_VMC
+  string: Create VMC on First Launch
+- label: HINT_AUTO_CREATE_VMC
+  string: "With no card assigned to slot 1, create an 8 MB card on the game's device and assign it. Existing cards are preserved. Not available for HTTP or internal HDD games under Neutrino."
+- label: AUTO_VMC_CREATING
+  string: "Creating this game's VMC..."
+- label: AUTO_VMC_FAILED
+  string: "Could not create this game's VMC. The game starts without one."
+- label: AUTO_VMC_TIMEOUT
+  string: "VMC creation did not finish. Launch cancelled."

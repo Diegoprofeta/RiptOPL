@@ -27,6 +27,7 @@ CHECK(gCustomSettingsPath[0] == '\0');
 CHECK(gAutosort == (1));
 CHECK(gAutoRefresh == (0));
 CHECK(gDefaultDevice == (APP_MODE));
+CHECK(gAutoCreateVmc == (0));
 CHECK(gEnableWrite == (1));
 CHECK(gHDDSpindown == (20));
 CHECK(gBDMPrefix[0] == '\0');

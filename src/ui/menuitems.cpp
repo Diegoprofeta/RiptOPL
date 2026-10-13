@@ -105,13 +105,45 @@ static void itemExecSelect(struct menu_item *curMenu)
                     return; // a deferred source refresh replaced the row while config IO was pending
                 int launchId = curMenu->current->item.id;
                 char gameIdStartup[128] = {0};
+                char launchIdentity[APP_STARTUP_MAX + 1] = {0};
                 char *startup = gsOf(support)->startup(support, launchId);
-                if (startup != NULL)
+                if (startup != NULL) {
+                    if ((unsigned int)snprintf(launchIdentity, sizeof(launchIdentity), "%s", startup) >= sizeof(launchIdentity))
+                        return;
                     snprintf(gameIdStartup, sizeof(gameIdStartup), "%s", startup);
+                }
+                int ownsConfig = 0;
+                if (gAutoCreateVmc) {
+                    configSet = menuTakeLaunchConfig(configSet, support, launchId);
+                    if (configSet == NULL)
+                        return;
+                    ownsConfig = 1;
+                    if (!guiGameAutoCreateVmc(support, launchId, configSet)) {
+                        configFree(configSet);
+                        return;
+                    }
+                    menuInvalidateConfig();
+                }
                 // Flash the GameID barcode (Pixel FX/RetroGEM HDMI auto-profile) before handoff. Use
                 // the stack copy: the hold renders/unlocks for many frames while source lists may refresh.
                 guiShowGameID(gameIdStartup);
+                // Modal progress/GameID screens yield to source refreshes. A numeric ID alone
+                // can now name another row; refuse that handoff while still in the menu.
+                if (!support->enabled || curMenu->userdata != support || curMenu->current == NULL ||
+                    curMenu->current->item.id != launchId) {
+                    if (ownsConfig)
+                        configFree(configSet);
+                    return;
+                }
+                startup = gsOf(support)->startup(support, launchId);
+                if (startup == NULL || strcmp(startup, launchIdentity) != 0) {
+                    if (ownsConfig)
+                        configFree(configSet);
+                    return;
+                }
                 gsOf(support)->launch(support, launchId, configSet);
+                if (ownsConfig)
+                    configFree(configSet); // successful handoff never returns
             }
         } else {
             // If we're trying to enable BDM support we need to enable it for all BDM menu slots.

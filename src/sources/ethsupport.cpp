@@ -828,11 +828,11 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
         return;
     }
     if (!cueResolveEmber(gEthSupport.prefix(), emberElf, sizeof(emberElf))) {
-        host::ui().msgBox(_l(_STR_EMBER_NOT_FOUND), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
         return;
     }
     if (!cueResolveEmberBios(gEthSupport.prefix(), biosPath, sizeof(biosPath))) {
-        host::ui().msgBox(_l(_STR_EMBER_BIOS_MISSING), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
     cueApplySettings(gEthSupport.prefix(), cueName, configSet); // best-effort marker, never a launch gate

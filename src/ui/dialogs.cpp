@@ -996,6 +996,11 @@ struct UIItem diaLaunchConfig[] = {
     {UI_ENUM, CFG_DEFAULT_CORE, 1, 1, _STR_HINT_DEFAULT_CORE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
+    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_AUTO_CREATE_VMC}}},
+    {UI_SPACER},
+    {UI_BOOL, CFG_AUTO_CREATE_VMC, 1, 1, _STR_HINT_AUTO_CREATE_VMC, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
+
     // Modify actions. Neutrino's actual default fields are composed below; OSD defaults retain the
     // existing structured editor, but the page exposes it as one native action row.
     {UI_BUTTON, LAUNCH_NEUTRINO_DEFAULTS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_NEUTRINO_DEFAULTS}}},

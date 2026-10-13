@@ -73,13 +73,13 @@ void BdmLauncher::launchCue(item_list_t *itemList, const char *cueName, config_s
     bdmBuildPs1Prefix(ps1Prefix, sizeof(ps1Prefix), itemList->mode); // device ROOT: EMBER/ lives there
 
     if (!cueResolveEmber(ps1Prefix, emberElf, sizeof(emberElf))) {
-        host::ui().msgBox(_l(_STR_EMBER_NOT_FOUND), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
         return;
     }
     // Ember needs a user-supplied bios.bin beside it and says nothing useful when it is missing --
     // it just runs the PS1 BIOS shell. Check while we can still explain.
     if (!cueResolveEmberBios(ps1Prefix, biosPath, sizeof(biosPath))) {
-        host::ui().msgBox(_l(_STR_EMBER_BIOS_MISSING), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
     // The scan lists folders without reading inside them -- that would be a directory read per row

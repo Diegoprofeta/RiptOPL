@@ -90,6 +90,7 @@ enum UI_ITEMS {
     CFG_BGM_VOLUME,
     CFG_DEFAULT_BGM_PATH,
     CFG_DEFAULT_CORE, // global default Loader Core (gDefaultCoreLoader); per-game "Default" follows it
+    CFG_AUTO_CREATE_VMC,
     CFG_NEUTRINO_ARGS,
     CFG_NEUTRINO_PATH,
     CFG_NEUTRINO_VIDEO,   // global default Neutrino -gsm video mode (gNeutrinoVideoDefault); per-game "Default" follows it

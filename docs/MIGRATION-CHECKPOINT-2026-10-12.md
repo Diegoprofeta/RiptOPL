@@ -1,5 +1,36 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: automatic VMC and Ember missing-core behavior
+
+Base is merged PR #27 at `2959b7a5077b6a16a0dca981813cdd1fdf1c793d`.
+Its fresh GCC/LLVM, host, 32-configuration and three-kit integration checks and
+downloaded artifacts pass. Favorites Pages PR #28 deployed at `b686bebd`; Wiki
+`feb11605` updates only the affected guidance with repeatable scoped generation.
+Earlier instructions below to start the already merged branch are historical.
+
+Continue `codex/vmc-ember-parity`. Production refreshed to
+`ebb62e1d` (including newer RA #927/#929, still separate work). Adapt automatic
+VMC creation through GameSource, table-driven settings and the existing launch
+menu; see [AUTOMATIC-VMC.md](AUTOMATIC-VMC.md). Preserve the non-destructive
+sysCheckVMC guards and supported backend/core exclusions.
+
+The formatter now owns its asynchronous request, reserves busy state before
+worker scheduling, rejects overlapping creates, and recovers failed thread
+creation/start. Abort is nonblocking/idempotent and completion publishes idle
+after partial-file cleanup. A real-source lifecycle regression fails against
+the pre-port formatter. The modal launch owns its config, rejects stale cache
+ownership and revalidates row identity after yielding.
+
+Ember scans retain valid image folders without a readable core; five launch
+backends use the existing host missing-file service to name the expected ELF
+or BIOS path. Ambiguous absent-directory errors retain production's missing-core
+fallback, while definite device errors remain scan failures. No whole-source
+legacy files or alternate SDK/release flavours are introduced.
+
+All 59 Python host suites, HTTP and seven C++ sanitizer suites pass; the focused
+policy/launch tests also pass after the final full-length app-identity guard.
+Final native/CI/artifact verification is pending at this source checkpoint.
+
 ## Current continuation: older feature parity and released SDK follow-up
 
 Base is merged POPS PR #25, `4157d5a23eb51d377635188b811b74883e927e41`.

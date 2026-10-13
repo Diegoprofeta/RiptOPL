@@ -595,11 +595,11 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
         return;
     }
     if (!cueResolveEmber(udpfsPrefix, emberElf, sizeof(emberElf))) {
-        host::ui().msgBox(_l(_STR_EMBER_NOT_FOUND), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
         return;
     }
     if (!cueResolveEmberBios(udpfsPrefix, biosPath, sizeof(biosPath))) {
-        host::ui().msgBox(_l(_STR_EMBER_BIOS_MISSING), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
 

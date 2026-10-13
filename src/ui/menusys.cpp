@@ -591,6 +591,27 @@ config_set_t *menuLoadConfig()
     return result;
 }
 
+config_set_t *menuTakeLaunchConfig(config_set_t *expected, item_list_t *list, int id)
+{
+    config_set_t *owned = NULL;
+    WaitSema(menuSemaId);
+    if (itemConfig == expected && itemConfigList == list && itemConfigId == id) {
+        owned = itemConfig;
+        itemConfig = NULL;
+        itemConfigId = -1;
+        itemConfigList = NULL;
+    }
+    SignalSema(menuSemaId);
+    return owned;
+}
+
+void menuInvalidateConfig()
+{
+    WaitSema(menuSemaId);
+    itemConfigId = -1; // a modal launch may have persisted after an old prefetch completed
+    SignalSema(menuSemaId);
+}
+
 // we don't want a pop up when transitioning to or refreshing Game Menu gui.
 config_set_t *gameMenuLoadConfig(struct UIItem *ui)
 {

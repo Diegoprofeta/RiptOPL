@@ -47,6 +47,7 @@ struct cue_entry_t { char name[256]; };
 static char gamesRoot[288];
 static int opens;
 static bool corePresent = true;
+static int directoryError = -1;
 static std::string lastProbe;
 #define LOG(...) ((void)0)
 static char cueSep(const char *prefix) { return strchr(prefix, '\\') ? '\\' : '/'; }
@@ -54,6 +55,7 @@ static int cueResolveEmber(const char*, char*, int) { return corePresent; }
 static void cueBuildGamesDir(const char*, char *out, int length) { snprintf(out, length, "%s", gamesRoot); }
 static DIR *probeDir(const char *path) {
     ++opens; lastProbe = path; std::string mapped(path);
+    if (directoryError >= 0) { errno = directoryError; return nullptr; }
     for (char &c : mapped) if (c == '\\') c = '/';
     return opendir(mapped.c_str());
 }
@@ -80,8 +82,16 @@ int main() {
     assert(cueScanDir("mass0:/", &list) == 3);
     std::set<std::string> found; for (int i = 0; i < 3; ++i) found.insert(list[i].name);
     assert((found == std::set<std::string>{"cue", "exe", "bin"})); free(list);
-    // This port preserves the existing core-availability gate; missing-core diagnostics are separate.
-    corePresent = false; list = nullptr; assert(cueScanDir("mass0:/", &list) == 0 && !list);
+    // Missing core no longer hides valid games; launch diagnostics name the absent file.
+    corePresent = false; list = nullptr; assert(cueScanDir("mass0:/", &list) == 3 && list); free(list);
+    for (int error : {0, EPERM, ENOENT, EIO, EBUSY}) {
+        directoryError = error; list = nullptr;
+        assert(cueScanDir("mass0:/", &list) == (error == EIO || error == EBUSY ? -1 : 0) && !list);
+        corePresent = true;
+        assert(cueScanDir("mass0:/", &list) == (error == ENOENT ? 0 : -1) && !list);
+        corePresent = false;
+    }
+    directoryError = -1;
     assert(opens > 0);
 }
 ''')

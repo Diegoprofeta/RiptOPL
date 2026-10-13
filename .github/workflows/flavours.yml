@@ -40,6 +40,8 @@ jobs:
         run: |
           python3 .github/scripts/test_legacy_parity_885_898.py
           python3 .github/scripts/test_genvmc_recovery.py
+          python3 .github/scripts/test_genvmc_lifecycle.py
+          python3 .github/scripts/test_auto_vmc.py
       - name: Check POPS UDPFS configuration and multi-volume rollback failures
         run: |
           python3 .github/scripts/test_pops_udpfs.py

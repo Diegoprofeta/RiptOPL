@@ -322,6 +322,102 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, char *VMCName, int
     return result;
 }
 
+// Opt-in first-launch card creation. The caller owns configSet across this modal
+// operation and revalidates the selected row before handing off to its source.
+constexpr int AUTO_VMC_SIZE_MB = 8;
+constexpr int AUTO_VMC_MAX_FRAMES = 120 * 60;
+int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
+{
+    if (!gAutoCreateVmc || support == NULL || configSet == NULL || !guiIsActive())
+        return 1;
+    item_list_t ownerView;
+    item_list_t *backing = support;
+    if (support->mode == FAV_MODE) {
+        if (favGetItemKind(id) != FAV_KIND_ISO)
+            return 1;
+        backing = gFavSupport.ownerView(id, &ownerView);
+    } else if (support->mode == APP_MODE || libListRowView(support, id) == LIB_VIEW_PS1)
+        return 1;
+    if (backing == NULL || !backing->enabled || !gsOf(backing)->hasCheckVmc() || backing->mode == HTTP_MODE)
+        return 1;
+    int loader = gDefaultCoreLoader;
+    configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &loader);
+    if (loader == 2)
+        loader = gDefaultCoreLoader;
+    if (backing->mode == HDD_MODE && loader == 1)
+        return 1;
+    char assigned[32] = {}, vmc[32], progress[96];
+    int disabled = 0;
+    configGetVMC(configSet, assigned, sizeof(assigned), 0);
+    configGetVMCDisable(configSet, 0, &disabled);
+    if (assigned[0] || disabled)
+        return 1;
+    const char *startup = gsOf(support)->startup(support, id);
+    if (startup == NULL || startup[0] == '\0')
+        return 1;
+    snprintf(vmc, sizeof(vmc), "%s_0", getGroupIdForTitleId(startup));
+    statusVMCparam_t activeJob = {};
+    if (fileXioDevctl("genvmc:", 0xC0DE0003, NULL, 0, &activeJob, sizeof(activeJob)) != 0) {
+        guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
+        return 1;
+    }
+    if (activeJob.VMC_status) {
+        guiMsgBox(_l(_STR_AUTO_VMC_TIMEOUT), 0, NULL);
+        return 0; // a previous timeout/cancel may still be cleaning a partial image
+    }
+    int size = gsOf(backing)->checkVmc(backing, vmc, 0);
+    if (size == -1) {
+        int submitted = gsOf(backing)->checkVmc(backing, vmc, AUTO_VMC_SIZE_MB);
+        if (submitted != -1 && submitted != AUTO_VMC_SIZE_MB) {
+            guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
+            return 1;
+        }
+        if (submitted == -1) {
+            statusVMCparam_t status = {};
+            status.VMC_status = 1;
+            int aborted = 0;
+            for (int frames = 0; status.VMC_status; ++frames) {
+                if (frames >= AUTO_VMC_MAX_FRAMES) {
+                    fileXioDevctl("genvmc:", 0xC0DE0002, NULL, 0, NULL, 0);
+                    guiMsgBox(_l(_STR_AUTO_VMC_TIMEOUT), 0, NULL);
+                    return 0; // never launch or assign an unconfirmed in-flight image
+                }
+                if (fileXioDevctl("genvmc:", 0xC0DE0003, NULL, 0, &status, sizeof(status)) != 0)
+                    status.VMC_status = 1;
+                readPads();
+                if (!aborted && getKeyOn(guiCancelKey())) {
+                    fileXioDevctl("genvmc:", 0xC0DE0002, NULL, 0, NULL, 0);
+                    aborted = 1;
+                }
+                snprintf(progress, sizeof(progress), "%s %d%%", _l(_STR_AUTO_VMC_CREATING), status.VMC_progress);
+                guiRenderTextScreen(progress);
+            }
+            if (aborted)
+                return 0;
+            if (status.VMC_error) {
+                guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
+                return 1;
+            }
+            if (loader != 1 && sysVMCContiguity() == 0)
+                guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, NULL);
+        }
+    } else if (size != 8 && size != 16 && size != 32 && size != 64) {
+        // Invalid/unreadable images are never reformatted or silently assigned.
+        guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
+        return 1;
+    }
+    configSetVMC(configSet, vmc, 0);
+    configGetVMC(configSet, assigned, sizeof(assigned), 0);
+    if (strcmp(assigned, vmc) != 0) {
+        guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
+        return 1;
+    }
+    // Persist the owned launch config, never a menu cache that a refresh can replace.
+    if (!configWrite(configSet))
+        guiMsgBox(_l(_STR_ERROR_SAVING_SETTINGS), 0, NULL);
+    return 1;
+}
+
 void guiGameShowVMCMenu(int id, item_list_t *support)
 {
     int result = -1;

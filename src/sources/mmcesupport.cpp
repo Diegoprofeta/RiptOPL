@@ -880,11 +880,11 @@ void MmceSource::launchCue(item_list_t *itemList, const char *cueName, config_se
     gMmceSupport.getDeviceRoot(ps1Root, sizeof(ps1Root));
 
     if (!cueResolveEmber(ps1Root, emberElf, sizeof(emberElf))) {
-        host::ui().msgBox(_l(_STR_EMBER_NOT_FOUND), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
         return;
     }
     if (!cueResolveEmberBios(ps1Root, biosPath, sizeof(biosPath))) {
-        host::ui().msgBox(_l(_STR_EMBER_BIOS_MISSING), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
     // The scan lists folders without reading inside them -- that would be a directory read per row
