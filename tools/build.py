@@ -4,6 +4,7 @@ import argparse
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -11,14 +12,31 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parent.parent
-MINIMUM_VERSION = (2026, 10, 12, 2)
+MINIMUM_VERSION = (2026, 10, 13, 0)
+
+
+def version_tuple(version):
+    match = re.search(r"\bv(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\b", str(version))
+    return tuple(int(v or 0) for v in match.groups()) if match else None
 
 
 def require_supported_sdk():
     version = subprocess.check_output(["ps2build", "--version"], text=True).strip()
-    match = re.search(r"\bv(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\b", version)
-    if match is None or tuple(int(v or 0) for v in match.groups()) < MINIMUM_VERSION:
-        raise RuntimeError(f"ps2build v2026.10.12.2 or newer is required (found {version}); run ps2build update")
+    parsed = version_tuple(version)
+    if parsed is None or parsed < MINIMUM_VERSION:
+        raise RuntimeError(f"ps2build v2026.10.13 or newer is required (found {version}); run ps2build update")
+    # A successful CLI update can leave older core packages behind after a download failure.
+    sdk = Path(os.environ.get("PS2BUILD_HOME") or shutil.which("ps2build") or "").resolve()
+    if sdk.is_file():
+        sdk = sdk.parent
+    try:
+        metadata = yaml.safe_load((sdk / "versions.yaml").read_text())
+        core = metadata["components"]["sdk-core"]
+        parsed_core = version_tuple(core)
+    except (OSError, ValueError, TypeError, KeyError, yaml.YAMLError):
+        parsed_core = None
+    if parsed_core is None or parsed_core < MINIMUM_VERSION:
+        raise RuntimeError("sdk-core v2026.10.13 or newer is required for native POSIX sockets; run ps2build update")
 
 
 def build(toolchain, out_dir, definition=None):

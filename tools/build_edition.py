@@ -45,15 +45,8 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
         add(main, "embed_irx", "raudp")
         add(targets["SMSTCPIP"], "defines", "INGAME_UDP")
-        # sdk-core v2026.10.12.1 still omits these POSIX socket entry points.
-        # Use the pinned SDK implementation, retaining its libc descriptor table.
-        config["targets"].append({
-            "name": "ps2sdk_socket_compat", "type": "ee_lib",
-            "sources": ["third_party/ps2sdk-socket/socket.c"],
-            "include_dirs": ["third_party/ps2sdk-socket"], "headers": ["cglue"],
-            "defines": ["F_socket", "F_bind", "F_recvfrom", "F_sendto", "F_setsockopt"],
-        })
-        add(main, "libs", "ps2sdk_socket_compat")
+        # sdk-core v2026.10.13 supplies POSIX sockets through libc's fdman.
+        # Keep descriptor ownership/non-blocking callbacks in the SDK, not a second archive.
         for name in ("bdm_cdvdman", "mmce_cdvdman"):
             add(targets[name], "defines", "__USE_DEV9")
             add(targets[name], "sources", "modules/iopcore/cdvdman/dev9.c")

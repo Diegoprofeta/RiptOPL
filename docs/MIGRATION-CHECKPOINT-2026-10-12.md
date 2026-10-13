@@ -1,6 +1,33 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: automatic VMC and Ember missing-core behavior
+## Current continuation: Favorites IO safeguards and native SDK sockets
+
+Base is merged PRs #29/#30 at `39eda4b8ae12d8486503c16ffab8a3b5f1df6724`.
+Fresh integration GCC/LLVM, host gates, all 32 selected configurations and three
+complete kits pass, with all downloaded configuration/kit artifacts verified
+against that exact SHA. Automatic VMC and newer Ember missing-core behavior are
+merged. Pages `b686bebd` and Wiki `feb11605` are unchanged by this source batch.
+The final evidence and remaining queue are in
+[issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+
+Continue `codex/favorites-read-write-failures`. Commit `6516f0c9` refuses edits
+after failed/incomplete Favorites reads, distinguishes validated empty/missing
+stores, accumulates short transfers and propagates close failure. All 60 Python
+host suites, HTTP and seven C++ sanitizer suites pass. The same edit test fails
+against both the pre-fix C++ and original C methods. See
+[FAVORITES-STORAGE.md](FAVORITES-STORAGE.md); durable replacement and interruption
+recovery remain open in both repositories' linked issues.
+
+Local ps2build/sdk-core updated to `v2026.10.13`, sdk-world remains
+`v2026.10.12.2`, LLVM `v0.3.3`. The RA graph now uses native cglue sockets and
+refuses stale core metadata; the historical fallback source/notices remain.
+The newer audio driver and audsrv-compat were already selected. See
+[NATIVE-SDK-SOCKETS.md](NATIVE-SDK-SOCKETS.md) for source and package evidence.
+Final native/CI/artifact verification is pending at this source checkpoint.
+
+Earlier continuation sections below are historical and superseded above.
+
+## Historical continuation: automatic VMC and Ember missing-core behavior
 
 Base is merged PR #27 at `2959b7a5077b6a16a0dca981813cdd1fdf1c793d`.
 Its fresh GCC/LLVM, host, 32-configuration and three-kit integration checks and

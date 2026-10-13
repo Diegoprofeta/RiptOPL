@@ -103,6 +103,8 @@ jobs:
         run: python3 .github/scripts/test_theme_text_room.py
       - name: Check Favorites failure feedback, persistence ordering, first-run view and title layout
         run: python3 .github/scripts/test_favorites_parity.py
+      - name: Refuse Favorites edits after unreadable or incomplete stores and check IO failures
+        run: python3 .github/scripts/test_favorites_storage_io.py
 
   release-notes-tests:
     runs-on: ubuntu-24.04
