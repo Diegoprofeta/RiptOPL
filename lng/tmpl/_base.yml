@@ -1395,3 +1395,7 @@ gui_strings:
   string: "These Ember settings apply to every PS1 game, and some games crash with them. To change one game only, use Triangle > Ember Game Settings on that game."
 - label: PS1_SAVE_GUIDANCE
   string: "PS1 saves depend on Ember or POPSTARTER; PS2 VMC settings do not apply."
+
+# UDPFS IP conflict notice, appended to preserve existing positional language IDs.
+- label: UDPFS_IP_CONFLICT
+  string: "Another device on your network is using this PS2's IP address, so the UDPFS server's replies go to it. Set a different PS2 IP in Network Settings."

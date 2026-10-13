@@ -5,6 +5,9 @@
 #include "include/iosupport.h"
 #include "include/supportbase.h" // base_game_info_t
 
+// GUI thread: show a one-shot notice queued by the background UDPFS scan.
+void udpfsShowPendingNotice(void);
+
 // Reuse ETH's refresh cadence: this is a network filesystem, so the same slow-poll delay applies.
 #define UDPFS_MODE_UPDATE_DELAY 300
 

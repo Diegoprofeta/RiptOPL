@@ -884,6 +884,9 @@ void menuUpdateHook()
     // if timer exceeds some threshold, schedule updates of the available input sources
     frameCounter++;
 
+    // IO scans queue warnings; rendering belongs to the GUI thread.
+    udpfsShowPendingNotice();
+
     // Keep background refresh work out of the shared IO queue while the user is actively navigating.
     if (guiInactiveFrames < MENU_MIN_INACTIVE_FRAMES)
         return;

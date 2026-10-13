@@ -30,6 +30,8 @@ jobs:
           python3 .github/scripts/test_reset_failure_lifecycle.py
       - name: Check RA-only Mode 6 snapshot handler and registration retries
         run: python3 .github/scripts/test_ra_mode6.py
+      - name: Check UDP NIC reservation, DEV9 failure/retry and queued IP conflict notice
+        run: python3 .github/scripts/test_network_parity_922.py
       - name: Check VMC preservation and BDM allocation recovery
         run: |
           python3 .github/scripts/test_vmc_preserve_existing.py

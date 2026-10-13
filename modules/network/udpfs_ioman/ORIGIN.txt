@@ -43,3 +43,6 @@ LOCAL CHANGES vs upstream (re-apply after re-vendoring):
     ministack ships its own).
   - src/*.c and src/*.h reformatted with the repo clang-format (CI-format-check lints every
     .c/.h, exclude:none). Whitespace-only; module logic unmodified.
+Local IP-conflict telemetry ported from Open-PS2-Loader #922 (0a1a593a): import arp_ip_conflict
+in slot 7 and answer devctl 0x55460001 without network traffic or the UDPFS lock.
+The C++ loader queues a one-shot GUI warning. Keep this change when re-vendoring.

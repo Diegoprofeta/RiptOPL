@@ -448,3 +448,18 @@ Rules that follow from Neutrino's design (verified against `rickgaiser/neutrino`
   and the advertised card geometry is hardcoded (8192 pages ≈ first 4 MB of the image addressed)
   rather than read from the card file. Both are Neutrino-side behaviors, not OPL's; prefer slot 1
   and 8 MB cards for predictable results.
+
+## When the network game list stays empty
+
+- **Server restarted or connection dropped:** UDPFS attempts to reconnect and starts a fresh
+  session. Reconnect and late-server behavior are covered by host tests; console acceptance
+  remains tracked in [migration issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+- **Another device using the PS2's IP:** before each discovery the PS2 announces its IP. If another
+  device answers for that same address, the server's replies go to it and the list stays empty;
+  RiptOPL then shows a notice with the IP and the other device's MAC address. Pick a free PS2 IP in
+  **Network Settings** (an address outside your router's DHCP range is safest).
+- **RetroAchievements build:** while UDPFS or UDPBD is the selected protocol, RA menu actions (support
+  check and link test) report the network as busy instead of starting SMB, which
+  would otherwise take the network adapter until the next boot.
+- **Network adapter not detected:** if DEV9 fails to start, the UDPFS/UDPBD chains load no SMAP driver and
+  retry the next time the page refreshes.

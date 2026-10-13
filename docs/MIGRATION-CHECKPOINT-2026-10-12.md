@@ -1,5 +1,51 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Latest continuation: local recovery and production #922
+
+Integration is `6988499b84e6049c7f544e4a8eff2769f58563a3`: PR #21 merged the
+useful changes from #12–#16, and those originals are closed as superseded.
+Its GCC/LLVM, host and three-edition CI passed. Independently downloaded kits
+passed publisher verification against that exact integration SHA. Site
+`72e3dd6575c0ff602cf087e1c7b812428984c2b8` and wiki
+`45e0ee19293b1f86a4bbd599671700b838d86a89` are pushed and validated.
+
+Continue branch `codex/network-parity-922` for the next reviewed batch. It
+adapts production `0a1a593ade393d2c1d28bafb09ea8f3c5cb63706`: DEV9 return/failure
+gates in all three UDP load paths, selected UDP NIC reservation for the existing
+C++ RA menu methods, appended ministack export slot 7, local IOP devctl and a
+one-shot warning queued by the IO scan and displayed by the GUI frame hook.
+The newer achievements browser/Caduceus methods are absent and remain part of
+the broader RA port. Legacy Makefile dependencies and RA-only preview filtering
+were not imported; ps2build header tracking and all-three-edition CI remain.
+
+Local ps2build/SDK update commands report `v2026.10.12.1` current, optional
+LLVM `v0.3.2` current (clang 24.0.0git). Regenerating assets with
+`python tools/assets.py all` fixed stale language IDs in the older local build
+outputs. The actual LLVM compile/link/pack then passed. Console compatibility
+and LLVM precision/performance are still unverified.
+
+Local cleanup preserved changes before stashing them. Recovery ZIPs and JSON
+hash inventories are under `REA/local-recovery/2026-10-12/`, outside the source
+clone. All archived file bytes were read back and verified before stashing.
+The old repository also retains permanent recovery refs:
+
+- `refs/recovery/2026-10-12-public-transition` →
+  `6aabfb2bac319d4d45fd9a2ec610bacf2d66fa99` (112 files, including old variant helpers).
+- `refs/recovery/2026-10-12-primary` →
+  `d76f7e5bc164cb7f166815308490713d5ea18962` (old primary artwork and scratch scripts).
+
+Three entirely clean closed-PR worktrees (docs, Ember Watch and site) were
+removed; their Git branches/history remain. Three fully merged local branches
+in the active clone were deleted. The transition, Neutrino and unrelated Copilot
+worktrees were retained, including ignored build outputs and the nested legacy
+wiki checkout. Recover unique `tools/build_flavour.py`, variant tests and PPC
+TTY provenance from the ZIP or the transition stash's third parent before
+implementing configuration coverage. Never restore obsolete workflows wholesale.
+
+The historical sections below retain prior evidence; their open-PR and dirty
+worktree descriptions are superseded by this continuation record. Issue #20
+remains authoritative for unfinished parity, publication and hardware work.
+
 ## Current merged checkpoint and continuation queue
 
 The authoritative remaining-work tracker is
