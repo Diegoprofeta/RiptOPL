@@ -1,5 +1,41 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: older feature parity and released SDK follow-up
+
+Base is merged POPS PR #25, `4157d5a23eb51d377635188b811b74883e927e41`.
+Its fresh compiler, host, 32-configuration and three-kit integration runs and
+downloaded artifacts pass. Pages PR #26 deployed at `fdda817f`; Wiki `6c1ffb6d`
+updates only POPS sections, preserving unrelated imports and credits.
+
+Continue `codex/legacy-parity-885-898`. Adapted production bodies are #885 quoted
+config decoding (`f71cb5c6`), #887 top-level Ember image filtering (`ac5085c9`),
+#889 VMC write/semaphore recovery and Neutrino warning policy (`3e836bd3`), and
+#898 explicit SMB session checking (`2297297b`). The current production snapshot
+is `a0ca55c54cb32b801423a4fdc800968ff4f62c2d`; full RA/browser parity is separate.
+
+The C++ config sanitizer suite tests real file save/read cycles, maximum escaped
+values and unknown escapes. Config and VMC regressions fail on the actual
+pre-port source. VMC creation also stops before writing on a failed seek and
+releases the semaphore. The stronger existing non-destructive VMC guards stay.
+The production automatic-VMC-creation launch hook is absent here; this batch
+does not claim that broader feature is ported.
+
+Checked SMB Refresh uses `EthSupport`, host library services and the existing
+serialized reconnect path. Healthy ART/BGM handles stay open. Queue rejection
+is retryable; protocol changes cancel queued/in-flight probes. A settings
+reconnect upgrades a queued or in-flight probe instead of being lost behind it;
+the initial adaptation failed that scenario and the corrected regression passes.
+New checks execute the actual class methods, menu dispatch and Ember scan.
+The seven C++ sanitizer suites are now explicitly included in CI.
+
+Tech reports released ps2build/sdk-world `v2026.10.12.2` fixes project-header
+tracking and adds native `ppctty` for both compilers. Live update discovery also
+finds LLVM `v0.3.3`. Verify these releases locally before dropping the LLVM
+`-sys-header-deps` workaround or replacing the pinned PPC TTY fallback. Retain
+the RA socket compatibility archive: released cglue still lacks those APIs.
+The EE-core stack guard and narrow LLVM IGS `-Oz` policy remain unchanged.
+Final SDK-updated native/CI/package verification is pending at this checkpoint.
+
 ## Latest continuation: POPS UDPFS #904/#909
 
 Base integration is merged PR #24, `7bcb77b3ccf5bcf2af29c34527d864a6417ffbc7`.

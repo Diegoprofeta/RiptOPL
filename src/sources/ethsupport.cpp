@@ -209,6 +209,11 @@ static void ethReconnectSMB(void)
     gEthSupport.reconnectSmb();
 }
 
+static void ethCheckedRefreshSMB(void)
+{
+    gEthSupport.checkedRefreshSmb();
+}
+
 void EthSupport::initSmb(void)
 {
     int ret;
@@ -402,6 +407,60 @@ void EthSupport::reconnectSmb(void)
     host::library().markDirty(ETH_MODE);
     ioPutRequest(IO_MENU_UPDATE_DEFFERED, &(*ethInstance()).mode);
     reconnectQueued_ = 0;
+    reconnectRequested_ = 0;
+}
+
+void EthSupport::checkedRefreshSmb()
+{
+    // A queued Refresh can outlive a protocol/settings change. Recheck ownership on the worker
+    // before probing or reconnecting; do not revive SMB after the user selected a UDP transport.
+    if (gNetworkProtocol != NET_PROTO_SMB || gETHStartMode == START_MODE_DISABLED || !ethInstance()->enabled) {
+        reconnectQueued_ = 0;
+        reconnectRequested_ = 0;
+        return;
+    }
+    if (reconnectRequested_ || gNetworkStartup != 0 || !smbModuleLoaded_ || base_ == NULL) {
+        reconnectSmb();
+        return;
+    }
+    smbEcho_in_t echo;
+    memset(&echo, 0, sizeof(echo));
+    strcpy(echo.echo, "OPL REFRESH");
+    echo.len = strlen(echo.echo);
+    int echoResult = fileXioDevctl(base_, SMB_DEVCTL_ECHO, &echo, sizeof(echo), NULL, 0);
+    // The RPC can yield to the GUI. A settings reconnect may have upgraded this request, or
+    // the user may have disabled/switched away from SMB while the probe was in flight.
+    if (gNetworkProtocol != NET_PROTO_SMB || gETHStartMode == START_MODE_DISABLED || !ethInstance()->enabled) {
+        reconnectQueued_ = 0;
+        reconnectRequested_ = 0;
+        return;
+    }
+    if (echoResult < 0 || reconnectRequested_) {
+        LOG("ETH: explicit Refresh requires a session/settings reconnect\n");
+        reconnectSmb();
+        return;
+    }
+    // A healthy session keeps its open ART/BGM handles. Refresh either PS1 or PS2 backing view.
+    host::library().markDirty(ETH_MODE);
+    ioPutRequest(IO_MENU_UPDATE_DEFFERED, &ethInstance()->mode);
+    reconnectQueued_ = 0;
+}
+
+void EthSupport::requestCheckedRefresh()
+{
+    if (gNetworkProtocol != NET_PROTO_SMB || gETHStartMode == START_MODE_DISABLED || reconnectQueued_)
+        return;
+    if (!ethInstance()->enabled || netInitSema() < 0)
+        return;
+    reconnectQueued_ = 1; // coalesce with both explicit Refresh and ordinary settings reconnects
+    reconnectRequested_ = 0;
+    if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&ethCheckedRefreshSMB)) != IO_OK)
+        reconnectQueued_ = 0;
+}
+
+void ethRequestCheckedRefresh(void)
+{
+    gEthSupport.requestCheckedRefresh();
 }
 
 void EthSupport::requestReconnect()
@@ -410,16 +469,23 @@ void EthSupport::requestReconnect()
     // a stale/hidden ETH page fight that interlock or revive SMB after Network Start was disabled.
     if (gNetworkProtocol != NET_PROTO_SMB || gETHStartMode == START_MODE_DISABLED)
         return;
-    if (reconnectQueued_)
+    if (reconnectQueued_) {
+        // A healthy-session probe does not apply changed settings. Upgrade the queued worker's
+        // action instead of losing a settings reconnect behind that cheaper request.
+        reconnectRequested_ = 1;
         return;
+    }
     if (netInitSema() < 0)
         return;
 
     (*ethInstance()).enabled = 1;
     (*ethInstance()).delay = gArtDelay;
     reconnectQueued_ = 1;
-    if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&ethReconnectSMB)) != IO_OK)
+    reconnectRequested_ = 1;
+    if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&ethReconnectSMB)) != IO_OK) {
         reconnectQueued_ = 0;
+        reconnectRequested_ = 0;
+    }
 }
 
 void ethRequestReconnect(void)

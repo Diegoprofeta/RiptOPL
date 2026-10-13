@@ -31,6 +31,8 @@ int ethEnsureSMBShareConnected(void);
 // (link mode + IP/DHCP), log on/open the share again, and rebuild the list. Safe to call repeatedly;
 // one request is coalesced while the IO worker is reconnecting.
 void ethRequestReconnect(void);
+// Explicit Refresh probes the session on the IO worker; healthy ART/BGM handles stay open.
+void ethRequestCheckedRefresh(void);
 int ethGetNetConfig(u8 *ip_address, u8 *netmask, u8 *gateway);
 int ethApplyConfig(void);
 int ethGetDHCPStatus(void);
@@ -70,6 +72,7 @@ public:
     bool smbShareConnected() const;
     int ensureShareConnected();
     void requestReconnect();
+    void requestCheckedRefresh();
     int resolveIsoFavourite(int id, const char *name, int *outId);
 
     // The row lookup shared by the EthSource accessors.
@@ -83,6 +86,7 @@ public:
     void protocolTeardown();
     void displayErrorStatus();
     void reconnectSmb();
+    void checkedRefreshSmb();
 
 private:
     char prefix_[40] = {}; // Contains the full path to the folder where all the games are.
@@ -96,6 +100,7 @@ private:
     base_game_info_t *ps1Games_ = NULL;
     unsigned char smbModuleLoaded_ = 0;
     unsigned char reconnectQueued_ = 0;
+    unsigned char reconnectRequested_ = 0; // settings reconnect upgrades a pending checked Refresh
 };
 
 extern EthSupport gEthSupport;
