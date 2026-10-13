@@ -40,6 +40,8 @@ private:
        SMAP NIC. RA must not raise the SMB stack on top of it; the menu actions
        refuse with a notice instead. */
     static int nicBusy();
+    // Selected UDP transports reserve the NIC before their modules load. Menu actions only.
+    static int nicReserved();
     /* Waits for a reply, resending the request. Returns the length or -1. */
     int ask(int sock, struct sockaddr_in *to, const char *req, char *out, int outmax);
     /* Opens the UDP socket: network up if needed, broadcast allowed,

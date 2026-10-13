@@ -99,11 +99,11 @@
 #include <time.h> /* clock(): round trip of the link test */
 
 constexpr int RA_PORT = 18194;
-constexpr int RA_MY_PORT = 18196;  /* own port: the PC replies here directly, past NAT */
-constexpr int RA_CHUNK = 896;  /* agreed with the PC; rule 3 in the header */
+constexpr int RA_MY_PORT = 18196; /* own port: the PC replies here directly, past NAT */
+constexpr int RA_CHUNK = 896;     /* agreed with the PC; rule 3 in the header */
 constexpr int RA_RECV_MAX = 992;  /* cap for one recvfrom; rule 3 */
-constexpr int RA_TRY = 12;  /* attempts per request */
-constexpr int RA_POLL_MS = 25;  /* pause between polls for a reply */
+constexpr int RA_TRY = 12;        /* attempts per request */
+constexpr int RA_POLL_MS = 25;    /* pause between polls for a reply */
 /* How many times to ask again while the PC answers WAIT. Identifying
    the image is a live request to the RetroAchievements server and
    takes seconds. We wait only while the PC keeps answering: if it goes
@@ -153,6 +153,12 @@ int raNetTestLink(char *line1, int sz1, char *line2, int sz2)
 int Ranet::nicBusy()
 {
     return bdmIsUDPBDLoaded() || udpfsGetModulesLoaded();
+}
+
+int Ranet::nicReserved()
+{
+    return nicBusy() || gNetworkProtocol == NET_PROTO_UDPFS || gNetworkProtocol == NET_PROTO_UDPFSBD ||
+           gNetworkProtocol == NET_PROTO_UDPBD;
 }
 
 /* Waits for a reply, resending the request. Returns the length or -1.
@@ -301,7 +307,7 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
     if (info2 != NULL && info2sz > 0)
         info2[0] = '\0';
 
-    if (nicBusy()) {
+    if (nicReserved()) {
         LOG("RA: NIC is owned by a UDP transport, not asking the PC\n");
         raHashStep("6-nic-busy-udp-transport");
         return -8;
@@ -567,7 +573,7 @@ int Ranet::netTestLink(char *line1, int sz1, char *line2, int sz2)
     clock_t t0, deadline;
     unsigned int ms;
 
-    if (nicBusy()) {
+    if (nicReserved()) {
         snprintf(line1, sz1, "%s", _l(_STR_RA_NET_BUSY));
         snprintf(line2, sz2, "%s", _l(_STR_RA_NET_BUSY2));
         return 0;

@@ -4,10 +4,13 @@ Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/Ript
 PRs #18/#19 and the full site import #17 are merged; Pages and the independent
 wiki import are published. GCC/LLVM, host gates and all three complete release
 candidate kits pass. Publication and physical-console acceptance remain open.
-The follow-up `codex/merge-migration-queue` branch consolidates PRs #12–#16;
-check its actual PR merge state before repeating those adaptations.
-Production now includes #922 (`9d910fc05796b7bcfb4f00544a55baf73d800a33`),
-whose NIC reservation, DEV9 failure handling and IP-clash notice still need ports.
+PR #21 merged the useful changes from PRs #12–#16 as `6988499b`; the originals
+are closed as superseded. See the checkpoint for exact final CI/artifact refs.
+The next branch `codex/network-parity-922` adapts production #922
+(`0a1a593a`, merge `9d910fc05796b7bcfb4f00544a55baf73d800a33`). Its C++ guards,
+IOP ABI and queued notice have host coverage; check the new PR's exact compiler
+and edition CI before merging. The absent newer RA browser/Caduceus methods
+remain part of the broader RA port.
 
 This ledger records verified ports into the C++/ps2build repository. It does not
 claim that the entire public repository is synchronized. The public source
@@ -16,6 +19,7 @@ snapshot used for the ports below is Open-PS2-Loader commit
 
 | Public change | Private state before this port | Port and scope |
 | --- | --- | --- |
+| #922: NIC reservation, DEV9 gates and IP-conflict notice | Existing RA menu methods could start SMB before selected UDP modules loaded; three UDP chains ignored DEV9 failure; no IP-clash query/notice. | Keep `Ranet` and `BdmSupport` methods, reserve selected UDP protocols only for menu actions, propagate DEV9 usability and balance failed references in Files/on-demand/boot paths. Append ministack export slot 7 and ioman devctl; queue one IO-thread notice for the GUI hook. Compile the actual C++ guards/refcount/notice and actual ARP handler in regressions. Newer RA browser/Caduceus absent; legacy Makefile/filter changes inapplicable to this SDK/edition CI. |
 | #904: UDPFS operation serialization | Filesystem RPC callers and watchdog discovery shared one transport without a semaphore; teardown left the watchdog alive. | Serialize all operations that touch transport/FD state with the watchdog, stop it before teardown, retain 64-bit seek results and unlocked interrupt completion. Only the UDPFS portion of #904 is covered. Favorites and POPS changes remain separate. |
 | #908: cumulative ACK validation | Filesystem used the sequence helper; IMG still used the ineffective signed comparison after a 12-bit mask. | Both modes use the same sequence helper, including wrap and ambiguous half-ring behavior. |
 | #913: canonical transport | The core was identical in both variants, while ACK behavior had already diverged. | Move the unchanged core and updated transport to `udpfs_shared/src`; retain per-variant wrappers, headers, defines, imports, module names and SDK targets. |

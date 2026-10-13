@@ -44,6 +44,14 @@ static int udpfsWaitingForServer = 0; // the last scan got no answer from the se
 static int udpfsThemesScanned = 0;    // THM is registered once per active UDPFS session, after THM opens
 static int udpfsPs1Scanned = 0;       // a PS1-view scan has reached the server this session; see udpfsNeedsUpdate
 
+// Another device answering for this PS2's IP (udpfs_ioman devctl, value shared with udpfs_ioman.c).
+// The scan runs on the IO thread, but guiWarning draws, so the scan only queues the text and the GUI
+// thread shows it (udpfsShowPendingNotice, from the menu frame hook). Once per boot.
+#define UDPFS_DEVCTL_IP_CONFLICT 0x55460001
+static int udpfsIpConflictWarned = 0;
+static volatile int udpfsIpConflictNotice = 0;
+static char udpfsIpConflictText[320];
+
 UdpfsSupport gUdpfsSupport;
 
 // Load the UDPFS ioman IRX chain ONCE per boot. Mirrors bdmsupport's udpfs_bd chain load
@@ -77,7 +85,11 @@ static void udpfsLoadModules(void)
 
     // dev9 is refcounted (shared with ATA-HDD). The ministack has no DHCP client, so it needs the PS2's
     // static IP as an "ip=A.B.C.D" arg -- built exactly as bdmsupport does for the udpfs_bd chain.
-    sysInitDev9();
+    if (!sysInitDev9()) {
+        LOG("UDPFSSUPPORT: DEV9 failed -- not loading the UDPFS ioman stack\n");
+        sysShutdownDev9();
+        return;
+    }
     snprintf(ipArg, sizeof(ipArg), "ip=%d.%d.%d.%d", ps2_ip[0], ps2_ip[1], ps2_ip[2], ps2_ip[3]);
 
     LOG("[UDPFS_SMAP]:\n");
@@ -139,6 +151,33 @@ static int udpfsServerAnswers(void)
 
     return stat(udpfsPrefix, &st) == 0;
 }
+// The server is silent. If another device has answered ARP for this PS2's IP, the server's replies
+// go to that device: say so once, with the address and the other device's MAC, instead of leaving an
+// empty list. The query is answered inside the IOP without network traffic.
+static void udpfsCheckIpConflict(void)
+{
+    static unsigned char mac[64] __attribute__((aligned(64)));
+
+    if (udpfsIpConflictWarned || !udpfsIomanModLoaded)
+        return;
+    if (fileXioDevctl("udpfs:", UDPFS_DEVCTL_IP_CONFLICT, NULL, 0, mac, 6) != 1)
+        return;
+    udpfsIpConflictWarned = 1;
+    snprintf(udpfsIpConflictText, sizeof(udpfsIpConflictText), "%s\n%d.%d.%d.%d  /  %02X:%02X:%02X:%02X:%02X:%02X",
+             _l(_STR_UDPFS_IP_CONFLICT), ps2_ip[0], ps2_ip[1], ps2_ip[2], ps2_ip[3],
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    LOG("UDPFSSUPPORT: IP conflict -- %s\n", udpfsIpConflictText);
+    udpfsIpConflictNotice = 1;
+}
+
+void udpfsShowPendingNotice(void)
+{
+    if (!udpfsIpConflictNotice)
+        return;
+    udpfsIpConflictNotice = 0;
+    host::ui().warning(udpfsIpConflictText, 10);
+}
+
 class UdpfsSource: public GameSource
 {
 public:
@@ -430,6 +469,8 @@ int UdpfsSource::update(item_list_t *itemList)
     // view (whose empty result can't tell "no titles" from "no answer"), asks the server itself before
     // deciding to wait -- otherwise a working server would be polled and rescanned every two seconds.
     udpfsSetWaitingForServer(!answeredBefore || (!reached && !udpfsServerAnswers()));
+    if (udpfsWaitingForServer)
+        udpfsCheckIpConflict();
     return gUdpfsSupport.activeGameCount(itemList);
 }
 

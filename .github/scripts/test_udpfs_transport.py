@@ -38,8 +38,9 @@ def main():
             flags.append('-DUDPRDMA_TEST_SOURCE="' + production.as_posix() + '"')
             run(variant, TESTS / "test_udprdma_session.c", flags)
         run("announce", TESTS / "test_ministack_announce.c", [])
+        run("conflict", TESTS / "test_ministack_conflict.c", [])
         run("ack_wrap", NETWORK / "udpfs_ioman/tests/test_ack_sequence.c", [])
-    print("PASS: UDPFS Files/IMG sessions, ACK wrap and discovery ARP packet")
+    print("PASS: UDPFS Files/IMG sessions, ACK wrap, discovery ARP and real IP-conflict handler")
 
 
 if __name__ == "__main__":
