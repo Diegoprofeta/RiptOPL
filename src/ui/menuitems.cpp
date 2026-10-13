@@ -82,7 +82,7 @@ static void itemInitSupport(item_list_t *support)
 
 static void itemExecSelect(struct menu_item *curMenu)
 {
-    item_list_t *support = static_cast<item_list_t*>(curMenu->userdata);
+    item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
     sfxPlay(SFX_CONFIRM);
     // That confirm just armed a rumble pulse, and everything below blocks the GUI thread without
     // polling readPads() -- config load, GameID hold, the whole itemLaunch chain. The IOP LATCHES
@@ -132,7 +132,7 @@ static void itemExecSelect(struct menu_item *curMenu)
 
 void itemExecRefresh(struct menu_item *curMenu)
 {
-    item_list_t *support = static_cast<item_list_t*>(curMenu->userdata);
+    item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
 
     if (support && support->enabled) {
         // FAV has no device to rescan: loadFavourites() re-reads favourites.bin and schedules its
@@ -163,7 +163,7 @@ void itemExecRefresh(struct menu_item *curMenu)
 // through the old view; otherwise a valid row 0 from one list can silently become row 0 of another.
 void itemExecToggleView(struct menu_item *curMenu)
 {
-    item_list_t *support = static_cast<item_list_t*>(curMenu->userdata);
+    item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
     if (!support || !libViewRingUsable(support->mode) || libViewPending(support->mode))
         return;
 
@@ -222,7 +222,7 @@ static int itemSelectedView(struct menu_item *curMenu, item_list_t *support)
 // Folder browsing: the cancel button (whichever of Cross/Circle is not Select) ascends a level.
 static void itemFolderAscend(struct menu_item *curMenu)
 {
-    item_list_t *support = curMenu ? static_cast<item_list_t*>(curMenu->userdata) : NULL;
+    item_list_t *support = curMenu ? static_cast<item_list_t *>(curMenu->userdata) : NULL;
     if (support == NULL || folderDepth(support->mode) == 0)
         return;
     if (folderAscend(support->mode)) {
@@ -261,7 +261,7 @@ void itemExecSquare(struct menu_item *curMenu)
         // failing stat on the shared MMCE/fileXio channel whose only visible effect is raising the
         // busy spinner (Andrew, #120). Skipping it for VCD strictly REDUCES channel traffic and drops
         // no displayed data (the info page shows no size for a VCD anyway).
-        item_list_t *support = static_cast<item_list_t*>(curMenu->userdata);
+        item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
         // Direct HDD/HDL rows already carry their size in APA metadata (total_size_in_kb), so the
         // generic CFG+stat pass is redundant there. VCD rows likewise have no meaningful #Size.
         // Avoid putting either no-op read onto the shared IO worker merely for opening Info.
@@ -318,7 +318,7 @@ void itemExecFav(struct menu_item *curMenu)
     if (!curMenu->current)
         return;
 
-    item_list_t *support = static_cast<item_list_t*>(curMenu->userdata);
+    item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
     if (!support)
         return;
 
@@ -331,7 +331,11 @@ void itemExecFav(struct menu_item *curMenu)
         return;
 
     if (support->mode == FAV_MODE) {
-        favRemoveByIndex(it->id);
+        if (!favRemoveByIndex(it->id)) {
+            guiShowToast(_l(_STR_FAV_REMOVE_FAILED));
+            return;
+        }
+        guiShowToast(_l(_STR_FAV_REMOVED));
     } else {
         int kind = itemFavKind(support, it->id, it->text);
         int sourceId = libListSourceId(support, it->id);
@@ -348,11 +352,20 @@ void itemExecFav(struct menu_item *curMenu)
         if (kind == FAV_KIND_CUE && !gsOf(support)->hasLaunchCue())
             return;
         if (it->favourited) {
-            if (removeFavouriteByIdAndText(support->mode, sourceId, it->text, kind))
-                it->favourited = 0; // only clear the star once the store write succeeded
+            if (!removeFavouriteByIdAndText(support->mode, sourceId, it->text, kind)) {
+                guiShowToast(_l(_STR_FAV_REMOVE_FAILED));
+                return;
+            }
+            it->favourited = 0;
+            guiShowToast(_l(_STR_FAV_REMOVED));
         } else {
-            if (addFavouriteItem(support->mode, sourceId, it->icon_id, it->text_id, it->text, kind))
-                it->favourited = 1; // only show the star once the store write succeeded
+            guiShowToast(_l(_STR_FAV_SAVING));
+            if (!addFavouriteItem(support->mode, sourceId, it->icon_id, it->text_id, it->text, kind)) {
+                guiShowToast(_l(_STR_FAV_SAVE_FAILED));
+                return;
+            }
+            it->favourited = 1;
+            guiShowToast(_l(_STR_FAV_SAVED));
         }
     }
 
@@ -369,7 +382,7 @@ void itemExecTriangle(struct menu_item *curMenu)
     if (curMenu->current->item.isFolder)
         return;
 
-    item_list_t *support = static_cast<item_list_t*>(curMenu->userdata);
+    item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
 
     if (support) {
         // A VCD is a POPSTARTER title, not a PS2-loader title. Route before the generic per-game

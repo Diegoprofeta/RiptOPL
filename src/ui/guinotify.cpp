@@ -14,6 +14,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
 
 Notifications gNotifications;
 
@@ -51,6 +52,24 @@ void Notifications::render(const char *string, int y)
 
     rmDrawRect(x - 10, y, gGuiScreenWidth - x, MENU_ITEM_HEIGHT + 10, gColDarker);
     fntRenderString(gTheme->fonts[0], x - 5, y + 5, ALIGN_NONE, 0, 0, string, gTheme->textColor);
+}
+
+void Notifications::setToast(const char *text)
+{
+    snprintf(toast_, sizeof(toast_), "%s", text ? text : "");
+    toastStart_ = clock();
+}
+
+void Notifications::drawToast()
+{
+    if (toast_[0] == '\0')
+        return;
+    // The EE clock wraps at 32 bits. Cast before subtracting to avoid signed overflow.
+    if ((uint32_t)clock() - (uint32_t)toastStart_ >= (uint32_t)3000 * (CLOCKS_PER_SEC / 1000)) {
+        toast_[0] = '\0';
+        return;
+    }
+    render(toast_, 10);
 }
 
 void Notifications::show()

@@ -7,12 +7,11 @@
 #include "include/opl.h"
 #include "include/libview.h"
 #include "include/gamesource.h"
+#include <array>
 
-// Both-mode device state, the Favorites ring, and the APPS split ring. Zero -- LIB_VIEW_ISO, so
-// PS2 for a device or Favorites and Apps for the APPS tab -- is the wanted FIRST-RUN default
-// everywhere: Favorites' ring reads PS2 -> PS1 -> ELF -> All from there, so it opens on the plain
-// PS2 shelf and the all-in-one one is a press away. A position remembered from an earlier session
-// (libViewLoadFromConfig) overrides this, so it only decides where a fresh config starts.
+// Both-mode device state, the Favorites ring, and the APPS split ring. New configs open Favorites
+// on All so saved PS1 games and apps are immediately visible. Devices and split Apps still start
+// on PS2/Apps. A position remembered by libViewLoadFromConfig overrides these first-run defaults.
 //
 // BDM pages keep their position per device TYPE, not per page: massN numbers follow attach order,
 // so a device can be mass0 one boot and mass1 the next, and each then opened on the other's view.
@@ -20,7 +19,11 @@
 // BDM entries, so the saved strings keep their format), and each BDM page's live position sits past
 // MODE_COUNT, where libViewBdmAttach seeds it from the type of the device that just attached.
 #define LIB_VIEW_ENTRIES (MODE_COUNT + BDM_MODE_COUNT)
-static unsigned char retainedView[LIB_VIEW_ENTRIES];
+static std::array<unsigned char, LIB_VIEW_ENTRIES> retainedView = [] {
+    std::array<unsigned char, LIB_VIEW_ENTRIES> views {};
+    views[FAV_MODE] = LIB_VIEW_ALL;
+    return views;
+}();
 
 // Mixed has a different three-stop ring from Both. Keep its position separately so switching the
 // setting to Mixed always enters the combined list the first time, while later visits retain the
@@ -320,7 +323,7 @@ void libViewLoadFromConfig(config_set_t *configLast)
 
     value = NULL;
     if (configGetStr(configLast, CONFIG_LAST_LIB_VIEW_RETAINED, &value) && value != NULL)
-        libViewDecodeRing(value, retainedView, NULL);
+        libViewDecodeRing(value, retainedView.data(), NULL);
 
     // The Mixed ring carries its own "has been visited" flag: an unvisited page must enter on the
     // combined list the first time (libViewMixedActive), and restoring a position has to satisfy
@@ -339,7 +342,7 @@ void libViewStoreToConfig(config_set_t *configLast)
 
     // configSetStr only marks the set modified when the text actually changes, so a session that
     // never touched L3 does not dirty the file and configWrite leaves the disk alone.
-    libViewEncodeRing(encoded, retainedView, NULL);
+    libViewEncodeRing(encoded, retainedView.data(), NULL);
     configSetStr(configLast, CONFIG_LAST_LIB_VIEW_RETAINED, encoded);
 
     libViewEncodeRing(encoded, mixedView, mixedViewInitialized);

@@ -6,11 +6,14 @@ wiki import are published. GCC/LLVM, host gates and all three complete release
 candidate kits pass. Publication and physical-console acceptance remain open.
 PR #21 merged the useful changes from PRs #12–#16 as `6988499b`; the originals
 are closed as superseded. See the checkpoint for exact final CI/artifact refs.
-The next branch `codex/network-parity-922` adapts production #922
-(`0a1a593a`, merge `9d910fc05796b7bcfb4f00544a55baf73d800a33`). Its C++ guards,
-IOP ABI and queued notice have host coverage; check the new PR's exact compiler
-and edition CI before merging. The absent newer RA browser/Caduceus methods
-remain part of the broader RA port.
+PR #22 merged production #922 (`0a1a593a`) into `d54dfc57`. Fresh integration
+GCC/LLVM, host and all three kit jobs pass; downloaded kits pass the publisher's
+independent verification against that exact integration SHA. The absent newer
+RA browser/Caduceus methods remain part of the broader RA port.
+
+Branch `codex/favorites-parity-903` adapts Favorites from production #903
+(`a73fb2e4`) and #904 (`906cdafe`) to `FavSupport`, `Notifications` and the C++
+theme engine. Check its exact compiler/package CI before using its candidates.
 
 This ledger records verified ports into the C++/ps2build repository. It does not
 claim that the entire public repository is synchronized. The public source
@@ -19,6 +22,7 @@ snapshot used for the ports below is Open-PS2-Loader commit
 
 | Public change | Private state before this port | Port and scope |
 | --- | --- | --- |
+| #903/#904: Favorites feedback, default view and centered title | Indexed removal cleared the source star before persistence; failed source toggles still played success/reloaded; new Favorites opened on PS2 only; stars followed the title. | Return the actual removal result before clearing the star; render saving/success/failure feedback independently of courtesy notices and only confirm/reload successful writes. New configs open All while remembered shelves still win. Preserve centered title anchors with symmetric room and a leading star; ordinary lists use a fixed leading column. Execute actual C++ actions/removal/config decoding/toast timing/layout with fault injection and clock-wrap coverage. This changes UI commit ordering, not disk atomicity: the inherited truncating writer still needs partial-write/close/recovery work. |
 | #922: NIC reservation, DEV9 gates and IP-conflict notice | Existing RA menu methods could start SMB before selected UDP modules loaded; three UDP chains ignored DEV9 failure; no IP-clash query/notice. | Keep `Ranet` and `BdmSupport` methods, reserve selected UDP protocols only for menu actions, propagate DEV9 usability and balance failed references in Files/on-demand/boot paths. Append ministack export slot 7 and ioman devctl; queue one IO-thread notice for the GUI hook. Compile the actual C++ guards/refcount/notice and actual ARP handler in regressions. Newer RA browser/Caduceus absent; legacy Makefile/filter changes inapplicable to this SDK/edition CI. |
 | #904: UDPFS operation serialization | Filesystem RPC callers and watchdog discovery shared one transport without a semaphore; teardown left the watchdog alive. | Serialize all operations that touch transport/FD state with the watchdog, stop it before teardown, retain 64-bit seek results and unlocked interrupt completion. Only the UDPFS portion of #904 is covered. Favorites and POPS changes remain separate. |
 | #908: cumulative ACK validation | Filesystem used the sequence helper; IMG still used the ineffective signed comparison after a 12-bit mask. | Both modes use the same sequence helper, including wrap and ambiguous half-ring behavior. |
@@ -58,10 +62,10 @@ verified port ledger, not a claim that every earlier public change is present.
 
 | Area | Evidence and next boundary |
 | --- | --- |
-| Favorites and POPS UDPFS | Public #904 also changes Favorites routing, PS1 network launch, driver preparation and transactional config writes. These are absent from this port; #909's rollback change depends on that implementation. Audit #903 and the UI/source dispatch together before adapting it to `GameSource`. |
+| POPS UDPFS and Favorites storage recovery | Favorites feedback/view/title changes are adapted above. Public #904's PS1 network launch, driver preparation and transactional POPS config writes are still absent; #909's rollback depends on that implementation. Separately harden the Favorites writer against short writes, close failures and interrupted replacement across supported devices; the upstream in-place writer is not atomic. |
 | RA runtime and standard/RA isolation | Public #894/#899/#906/#916 include newer RA runtime/browser/client behavior and ORBIT handoff. Only the snapshot subset of #906 is covered here. Require explicit standard/RA targets, package isolation and launch/resource validation before claiming RA parity. |
 | Configuration matrix and release packaging | Three complete ps2build edition kits now pass CI. Additional diagnostic, no-IGR, PADEMU-disabled, DS5/extras and debug configurations, language/font packs and actual GitHub publication still require validation. Recover useful variant work from the preserved public-transition worktree. Keep three release channels and one SDK. |
-| Existing feature PRs | #17/#18/#19 are merged. PRs #12–#16 are consolidated in `codex/merge-migration-queue`, preserving useful Ember, Neutrino, docs/evidence, splash and updater work while adapting stale build automation. Verify the consolidated PR's checks/merge state and close superseded originals only after retaining their changes. |
+| Existing feature PRs | #17/#18/#19/#21/#22 are merged. #21 retained the useful Ember, Neutrino, docs/evidence, splash and updater work from #12–#16; those originals are closed as superseded. Exact CI/artifact refs and local recovery are recorded in the checkpoint. |
 | Earlier feature/config parity | Public #885 custom core paths, #887 Ember launchability, #889 VMC recovery, #898 SMB refresh, and UI/font/settings changes need individual body-level comparisons. Some private custom path handling already exists; PR names or a test-count difference alone do not prove a gap. |
 | Hardware acceptance | Validate boot, USB/MX4SIO/MMCE/ATA discovery, hotplug, device allocation recovery, existing VMC handling, game launch/IGR, Files/IMG reconnect and other network protocols. LLVM floating-point behavior/performance also remains unproven. |
 

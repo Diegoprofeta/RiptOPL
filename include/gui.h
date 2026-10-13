@@ -165,6 +165,10 @@ void guiShowPopsNetConfig(void); // POPSTARTER's OWN IPCONFIG.DAT/SMBCONFIG.DAT 
 
 void guiCheckNotifications(int checkTheme, int checkLang);
 
+// GUI thread only, outside a frame bracket. Draws immediately before a synchronous action,
+// then keeps the feedback visible for three seconds, independently of courtesy notifications.
+void guiShowToast(const char *text);
+
 /** Renders the given string on screen for the given function until it's io finishes
  * @note The ptr pointer is watched for it's value. The IO is considered finished when the value becomes zero.
  * @param ptr The finished state pointer (1 unfinished, 0 finished)

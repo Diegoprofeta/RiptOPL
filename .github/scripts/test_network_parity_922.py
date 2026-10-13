@@ -1,6 +1,7 @@
 """Exercise the actual C++ DEV9/RA guards and UDPFS notice lifecycle from production #922."""
 from pathlib import Path
 import os
+import re
 import shlex
 import subprocess
 import tempfile
@@ -131,5 +132,7 @@ assert "arp_ip_conflict(" in function(ioman, "static int udpfs_devctl(")
 assert "I_arp_ip_conflict" in read("modules/network/udpfs_ioman/src/imports.lst")
 assert "I_arp_ip_conflict" not in read("modules/network/udpfs_bd/src/imports.lst")
 assert "DECLARE_IMPORT(7, arp_ip_conflict)" in read("modules/network/udpfs_ministack/include/mstack.h")
-assert read("lng/tmpl/_base.yml").rstrip().splitlines()[-2] == "- label: UDPFS_IP_CONFLICT"
+# Pin the positional ID while permitting later features to append their own labels.
+labels = re.findall(r"^- label: (.+)$", read("lng/tmpl/_base.yml"), re.M)
+assert labels.index("UDPFS_IP_CONFLICT") == 669  # generated enum ID 670 follows _STR_LOCALE
 print("PASS: actual C++ NIC reservation, DEV9 retry/refcount and one-shot GUI notice; three DEV9 gates and IOP ABI")

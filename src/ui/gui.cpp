@@ -349,6 +349,7 @@ void Gui::mainLoop()
         // something the user just asked for), independent of gEnableNotifications.
         gNotifications.drawRA();
 #endif
+        gNotifications.drawToast();
 
         // handle deferred operations
         execDeferred();
@@ -443,6 +444,16 @@ void Gui::updateScreenScale()
     fntUpdateAspectRatio();
 }
 
+void Gui::showToast(const char *text)
+{
+    gNotifications.setToast(text);
+    startFrame();
+    show();
+    guiDrawOverlays();
+    gNotifications.drawToast();
+    endFrame();
+}
+
 // The C-style entry points other files use.
 void guiInit(void) { gGui.init(); }
 void guiEnd() { gGui.shutdown(); }
@@ -451,6 +462,7 @@ void guiUnlock(void) { gGui.unlock(); }
 void guiStartFrame(void) { gGui.startFrame(); }
 void guiEndFrame(void) { gGui.endFrame(); }
 void guiShow() { gGui.show(); }
+void guiShowToast(const char *text) { gGui.showToast(text); }
 void guiDrawBGPlasma() { gGui.drawBackground(); }
 void guiReloadScreenExtents() { gGui.reloadScreenExtents(); }
 void guiMainLoop(void) { gGui.mainLoop(); }
