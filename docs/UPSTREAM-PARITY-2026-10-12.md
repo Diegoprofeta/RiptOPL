@@ -13,7 +13,10 @@ RA browser/Caduceus methods remain part of the broader RA port.
 
 Branch `codex/favorites-parity-903` adapts Favorites from production #903
 (`a73fb2e4`) and #904 (`906cdafe`) to `FavSupport`, `Notifications` and the C++
-theme engine. Check its exact compiler/package CI before using its candidates.
+theme engine. PR #23 is merged as `daae402e`, with fresh integration compiler,
+host and three-kit CI plus independent downloaded artifact verification passing.
+The next branch `codex/ps2build-configurations` restores optional configuration
+overlays and a 32-build compiler matrix; see the latest checkpoint for status.
 
 This ledger records verified ports into the C++/ps2build repository. It does not
 claim that the entire public repository is synchronized. The public source
@@ -64,7 +67,7 @@ verified port ledger, not a claim that every earlier public change is present.
 | --- | --- |
 | POPS UDPFS and Favorites storage recovery | Favorites feedback/view/title changes are adapted above. Public #904's PS1 network launch, driver preparation and transactional POPS config writes are still absent; #909's rollback depends on that implementation. Separately harden the Favorites writer against short writes, close failures and interrupted replacement across supported devices; the upstream in-place writer is not atomic. |
 | RA runtime and standard/RA isolation | Public #894/#899/#906/#916 include newer RA runtime/browser/client behavior and ORBIT handoff. Only the snapshot subset of #906 is covered here. Require explicit standard/RA targets, package isolation and launch/resource validation before claiming RA parity. |
-| Configuration matrix and release packaging | Three complete ps2build edition kits now pass CI. Additional diagnostic, no-IGR, PADEMU-disabled, DS5/extras and debug configurations, language/font packs and actual GitHub publication still require validation. Recover useful variant work from the preserved public-transition worktree. Keep three release channels and one SDK. |
+| Configuration matrix and release packaging | Three complete ps2build edition kits pass CI. The recovered PADEMU-disabled, DS5/extras, DTL, diagnostic, debug and UART definitions are adapted through the edition builder with isolated configuration stages and release rejection guards. Host/native UART checks pass; verify the new PR's 32-build GCC/LLVM matrix. No compile-time no-IGR switch was found; audit its actual behavior separately. DECI2, language/font/debug distribution bundles and publication remain open. Keep three release channels and one SDK. |
 | Existing feature PRs | #17/#18/#19/#21/#22 are merged. #21 retained the useful Ember, Neutrino, docs/evidence, splash and updater work from #12–#16; those originals are closed as superseded. Exact CI/artifact refs and local recovery are recorded in the checkpoint. |
 | Earlier feature/config parity | Public #885 custom core paths, #887 Ember launchability, #889 VMC recovery, #898 SMB refresh, and UI/font/settings changes need individual body-level comparisons. Some private custom path handling already exists; PR names or a test-count difference alone do not prove a gap. |
 | Hardware acceptance | Validate boot, USB/MX4SIO/MMCE/ATA discovery, hotplug, device allocation recovery, existing VMC handling, game launch/IGR, Files/IMG reconnect and other network protocols. LLVM floating-point behavior/performance also remains unproven. |

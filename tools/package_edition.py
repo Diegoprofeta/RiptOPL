@@ -23,6 +23,8 @@ def package(edition, neutrino_archive):
     options = EDITIONS[edition]
     built = ROOT / "dist/editions" / edition
     manifest = json.loads((built / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+    if manifest.get("configuration", "standard") != "standard":
+        raise ValueError("configuration candidates cannot be packaged as standard releases")
     elf = built / "RIPTOPL.ELF"
     if manifest["edition"] != edition or manifest["source_commit"] != git("rev-parse", "HEAD"):
         raise ValueError("edition/source mismatch; rebuild before packaging")

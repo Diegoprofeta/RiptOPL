@@ -13,6 +13,7 @@ import sys
 import yaml
 
 from build import build
+from build_configuration import CONFIGURATIONS, apply_configuration
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITIONS = {
@@ -26,7 +27,7 @@ def add(target, field, *values):
     target.setdefault(field, []).extend(v for v in values if v not in target.get(field, []))
 
 
-def definition(edition):
+def definition(edition, configuration="standard", toolchain="gcc"):
     options = EDITIONS[edition]
     config = yaml.safe_load((ROOT / "ps2.yaml").read_text(encoding="utf-8"))
     # YAML aliases share lists. Mutating one target must not change another.
@@ -56,7 +57,20 @@ def definition(edition):
         for name in ("bdm_cdvdman", "mmce_cdvdman"):
             add(targets[name], "defines", "__USE_DEV9")
             add(targets[name], "sources", "modules/iopcore/cdvdman/dev9.c")
+    apply_configuration(config, configuration)
+    # IGS makes LLVM -Os leave only 2,712 bytes for the core's stack. -Oz leaves
+    # 6,040 with the same 3 KB linker guard and fixed memory regions; GCC stays -Os.
+    if toolchain == "llvm" and "IGS" in core["defines"]:
+        core["opt"] = "-Oz"
     return config
+
+
+def build_paths(edition, toolchain, configuration):
+    if configuration == "standard":
+        return Path("build/editions") / f"{edition}-{toolchain}", ROOT / "dist/editions" / edition
+    # Compiler/configuration checks cannot overwrite a publishable edition stage.
+    name = f"{edition}-{configuration}-{toolchain}"
+    return Path("build/configurations") / name, ROOT / "dist/configurations" / name
 
 
 def git(*args):
@@ -67,20 +81,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("edition", choices=EDITIONS)
     parser.add_argument("--toolchain", choices=("gcc", "llvm"), default="gcc")
+    parser.add_argument("--configuration", choices=CONFIGURATIONS, default="standard")
     args = parser.parse_args()
     os.chdir(ROOT)
     source = git("rev-parse", "HEAD")
     dirty = bool(git("status", "--porcelain"))
     options = EDITIONS[args.edition]
     os.environ["RIPTOPL_EDITION"] = args.edition
-    os.environ["LOCALVERSION"] = f"PS2BUILD-{options['title']}-{args.toolchain.upper()}"
+    suffix = "" if args.configuration == "standard" else f"-{args.configuration.upper()}"
+    os.environ["LOCALVERSION"] = f"PS2BUILD-{options['title']}-{args.toolchain.upper()}{suffix}"
     # Each edition regenerates blobs, so sequential local builds cannot inherit
     # a previous edition's RA mark, theme graphics, or displayed version.
     subprocess.run([sys.executable, "tools/assets.py", "embed"], check=True)
     subprocess.run([sys.executable, "tools/assets.py", "version"], check=True)
-    config = definition(args.edition)
+    config = definition(args.edition, args.configuration, args.toolchain)
     canonical = yaml.safe_dump(config, sort_keys=False)
-    output = Path("build/editions") / f"{args.edition}-{args.toolchain}"
+    output, stage = build_paths(args.edition, args.toolchain, args.configuration)
     result = build(args.toolchain, str(output), config)
     if result:
         return result
@@ -89,7 +105,6 @@ def main():
         raise ValueError(f"invalid packed ELF: {elf}")
     if git("rev-parse", "HEAD") != source or bool(git("status", "--porcelain")) != dirty:
         raise ValueError("source checkout changed during build")
-    stage = ROOT / "dist/editions" / args.edition
     stage.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(elf, stage / "RIPTOPL.ELF")
     sdk = Path(os.environ.get("PS2BUILD_HOME", shutil.which("ps2build") or "")).resolve()
@@ -98,6 +113,7 @@ def main():
     manifest = {
         "repository": "NathanNeurotic/RiptOPL", "source_commit": source, "dirty": dirty,
         "edition": args.edition, **options, "sdk": "ps2build", "compiler": args.toolchain,
+        "configuration": args.configuration,
         "ps2build_version": subprocess.check_output(["ps2build", "--version"], text=True).strip(),
         "components": yaml.safe_load((sdk / "versions.yaml").read_text()) if (sdk / "versions.yaml").exists() else {},
         "definition_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
@@ -108,6 +124,15 @@ def main():
     }
     (stage / "BUILD-MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     (stage / "ps2.resolved.yaml").write_text(canonical, encoding="utf-8")
+    if args.configuration != "standard":
+        shutil.copyfile(output / "eecore.map", stage / "eecore.map")
+        for filename in ("LICENSE", "CREDITS"):
+            shutil.copyfile(ROOT / filename, stage / filename)
+        for component in (["ps2sdk-ppctty"] if args.configuration.endswith("_uart") else []) + (["ps2sdk-socket"] if options["ra"] else []):
+            destination = stage / "licenses" / component
+            destination.mkdir(parents=True, exist_ok=True)
+            for filename in ("LICENSE", "UPSTREAM"):
+                shutil.copyfile(ROOT / "third_party" / component / filename, destination / filename)
     print(f"Built {options['title']}: {manifest['elf_sha256']}")
     return 0
 

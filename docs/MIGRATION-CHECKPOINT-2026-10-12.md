@@ -1,5 +1,34 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Latest continuation: optional ps2build configurations
+
+Integration `daae402eb7e3618c0de948a2537a3ae4b4a4d960` contains merged PR #23
+Favorites parity. Fresh GCC/LLVM, host, format and all three full-kit jobs pass;
+downloaded final integration kits pass independent publisher verification at
+that exact SHA. Both primary local RiptOPL checkouts were synchronized and clean.
+No releases were published. The earlier sections below retain historical evidence;
+their instructions to continue the already merged branches are superseded here.
+
+Continue `codex/ps2build-configurations`. It adapts the recovered transition
+definitions through `tools/build_edition.py --configuration`, retaining the
+three editions and one SDK. See [BUILD-CONFIGURATIONS.md](BUILD-CONFIGURATIONS.md)
+for flags, paths and limits. All 14 configurations preserve edition/RA ABI in
+host checks; the new workflow builds 16 selected edition/configuration pairs on
+both compilers (32 candidates). Nonstandard objects/stages are isolated, and
+packaging/publication reject nonstandard manifests. Older standard manifests
+remain verifiable. Do not restore the recovered helper's duplicate RA setup,
+obsolete asset paths, or alternate release workflow.
+
+The native LLVM Korium `iopcore_debug_uart` compile/link/pack passes, as do all
+52 Python host suites, HTTP and seven C++ sanitizer suites. Verify the new PR's
+exact-head 32-build matrix and standard edition packages before merging.
+PPC TTY is still absent from SDK package discovery; its six recovered source/
+license files were compared to official ps2sdk `ac92a9f657d2e531dd8f060250b07f2a5ac6dea5`
+and match after line-ending normalization. License/provenance remain in the
+source and applicable candidate artifacts. UART output requires separate console
+acceptance. The source contains no verified compile-time no-IGR switch; that
+audit, DECI2 and debug/language/font distribution bundles remain in issue #20.
+
 ## Latest continuation: merged network port and Favorites #903/#904
 
 Verified integration is `d54dfc57d6af99995e72568af7a7ae8323b7dec8` (PR #22).
