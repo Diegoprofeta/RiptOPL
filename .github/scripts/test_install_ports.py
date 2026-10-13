@@ -32,6 +32,31 @@ def archive(extra=None):
 
 
 class InstallPortsTests(unittest.TestCase):
+    def test_incomplete_http_body_is_discarded_and_retried(self):
+        import http.client
+        partial, complete = MagicMock(), MagicMock()
+        partial.__enter__.return_value = partial
+        complete.__enter__.return_value = complete
+        partial.read.side_effect = http.client.IncompleteRead(b"partial archive", 121192)
+        complete.read.return_value = b"complete archive"
+        with patch.object(ports.urllib.request, "urlopen", side_effect=[partial, complete]) as opened, patch.object(ports.time, "sleep") as sleep:
+            self.assertEqual(ports.download("https://example.com/package.zip"), b"complete archive")
+        self.assertEqual(opened.call_count, 2)
+        partial.__exit__.assert_called_once()
+        complete.__exit__.assert_called_once()
+        sleep.assert_called_once_with(1)
+
+    def test_persistent_incomplete_http_body_stops_after_three_attempts(self):
+        import http.client
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.side_effect = http.client.IncompleteRead(b"partial", 100)
+        with patch.object(ports.urllib.request, "urlopen", return_value=response) as opened, patch.object(ports.time, "sleep") as sleep:
+            with self.assertRaises(http.client.IncompleteRead):
+                ports.download("https://example.com/package.zip")
+        self.assertEqual(opened.call_count, 3)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [1, 2])
+
     def test_timeout_during_response_read_retries_from_a_new_request(self):
         response = MagicMock()
         response.__enter__.return_value = response
