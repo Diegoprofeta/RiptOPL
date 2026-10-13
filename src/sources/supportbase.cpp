@@ -1,4 +1,5 @@
 #include "include/host.h"
+#include <limits.h>
 #include "include/opl.h"
 #include "include/lang.h"
 #include "include/util.h"
@@ -521,7 +522,7 @@ static int sbDedupFolderList(struct game_list_t **head)
 
 int sbReadList(base_game_info_t **list, const char *prefix, const char *sub, int *fsize, int *gamecount)
 {
-    int fd = -1, size, id = 0;
+    int fd = -1, size, id = 0, ulError = 0;
     int count, cdRet, dvdRet;
     char path[256];
     const int atRoot = (sub == NULL || sub[0] == '\0');
@@ -590,20 +591,39 @@ int sbReadList(base_game_info_t **list, const char *prefix, const char *sub, int
         if (count < 0)
             count = 0;
         size = getFileSize(fd);
-        newfsize = size;
-        count += size / sizeof(USBExtreme_game_entry_t);
+        const int recordSize = sizeof(USBExtreme_game_entry_t);
+        const int maxEntries = INT_MAX / sizeof(base_game_info_t);
+        const int ulEntries = size >= 0 ? size / recordSize : 0;
+        if (size < 0)
+            ulError = EIO;
+        else if (size % recordSize != 0)
+            ulError = EINVAL;
+        else if (count > maxEntries - fcount || ulEntries > maxEntries - fcount - count)
+            ulError = EOVERFLOW;
+        else {
+            newfsize = size;
+            count += ulEntries;
+        }
 
         int total = (count > 0 ? count : 0) + fcount;
-        if (total > 0) {
+        if (ulError == 0 && total > 0) {
             if ((newlist = (base_game_info_t *)malloc(sizeof(base_game_info_t) * total)) != NULL) {
                 memset(newlist, 0, sizeof(base_game_info_t) * total);
 
-                while (size > 0) {
+                while (size >= recordSize) {
+                    int received = 0;
+                    while (received < recordSize) {
+                        int got = read(fd, (char *)&GameEntry + received, recordSize - received);
+                        if (got <= 0 || got > recordSize - received) {
+                            ulError = EIO;
+                            break;
+                        }
+                        received += got;
+                    }
+                    if (ulError != 0)
+                        break;
+                    size -= recordSize;
                     base_game_info_t *g = &newlist[id++];
-
-                    // populate game entry in list even if entry corrupted
-                    read(fd, &GameEntry, sizeof(USBExtreme_game_entry_t));
-                    size -= sizeof(USBExtreme_game_entry_t);
 
                     // to ensure no leaks happen, we copy manually and pad the strings
                     memcpy(g->name, GameEntry.name, UL_GAME_NAME_MAX);
@@ -635,7 +655,8 @@ int sbReadList(base_game_info_t **list, const char *prefix, const char *sub, int
                 }
             }
         }
-        close(fd);
+        if (close(fd) < 0)
+            ulError = EIO;
     } else if (count + fcount > 0) {
         newlist = (base_game_info_t *)malloc(sizeof(base_game_info_t) * (count + fcount));
         if (newlist != NULL)
@@ -674,7 +695,9 @@ int sbReadList(base_game_info_t **list, const char *prefix, const char *sub, int
 
     // A total device-read failure or failed output allocation must preserve the last-good list.
     // ISO-only callers need an explicit error so they retry instead of latching an empty library.
-    if ((cdRet < 0 && dvdRet < 0 && fd < 0) || (total > 0 && newlist == NULL)) {
+    if (ulError != 0 || (cdRet < 0 && dvdRet < 0 && fd < 0) || (total > 0 && newlist == NULL)) {
+        if (ulError != 0)
+            sbReadListErrno = ulError;
         free(newlist);
         return fsize == NULL ? -1 : *gamecount; // retain the last-good list; ISO-only callers must retry
     }

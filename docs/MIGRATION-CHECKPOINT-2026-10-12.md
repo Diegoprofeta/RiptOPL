@@ -28,13 +28,30 @@ and full notices ship in `POPS/UDPFS-NOTICES/`. USB supplies non-VCD dependencie
 no dummy local VCD is required. This external POPSTARTER driver is separate
 from the sole ps2build SDK and the Neutrino PS2 network loader.
 
-All 54 Python host checks, HTTP and seven C++ sanitizer suites pass, including
+All 55 Python host checks, HTTP and seven C++ sanitizer suites pass, including
 121 config/rollback/module checks and actual C++ launch/scan/IO failure harnesses.
 The native LLVM Korium compile/link/pack passes. New PR compiler/configuration/
 edition CI and downloaded artifact verification must finish before merging.
 Physical-console POPS UDPFS acceptance, RA runtime parity
-(including newer production #923), UL short-read safety, Favorites durable
+(including newer production #923), Favorites durable
 storage, DECI2/distribution bundles and publication remain in issue #20.
+
+The follow-up UL audit reproduced a heap-buffer-overflow with a 65-byte `ul.cfg`:
+the old loop allocated one 64-byte record's output but wrote a second row for
+the trailing byte. The real-layout ASan/UBSan regression fails against the
+pre-fix scanner and passes after enforcing record alignment, bounded output
+counts and complete reads. Valid partial reads accumulate; failed size/read/
+close/allocation checks retain the previous list/count/size. Valid UL, ISO and
+folder rows still publish together. Corrupt UL content now prevents replacement
+of the cached library, rather than publishing partially trusted entries.
+
+The first configuration matrix passed 31/32; the remaining job timed out reading
+Vorbis release metadata from `git.techwritescode.dev` after 60 seconds, before
+compilation. `tools/install_ports.py` now retries transient network/HTTP failures
+up to three times, reports the URL, and still fails immediately for permanent
+HTTP errors. Package selection, staged replacement and archive checks remain.
+Fault injection covers interrupted response reads, transient HTTP errors,
+permanent missing releases and retry exhaustion. Reverify the final pushed head.
 
 ## Latest continuation: optional ps2build configurations
 

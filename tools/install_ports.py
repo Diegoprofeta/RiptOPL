@@ -9,6 +9,8 @@ from pathlib import Path, PurePosixPath
 import shutil
 import stat
 import tempfile
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 import zipfile
@@ -20,8 +22,17 @@ LIBRARIES = {"ogg": ("libogg.a",), "vorbis": ("libvorbis.a", "libvorbisfile.a")}
 
 def download(url):
     request = urllib.request.Request(url, headers={"User-Agent": "RiptOPL-build/1.0"})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return response.read()
+    for attempt in range(3):
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return response.read()
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            if isinstance(error, urllib.error.HTTPError) and error.code not in (408, 429, 500, 502, 503, 504):
+                raise
+            if attempt == 2:
+                raise
+            print(f"retrying {url} after {type(error).__name__}: {error}", flush=True)
+            time.sleep(1 << attempt)
 
 
 def select_asset(release, package, toolchain):

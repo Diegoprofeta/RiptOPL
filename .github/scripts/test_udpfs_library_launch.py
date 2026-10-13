@@ -79,6 +79,8 @@ int main() {
 support = read("src/sources/supportbase.cpp")
 run("iso_only", r'''
 #include <cassert>
+#include <climits>
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <cstdio>
