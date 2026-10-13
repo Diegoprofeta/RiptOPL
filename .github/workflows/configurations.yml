@@ -1,0 +1,100 @@
+name: ps2build-configurations
+
+on:
+  push:
+    branches: [rebuild/main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: configurations-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.target.edition }} / ${{ matrix.target.configuration }} / ${{ matrix.toolchain }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        toolchain: [gcc, llvm]
+        target:
+          - {edition: korium, configuration: pademu0}
+          - {edition: korium, configuration: ds5}
+          - {edition: korium, configuration: extras}
+          - {edition: korium, configuration: extras_ds5}
+          - {edition: korium, configuration: dtl}
+          - {edition: korium, configuration: diag}
+          - {edition: korium, configuration: debug}
+          - {edition: korium, configuration: debug_uart}
+          - {edition: korium, configuration: ingame_debug}
+          - {edition: korium, configuration: iopcore_debug}
+          - {edition: korium, configuration: eesio_debug}
+          - {edition: korium, configuration: ingame_debug_uart}
+          - {edition: korium, configuration: iopcore_debug_uart}
+          - {edition: ra, configuration: pademu0}
+          - {edition: ra, configuration: ingame_debug}
+          - {edition: incebtion, configuration: extras_ds5}
+    env:
+      PS2BUILD_HOME: ${{ github.workspace }}/.ps2dev
+      PS2DEV_INSTALL_DIR: ${{ github.workspace }}/.ps2dev
+      PS2BUILD_TOOLCHAIN: ${{ matrix.toolchain }}
+      GODEBUG: http2client=0
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.ps2dev
+          # Share the compiler-validation cache instead of storing one SDK per variant.
+          key: ps2dev-${{ runner.os }}-${{ matrix.toolchain }}-v2-${{ github.run_id }}
+          restore-keys: |
+            ps2dev-${{ runner.os }}-${{ matrix.toolchain }}-v2-
+      - name: Install ps2build and update the SDK
+        id: sdk1
+        continue-on-error: true
+        uses: techwritescode/setup-sdk@master
+        with:
+          ps2dev: ${{ github.workspace }}/.ps2dev
+      - name: Wait before retrying SDK setup
+        if: steps.sdk1.outcome == 'failure'
+        run: sleep 45
+      - name: Install ps2build (retry)
+        if: steps.sdk1.outcome == 'failure'
+        uses: techwritescode/setup-sdk@master
+        with:
+          ps2dev: ${{ github.workspace }}/.ps2dev
+      - name: Install matching ports and prepare assets
+        run: |
+          sh tools/install_ps2build.sh
+          python tools/assets.py fetch
+          python tools/assets.py lang
+      - name: Build configuration candidate
+        shell: bash
+        run: |
+          mkdir -p build
+          python tools/build_edition.py '${{ matrix.target.edition }}' --configuration '${{ matrix.target.configuration }}' --toolchain '${{ matrix.toolchain }}' 2>&1 | tee build/configuration.log
+      - name: Retain configuration candidate and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: configuration-${{ matrix.target.edition }}-${{ matrix.target.configuration }}-${{ matrix.toolchain }}
+          path: dist/configurations/${{ matrix.target.edition }}-${{ matrix.target.configuration }}-${{ matrix.toolchain }}/
+          if-no-files-found: error
+          retention-days: 7
+      - name: Retain compiler log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: configuration-log-${{ matrix.target.edition }}-${{ matrix.target.configuration }}-${{ matrix.toolchain }}
+          path: build/configuration.log
+          retention-days: 7

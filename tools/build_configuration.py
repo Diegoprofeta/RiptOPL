@@ -1,0 +1,84 @@
+"""Configuration overlays shared by all three editions; never additional release channels.
+
+Adapted from the preserved 2026-10-12 transition snapshot, checked against the
+legacy Makefile/EE-core/IOP flags. Edition-specific RA and assets stay in build_edition.
+"""
+
+CONFIGURATIONS = (
+    "standard", "pademu0", "ds5", "extras", "extras_ds5", "dtl", "diag",
+    "debug", "debug_uart", "ingame_debug", "iopcore_debug", "eesio_debug",
+    "ingame_debug_uart", "iopcore_debug_uart",
+)
+
+
+def add(target, field, *values):
+    target.setdefault(field, []).extend(v for v in values if v not in target.get(field, []))
+
+
+def apply_configuration(config, configuration):
+    if configuration not in CONFIGURATIONS:
+        raise ValueError(f"unknown configuration: {configuration}")
+    targets = {t["name"]: t for t in config["targets"]}
+    main, core = targets["riptopl"], targets["eecore"]
+    if configuration == "pademu0":
+        for target in config["targets"]:
+            target["defines"] = [v for v in target.get("defines", []) if v != "PADEMU"]
+        main["libs"] = [v for v in main["libs"] if v not in ("ds34usb_ee", "ds34bt_ee")]
+        main["embed_irx"] = [v for v in main["embed_irx"] if v not in ("usb_pademu", "bt_pademu", "ds34usb", "ds34bt")]
+    if configuration in ("ds5", "extras_ds5"):
+        add(targets["ds34usb"], "defines", "DS5_ENABLE")
+    if configuration in ("extras", "extras_ds5"):
+        add(main, "defines", "__RTL", "IGS")
+        add(core, "defines", "IGS")
+        add(core, "sources", "ee_core/src/igs_api.c")
+    if configuration == "dtl":
+        for target in (main, core):
+            add(target, "defines", "_DTL_T10000")
+        main["embed_irx"] = ["udnl-t300:udnl" if v == "udnl" else v for v in main["embed_irx"]]
+    if configuration == "diag":
+        add(main, "defines", "__OPLDIAG")
+    if "debug" in configuration:
+        uart = configuration.endswith("_uart")
+        add(main, "defines", "__DEBUG", "__OPLDIAG", "TTY_PPC_UART" if uart else "TTY_UDP")
+        add(main, "sources", "src/platform/debug.cpp")
+        add(main, "embed_irx", "ioptrap", "ppctty" if uart else "udptty")
+        if uart:
+            # No installed ppctty package as of v2026.10.12.1. Pinned official
+            # SDK source, license and provenance are retained with this fallback.
+            config["targets"].append({
+                "name": "ppctty", "type": "iop",
+                "sources": ["third_party/ps2sdk-ppctty/main.c", "third_party/ps2sdk-ppctty/tty.c"],
+                "include_dirs": ["third_party/ps2sdk-ppctty"],
+                "headers": list(targets["isofs"]["headers"]), "defines": ["KPRINTF"],
+                "imports_lst": "third_party/ps2sdk-ppctty/imports.lst",
+            })
+        else:
+            config["targets"].append({
+                "name": "ps2link", "type": "iop",
+                "sources": [f"modules/debug/ps2link/{name}.c" for name in
+                            ("net_fsys", "net_fio", "ps2link", "cmdHandler", "nprintf", "excepHandler")],
+                "include_dirs": ["modules/debug/ps2link"], "defines": ["DEBUG"],
+                "headers": list(targets["isofs"]["headers"]),
+                "imports_lst": "modules/debug/ps2link/imports.lst",
+            })
+            add(main, "embed_irx", "ps2link")
+        if configuration.startswith(("ingame_", "iopcore_")):
+            add(main, "defines", "__INGAME_DEBUG")
+            add(core, "defines", "__LOAD_DEBUG_MODULES", "TTY_PPC" if uart else "TTY_UDP")
+            # Preserve RA's INGAME_UDP; only drop the release driver's reduced API.
+            targets["SMSTCPIP"]["defines"] = [v for v in targets["SMSTCPIP"]["defines"] if v != "INGAME_DRIVER"]
+            if not uart:
+                add(main, "embed_irx", "udptty_ingame")
+            for target in config["targets"]:
+                if target["name"].endswith("_cdvdman"):
+                    add(target, "defines", "__IOPCORE_DEBUG", "__USE_DEV9")
+                    add(target, "sources", "modules/iopcore/cdvdman/dev9.c")
+                if configuration.startswith("iopcore_") and target["name"].endswith("_mcemu"):
+                    add(target, "defines", "DEBUG")
+            add(targets["bdm_ata_cdvdman"], "defines", "DEV9_DEBUG")
+        if configuration == "eesio_debug":
+            add(main, "defines", "__EESIO_DEBUG")
+            add(main, "libs", "siocookie")
+            add(main, "headers", "siocookie")
+            add(core, "defines", "__EESIO_DEBUG")
+    return config

@@ -6,6 +6,10 @@
 > describe earlier migration choices, including configurations still awaiting
 > parity. They are not the supported release build commands.
 
+Optional controller/diagnostic/debug configurations use the same edition builder;
+see [BUILD-CONFIGURATIONS.md](BUILD-CONFIGURATIONS.md). They have isolated candidate
+outputs and cannot be published as the three standard release kits.
+
 Status: MAIN FLAVOUR PORTED (GSM1080P + PADEMU, no debug/RA/IGS/RTL/DTL). Other flavours still
 need SDK definitions; the legacy Makefile cannot compile the converted C++ sources. Build:
 

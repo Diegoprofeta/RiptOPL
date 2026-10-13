@@ -24,7 +24,8 @@ def verify(root, expected_sha):
         manifest = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
         if (manifest["repository"] != "NathanNeurotic/RiptOPL" or manifest["source_commit"] != expected_sha
                 or manifest["dirty"] or manifest["edition"] != edition or manifest["compiler"] != "gcc"
-                or manifest["sdk"] != "ps2build" or manifest["ra"] != options["ra"]):
+                or manifest["sdk"] != "ps2build" or manifest["ra"] != options["ra"]
+                or manifest.get("configuration", "standard") != "standard"):
             raise ValueError(f"invalid source/edition manifest for {edition}")
         suites.append((manifest["ps2build_version"], manifest["components"]))
         sums = {}
