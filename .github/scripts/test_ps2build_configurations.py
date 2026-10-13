@@ -108,6 +108,15 @@ class ConfigurationTests(unittest.TestCase):
                     outputs.add(output)
                     stages.add(stage)
 
+    def test_llvm_igs_size_policy_preserves_other_compiler_configurations(self):
+        for edition in editions.EDITIONS:
+            for compiler in ("gcc", "llvm"):
+                for configuration in ("standard", "extras", "extras_ds5", "debug"):
+                    targets = {t["name"]: t for t in editions.definition(edition, configuration, compiler)["targets"]}
+                    wanted = "-Oz" if compiler == "llvm" and configuration in ("extras", "extras_ds5") else "-Os"
+                    self.assertEqual(targets["eecore"]["opt"], wanted)
+                    self.assertEqual(targets["eecore"]["linkfile"], "ee_core/linkfile")
+
     def test_packager_refuses_configuration_before_touching_release_outputs(self):
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
             root = Path(directory)

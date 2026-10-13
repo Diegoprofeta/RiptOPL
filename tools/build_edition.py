@@ -27,7 +27,7 @@ def add(target, field, *values):
     target.setdefault(field, []).extend(v for v in values if v not in target.get(field, []))
 
 
-def definition(edition, configuration="standard"):
+def definition(edition, configuration="standard", toolchain="gcc"):
     options = EDITIONS[edition]
     config = yaml.safe_load((ROOT / "ps2.yaml").read_text(encoding="utf-8"))
     # YAML aliases share lists. Mutating one target must not change another.
@@ -57,7 +57,12 @@ def definition(edition, configuration="standard"):
         for name in ("bdm_cdvdman", "mmce_cdvdman"):
             add(targets[name], "defines", "__USE_DEV9")
             add(targets[name], "sources", "modules/iopcore/cdvdman/dev9.c")
-    return apply_configuration(config, configuration)
+    apply_configuration(config, configuration)
+    # IGS makes LLVM -Os leave only 2,712 bytes for the core's stack. -Oz leaves
+    # 6,040 with the same 3 KB linker guard and fixed memory regions; GCC stays -Os.
+    if toolchain == "llvm" and "IGS" in core["defines"]:
+        core["opt"] = "-Oz"
+    return config
 
 
 def build_paths(edition, toolchain, configuration):
@@ -89,7 +94,7 @@ def main():
     # a previous edition's RA mark, theme graphics, or displayed version.
     subprocess.run([sys.executable, "tools/assets.py", "embed"], check=True)
     subprocess.run([sys.executable, "tools/assets.py", "version"], check=True)
-    config = definition(args.edition, args.configuration)
+    config = definition(args.edition, args.configuration, args.toolchain)
     canonical = yaml.safe_dump(config, sort_keys=False)
     output, stage = build_paths(args.edition, args.toolchain, args.configuration)
     result = build(args.toolchain, str(output), config)
@@ -120,6 +125,7 @@ def main():
     (stage / "BUILD-MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     (stage / "ps2.resolved.yaml").write_text(canonical, encoding="utf-8")
     if args.configuration != "standard":
+        shutil.copyfile(output / "eecore.map", stage / "eecore.map")
         for filename in ("LICENSE", "CREDITS"):
             shutil.copyfile(ROOT / filename, stage / filename)
         for component in (["ps2sdk-ppctty"] if args.configuration.endswith("_uart") else []) + (["ps2sdk-socket"] if options["ra"] else []):

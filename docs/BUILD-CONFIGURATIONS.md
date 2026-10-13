@@ -50,7 +50,8 @@ Compilation alone does not establish working serial output on a console.
 Nonstandard object trees are isolated under
 `build/configurations/<edition>-<configuration>-<compiler>/`. Candidate ELF,
 resolved definition and build manifest are staged under the matching
-`dist/configurations/` directory. They never write `dist/editions/`, which is
+`dist/configurations/` directory, with the EE core map and applicable license/
+provenance files. They never write `dist/editions/`, which is
 reserved for standard release packaging. Both the packager and publisher reject
 a manifest naming a nonstandard configuration, even if its checksums are valid.
 Historical standard manifests without this new field remain verifiable.
@@ -61,6 +62,14 @@ extras/DS5, on both compilers. This is 32 selected builds, not every possible
 edition/configuration cross-product. Host tests cover definition/ABI isolation
 across all three editions and all 14 configurations, separate stage paths and
 negative packaging/publishing cases.
+
+With IGS enabled, LLVM `-Os` left only 2,712 bytes for the EE core's stack and
+correctly failed its 3,072-byte linker guard. Core-only comparison builds left
+8,128 bytes with GCC `-Os` and 6,040 with LLVM `-Oz`. The builder selects `-Oz`
+only for LLVM's IGS-enabled core; other targets/configurations retain their
+optimization settings. The memory regions and stack assertion are unchanged.
+Candidate core maps retain the evidence for each build. Console screenshot
+behavior and compiler performance still require hardware validation.
 
 There is no verified compile-time no-IGR switch in the compared legacy/current
 source. Its behavior/configuration audit remains in [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20),
