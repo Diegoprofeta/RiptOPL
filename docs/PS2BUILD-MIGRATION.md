@@ -19,8 +19,9 @@ need SDK definitions; the legacy Makefile cannot compile the converted C++ sourc
 
 ### GCC and LLVM setup (PR #18 and follow-up)
 
-The LLVM source compatibility changes are in PR #18. Use ps2build, sdk-core and sdk-world
-`v2026.10.12.1` or newer, and the separately installed `llvm-toolchain v0.3.2` or newer.
+The LLVM source compatibility changes are in PR #18. Use ps2build and sdk-world
+`v2026.10.12.2` or newer, sdk-core `v2026.10.12.1` or newer, and the separately
+installed `llvm-toolchain v0.3.3` or newer.
 The default suite update does not install the optional LLVM compiler:
 
 ```sh
@@ -50,13 +51,14 @@ The `ps2build` CI workflow builds both compilers and uploads separately named ar
 existing GCC warning ratchet remains mandatory; LLVM needs its own reviewed warning policy.
 Clang currently reports that `-fsingle-precision-constant` is unsupported, so floating-point code
 still needs a precision/performance audit before assuming the GCC and LLVM results are equivalent.
-Use `tools/build.py` for LLVM incremental builds: the current SDK emits project include
-directories as `-isystem`, so its generated `-MMD` omits those headers from Ninja's dependency
-database. Clang gives `-MMD` precedence over `-MD` regardless of their order. The wrapper adds
-`-Xclang -sys-header-deps` to each target in a temporary configuration beside `ps2.yaml`, then
-calls ps2build and removes the temporary file. The checked-in configuration stays unchanged.
-Without this workaround, changing `asm/opl_version.h` left the LLVM ELF at its old version while
-Ninja reported no work. Header dependency tracking must be checked alongside clean builds.
+ps2build `v2026.10.12.2` fixes project-header dependency tracking by using `-I`
+for project `include_dirs` on both compilers. A local native probe changed only
+a header and confirmed object rebuilds and changed bytes on GCC and LLVM,
+without the previous `-Xclang -sys-header-deps` workaround. The workaround is
+removed; the wrapper requires this fixed release or newer. Package/toolchain
+headers remain system headers on LLVM. UART configurations now embed the native
+sdk-world `ppctty` driver; the RA-only socket compatibility archive remains
+necessary because released cglue still omits those socket entry points.
 
 The native Windows LLVM `v0.3.2` linker also crashed once in its winpthreads thread pool
 with exception `0xC0000008` during the October 12 parity build. An unchanged retry linked

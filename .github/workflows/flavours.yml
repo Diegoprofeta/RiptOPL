@@ -34,6 +34,12 @@ jobs:
         run: python3 .github/scripts/test_ra_mode6.py
       - name: Check UDP NIC reservation, DEV9 failure/retry and queued IP conflict notice
         run: python3 .github/scripts/test_network_parity_922.py
+      - name: Check real C++ configuration round trips and host modules under ASan/UBSan
+        run: sh tests/host/run.sh
+      - name: Check Ember image filtering, VMC recovery and checked SMB Refresh
+        run: |
+          python3 .github/scripts/test_legacy_parity_885_898.py
+          python3 .github/scripts/test_genvmc_recovery.py
       - name: Check POPS UDPFS configuration and multi-volume rollback failures
         run: |
           python3 .github/scripts/test_pops_udpfs.py

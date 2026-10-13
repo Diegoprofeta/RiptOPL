@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Build RiptOPL with ps2build, including project headers in LLVM dependencies."""
+"""Build RiptOPL with the released ps2build project-header dependency fix."""
 import argparse
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 
@@ -10,22 +11,23 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parent.parent
+MINIMUM_VERSION = (2026, 10, 12, 2)
+
+
+def require_supported_sdk():
+    version = subprocess.check_output(["ps2build", "--version"], text=True).strip()
+    match = re.search(r"\bv(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\b", version)
+    if match is None or tuple(int(v or 0) for v in match.groups()) < MINIMUM_VERSION:
+        raise RuntimeError(f"ps2build v2026.10.12.2 or newer is required (found {version}); run ps2build update")
 
 
 def build(toolchain, out_dir, definition=None):
+    require_supported_sdk()
     config = ROOT / "ps2.yaml"
     command = ["ps2build", "build", "--toolchain", toolchain, "--out-dir", out_dir]
-    if toolchain == "gcc" and definition is None:
+    if definition is None:
         return subprocess.call([*command, "--config", str(config)], cwd=ROOT)
 
-    # ps2build currently emits project paths as -isystem under LLVM. Its -MMD
-    # therefore misses project headers. Clang gives -MMD precedence over -MD,
-    # so request system-header dependencies explicitly through its cc1 option.
-    if definition is None:
-        definition = yaml.safe_load(config.read_text(encoding="utf-8"))
-    if toolchain == "llvm":
-        for target in definition["targets"]:
-            target.setdefault("cflags", []).extend(["-Xclang", "-sys-header-deps"])
     temporary = None
     try:
         # Keep the config beside ps2.yaml so relative project paths resolve alike.

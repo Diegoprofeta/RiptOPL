@@ -140,11 +140,10 @@ void itemExecRefresh(struct menu_item *curMenu)
         // explicit user Refresh must invalidate that cache before posting the deferred update.
         if (support->mode == FAV_MODE) {
             loadFavourites();
-        } else if (support->mode == ETH_MODE && gNetworkStartup != 0) {
-            // A failed SMB page uses the same Select/Refresh gesture as every other list, but its
-            // failure is a connection state rather than stale directory metadata. Retry the full
-            // live apply/logon/open-share path so a slow router/server can recover in place.
-            ethRequestReconnect();
+        } else if (support->mode == ETH_MODE) {
+            // A server restart can leave startup marked successful with a stale TCP session.
+            // Probe on the IO worker and preserve healthy ART/BGM handles; reconnect only on failure.
+            ethRequestCheckedRefresh();
         } else {
             if (support->mode == HDD_MODE &&
                 (libListViewActive(support) == LIB_VIEW_PS1 || libListViewActive(support) == LIB_VIEW_MIXED))

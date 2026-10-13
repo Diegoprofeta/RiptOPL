@@ -1,5 +1,49 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: older feature parity and released SDK follow-up
+
+Base is merged POPS PR #25, `4157d5a23eb51d377635188b811b74883e927e41`.
+Its fresh compiler, host, 32-configuration and three-kit integration runs and
+downloaded artifacts pass. Pages PR #26 deployed at `fdda817f`; Wiki `6c1ffb6d`
+updates only POPS sections, preserving unrelated imports and credits.
+
+Continue `codex/legacy-parity-885-898`. Adapted production bodies are #885 quoted
+config decoding (`f71cb5c6`), #887 top-level Ember image filtering (`ac5085c9`),
+#889 VMC write/semaphore recovery and Neutrino warning policy (`3e836bd3`), and
+#898 explicit SMB session checking (`2297297b`). The current production snapshot
+is `a0ca55c54cb32b801423a4fdc800968ff4f62c2d`; full RA/browser parity is separate.
+
+The C++ config sanitizer suite tests real file save/read cycles, maximum escaped
+values and unknown escapes. Config and VMC regressions fail on the actual
+pre-port source. VMC creation also stops before writing on a failed seek and
+releases the semaphore. The stronger existing non-destructive VMC guards stay.
+The production automatic-VMC-creation launch hook is absent here; this batch
+does not claim that broader feature is ported.
+
+Checked SMB Refresh uses `EthSupport`, host library services and the existing
+serialized reconnect path. Healthy ART/BGM handles stay open. Queue rejection
+is retryable; protocol changes cancel queued/in-flight probes. A settings
+reconnect upgrades a queued or in-flight probe instead of being lost behind it;
+the initial adaptation failed that scenario and the corrected regression passes.
+New checks execute the actual class methods, menu dispatch and Ember scan.
+The seven C++ sanitizer suites are now explicitly included in CI.
+
+Runtime checkpoint `47f61dce` is pushed. Local ps2build/sdk-world are updated to
+`v2026.10.12.2`, LLVM to `v0.3.3`; sdk-core remains `v2026.10.12.1`.
+The released project-header fix passes a native header-only-change probe on
+GCC and LLVM: both rebuild the object with changed bytes and project `-I` paths,
+without the old `-sys-header-deps` workaround. The wrapper now requires the fixed
+ps2build release. Both compiler package sets contain native `ppctty` (AFL-2.0);
+UART overlays use that package and the bundled driver source is removed while
+retaining license/provenance notices. Retain the RA socket compatibility archive:
+released cglue still lacks those APIs, as the maintainer confirms.
+The EE-core stack guard and narrow LLVM IGS `-Oz` policy remain unchanged.
+All 57 Python host suites, HTTP and seven C++ sanitizer suites pass after the
+final changes. Native LLVM Korium `debug_uart` compiles, links and packs with
+the SDK driver (ELF SHA256 `62bf8defbff72e07c1681a959b0f1667bd5e401144223f366fc2ec69ec9cea8f`).
+This local candidate records a dirty SDK-cleanup checkout; clean final CI,
+configuration/kit verification and console UART acceptance remain pending.
+
 ## Latest continuation: POPS UDPFS #904/#909
 
 Base integration is merged PR #24, `7bcb77b3ccf5bcf2af29c34527d864a6417ffbc7`.

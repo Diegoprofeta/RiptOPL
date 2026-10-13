@@ -40,10 +40,11 @@ interface between those components). In-game debug removes SMSTCPIP's reduced
 `INGAME_DRIVER` API while preserving RA's `INGAME_UDP`. CDVDMAN debug graphs keep
 their DEV9 source/import requirements, including BDM-ATA's `DEV9_DEBUG`.
 
-The official PPC TTY driver is vendored under `third_party/ps2sdk-ppctty` at
-ps2sdk `ac92a9f657d2e531dd8f060250b07f2a5ac6dea5`, with its AFL-2.0 license and
-provenance. The installed ps2build SDK has no `ppctty` package as of
-`v2026.10.12.1`; SIOCookie, IOPTRAP and the DTL boot driver use installed packages.
+PPC TTY now resolves the native `ppctty` driver from sdk-world `v2026.10.12.2`
+or newer for the selected compiler. The previous pinned source fallback is
+removed; `third_party/ps2sdk-ppctty` retains the AFL-2.0 license and provenance
+notice for candidate distributions. Actual SDK component versions are recorded
+in each build manifest. SIOCookie, IOPTRAP and the DTL boot driver also use installed packages.
 PPC TTY checks for a Deckard IOP and declines residency on older IOP hardware.
 Compilation alone does not establish working serial output on a console.
 
