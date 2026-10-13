@@ -198,6 +198,11 @@ int MessageBoxScreen::finish()
     return terminate_ - 1;
 }
 
+int guiIsActive(void)
+{
+    return gTheme != NULL;
+}
+
 int guiMsgBox(const char *text, int addAccept, struct UIItem *ui)
 {
     // Same pre-GUI guard as guiWarning: autolaunch (miniInit) never runs rmInit/thmInit/guiInit or

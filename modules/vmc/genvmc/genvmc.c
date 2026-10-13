@@ -125,11 +125,11 @@ static u8 cluster_buf[(BLOCKKB * 1024) + 16] __attribute__((aligned(16)));
 static int genvmc_io_sema = -1;
 static int genvmc_thread_sema = -1;
 static int genvmc_abort_sema = -1;
-static int genvmc_abort_finished_sema = -1;
 
 static int genvmc_abort = 0;
 
 static statusVMCparam_t genvmc_stats;
+static createVMCparam_t genvmc_request;
 
 //--------------------------------------------------------------
 static void long_multiply(u32 v1, u32 v2, u32 *HI, u32 *LO)
@@ -562,40 +562,32 @@ static void VMC_create_thread(void *args)
 
     WaitSema(genvmc_thread_sema);
 
-    WaitSema(genvmc_abort_sema);
-    genvmc_abort = 0;
-    SignalSema(genvmc_abort_sema);
-
-    genvmc_stats.VMC_status = GENVMC_STAT_BUSY;
-    genvmc_stats.VMC_error = 0;
-    genvmc_stats.VMC_progress = 0;
-    strcpy(genvmc_stats.VMC_msg, "Initializing...");
-
     if (param->VMC_card_slot == -1)
         r = vmc_mcformat(param->VMC_filename, param->VMC_size_mb * 1024, param->VMC_blocksize, &genvmc_stats.VMC_progress, genvmc_stats.VMC_msg);
     else
         r = vmc_mccopy(param->VMC_filename, param->VMC_card_slot, &genvmc_stats.VMC_progress, genvmc_stats.VMC_msg);
 
     if (r < 0) {
-        genvmc_stats.VMC_status = GENVMC_STAT_AVAIL;
         genvmc_stats.VMC_error = r;
 
         if (r == -1000) { // user abort
             remove(param->VMC_filename);
             strcpy(genvmc_stats.VMC_msg, "VMC file creation aborted");
-            SignalSema(genvmc_abort_finished_sema);
         } else
             strcpy(genvmc_stats.VMC_msg, "Failed to format VMC file");
 
         goto exit;
     }
 
-    genvmc_stats.VMC_status = GENVMC_STAT_AVAIL;
     genvmc_stats.VMC_error = 0;
     genvmc_stats.VMC_progress = 100;
     strcpy(genvmc_stats.VMC_msg, "VMC file created");
 
 exit:
+    // Publish idle only after partial-file cleanup and final status are complete.
+    WaitSema(genvmc_abort_sema);
+    genvmc_stats.VMC_status = GENVMC_STAT_AVAIL;
+    SignalSema(genvmc_abort_sema);
     SignalSema(genvmc_thread_sema);
     ExitDeleteThread();
 }
@@ -609,6 +601,21 @@ static int vmc_create(createVMCparam_t *param)
     register int r, thid;
     iop_thread_t thread_param;
 
+    WaitSema(genvmc_abort_sema);
+    if (genvmc_stats.VMC_status == GENVMC_STAT_BUSY) {
+        SignalSema(genvmc_abort_sema);
+        return -1;
+    }
+    // fileXio reuses its RPC argument buffer after this devctl returns. Own the
+    // request and reserve the single job before the new worker can be scheduled.
+    memcpy(&genvmc_request, param, sizeof(genvmc_request));
+    genvmc_abort = 0;
+    genvmc_stats.VMC_status = GENVMC_STAT_BUSY;
+    genvmc_stats.VMC_error = 0;
+    genvmc_stats.VMC_progress = 0;
+    strcpy(genvmc_stats.VMC_msg, "Initializing...");
+    SignalSema(genvmc_abort_sema);
+
     thread_param.attr = TH_C;
     thread_param.option = 0;
     thread_param.thread = (void *)VMC_create_thread;
@@ -617,15 +624,25 @@ static int vmc_create(createVMCparam_t *param)
 
     // creating VMC create thread
     thid = CreateThread(&thread_param);
-    if (thid < 0)
-        return -1;
+    if (thid < 0) {
+        r = -1;
+        goto failed;
+    }
 
     // starting VMC create thread
-    r = StartThread(thid, (void *)param);
-    if (r < 0)
-        return -2;
+    r = StartThread(thid, (void *)&genvmc_request);
+    if (r < 0) {
+        DeleteThread(thid);
+        r = -2;
+        goto failed;
+    }
 
     return 0;
+failed:
+    genvmc_stats.VMC_error = r;
+    strcpy(genvmc_stats.VMC_msg, "Failed to start VMC creation");
+    genvmc_stats.VMC_status = GENVMC_STAT_AVAIL;
+    return r;
 }
 
 //--------------------------------------------------------------
@@ -635,13 +652,11 @@ static int vmc_abort(void)
 
     DPRINTF("%s: vmc_abort()\n", MODNAME);
 
-    genvmc_abort = 1;
+    if (genvmc_stats.VMC_status == GENVMC_STAT_BUSY)
+        genvmc_abort = 1;
     SignalSema(genvmc_abort_sema);
-
-    genvmc_abort_finished_sema = CreateMutex(IOP_MUTEX_LOCKED);
-    WaitSema(genvmc_abort_finished_sema);
-    DeleteSema(genvmc_abort_finished_sema);
-
+    // Nonblocking and idempotent: the caller polls STATUS for completion. Waiting
+    // for an abort-only signal deadlocked when completion won the race.
     return 0;
 }
 

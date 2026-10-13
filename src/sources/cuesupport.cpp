@@ -182,7 +182,7 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
     if (devPrefix == NULL)
         return 0;
 
-    // NO EMBER CORE, NO EMBER LIBRARY -- and settle that with an open(), not with opendir's errno.
+    // Probe core availability to interpret ambiguous directory-not-found errors, not to hide games.
     //
     // The absent-vs-contended split below reads errno to tell "this folder isn't here" (fine, 0 rows)
     // from "this device wouldn't answer" (a failure the caller must not mistake for emptiness). That
@@ -196,13 +196,14 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
     // titles that had scanned perfectly -- stayed empty. USB and APA were fine because their driver
     // does report ENOENT.
     //
-    // A plain open() of ember.elf has none of that ambiguity. If the core is not readable there is
-    // no Ember library to list, whatever the reason: we could not launch a row from it either.
+    // Keep valid game folders visible without a readable core. The launch path can explain the
+    // missing ELF/BIOS and name its expected path instead of silently hiding the whole library.
     // gamesDir is scratch for the probe here -- cueResolveEmber writes the ELF path into it and we
     // discard that, then rebuild it as the games directory below. One buffer, not two, on a stack
     // this platform keeps small.
-    if (!cueResolveEmber(devPrefix, gamesDir, sizeof(gamesDir)))
-        return 0;
+    int coreReadable = cueResolveEmber(devPrefix, gamesDir, sizeof(gamesDir));
+    if (!coreReadable)
+        LOG("[CUE] no readable ember.elf at '%s' -- listing games anyway\n", gamesDir);
 
     cueBuildGamesDir(devPrefix, gamesDir, sizeof(gamesDir));
     if (gamesDir[0] == '\0')
@@ -216,7 +217,7 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
         // here"), not a failure -- ps1FillGameList treats a failure from either half as a reason to
         // keep the whole last-good list, so getting this wrong would freeze the PS1 page of every
         // device that only uses one core.
-        if (errno == ENOENT)
+        if (errno == ENOENT || (!coreReadable && (errno == 0 || errno == EPERM)))
             return 0;
         // Anything else: the directory could not be READ (bus contended, device mid-detach). Signal
         // failure so the caller preserves its last-good list rather than blanking the page.

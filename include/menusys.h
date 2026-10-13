@@ -129,6 +129,9 @@ void submenuSort(submenu_list_t **submenu, int mode);
 char *submenuItemGetText(submenu_item_t *it);
 char *menuItemGetText(menu_item_t *it);
 config_set_t *menuLoadConfig();
+// Transfer the current cached config to a modal launch; later list refreshes cannot free it.
+config_set_t *menuTakeLaunchConfig(config_set_t *expected, item_list_t *list, int id);
+void menuInvalidateConfig();
 config_set_t *gameMenuLoadConfig(struct UIItem *ui);
 int menuSaveConfig();
 int menuSaveEmberGameSettings(config_set_t *configSet);

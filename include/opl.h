@@ -180,6 +180,7 @@ enum { NEUTRINO_DEV_AUTO = 0, // game device, then mc0/mc1
 #define NEUTRINO_MIGRATED_MC_PATH "mc:/NEUTRINO/neutrino.elf"
 extern int gNeutrinoDevice;
 extern int gDefaultCoreLoader;
+extern int gAutoCreateVmc;
 extern int gNeutrinoVideoDefault;
 extern int gNeutrinoGsmCompDefault;
 extern int gNeutrinoElfArg;

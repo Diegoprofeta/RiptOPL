@@ -1844,7 +1844,7 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     if (fileXioMount(hddPrefix, mountSrc, FIO_MT_RDWR | HDD_PFS_MT_WRITETHROUGH) < 0) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().msgBox(_l(_STR_EMBER_NOT_FOUND), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
         return;
     }
 
@@ -1853,13 +1853,13 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     if (!cueResolveEmber("pfs0:/", emberElf, sizeof(emberElf))) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().msgBox(_l(_STR_EMBER_NOT_FOUND), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
         return;
     }
     if (!cueResolveEmberBios("pfs0:/", biosPath, sizeof(biosPath))) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().msgBox(_l(_STR_EMBER_BIOS_MISSING), 0, NULL);
+        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
     if (!cueGameHasImage("pfs0:/", name)) {
