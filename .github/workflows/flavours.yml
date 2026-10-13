@@ -33,6 +33,10 @@ jobs:
         run: python3 .github/scripts/test_ra_mode6.py
       - name: Check UDP NIC reservation, DEV9 failure/retry and queued IP conflict notice
         run: python3 .github/scripts/test_network_parity_922.py
+      - name: Check POPS UDPFS configuration and multi-volume rollback failures
+        run: |
+          python3 .github/scripts/test_pops_udpfs.py
+          python3 .github/scripts/test_udpfs_library_launch.py
       - name: Check VMC preservation and BDM allocation recovery
         run: |
           python3 .github/scripts/test_vmc_preserve_existing.py

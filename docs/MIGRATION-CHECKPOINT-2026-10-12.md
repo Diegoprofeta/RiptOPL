@@ -1,5 +1,41 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Latest continuation: POPS UDPFS #904/#909
+
+Base integration is merged PR #24, `7bcb77b3ccf5bcf2af29c34527d864a6417ffbc7`.
+Its fresh GCC/LLVM, host, format, 32 optional-configuration builds and three
+standard kits pass. All 32 configuration candidates and three downloaded kits
+were independently verified. Historical continuation instructions below are superseded.
+
+Continue `codex/pops-udpfs-parity`. Production was fetched at
+`90566eb863f9ed3771cdbc9702a5611b55f8ddd9`; #904 POPS and #909 rollback are
+adapted through `UdpfsSource`, `VcdSupport` and host UI services. UDPFS Files
+merges VCD/Ember rows; partial PS1 scans and failed ISO scans stay retryable.
+ISO-only scans avoid unsupported UL probing. Output allocation failure keeps
+the last-good library. Launch validates USB configs, remote VCD readability,
+POPSTARTER lookup, equipped driver identity and clean-launch eligibility before
+teardown. Both page and Favorites use the same virtual launch method.
+
+The editor stages both DAT files on every identified USB volume, backs up old
+copies, rolls back failed replacement, and preserves recovery files if restore
+fails. Copy/write helpers propagate destination close errors. These checks do
+not establish power-loss atomicity across multiple files or USB volumes.
+
+The official BDM-UDPFS Assault Alpha archive has SHA256
+`532bcf85b5beff90df9ff51da02b690b0bdee82ed3372e40b4f2c36de5eaf5ce`.
+All ten upstream driver/config/notice members match byte-for-byte; provenance
+and full notices ship in `POPS/UDPFS-NOTICES/`. USB supplies non-VCD dependencies;
+no dummy local VCD is required. This external POPSTARTER driver is separate
+from the sole ps2build SDK and the Neutrino PS2 network loader.
+
+All 54 Python host checks, HTTP and seven C++ sanitizer suites pass, including
+121 config/rollback/module checks and actual C++ launch/scan/IO failure harnesses.
+The native LLVM Korium compile/link/pack passes. New PR compiler/configuration/
+edition CI and downloaded artifact verification must finish before merging.
+Physical-console POPS UDPFS acceptance, RA runtime parity
+(including newer production #923), UL short-read safety, Favorites durable
+storage, DECI2/distribution bundles and publication remain in issue #20.
+
 ## Latest continuation: optional ps2build configurations
 
 Integration `daae402eb7e3618c0de948a2537a3ae4b4a4d960` contains merged PR #23

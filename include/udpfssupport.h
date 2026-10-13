@@ -29,14 +29,14 @@ public:
     base_game_info_t *activeGame(item_list_t *itemList, int id);
 
     // Scan-latch bookkeeping for needsUpdate: init resets everything, a delete/rename only forces
-    // the size comparison (-2 = unknown, triggers a rescan).
+    // the ISO scan latch (zero requests a rescan).
     void resetScanState()
     {
-        ulSizePrev_ = -2;
+        isoScanned_ = 0;
         modifiedCDPrev_ = 0;
         modifiedDVDPrev_ = 0;
     }
-    void invalidateUlSize() { ulSizePrev_ = -2; }
+    void invalidateIsoScan() { isoScanned_ = 0; }
 
     // Free both cached lists and zero their counts (cleanUp/shutdown keep the NIC stack resident).
     void clearGameLists();
@@ -49,7 +49,7 @@ private:
     base_game_info_t *ps1Games_ = NULL;
     int ps1GameCount_ = 0;
     base_game_info_t emptyGame_ = {}; // returned for out-of-range/stale ids; never launched
-    int ulSizePrev_ = -2;             // -2 = unknown, force the first scan
+    int isoScanned_ = 0;              // only a successful server-backed ISO scan is latched
     time_t modifiedCDPrev_ = 0;
     time_t modifiedDVDPrev_ = 0;
     int foldersCreated_ = 0; // sbCreateFolders latched once the server first answers

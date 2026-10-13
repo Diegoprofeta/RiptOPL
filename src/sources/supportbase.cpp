@@ -580,7 +580,7 @@ int sbReadList(base_game_info_t **list, const char *prefix, const char *sub, int
 
     // count and process games in ul.cfg -- a device-ROOT concept (USBLD split games live at the
     // library root); never present or scanned inside a browse subfolder.
-    if (atRoot) {
+    if (atRoot && fsize != NULL) {
         snprintf(path, sizeof(path), "%sul.cfg", prefix);
         fd = openFile(path, O_RDONLY);
     }
@@ -672,20 +672,19 @@ int sbReadList(base_game_info_t **list, const char *prefix, const char *sub, int
         free(cur);
     }
 
-    // TOTAL device-read failure (both dir scans failed to open AND no ul.cfg): keep the caller's
-    // current list rather than blanking it. newlist is NULL here; nothing to publish or leak.
-    if (cdRet < 0 && dvdRet < 0 && fd < 0) {
+    // A total device-read failure or failed output allocation must preserve the last-good list.
+    // ISO-only callers need an explicit error so they retry instead of latching an empty library.
+    if ((cdRet < 0 && dvdRet < 0 && fd < 0) || (total > 0 && newlist == NULL)) {
         free(newlist);
-        return *gamecount; // *list / *gamecount / *fsize untouched -> last-good list stays on screen
+        return fsize == NULL ? -1 : *gamecount; // retain the last-good list; ISO-only callers must retry
     }
 
-    // Success or genuinely-empty: publish the freshly-built list (frees the previous one). Guard on
-    // newlist so a failed allocation publishes an EMPTY list (count 0) rather than a NULL pointer with
-    // a non-zero count -- an OOB on the very next render.
+    // Success or genuinely-empty: publish the freshly-built list (frees the previous one).
     const int published = (newlist != NULL && total > 0) ? total : 0;
     free(*list);
     *list = newlist;
-    *fsize = newfsize;
+    if (fsize != NULL)
+        *fsize = newfsize;
     *gamecount = published;
 
     return published;

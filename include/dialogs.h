@@ -173,6 +173,7 @@ enum UI_ITEMS {
     NETCFG_POPS_SMB_USER,
     NETCFG_POPS_SMB_PASS,
     NETCFG_POPS_IMPORT,
+    NETCFG_POPS_UDPFS,
     NETCFG_ETHOPMODE,
     NETCFG_RECONNECT,
     NETCFG_POPSTARTER_BUTTON,
@@ -390,6 +391,7 @@ extern struct UIItem diaLaunchConfig[];
 extern struct UIItem diaNeutrinoDefaults[];
 extern struct UIItem diaBdmaConfig[];
 extern struct UIItem diaVcdListConfig[];
+extern struct UIItem diaPopsUdpfsConfig[];
 extern struct UIItem diaPopsNetConfig[];
 extern struct UIItem diaPopsOverwrite[];
 extern struct UIItem diaEmberGameConfig[];

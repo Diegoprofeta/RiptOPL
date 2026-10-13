@@ -4,6 +4,8 @@
 #include "include/iosupport.h"
 #include "include/hdd.h"
 
+int hddEquipPopstarterBdmaFromCommon(int mode, char *diag, int diagSize);
+
 #define HDD_MODE_UPDATE_DELAY MENU_UPD_DELAY_NOUPDATE
 
 #define HDL_GAME_NAME_MAX 64

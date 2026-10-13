@@ -174,6 +174,7 @@ int cueFillGameList(const char *devPrefix, base_game_info_t **outGames);
 // devPrefix is the device ROOT for BOTH libraries -- POPS/ and EMBER/ are peers there, on every
 // device class. See the note at the top of this header for why the root, and not a configurable
 // games prefix, is the right home for them.
+int ps1GameListNeedsRetry(void);
 int ps1FillGameList(const char *devPrefix, base_game_info_t **outGames);
 
 // The CUE support instance (defined in src/sources/cuesupport.cpp). The module is deliberately

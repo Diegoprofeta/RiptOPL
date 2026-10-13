@@ -18,10 +18,20 @@
 namespace
 {
 
-class OplUi final : public UiServices
+class OplUi final: public UiServices
 {
 public:
     int msgBox(const char *text, int addAccept, struct UIItem *ui) override { return guiMsgBox(text, addAccept, ui); }
+    void missingFile(const char *message, const char *path) override
+    {
+        char text[384];
+        if (path == NULL || path[0] == '\0') {
+            guiMsgBox(message, 0, NULL);
+            return;
+        }
+        snprintf(text, sizeof(text), "%s\n%s", message, path);
+        guiMsgBox(text, 0, NULL);
+    }
     void warning(const char *text, int count) override { guiWarning(text, count); }
     void warningId(int strId, int count) override { guiWarning(_l(strId), count); }
     void raNotice(const char *line1, const char *line2) override
@@ -44,7 +54,7 @@ public:
     void unlock() override { guiUnlock(); }
 };
 
-class OplApp final : public AppServices
+class OplApp final: public AppServices
 {
 public:
     void deinit(int exception, int modeSelected) override { ::deinit(exception, modeSelected); }
@@ -67,7 +77,7 @@ public:
     int shouldAppsUpdate() override { return oplShouldAppsUpdate(); }
 };
 
-class OplLibrary final : public LibraryServices
+class OplLibrary final: public LibraryServices
 {
 public:
     int listViewActive(const item_list_t *itemList) override { return libListViewActive(itemList); }
@@ -79,7 +89,7 @@ public:
     void bdmAttach(int mode, int bdmType) override { libViewBdmAttach(mode, bdmType); }
 };
 
-class OplLaunch final : public LaunchServices
+class OplLaunch final: public LaunchServices
 {
 public:
     void fillCoreConfig(struct EECoreConfig_t *config, bool discMode, void *raWorkArea) override
