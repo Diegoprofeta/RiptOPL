@@ -1,6 +1,47 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Latest continuation: local recovery and production #922
+## Latest continuation: merged network port and Favorites #903/#904
+
+Verified integration is `d54dfc57d6af99995e72568af7a7ae8323b7dec8` (PR #22).
+Fresh [GCC/LLVM](https://github.com/NathanNeurotic/RiptOPL/actions/runs/38331420380),
+[host gates](https://github.com/NathanNeurotic/RiptOPL/actions/runs/38331420445),
+format and [three complete kits](https://github.com/NathanNeurotic/RiptOPL/actions/runs/38331420407)
+pass. Downloaded integration artifacts independently pass
+`python tools/publish_editions.py build/ci-integration-d54dfc57 --check` at that
+exact SHA. PR candidates were verified separately, without relabelling them.
+No GitHub releases were published; console acceptance remains open.
+
+Continue `codex/favorites-parity-903`: production #903 (`a73fb2e4`) and #904
+(`906cdafe`) Favorites changes are adapted to the C++ classes. Indexed removal
+returns persistence failure before clearing the source star; source and Favorites
+actions show saving/success/failure feedback and only confirm/reload successful
+writes. A new config opens Favorites on All; existing valid shelves remain.
+Centered titles retain their anchor and scrolling room with leading stars;
+ordinary lists retain aligned leading columns. Language labels are appended.
+Regression coverage executes the actual C++ removal, R3 actions/guards, config
+decoding, wrap-safe toast timing and layout geometry. The host entry point is
+`.github/scripts/test_favorites_parity.py`; the full suite is
+`sh tools/run_tests.sh -k`. Refresh the branch's exact compiler/edition CI before
+merging. Local host/native logs are ignored under `build/`.
+
+The inherited Favorites writer still opens with `O_TRUNC`, writes once and
+ignores `close` errors. This port fixes feedback/star ordering, not atomic disk
+replacement. Partial writes, interrupted saves and device-specific recovery need
+a separate implementation and fault-injection/hardware checks. POPS UDPFS
+launch/config/driver work and full RA/ORBIT parity remain in issue #20.
+
+SDK feedback was sent to [@techwritescode on PR #22](https://github.com/NathanNeurotic/RiptOPL/pull/22#issuecomment-6135955069):
+LLVM project-header dependency tracking, the confirmed missing POSIX socket
+entrypoints in both installed cglue archives, and unavailable PPC TTY package
+discovery. Local asset regeneration is an application preparation issue, not an
+SDK defect. Retain the current RA-only compatibility code until native SDK
+coverage preserves libc descriptor ownership and passes runtime validation.
+
+The recovery section below records the earlier checkpoint; its open-branch
+directions are superseded by this section. Recovery ZIPs and permanent Git refs
+remain intact.
+
+## Local recovery and production #922 (prior checkpoint)
 
 Integration is `6988499b84e6049c7f544e4a8eff2769f58563a3`: PR #21 merged the
 useful changes from #12–#16, and those originals are closed as superseded.

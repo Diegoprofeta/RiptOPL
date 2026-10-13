@@ -1399,3 +1399,15 @@ gui_strings:
 # UDPFS IP conflict notice, appended to preserve existing positional language IDs.
 - label: UDPFS_IP_CONFLICT
   string: "Another device on your network is using this PS2's IP address, so the UDPFS server's replies go to it. Set a different PS2 IP in Network Settings."
+
+# Action feedback appended to preserve existing positional language IDs.
+- label: FAV_SAVING
+  string: "Saving to Favorites..."
+- label: FAV_SAVED
+  string: "Saved to Favorites"
+- label: FAV_SAVE_FAILED
+  string: "Could not save to Favorites"
+- label: FAV_REMOVED
+  string: "Removed from Favorites"
+- label: FAV_REMOVE_FAILED
+  string: "Could not remove from Favorites"

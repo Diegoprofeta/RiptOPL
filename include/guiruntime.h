@@ -22,6 +22,7 @@ public:
 
     // One frame of the active screen.
     void show();
+    void showToast(const char *text);
     void drawBackground();
     void reloadScreenExtents();
 

@@ -802,25 +802,27 @@ int FavSupport::removeByIdAndText(int mode, int id, const char *text, int kind)
     return ok;
 }
 
-void FavSupport::removeByIndex(int favIndex)
+int FavSupport::removeByIndex(int favIndex)
 {
     if (!validIndex(favIndex))
-        return;
+        return 0;
     int srcMode = array_[favIndex].mode;
     int srcId = array_[favIndex].id;
     int srcKind = array_[favIndex].kind;
     char *txt = array_[favIndex].text;
 
-    // Clear the star on the source-list copy, then drop the record from the store. (For a VCD fav the
-    // live submenu may be the device's disc list right now -> the by-id+text find simply misses, which
-    // is fine -- the record is still removed from the store.)
+    // Commit the removal before changing the visible source star. A failed write must not look
+    // successful; an absent source list is harmless once the stored record has been removed.
+    if (!removeByIdAndText(srcMode, srcId, txt, srcKind))
+        return 0;
+
     opl_io_module_t *mod = oplGetModule(srcMode);
     if (mod != NULL) {
         submenu_list_t *src = favFindVisibleSource(mod, srcId, txt, favKindView(srcKind));
         if (src != NULL)
             src->item.favourited = 0;
     }
-    removeByIdAndText(srcMode, srcId, txt, srcKind);
+    return 1;
 }
 
 // ---- item_list_t callbacks ----------------------------------------------------
@@ -1135,9 +1137,9 @@ int favGetArtMode(const char *value)
     return gFavSupport.artMode(value);
 }
 
-void favRemoveByIndex(int favIndex)
+int favRemoveByIndex(int favIndex)
 {
-    gFavSupport.removeByIndex(favIndex);
+    return gFavSupport.removeByIndex(favIndex);
 }
 
 void loadFavourites(void)

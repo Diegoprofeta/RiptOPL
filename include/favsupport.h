@@ -102,7 +102,7 @@ public:
     // R3 toggle API.
     int addItem(int mode, int id, int icon_id, int text_id, const char *text, int kind);
     int removeByIdAndText(int mode, int id, const char *text, int kind);
-    void removeByIndex(int favIndex);
+    int removeByIndex(int favIndex);
 
 private:
     bool validIndex(int id) const { return array_ != NULL && id >= 0 && id < count_; }
@@ -146,7 +146,7 @@ int addFavouriteItem(int mode, int id, int icon_id, int text_id, const char *tex
 int removeFavouriteByIdAndText(int mode, int id, const char *text, int kind);
 
 // Remove the favourite at FAV-list index favIndex (R3 pressed on the Favourites tab).
-void favRemoveByIndex(int favIndex);
+int favRemoveByIndex(int favIndex);
 
 // Cheap/idempotent: clears the FAV list + schedules its single deferred rebuild.
 void loadFavourites(void);

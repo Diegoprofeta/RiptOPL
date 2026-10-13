@@ -15,6 +15,9 @@ public:
     void showPartition() { showPart_ = true; }
     // One frame: draw whatever is pending and expire it after 5 s.
     void show();
+    // GUI-thread action feedback, drawn even when courtesy notifications are disabled.
+    void setToast(const char *text);
+    void drawToast();
 #ifdef RETROACHIEVEMENTS
     void setRA(const char *line1, const char *line2);
     void drawRA();
@@ -31,6 +34,8 @@ private:
     // wrap. The (clock() - start) ELAPSED form is correct across one wrap by ordinary unsigned arithmetic.
     clock_t popupStart_ = 0;
     bool popupArmed_ = false;
+    char toast_[128] = {0};
+    clock_t toastStart_ = 0;
 #ifdef RETROACHIEVEMENTS
     char raNotice_[2][96] = {{0}, {0}};
     int raNoticeLines_ = 0;
