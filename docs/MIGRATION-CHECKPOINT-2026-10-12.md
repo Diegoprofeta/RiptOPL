@@ -28,13 +28,21 @@ the initial adaptation failed that scenario and the corrected regression passes.
 New checks execute the actual class methods, menu dispatch and Ember scan.
 The seven C++ sanitizer suites are now explicitly included in CI.
 
-Tech reports released ps2build/sdk-world `v2026.10.12.2` fixes project-header
-tracking and adds native `ppctty` for both compilers. Live update discovery also
-finds LLVM `v0.3.3`. Verify these releases locally before dropping the LLVM
-`-sys-header-deps` workaround or replacing the pinned PPC TTY fallback. Retain
-the RA socket compatibility archive: released cglue still lacks those APIs.
+Runtime checkpoint `47f61dce` is pushed. Local ps2build/sdk-world are updated to
+`v2026.10.12.2`, LLVM to `v0.3.3`; sdk-core remains `v2026.10.12.1`.
+The released project-header fix passes a native header-only-change probe on
+GCC and LLVM: both rebuild the object with changed bytes and project `-I` paths,
+without the old `-sys-header-deps` workaround. The wrapper now requires the fixed
+ps2build release. Both compiler package sets contain native `ppctty` (AFL-2.0);
+UART overlays use that package and the bundled driver source is removed while
+retaining license/provenance notices. Retain the RA socket compatibility archive:
+released cglue still lacks those APIs, as the maintainer confirms.
 The EE-core stack guard and narrow LLVM IGS `-Oz` policy remain unchanged.
-Final SDK-updated native/CI/package verification is pending at this checkpoint.
+All 57 Python host suites, HTTP and seven C++ sanitizer suites pass after the
+final changes. Native LLVM Korium `debug_uart` compiles, links and packs with
+the SDK driver (ELF SHA256 `62bf8defbff72e07c1681a959b0f1667bd5e401144223f366fc2ec69ec9cea8f`).
+This local candidate records a dirty SDK-cleanup checkout; clean final CI,
+configuration/kit verification and console UART acceptance remain pending.
 
 ## Latest continuation: POPS UDPFS #904/#909
 

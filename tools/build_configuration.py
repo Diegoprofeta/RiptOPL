@@ -42,17 +42,8 @@ def apply_configuration(config, configuration):
         add(main, "defines", "__DEBUG", "__OPLDIAG", "TTY_PPC_UART" if uart else "TTY_UDP")
         add(main, "sources", "src/platform/debug.cpp")
         add(main, "embed_irx", "ioptrap", "ppctty" if uart else "udptty")
-        if uart:
-            # No installed ppctty package as of v2026.10.12.1. Pinned official
-            # SDK source, license and provenance are retained with this fallback.
-            config["targets"].append({
-                "name": "ppctty", "type": "iop",
-                "sources": ["third_party/ps2sdk-ppctty/main.c", "third_party/ps2sdk-ppctty/tty.c"],
-                "include_dirs": ["third_party/ps2sdk-ppctty"],
-                "headers": list(targets["isofs"]["headers"]), "defines": ["KPRINTF"],
-                "imports_lst": "third_party/ps2sdk-ppctty/imports.lst",
-            })
-        else:
+        # UART resolves the native ppctty driver from sdk-world v2026.10.12.2+.
+        if not uart:
             config["targets"].append({
                 "name": "ps2link", "type": "iop",
                 "sources": [f"modules/debug/ps2link/{name}.c" for name in

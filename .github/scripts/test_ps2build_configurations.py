@@ -71,8 +71,9 @@ class ConfigurationTests(unittest.TestCase):
             self.assertIn("ioptrap", main["embed_irx"])
             if uart:
                 self.assertNotIn("ps2link", targets)
+                self.assertNotIn("ppctty", targets)  # Resolve the installed SDK driver.
                 self.assertTrue((ROOT / "third_party/ps2sdk-ppctty/LICENSE").is_file())
-                self.assertIn("ac92a9f657d2e531dd8f060250b07f2a5ac6dea5", (ROOT / "third_party/ps2sdk-ppctty/UPSTREAM").read_text())
+                self.assertIn("sdk-world v2026.10.12.2", (ROOT / "third_party/ps2sdk-ppctty/UPSTREAM").read_text())
             else:
                 self.assertIn("DEBUG", targets["ps2link"]["defines"])
             ingame = configuration.startswith(("ingame_", "iopcore_"))
