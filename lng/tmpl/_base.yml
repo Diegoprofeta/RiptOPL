@@ -1455,3 +1455,9 @@ gui_strings:
   string: Show CFG Titles in Game Lists
 - label: HINT_CFG_TITLES
   string: "Shows the Title from each game's CFG instead of its file name, and sorts by it. Reads every CFG when a list refreshes, so lists load slower. Display only."
+
+# Appended: preserve every existing positional language ID.
+- label: AUTO_VMC_INVALID
+  string: "This game's existing VMC cannot be used by this loader. It was preserved. Choose a card in Game Settings."
+- label: AUTO_VMC_STILL_RUNNING
+  string: "VMC creation is still running. Stay in the menu and wait before retrying."

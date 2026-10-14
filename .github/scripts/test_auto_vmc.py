@@ -1,9 +1,11 @@
 """Execute actual automatic-card policy and modal launch ownership/identity guards."""
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 
 root = Path(__file__).resolve().parents[2]
+policy_source = Path(sys.argv[1]).read_text(encoding='utf-8') if len(sys.argv) > 1 else (root / 'src/ui/guigame.cpp').read_text(encoding='utf-8')
 def read(path):
     return (root / path).read_text(encoding='utf-8')
 def function(source, signature):
@@ -24,25 +26,29 @@ run('auto_vmc', r'''
 #include <cstdio>
 #include <cstring>
 #include <initializer_list>
-enum {FAV_MODE=12, APP_MODE=10, HTTP_MODE=14, HDD_MODE=9, LIB_VIEW_PS1=1,FAV_KIND_ISO=0};
+enum {FAV_MODE=12, APP_MODE=10, HTTP_MODE=14, HDD_MODE=9, ETH_MODE=8, UDPFS_MODE=15, LIB_VIEW_PS1=1,FAV_KIND_ISO=0};
 enum {CONFIG_ITEM_CORE_LOADER, _STR_AUTO_VMC_FAILED, _STR_AUTO_VMC_TIMEOUT,
-      _STR_AUTO_VMC_CREATING,_STR_VMC_FRAGMENTED_ON_CREATE,_STR_ERROR_SAVING_SETTINGS};
+      _STR_AUTO_VMC_CREATING,_STR_VMC_FRAGMENTED_ON_CREATE,_STR_ERROR_SAVING_SETTINGS,
+      _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING};
+constexpr int APP_STARTUP_MAX=255;
 static int gAutoCreateVmc=1,gDefaultCoreLoader=0;
 struct config_set_t {int loader=2,disabled=0;char assigned[32]={};};
-struct item_list_t {int mode=0,enabled=1;void *source=nullptr;};
+struct item_list_t {int mode=0,enabled=1;void *source=nullptr;void *priv=nullptr;};
 static int rowView,kind,probe= -1,submitted= -1,probes,creates,polls,aborts,writes,dialogs,contiguity;
 static int completionError,cancelAt= -1,completeAt=2,chain=1;
+static int completedSize=8,rowCount=3,mutation;
 static bool active=true,ownerPresent=true,cap=true,saveOk=true,statusFails,assignOk=true;
-static bool jobStarted,initialBusy,initialFailure;
+static bool jobStarted,initialBusy,initialFailure,udpbd;
 static const char *title="SLUS_123.45";
 struct statusVMCparam_t {int VMC_status,VMC_error,VMC_progress;char VMC_msg[64];};
 class GameSource {
 public:
     bool hasCheckVmc() {return cap;}
     const char *startup(item_list_t*,int) {return title;}
+    int count(item_list_t*) {return rowCount;}
     int checkVmc(item_list_t*,char *name,int size) {
         assert(!strcmp(name,"GROUP_0")); if(size) {assert(size==8);creates++;jobStarted=true;return submitted;}
-        probes++;return probe;
+        probes++;return creates ? completedSize : probe;
     }
 };
 static GameSource source;
@@ -53,6 +59,8 @@ static struct {
 } gFavSupport;
 static int favGetItemKind(int) {return kind;}
 static int libListRowView(item_list_t*,int) {return rowView;}
+[[maybe_unused]] static int bdmSupportIsUDPBD(const item_list_t*) {return udpbd;}
+[[maybe_unused]] static int bdmModeIsUDPBD(int) {return udpbd;}
 static int guiIsActive() {return active;}
 static void configGetInt(config_set_t *c,int,int *out) {*out=c->loader;}
 static void configGetVMC(config_set_t *c,char *out,int,int) {strcpy(out,c->assigned);}
@@ -73,23 +81,32 @@ static int fileXioDevctl(const char*,unsigned command,void*,int,void *out,int) {
     auto *s=static_cast<statusVMCparam_t*>(out);
     if(!jobStarted) {s->VMC_status=initialBusy;return initialFailure ? -1 : 0;}
     polls++;
+    if (polls==1) {
+        if(mutation==1)title="OTHER_GAME";
+        if(mutation==2)rowCount=0;
+        if(mutation==3)ownerPresent=false;
+        if(mutation==4)owner.priv=&source;
+        if(mutation==5)owner.mode=ETH_MODE;
+        if(mutation==6)owner.source=&source;
+    }
     if(statusFails)return -1;
     s->VMC_status=polls<completeAt;s->VMC_error=completionError;s->VMC_progress=50;
     return 0;
 }
-constexpr int AUTO_VMC_SIZE_MB=8, AUTO_VMC_MAX_FRAMES=5;
-''' + function(read('src/ui/guigame.cpp'),'int guiGameAutoCreateVmc(') + r'''
+constexpr int AUTO_VMC_SIZE_MB=8, AUTO_VMC_MAX_FRAMES=5, AUTO_VMC_CANCEL_FRAMES=5;
+''' + function(policy_source,'int guiGameAutoCreateVmc(') + r'''
 static void reset() {
     gAutoCreateVmc=1;gDefaultCoreLoader=0;rowView=kind=0;probe=submitted=-1;
     probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;
     completeAt=2;cancelAt=-1;chain=1;active=ownerPresent=cap=saveOk=assignOk=true;
-    statusFails=jobStarted=initialBusy=initialFailure=false;title="SLUS_123.45";owner={};
+    statusFails=jobStarted=initialBusy=initialFailure=udpbd=false;title="SLUS_123.45";owner={};
+    completedSize=8;rowCount=3;mutation=0;
 }
 static void noCard(config_set_t &c) {assert(!c.assigned[0] && !creates && !writes);}
 int main() {
     item_list_t list;config_set_t cfg;
     reset(); assert(guiGameAutoCreateVmc(&list,1,&cfg)==1);
-    assert(creates==1 && polls==2 && writes==1 && !strcmp(cfg.assigned,"GROUP_0") && contiguity==1);
+    assert(creates==1 && polls==2 && probes==2 && writes==1 && !strcmp(cfg.assigned,"GROUP_0") && contiguity==1);
     for(int size : {8,16,32,64}) {reset();cfg={};probe=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!creates && writes==1);}
     for(int size : {0,-2,-3,4}) {reset();cfg={};probe=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);assert(dialogs==1);}
     for(int result : {0,-2,-3}) {reset();cfg={};submitted=result;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(creates==1 && !polls && !writes && !cfg.assigned[0]);}
@@ -98,8 +115,11 @@ int main() {
     reset();cfg={};probe=8;initialFailure=true;assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
     reset();cfg={};completionError=-7;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);
     reset();cfg={};cancelAt=1;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(aborts==1 && !writes && !cfg.assigned[0]);
-    reset();cfg={};statusFails=true;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(aborts==1 && polls==5 && !writes);
-    reset();cfg={};completeAt=99;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(aborts==1 && !writes);
+    reset();cfg={};statusFails=true;cancelAt=1;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(aborts==1 && polls==6 && !writes);
+    reset();cfg={};completeAt=99;cancelAt=1;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(aborts==1 && !writes);
+    reset();cfg={};completeAt=13;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(polls==13 && !aborts && writes==1);
+    for(int size : {-1,-3,0,4,16}) {reset();cfg={};completedSize=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0] && dialogs==1);}
+    for(int change : {1,2}) {reset();cfg={};mutation=change;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);}
     reset();cfg={};saveOk=false;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(writes==1 && dialogs==1);
     reset();cfg={};assignOk=false;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);
     reset();cfg={};cfg.loader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && !contiguity);
@@ -125,6 +145,27 @@ int main() {
     assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
     reset();cfg={};list.mode=FAV_MODE;
     assert(guiGameAutoCreateVmc(&list,1,&cfg) && writes==1);
+    for(int change : {3,4,5,6}) {
+        reset();cfg={};list.mode=FAV_MODE;mutation=change;
+        assert(!guiGameAutoCreateVmc(&list,1,&cfg) && !writes && probes==1);
+    }
+    for(int transport : {0,1,2,3}) {
+        reset();cfg={};list={};probe=0;
+        if(transport==0)cfg.loader=1;
+        if(transport==1)list.mode=UDPFS_MODE;
+        if(transport==2)udpbd=true;
+        if(transport==3){list.mode=FAV_MODE;owner.mode=UDPFS_MODE;}
+        assert(guiGameAutoCreateVmc(&list,1,&cfg));
+        assert(writes==1 && !creates && !contiguity && !strcmp(cfg.assigned,"GROUP_0"));
+    }
+    for(int size : {4,128}) {
+        reset();cfg={};list={};cfg.loader=1;probe=size;
+        assert(guiGameAutoCreateVmc(&list,1,&cfg) && writes==1 && !creates);
+    }
+    reset();cfg={};list={};list.mode=ETH_MODE;cfg.loader=1;probe=0;
+    assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
+    reset();cfg={};list={};char longStartup[257];memset(longStartup,'x',256);longStartup[256]=0;title=longStartup;
+    assert(!guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
 }
 ''')
 run('auto_vmc_launch', r'''
@@ -194,4 +235,4 @@ int main() {
     reset();name=longPath;itemExecSelect(&menu);assert(launches==1 && config.freed==1);
 }
 ''')
-print('Automatic VMC: policy, faults, cancellation, timeout, owned launch configuration and changed-row refusal pass')
+print('Automatic VMC: effective loader, verified card, slow jobs/cancel, owned config and changed-row refusal pass')
