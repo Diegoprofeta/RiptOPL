@@ -1,6 +1,36 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: validate VMC format before automatic assignment
+## Current continuation: RA watch-list transfer integrity
+
+Base: merged VMC format PR #38 at `3acd135c406f324b60df8a422c112388e6b87d5f`.
+Final integration GCC/LLVM, host, all 32 configurations and three complete kits
+pass. All 35 downloaded final integration packages independently verify.
+Pages #39 deployed at `5f22b6af`; Wiki `687acb3d` publishes scoped VMC guidance.
+
+Branch `codex/ra-watch-transfer` adapts the confirmed fixed-stride chunk checks
+from original `f0943360` through C++ Ranet. The advertised chunk count and every
+payload length must cover the list exactly at 896-byte strides. Invalid parsed
+watch lists are neither confirmed nor persisted. The binary payload begins
+after exactly one protocol separator; whitespace bytes must not be consumed
+by the header scanner. The original scanner's defect is reproduced and reported
+in [original #946](https://github.com/NathanNeurotic/Open-PS2-Loader/issues/946).
+The existing 16 KB limit remains until the broader runtime budget port is done.
+
+The actual Ranet method/real class declaration run under ASan/UBSan with padded
+datagrams, gaps, malicious counts, truncated packets, stale indices, binary
+whitespace/NUL, supported sizes, parser refusal and NIC reservation. The old
+method confirms a gap-containing transfer and fails the new regression. All
+62 Python host suites, HTTP and seven C++ sanitizer suites pass. Native/CI/package
+checks remain pending for this branch.
+
+Original production refreshed to `6a3f12f2d22dbbf95bf2a1cf18f914ad6ed66145`:
+#942 freeze diagnostics and #944 About/QA layout are now merged and require
+individual adaptation. Original open #733 and DO NOT MERGE #687 remain tracked.
+Full RA runtime/browser/client/ORBIT/HTTPS, peer verification, watch-list cache
+replacement/error recovery, CJK/type labels, diagnostics/distribution and
+console acceptance remain open. This receive-boundary fix is not full RA parity.
+
+## Historical continuation: validate VMC format before automatic assignment
 
 Base: merged Favorites PR #36 at `9a868e82aef3a4846e8659b1aa3977ea6dfb61b1`.
 Its final GCC/LLVM, host, all 32 configurations and three kits pass, with all

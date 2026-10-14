@@ -292,6 +292,17 @@ void Ranet::broadcastTarget(struct sockaddr_in *to)
     to->sin_addr.s_addr = htonl(INADDR_BROADCAST);
 }
 
+// The protocol uses fixed offsets, so a matching byte sum alone cannot prove
+// coverage: a short intermediate chunk would leave stale bytes in wl_.
+static int raExpectedChunkLength(int total, int chunks, int index)
+{
+    if (total <= 0 || total > RA_MAX_BYTES || chunks != (total + RA_CHUNK - 1) / RA_CHUNK ||
+        index < 0 || index >= chunks)
+        return -1;
+    int remaining = total - index * RA_CHUNK;
+    return remaining > RA_CHUNK ? RA_CHUNK : remaining;
+}
+
 int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
                  char *info, int infosz, char *info2, int info2sz)
 {
@@ -396,7 +407,7 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
     }
 
     if (sscanf(rx_ + 8, "%d %d", &total, &chunks) != 2 ||
-        total <= 0 || total > RA_MAX_BYTES || chunks <= 0) {
+        raExpectedChunkLength(total, chunks, 0) < 0) {
         LOG("RA: malformed reply: %s\n", rx_);
         disconnect(sock);
         return -3;
@@ -408,6 +419,7 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
         int idx, len, hdr = 0;
 
         int attempt;
+        bool matched = false;
 
         snprintf(req, sizeof(req), "RAG1 %s %d%s", hash, i, myaddr);
 
@@ -425,17 +437,23 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
                          if idx happens to equal i the guard below passes, and the length
                          check that follows evaluates `len < 0` BEFORE it reaches `hdr == 0`. */
             hdr = 0;
-            if (sscanf(rx_, "RAC1 %d %d %n", &idx, &len, &hdr) >= 2 && idx == i)
+            // Consume exactly the protocol's one separator. Whitespace in the
+            // binary payload (space, tab, newline, etc.) belongs to the list.
+            if (sscanf(rx_, "RAC1 %d %d%n", &idx, &len, &hdr) == 2 && idx == i &&
+                hdr > 0 && hdr < got && rx_[hdr] == ' ') {
+                hdr++;
+                matched = true;
                 break;
+            }
         }
 
-        if (idx != i) {
+        if (!matched) {
             LOG("RA: chunk %d is malformed\n", i);
             disconnect(sock);
             return -5;
         }
 
-        if (len < 0 || len > RA_CHUNK || i * RA_CHUNK + len > RA_MAX_BYTES || hdr == 0 || hdr + len > got) {
+        if (len != raExpectedChunkLength(total, chunks, i) || len > got - hdr) {
             LOG("RA: chunk %d does not fit\n", i);
             disconnect(sock);
             return -6;
@@ -456,10 +474,11 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
        on whether the file reached the medium: on a USB stick writes sit
        in the USB driver's cache and the file may appear later, or never
        if the power goes off. */
-    if (SetWatchList(wl_, total, serial) > 0)
-        raHashStep("8-list-in-memory");
-    else
+    if (SetWatchList(wl_, total, serial) <= 0) {
         raHashStep("8x-list-not-parsed");
+        return -6; // Never persist or confirm a list the real parser refused.
+    }
+    raHashStep("8-list-in-memory");
 
     /* And as a file, for future launches and so the game gets its badge
        in the list. Two copies: next to the game (the loader reads from

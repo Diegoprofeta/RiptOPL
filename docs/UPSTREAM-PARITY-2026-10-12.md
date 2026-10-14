@@ -79,6 +79,20 @@ public feature parity.
 
 ## Remaining migration work
 
+Latest refresh: production `6a3f12f2d22dbbf95bf2a1cf18f914ad6ed66145` includes
+merged freeze diagnostics #942 and About/QA layout #944. They remain unadapted.
+The current RA transfer batch adapts original `f0943360`'s exact fixed-stride
+coverage checks, rejects parser-refused lists before persistence and fixes
+binary-separator consumption (original #946). Actual C++ transfer tests and
+all 62 Python/HTTP/seven C++ host suites pass; native/CI/package checks are
+pending. Full RA/HTTPS/browser/client/ORBIT and peer verification remain open.
+The existing 16 KB network-list ceiling is deliberately retained pending a
+coordinated runtime/watch/snapshot budget port.
+
+VMC automatic format validation is merged in #38 at `3acd135c`; its final
+compiler/host/32-configuration/three-kit checks and all 35 final package checks
+pass. Earlier statements below that this is unresolved in C++ are historical.
+
 The latest source audit is pinned to `fb00066fe7c806a415cd019177bcf0227068bf52`,
 including original #938/#939/#940 repairs of reported #934/#935/#936.
 Merged #932 adds optional CFG list titles; #937 updates the original Pages guide.
