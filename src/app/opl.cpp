@@ -7,6 +7,7 @@
 #include "include/settings.h"
 #include "include/oplint.h"
 #include "include/opl.h"
+#include "include/cfgtitle.h"
 #include "include/sourceregistry.h" // SourceRegistry gSourceRegistry
 #include "include/ioman.h"
 #include "include/launchdiag.h" // UDPBD hang-triage stage markers (gated on gLaunchDiag)
@@ -191,6 +192,7 @@ int gNeutrinoGsmCompDefault; // global default -gsm ":c" field-flip half (0=off,
 int gNeutrinoElfArg;         // default-on (settings key only, no UI): auto-emit -elf=cdrom0: on Neutrino launches
 int gDefaultGameView;
 int gAppsDisplay;
+int gCfgTitlesInLists;
 int gEmberDisplay;
 int gEmberTiming;
 int gEmberDither;
@@ -654,6 +656,7 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
             snprintf(keepStartup, sizeof(keepStartup), "%s", s);
     }
 
+    cfgTitleForget(mdl->support); // publish no titles before replacing the source rows
     clearMenuGameList(mdl);
     // An L3 transition is staged while the old submenu is still live. Commit only after that submenu
     // is gone, then every array read below and every newly queued row belongs to the same new view.
@@ -772,6 +775,11 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
         }
     }
 
+    // Complete the view transition before the optional slow per-game CFG pass.
+    if (viewTransition)
+        libViewFinishPending(mdl->support->mode);
+    cfgTitleRefresh(mdl->support, count);
+
     if (gAutosort) {
         gup = guiOpCreate(GUI_OP_SORT);
         if (gup) { // OOM: an unsorted list beats dereferencing NULL, same as the append loop above
@@ -779,13 +787,6 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
             gup->menu.subMenu = &mdl->subMenu;
             guiDeferUpdate(gup);
         }
-    }
-
-    if (viewTransition) {
-        // All rows for the committed view are now queued. The GUI may show none, some, or all of them
-        // on its next drain, but it can no longer expose a row backed by the discarded view. Do not
-        // clear a transition staged after this rebuild began; its own queued pass still has to run.
-        libViewFinishPending(mdl->support->mode);
     }
 }
 

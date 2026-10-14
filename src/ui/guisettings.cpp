@@ -7,6 +7,7 @@
 // Settings screens (the guiShow*Config family and the Settings shell). Split out of gui.cpp.
 
 #include "include/opl.h"
+#include "include/cfgtitle.h"
 #include "include/plasma.h"
 #include "include/gui.h"
 #include "include/guiint.h"
@@ -600,6 +601,17 @@ static void guiRefreshGameViews(void)
     loadFavourites();
 }
 
+// Read all title caches only after source lists are marked dirty. HTTP must precede Favorites too.
+static void guiRefreshCfgTitles(void)
+{
+    libViewMarkAllDirty();
+    oplQueueLibraryDeviceUpdates();
+    item_list_t *http = httpGetObject(0);
+    if (http != NULL && http->enabled)
+        ioPutRequest(IO_MENU_UPDATE_DEFFERED, &http->mode);
+    loadFavourites();
+}
+
 static void guiRefreshAppsView(void)
 {
     item_list_t *apps = appGetObject(0);
@@ -648,6 +660,7 @@ reshow_ui:
     diaSetInt(diaUIConfig, UICFG_AUTOSORT, gAutosort);
     diaSetInt(diaUIConfig, UICFG_AUTOREFRESH, gAutoRefresh);
     diaSetInt(diaUIConfig, UICFG_NOTIFICATIONS, gEnableNotifications);
+    diaSetInt(diaUIConfig, UICFG_CFG_TITLES, gCfgTitlesInLists);
     diaSetVisible(diaUIConfig, UICFG_COVERFLOW_BUTTON, gTheme->coverflow != NULL);
     guiSetGameViewPicker(diaUIConfig);
     guiSetAppsViewPicker(diaUIConfig);
@@ -688,6 +701,9 @@ reshow_ui:
         diaGetInt(diaUIConfig, UICFG_AUTOSORT, &gAutosort);
         diaGetInt(diaUIConfig, UICFG_AUTOREFRESH, &gAutoRefresh);
         diaGetInt(diaUIConfig, UICFG_NOTIFICATIONS, &gEnableNotifications);
+        int previousCfgTitles = gCfgTitlesInLists;
+        diaGetInt(diaUIConfig, UICFG_CFG_TITLES, &gCfgTitlesInLists);
+        int cfgTitlesChanged = previousCfgTitles != gCfgTitlesInLists;
         int gameViewChanged = guiReadGameViewPicker(diaUIConfig);
         int appsViewChanged = guiReadAppsViewPicker(diaUIConfig);
         diaGetInt(diaUIConfig, UICFG_VMODE, &gVMode);
@@ -696,7 +712,9 @@ reshow_ui:
             bgmStop();
 
         applyConfig(themeID, langID, 1);
-        if (gameViewChanged) {
+        if (cfgTitlesChanged) {
+            guiRefreshCfgTitles();
+        } else if (gameViewChanged) {
             // applyConfig(..., skipDeviceRefresh=1) deliberately avoids device scans. Queue after it
             // returns so HDD (which has no automatic refresh) cannot retain PS2 rows while rendering
             // uses the new VCD view, without racing the theme/menu bookkeeping above.
@@ -2423,6 +2441,7 @@ static int guiSettingsShowInterface(void)
     diaSetInt(ui, UICFG_AUTOSORT, gAutosort);
     diaSetInt(ui, UICFG_AUTOREFRESH, gAutoRefresh);
     diaSetInt(ui, UICFG_NOTIFICATIONS, gEnableNotifications);
+    diaSetInt(ui, UICFG_CFG_TITLES, gCfgTitlesInLists);
     // Keep the editor reachable even when the current theme has no active Coverflow view; users
     // need to be able to configure it before enabling or switching to a Coverflow-capable theme.
     diaSetVisible(ui, UICFG_COVERFLOW_BUTTON, 1);
@@ -2467,6 +2486,9 @@ reshow_interface:
         diaGetInt(ui, UICFG_AUTOSORT, &gAutosort);
         diaGetInt(ui, UICFG_AUTOREFRESH, &gAutoRefresh);
         diaGetInt(ui, UICFG_NOTIFICATIONS, &gEnableNotifications);
+        int previousCfgTitles = gCfgTitlesInLists;
+        diaGetInt(ui, UICFG_CFG_TITLES, &gCfgTitlesInLists);
+        int cfgTitlesChanged = previousCfgTitles != gCfgTitlesInLists;
         gameViewChanged = guiReadGameViewPicker(ui);
         appsViewChanged = guiReadAppsViewPicker(ui);
         diaGetInt(ui, UICFG_VMODE, &gVMode);
@@ -2483,7 +2505,9 @@ reshow_interface:
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
         applyConfig(themeID, langID, 1);
-        if (gameViewChanged) {
+        if (cfgTitlesChanged) {
+            guiRefreshCfgTitles();
+        } else if (gameViewChanged) {
             guiRefreshGameViews();
         }
         if (appsViewChanged)

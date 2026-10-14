@@ -90,6 +90,9 @@ static const char *vcdDisplayNameForRow(item_list_t *itemList, int id, const cha
     return strlen(text) > 12 && text[4] == '_' && text[8] == '.' && text[11] == '.' ? text + 12 : text;
 }
 
+static const char *cfgTitleDisplayName(item_list_t *l, int id, const char *text)
+{ return vcdDisplayNameForRow(l, id, text); }
+
 @FUNCTIONS@
 
 /* ---- the removed bubble sort, verbatim apart from its name ---- */

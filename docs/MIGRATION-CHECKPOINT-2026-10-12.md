@@ -1,6 +1,34 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: Favorites IO safeguards and native SDK sockets
+## Current continuation: CFG-title list parity and refreshed upstream audit
+
+Base: merged PR #31 at `d74bb85bef54e83cca3727f4f75f6b47af65d658`.
+Its final integration compiler/host checks, all 32 configurations and three kits
+passed; downloaded packages were independently verified. Native LLVM RA passed
+with ps2build/sdk-core v2026.10.13. Favorites durability remains open.
+
+Continue `codex/cfg-title-parity-932`. Production source was refreshed to
+`dea980ef4549de41dd1ee5e1261238a22da2080b`, including merged #932 and Pages #937.
+The optional CFG title setting is adapted to C++ GameSource, table-driven
+settings, list sorting, theme/header rendering and RA badge preservation.
+Cache IO runs on the worker; HTTP refresh precedes Favorites resolution.
+See [CFG-TITLES.md](CFG-TITLES.md). All 61 Python suites, HTTP and seven C++
+sanitizer suites pass. Native LLVM RA compile/link/pack passes at `fc7dfb74`,
+packed ELF SHA256 `9d11c08fd380e2db1dfc2b158cdf19c8a650526a3c0009bc947e92a29a4777f0`.
+Exact-head CI/package validation remains pending in PR #32.
+
+The audit confirmed two independent UI gaps: #917 optional CJK font fallback
+and the `game_type_labels` setting. Neither is supplied by this title port.
+Original PR #733 (cover art flow) remains open; #687 is explicitly marked
+DO NOT MERGE. Track them without treating their unmerged code as production.
+Full RA/browser/client/ORBIT, durable Favorites replacement and console testing
+remain open in [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+Pages #937 and Wiki title guidance require a scoped import preserving destination
+migration notices; current publications remain Pages `b686bebd`, Wiki `feb11605`.
+
+Earlier continuation sections below are historical and superseded above.
+
+## Historical continuation: Favorites IO safeguards and native SDK sockets
 
 Base is merged PRs #29/#30 at `39eda4b8ae12d8486503c16ffab8a3b5f1df6724`.
 Fresh integration GCC/LLVM, host gates, all 32 selected configurations and three
