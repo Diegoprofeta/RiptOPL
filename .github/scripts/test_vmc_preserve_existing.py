@@ -2,9 +2,10 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
 
 root = Path(__file__).resolve().parents[2]
-source = (root / "src/platform/sysvmc.cpp").read_text(encoding="utf-8")
+source = Path(sys.argv[1]).read_text(encoding="utf-8") if len(sys.argv)>1 else (root / "src/platform/sysvmc.cpp").read_text(encoding="utf-8")
 start = source.index("int sysCheckVMC(")
 brace = source.index("{", start)
 depth = 0
@@ -26,6 +27,8 @@ program = r'''
 #include <strings.h>
 #include <assert.h>
 #include <errno.h>
+#include <stdint.h>
+#include <initializer_list>
 #define O_RDONLY 1
 #define SEEK_END 2
 #define SEEK_SET 0
@@ -40,11 +43,15 @@ program = r'''
 #define S_IXOTH 0
 #define SYS_VMC_REPLACE_REQUIRES_DELETE (-2)
 #define SYS_VMC_CREATE_FAILED (-3)
+#define SYS_VMC_PROBE_FORMAT (-4)
 #define LOG(...) ((void)0)
-typedef struct {
-    char magic[32];
-    int mc_type, mc_flag, page_size, pages_per_block, pages_per_cluster, clusters_per_card;
-} vmc_superblock_t;
+typedef uint8_t u8;
+typedef uint16_t u16;
+typedef uint32_t u32;
+typedef uint64_t u64;
+@SUPERBLOCK@
+static vmc_superblock_t header;
+static int readPosition, readLimit, readErrorAt=-1, readEOFAt=-1, closeError, seekError;
 typedef struct {
     char VMC_filename[1024];
     int VMC_size_mb, VMC_blocksize, VMC_thread_priority, VMC_card_slot;
@@ -69,16 +76,25 @@ static int fileXioDclose(int fd) {(void)fd;return 0;}
 static int fake_open(const char *path, int flags, ...) {
     (void)path; (void)flags; opened++;
     if (openError) {errno=openError;return -1;}
-    if (exists) return 3;
+    if (exists) {readPosition=0;return 3;}
     errno=ENOENT;return -1;
 }
 static int fake_lseek(int fd, int offset, int whence) {
-    (void)fd; (void)offset; return whence == SEEK_END ? length : 0;
+    (void)fd; (void)offset;
+    if(seekError==1 && whence==SEEK_END)return -1;
+    if(seekError==2 && whence==SEEK_SET)return -1;
+    return whence == SEEK_END ? length : 0;
 }
 static int fake_read(int fd, void *buf, int count) {
-    (void)fd; memset(buf, 0, count); return count;
+    (void)fd;
+    if(readErrorAt>=0 && readPosition>=readErrorAt)return -1;
+    if(readEOFAt>=0 && readPosition>=readEOFAt)return 0;
+    int available=sizeof(header)-readPosition;
+    if(count>available)count=available;
+    if(readLimit && count>readLimit)count=readLimit;
+    memcpy(buf, (char*)&header+readPosition, count);readPosition+=count;return count;
 }
-static int fake_close(int fd) { (void)fd; return 0; }
+static int fake_close(int fd) { (void)fd; return closeError ? -1 : 0; }
 static int fake_unlink(const char *path) { (void)path; erased++; return 0; }
 static int fake_devctl(const char *path, int command, void *args, int alen, void *buf, int blen) {
     (void)path; (void)command; (void)args; (void)alen; (void)buf; (void)blen;
@@ -94,6 +110,54 @@ static int fake_devctl(const char *path, int command, void *args, int alen, void
 int main(void) {
     char name[] = "SAVE_0";
     exists = 1; length = 8 * 1048576;
+    // An idle/restarted formatter has no trustworthy error history. The full
+    // erase pass leaves this exact size but no final header: preserve, refuse.
+    for(int erasedByte : {0,255}) {
+        memset(&header,erasedByte,sizeof(header));
+        assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+        assert(!erased && !jobs);
+    }
+    memset(&header,0,sizeof(header));
+    memcpy(header.magic,"Sony PS2 Memory Card Format ",28);
+    header.mc_type=2;header.page_size=512;header.pages_per_cluster=2;
+    header.pages_per_block=16;header.clusters_per_card=8192;
+    const vmc_superblock_t validHeader=header;
+    for(int mb : {4,8,16,32,64,128}) {
+        header.clusters_per_card=mb*1024;length=mb*1048576;
+        assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==mb);
+    }
+    header=validHeader;length=8*1048576;
+    assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==8);
+    readLimit=7; // positive short reads must accumulate
+    assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==8);
+    readErrorAt=14;
+    assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+    readErrorAt=-1;readLimit=0;
+    readLimit=7;readEOFAt=14;
+    assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+    readEOFAt=-1;readLimit=0;
+    for(int fault : {1,2,3}) {
+        seekError=fault<3 ? fault : 0;closeError=fault==3;
+        assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+        assert(!erased && !jobs);
+    }
+    seekError=closeError=0;
+    for(int fault=0;fault<7;fault++) {
+        header=validHeader;
+        if(fault==0)header.magic[0]='x';
+        if(fault==1)header.mc_type=1;
+        if(fault==2)header.clusters_per_card=0;
+        if(fault==3)header.page_size=0;
+        if(fault==4)header.pages_per_cluster=0;
+        if(fault==5)header.pages_per_block=0;
+        if(fault==6){header.clusters_per_card=0xffffffff;header.pages_per_cluster=0xffff;header.page_size=0xffff;}
+        assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+    }
+    header=validHeader;header.clusters_per_card=8191;length=8191*1024;
+    assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==0); // formatted odd size for Neutrino
+    length=8*1048576;
+    assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+    header=validHeader;
     char prefix[243];
     memset(prefix, 'p', 241); prefix[241] = 0;
     assert(sysCheckVMC(prefix, "/", name, 0, NULL) == 8); // 255 characters fit
@@ -134,14 +198,16 @@ int main(void) {
     assert(jobs==2 && erased==0 && !gVMCCreatePath[0]);
     returnsError=0;
     assert(sysCheckVMC("mass0:/", "/", name, -1, NULL) == -1 && erased == 1);
-    puts("PASS: VMC size changes preserve the existing card; only explicit Delete removes");
+    puts("PASS: VMC format/IO checks refuse unfinished cards, preserve odd formatted cards and never replace saves");
     return 0;
 }
-'''.replace("@FUNCTION@", function)
+'''.replace("@FUNCTION@", function).replace("@SUPERBLOCK@", (root / "include/mcemu.h").read_text(encoding="utf-8"))
 with tempfile.TemporaryDirectory() as d:
     src = Path(d) / "test.cpp"
     out = Path(d) / "test"
     src.write_text(program, encoding="utf-8")
+    legacy_flags = ["-Wno-error=sign-compare"] if len(sys.argv)>1 else []
     subprocess.run(["g++", "-std=c++17", "-Wno-write-strings", "-Wall", "-Wextra", "-Wno-unused-parameter", "-Werror",
+                    "-fsanitize=address,undefined", "-fno-sanitize-recover=undefined", *legacy_flags,
                     str(src), "-o", str(out)], check=True)
     subprocess.run([str(out)], check=True, timeout=10)

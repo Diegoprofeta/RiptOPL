@@ -85,6 +85,11 @@ int sysCheckMC(void);
 /* Existing images require explicit, confirmed Delete before replacement. */
 #define SYS_VMC_REPLACE_REQUIRES_DELETE (-2)
 #define SYS_VMC_CREATE_FAILED           (-3)
+/* Read-only automatic-assignment probe: require a complete format header and
+ * matching geometry. Valid non-integral MB sizes return 0 (Neutrino only);
+ * invalid opened images return SYS_VMC_CREATE_FAILED. An open failure still
+ * requires the creation path's directory proof of absence before any job. */
+#define SYS_VMC_PROBE_FORMAT            (-4)
 int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock);
 // Layout of the VMC whose creation was last STARTED: 1 contiguous, 0 fragmented, -1 unknown.
 // Only meaningful once genvmc reports the job finished. -1 means "this backing store cannot say"

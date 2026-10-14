@@ -1,6 +1,36 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: Favorites staging and restore-before-reuse
+## Current continuation: validate VMC format before automatic assignment
+
+Base: merged Favorites PR #36 at `9a868e82aef3a4846e8659b1aa3977ea6dfb61b1`.
+Its final GCC/LLVM, host, all 32 configurations and three kits pass, with all
+35 downloaded integration packages verified. Pages #37 deployed at `44b6291c`;
+Wiki `bd82806e` publishes scoped Favorites storage/recovery guidance.
+
+Branch `codex/vmc-format-probe` addresses the retry described in original #941.
+Automatic existing-file and post-creation checks request a read-only format
+probe through GameSource. The actual superblock must be fully read and match
+PS2 type, raw page/cluster geometry and file length; seek/read/close errors
+refuse assignment. Geometry multiplication is widened before using untrusted
+fields. Valid formatted odd-size cards remain eligible for Neutrino. Existing
+invalid images are preserved and never implicitly reformatted. Open failures
+retain the creation path's completed-directory proof of absence.
+
+The real sysCheckVMC regression fails against the old size-only implementation
+on an erased full-size image. Current tests cover erased headers, malformed
+geometry, positive short reads, EOF/errors, seek and close failures, supported
+and odd sizes, safe absence checks and explicit-only deletion. All 61 Python
+suites, HTTP and seven C++ sanitizer suites pass; the final expanded focused
+test also passes under ASan/UBSan. Native/CI/package checks remain pending for
+this branch; update issue #20 with their final exact revisions.
+
+This validates the header written after formatter metadata, not every filesystem
+entry or media durability. Manual selection remains separate. Original production
+is unchanged at `fb00066fe7c806a415cd019177bcf0227068bf52`; original #941 is still
+open. Full RA/HTTPS/browser/ORBIT, CJK/type labels, optional diagnostics and
+distribution bundles, and console acceptance remain in issue #20.
+
+## Historical continuation: Favorites staging and restore-before-reuse
 
 Base: merged VMC PR #34 at `01affe4de6c88dfcfda68a31349941e4b644cae2`.
 Final compiler/host checks, all 32 configurations and three complete kits pass;

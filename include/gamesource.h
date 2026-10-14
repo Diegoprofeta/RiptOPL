@@ -48,6 +48,7 @@ public:
     virtual int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) = 0;
     virtual void cleanUp(item_list_t *itemList, int exception) = 0;
     virtual void shutdown(item_list_t *itemList) = 0;
+    // createSize also accepts SYS_VMC_PROBE_FORMAT for read-only auto-assignment validation.
     virtual int checkVmc(item_list_t *itemList, char *name, int createSize);
     virtual int iconId(item_list_t *itemList) = 0;
 

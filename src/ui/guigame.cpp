@@ -376,7 +376,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
         guiMsgBox(_l(_STR_AUTO_VMC_STILL_RUNNING), 0, NULL);
         return 0; // a previous timeout/cancel may still be cleaning a partial image
     }
-    int size = gsOf(backing)->checkVmc(backing, vmc, 0);
+    int size = gsOf(backing)->checkVmc(backing, vmc, SYS_VMC_PROBE_FORMAT);
     bool formatted = false;
     if (size == -1) {
         int submitted = gsOf(backing)->checkVmc(backing, vmc, AUTO_VMC_SIZE_MB);
@@ -415,7 +415,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
             }
         }
     } else if (size < 0 || (loader != 1 && size != 8 && size != 16 && size != 32 && size != 64)) {
-        // Neutrino accepts the game's existing odd-size card as is. The native
+        // Neutrino accepts an existing formatted odd-size card as is. The native
         // core requires supported sizes; neither path replaces an existing file.
         guiMsgBox(_l(_STR_AUTO_VMC_INVALID), 0, NULL);
         return 1;
@@ -432,7 +432,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
     if (backing == NULL || !backing->enabled || backing->source != backingSource ||
         backing->priv != backingState || backing->mode != backingMode)
         return 0;
-    if (size == -1 && gsOf(backing)->checkVmc(backing, vmc, 0) != AUTO_VMC_SIZE_MB) {
+    if (size == -1 && gsOf(backing)->checkVmc(backing, vmc, SYS_VMC_PROBE_FORMAT) != AUTO_VMC_SIZE_MB) {
         guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
         return 1;
     }

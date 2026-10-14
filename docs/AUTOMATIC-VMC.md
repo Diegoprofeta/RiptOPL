@@ -8,8 +8,8 @@ command-line Auto Loading or create cards before the GUI is active.
 
 The card lives in the game's source VMC directory. Its name follows the same
 group/title-ID rule as the VMC screen, with `_0` for slot 1, so known multidisc
-groups share a card. An existing supported-size card under that name is reused.
-Neutrino also receives an existing odd-size card as is, following its own card
+groups share a card. An existing formatted supported-size card under that name is reused.
+Neutrino also receives an existing formatted odd-size card as is, following its own card
 handling; native OPL requires a supported size. This option never resizes or
 reformats an existing file. Assigned cards and disabled
 slots remain unchanged. Slot 2 is untouched.
@@ -38,7 +38,7 @@ are not automatically assigned by that path. Failed creation submission or a rep
 an error and allows the game to launch without a newly assigned VMC. A settings
 write failure is reported separately; the successfully created card is retained
 and its assignment remains available to the current launch.
-After successful creation, the source is probed again for an existing 8 MB image
+After successful creation, the source is probed again for a formatted 8 MB image
 before assignment. Favorites re-resolve their source after modal progress;
 changed rows, source instances, device state or source modes refuse continuation.
 
@@ -49,14 +49,25 @@ different row. These safeguards and formatter scheduling/failure behavior have
 host regression coverage. Physical-console creation, cancellation, device
 removal and filesystem behavior still require acceptance testing.
 
-## Known failed-format retry limitation
+## Failed-format retry protection
 
-Size is not proof of a fully formatted card. A formatter failure after erasing
-the complete image can leave an 8 MB file without its final metadata. On a later
-launch, the current size-only probe can reuse that file. This affects both the
-original project and this C++ migration; see
+Size alone is not proof of a formatted card. A formatter failure after erasing
+the complete image can leave an 8 MB file without its final metadata. Automatic
+assignment now uses a read-only format probe on existing files and again after
+creation: a complete PS2 header, matching file length/geometry and successful
+seek/read/close are required. Short positive reads accumulate; missing bytes,
+erased headers, unsupported geometry and IO failures refuse assignment. The
+formatter writes this header last, after IFC/FAT/root metadata. The probe does
+not depend on the previous worker's error status, so the check also runs after
+restart and for another title sharing the same image.
+
+Invalid images remain untouched; the option neither truncates nor deletes them.
+Back up an image before manually recovering or explicitly deleting it. Valid
+formatted odd-size images remain eligible for Neutrino; native OPL still requires
+a supported size. Manual selection and the existing creation/deletion interface
+retain their separate behavior. See
 [original issue #941](https://github.com/NathanNeurotic/Open-PS2-Loader/issues/941)
 and [migration issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
-The changes above do not establish structural or interruption-safe validation.
-Preserve existing saves while addressing failed-output ownership and recovery;
-unconditionally deleting files for every formatter error is unsafe.
+This is header/geometry validation, not a filesystem integrity scan or a media
+flush/power-loss guarantee. A valid header cannot establish every FAT/directory
+entry or existing save's health. Physical-device acceptance remains open.
