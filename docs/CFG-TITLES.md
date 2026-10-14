@@ -2,7 +2,7 @@
 
 Enable **Show CFG Titles in Game Lists** in Interface settings to display each
 game's `Title` from its per-game CFG. It is off by default. Save the setting to
-retain it across restarts (`cfg_titles_in_lists=1` in `conf_opl.cfg`).
+retain it across restarts (`cfg_titles_in_lists=1` in `settings_riptopl.cfg`).
 
 The setting changes list text, alphabetical sorting and the selected game's
 title. It preserves the source filename, game ID, startup caption and launch

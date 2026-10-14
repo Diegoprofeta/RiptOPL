@@ -13,7 +13,9 @@ The optional CFG title setting is adapted to C++ GameSource, table-driven
 settings, list sorting, theme/header rendering and RA badge preservation.
 Cache IO runs on the worker; HTTP refresh precedes Favorites resolution.
 See [CFG-TITLES.md](CFG-TITLES.md). All 61 Python suites, HTTP and seven C++
-sanitizer suites pass. Native/CI/package validation is pending for this batch.
+sanitizer suites pass. Native LLVM RA compile/link/pack passes at `fc7dfb74`,
+packed ELF SHA256 `9d11c08fd380e2db1dfc2b158cdf19c8a650526a3c0009bc947e92a29a4777f0`.
+Exact-head CI/package validation remains pending in PR #32.
 
 The audit confirmed two independent UI gaps: #917 optional CJK font fallback
 and the `game_type_labels` setting. Neither is supplied by this title port.
