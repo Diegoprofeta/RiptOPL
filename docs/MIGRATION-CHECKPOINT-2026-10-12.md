@@ -1,6 +1,37 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: CFG-title list parity and refreshed upstream audit
+## Current continuation: VMC safety follow-ups from original #939/#940
+
+Base: merged CFG-title PR #32 at `cd78770555500d8020789bc8e436fcd17c2fa36e`.
+Its final compiler/host checks, all 32 configurations and three complete kits
+pass, with all 35 downloaded packages independently verified. Pages PR #33 is
+deployed at `bf73a48e`; Wiki `5e745be4` publishes the scoped Unicode guide.
+
+Continue `codex/vmc-safety-followups`. Production refreshed to
+`fb00066fe7c806a415cd019177bcf0227068bf52`, including original #938/#939/#940.
+Commit `78f79dfe` snapshots cancellation under the formatter's abort lock, then
+releases it before cluster seek/write. Its real-source regression fails on the
+old lock scope and exercises abort/status calls during the IO window; failed
+seek/write and existing owned-request/worker lifecycle tests continue to pass.
+
+Automatic VMC follows actual UDPFS/UDPBD/SMB loader selection, allows existing
+Neutrino odd-size cards without replacement, keeps slow working jobs running,
+bounds post-cancel cleanup waiting and re-probes newly created cards before
+assignment. Modal progress owns identity/configuration and re-resolves Favorites
+before touching source state again. See [AUTOMATIC-VMC.md](AUTOMATIC-VMC.md).
+All 61 Python suites, HTTP and seven C++ sanitizer suites pass; native/CI/package
+validation is pending for this branch.
+
+New shared defect reported as [original #941](https://github.com/NathanNeurotic/Open-PS2-Loader/issues/941):
+a failed formatter can leave a full-size unfinished image that a later automatic
+launch assigns based on size alone. Source inspection and the actual C++ policy
+host harness reproduce this retry; physical-console evidence is still absent.
+This batch does not resolve failed-output provenance/structural validation.
+Favorites staged recovery from #938/#940 remains the next separate storage port.
+
+Earlier continuation sections below are historical and superseded above.
+
+## Historical continuation: CFG-title list parity and refreshed upstream audit
 
 Base: merged PR #31 at `d74bb85bef54e83cca3727f4f75f6b47af65d658`.
 Its final integration compiler/host checks, all 32 configurations and three kits

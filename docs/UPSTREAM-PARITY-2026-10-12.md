@@ -26,8 +26,10 @@ and three-kit checks, including independent downloaded package verification.
 PR #31 merged Favorites read/write failure safeguards and sdk-core v2026.10.13
 native sockets at `d74bb85b`; final compiler/host/32-configuration/three-kit CI
 and independent downloaded artifact verification pass. Durable replacement is
-still open. The current branch adapts optional CFG list titles from #932;
-host tests pass, with native/CI/package validation pending.
+still open. PR #32 merged optional CFG list titles at `cd787705`; final native, compiler,
+host, 32-configuration and three-kit validation passes, including all 35
+downloaded package checks. Pages #33 deployed and scoped Wiki guidance is
+published. The current branch adapts #939/#940 VMC follow-ups; see the checkpoint.
 
 This ledger records verified ports into the C++/ps2build repository. It does not
 claim that the entire public repository is synchronized. The public source
@@ -77,10 +79,11 @@ public feature parity.
 
 ## Remaining migration work
 
-The latest source audit is pinned to `dea980ef4549de41dd1ee5e1261238a22da2080b`.
+The latest source audit is pinned to `fb00066fe7c806a415cd019177bcf0227068bf52`,
+including original #938/#939/#940 repairs of reported #934/#935/#936.
 Merged #932 adds optional CFG list titles; #937 updates the original Pages guide.
 Open original #733 (cover art flow, head `35653d79484e70b65024e972352e0718c1a48626`)
-and #687 (DO NOT MERGE, head `0b3e2c9d4396f3a0dc4c5382fb09e6072c9a0639`)
+and #687 (DO NOT MERGE, head `dba97ff725ac4dbca22c1f69ccb40443e03e696e`)
 remain tracked separately from production. Newer RA/browser changes
 #923/#926/#927/#929/#930 are still outside the individual ports above.
 
@@ -91,8 +94,10 @@ remain tracked separately from production. Newer RA/browser changes
 | Configuration matrix and release packaging | Three complete ps2build edition kits pass CI. The recovered PADEMU-disabled, DS5/extras, DTL, diagnostic, debug and UART definitions are adapted through the edition builder with isolated configuration stages and release rejection guards. PR #24 passed all 32 GCC/LLVM configuration builds and artifact verification. No-IGR is runtime Mode 6 (`0x20`), whose current hook gates and host reset/snapshot tests agree with production; no separate compile-time flavour was found. DECI2, language/font/debug distribution bundles and publication remain open. Keep three release channels and one SDK. |
 | Existing feature PRs | #17/#18/#19/#21/#22/#23/#24 are merged. #21 retained the useful Ember, Neutrino, docs/evidence, splash and updater work from #12–#16; those originals are closed as superseded. Exact CI/artifact refs and local recovery are recorded in the checkpoint. |
 | Earlier feature/config parity | #885/#887/#889/#898, automatic VMC and newer Ember missing-core behavior are merged and verified through final integration `39eda4b8`. Remaining UI/font/settings changes require individual body-level comparisons. PR titles or test-count differences alone do not establish parity. |
-| Optional CFG list titles (#932) | Adapted to C++ cache and GameSource with default-off setting, title sorting, RA prefix preservation and worker refresh. Host tests pass. Native/CI/package and console acceptance are pending. Pages #937 and scoped Wiki guidance are still to import. |
-| CJK and game-type labels | Current C++ font code decodes UTF-8 but lacks #917 independent CJK face/glyph fallback (original `5aa89ab0`, allocation fix `b995cf24`). The separate `game_type_labels` setting is also absent; VCD ID hiding and startup captions do not implement it. Preserve both as explicit UI gaps. |
+| Optional CFG list titles (#932) | Adapted to C++ cache and GameSource with default-off setting, title sorting, RA prefix preservation and worker refresh. Merged in PR #32, final compiler/host/32-configuration/three-kit CI and downloaded artifact checks pass at `cd787705`. Pages #33 and Wiki guidance are published. Console acceptance remains open. |
+| CJK and game-type labels | Current C++ font code decodes UTF-8 but lacks #917 independent CJK face/glyph fallback (original `5aa89ab0`; the allocation guard from `b995cf24` already exists in the C++ FontSystem). The separate `game_type_labels` setting is also absent; VCD ID hiding and startup captions do not implement it. Preserve both as explicit UI gaps. |
+| VMC #939/#940 follow-ups | This branch releases the abort lock before cluster IO, preserves failed-seek/short-write handling, follows effective loader policy, waits for slow working jobs, bounds cancel cleanup and re-probes created cards. It re-resolves Favorites and validates source/row identity after yielding. Real-source regressions and all host suites pass; native/CI/packages remain pending. Full-size failed-format retry is a separate shared defect reported as original #941, still unresolved here. |
+| Favorites #938/#940 staged recovery | Original recovery file, complete-main precedence, unreadable-file behavior, restore-before-staging and ENOSPC fallback need a separate C++ adaptation/review. Current writer still uses O_TRUNC directly; partial-write/close reporting is not durable replacement. |
 | Hardware acceptance | Validate boot, USB/MX4SIO/MMCE/ATA discovery, hotplug, device allocation recovery, existing VMC handling, game launch/IGR, Files/IMG reconnect and other network protocols. LLVM floating-point behavior/performance also remains unproven. |
 
 The new regression tests execute the adapted C++ allocation, queue and GUI

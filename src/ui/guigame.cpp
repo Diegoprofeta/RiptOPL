@@ -10,6 +10,7 @@
 #include "include/pad.h"
 #include "include/config.h"
 #include "include/ethsupport.h"
+#include "include/appsupport.h"
 #include "include/favsupport.h"
 #include "include/bdmsupport.h"
 #include "include/supportbase.h"
@@ -325,7 +326,7 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, char *VMCName, int
 // Opt-in first-launch card creation. The caller owns configSet across this modal
 // operation and revalidates the selected row before handing off to its source.
 constexpr int AUTO_VMC_SIZE_MB = 8;
-constexpr int AUTO_VMC_MAX_FRAMES = 120 * 60;
+constexpr unsigned AUTO_VMC_CANCEL_FRAMES = 10 * 60;
 int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
 {
     if (!gAutoCreateVmc || support == NULL || configSet == NULL || !guiIsActive())
@@ -344,6 +345,10 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
     configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &loader);
     if (loader == 2)
         loader = gDefaultCoreLoader;
+    if (backing->mode == UDPFS_MODE || bdmSupportIsUDPBD(backing) || bdmModeIsUDPBD(backing->mode))
+        loader = 1;
+    else if (backing->mode == ETH_MODE)
+        loader = 0;
     if (backing->mode == HDD_MODE && loader == 1)
         return 1;
     char assigned[32] = {}, vmc[32], progress[96];
@@ -355,17 +360,24 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
     const char *startup = gsOf(support)->startup(support, id);
     if (startup == NULL || startup[0] == '\0')
         return 1;
-    snprintf(vmc, sizeof(vmc), "%s_0", getGroupIdForTitleId(startup));
+    char identity[APP_STARTUP_MAX + 1];
+    if ((unsigned int)snprintf(identity, sizeof(identity), "%s", startup) >= sizeof(identity))
+        return 0;
+    snprintf(vmc, sizeof(vmc), "%s_0", getGroupIdForTitleId(identity));
+    void *const backingState = backing->priv;
+    void *const backingSource = backing->source;
+    const int backingMode = backing->mode;
     statusVMCparam_t activeJob = {};
     if (fileXioDevctl("genvmc:", 0xC0DE0003, NULL, 0, &activeJob, sizeof(activeJob)) != 0) {
         guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
         return 1;
     }
     if (activeJob.VMC_status) {
-        guiMsgBox(_l(_STR_AUTO_VMC_TIMEOUT), 0, NULL);
+        guiMsgBox(_l(_STR_AUTO_VMC_STILL_RUNNING), 0, NULL);
         return 0; // a previous timeout/cancel may still be cleaning a partial image
     }
     int size = gsOf(backing)->checkVmc(backing, vmc, 0);
+    bool formatted = false;
     if (size == -1) {
         int submitted = gsOf(backing)->checkVmc(backing, vmc, AUTO_VMC_SIZE_MB);
         if (submitted != -1 && submitted != AUTO_VMC_SIZE_MB) {
@@ -373,13 +385,16 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
             return 1;
         }
         if (submitted == -1) {
+            formatted = true;
             statusVMCparam_t status = {};
             status.VMC_status = 1;
-            int aborted = 0;
-            for (int frames = 0; status.VMC_status; ++frames) {
-                if (frames >= AUTO_VMC_MAX_FRAMES) {
-                    fileXioDevctl("genvmc:", 0xC0DE0002, NULL, 0, NULL, 0);
-                    guiMsgBox(_l(_STR_AUTO_VMC_TIMEOUT), 0, NULL);
+            bool aborted = false;
+            unsigned cancelFrames = 0;
+            while (status.VMC_status) {
+                // A slow working job can take minutes. Only cancellation has
+                // a bounded wait; never reset the IOP under an unfinished job.
+                if (aborted && cancelFrames++ >= AUTO_VMC_CANCEL_FRAMES) {
+                    guiMsgBox(_l(_STR_AUTO_VMC_STILL_RUNNING), 0, NULL);
                     return 0; // never launch or assign an unconfirmed in-flight image
                 }
                 if (fileXioDevctl("genvmc:", 0xC0DE0003, NULL, 0, &status, sizeof(status)) != 0)
@@ -387,7 +402,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
                 readPads();
                 if (!aborted && getKeyOn(guiCancelKey())) {
                     fileXioDevctl("genvmc:", 0xC0DE0002, NULL, 0, NULL, 0);
-                    aborted = 1;
+                    aborted = true;
                 }
                 snprintf(progress, sizeof(progress), "%s %d%%", _l(_STR_AUTO_VMC_CREATING), status.VMC_progress);
                 guiRenderTextScreen(progress);
@@ -398,14 +413,31 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
                 guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
                 return 1;
             }
-            if (loader != 1 && sysVMCContiguity() == 0)
-                guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, NULL);
         }
-    } else if (size != 8 && size != 16 && size != 32 && size != 64) {
-        // Invalid/unreadable images are never reformatted or silently assigned.
+    } else if (size < 0 || (loader != 1 && size != 8 && size != 16 && size != 32 && size != 64)) {
+        // Neutrino accepts the game's existing odd-size card as is. The native
+        // core requires supported sizes; neither path replaces an existing file.
+        guiMsgBox(_l(_STR_AUTO_VMC_INVALID), 0, NULL);
+        return 1;
+    }
+    // Modal progress yields to source refreshes. Re-resolve a Favorites proxy
+    // before using its private state again, and refuse a changed source or row.
+    if (!support->enabled || id < 0 || id >= gsOf(support)->count(support))
+        return 0;
+    startup = gsOf(support)->startup(support, id);
+    if (startup == NULL || strcmp(startup, identity) != 0)
+        return 0;
+    if (support->mode == FAV_MODE)
+        backing = gFavSupport.ownerView(id, &ownerView);
+    if (backing == NULL || !backing->enabled || backing->source != backingSource ||
+        backing->priv != backingState || backing->mode != backingMode)
+        return 0;
+    if (size == -1 && gsOf(backing)->checkVmc(backing, vmc, 0) != AUTO_VMC_SIZE_MB) {
         guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
         return 1;
     }
+    if (formatted && loader != 1 && sysVMCContiguity() == 0)
+        guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, NULL);
     configSetVMC(configSet, vmc, 0);
     configGetVMC(configSet, assigned, sizeof(assigned), 0);
     if (strcmp(assigned, vmc) != 0) {
