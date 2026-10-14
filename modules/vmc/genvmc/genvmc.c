@@ -194,28 +194,23 @@ static int mc_getmcrtime(sceMcStDateTime *time)
 //--------------------------------------------------------------
 static int mc_writecluster(int fd, int cluster, void *buf, int dup)
 {
-    register int r, size;
+    register int r, size, aborted;
     MCDevInfo *mcdi = (MCDevInfo *)&devinfo;
 
     WaitSema(genvmc_abort_sema);
-
-    if (genvmc_abort) {
-        SignalSema(genvmc_abort_sema);
-        return -2;
-    } else {
-        if (lseek(fd, cluster * mcdi->cluster_size, SEEK_SET) < 0) {
-            SignalSema(genvmc_abort_sema);
-            return -1;
-        }
-        size = mcdi->cluster_size * dup;
-        r = write(fd, buf, size);
-        if (r != size) {
-            SignalSema(genvmc_abort_sema);
-            return -1;
-        }
-    }
-
+    aborted = genvmc_abort;
     SignalSema(genvmc_abort_sema);
+
+    // Device IO can stall. Keep abort/status responsive while this cluster
+    // finishes; the next cluster observes cancellation and the worker cleans up.
+    if (aborted)
+        return -2;
+    if (lseek(fd, cluster * mcdi->cluster_size, SEEK_SET) < 0)
+        return -1;
+    size = mcdi->cluster_size * dup;
+    r = write(fd, buf, size);
+    if (r != size)
+        return -1;
 
     return 0;
 }
