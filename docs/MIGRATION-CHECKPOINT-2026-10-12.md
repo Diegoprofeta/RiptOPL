@@ -1,6 +1,30 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: VMC safety follow-ups from original #939/#940
+## Current continuation: Favorites staging and restore-before-reuse
+
+Base: merged VMC PR #34 at `01affe4de6c88dfcfda68a31349941e4b644cae2`.
+Final compiler/host checks, all 32 configurations and three complete kits pass;
+all 35 downloaded packages independently verify. Pages #35 deployed at `330f0f54`;
+Wiki `0e02e12e` publishes scoped VMC sections and repeatable maintenance tooling.
+
+Continue `codex/favorites-staged-recovery`. Commit `80cb0015` adds bounded image
+reads, strict native/foreign parsing, native `.new` recovery, complete-primary
+precedence, restore-before-restaging and exact readback before rewriting the
+primary. ENOSPC staging failure refuses the edit without a direct overwrite.
+Existing C++ edit/feedback/source architecture remains. See
+[FAVORITES-STORAGE.md](FAVORITES-STORAGE.md). All 61 Python suites, HTTP and seven
+C++ sanitizer suites pass; focused allocation/restart snapshots pass too.
+Native/CI/package validation is pending for this branch.
+
+Production remains `fb00066fe7c806a415cd019177bcf0227068bf52`. Original #943 is the
+confirmed full-device fallback defect; this port deliberately excludes that
+fallback. Real-device flush/power-loss behavior is not established by host IO
+or readback. Shared failed-format image reuse (#941), CJK/list labels, full RA
+and optional diagnostics remain separate work in issue #20.
+
+Earlier continuation sections below are historical and superseded above.
+
+## Historical continuation: VMC safety follow-ups from original #939/#940
 
 Base: merged CFG-title PR #32 at `cd78770555500d8020789bc8e436fcd17c2fa36e`.
 Its final compiler/host checks, all 32 configurations and three complete kits

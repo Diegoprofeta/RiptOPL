@@ -100,7 +100,7 @@ static int openError, closeError, writeErrorAt=-1, writeZeroAt=-1, opens, opened
 static bool failSeek, failAllocation;
 static int writeFaultFile,readFaultFile,closeWriteFile,closeReadFile,openWriteFile,writeErrno=EIO,corruptWriteFile;
 static bool removeError;
-static int reads;
+static int reads,allocations,failAllocationAt=-1;
 static int fileNumber(const std::vector<u8>* bytes) {return bytes==&disk?1:2;}
 
 static int fakeOpen(const char *path,int flags,...) {
@@ -148,14 +148,14 @@ static int fakeSeek(int fd,int pos,int origin) {
  if(strstr(path,".new")){staged.clear();stagedExists=false;checkpoint();return 0;}
  disk.clear();primaryExists=false;return 0;
 }
-static void *fakeMalloc(size_t n) {return failAllocation?nullptr:malloc(n);}
-static void *fakeCalloc(size_t n,size_t s) {return failAllocation?nullptr:calloc(n,s);}
+static void *fakeMalloc(size_t n) {return (failAllocation || allocations++==failAllocationAt)?nullptr:malloc(n);}
+static void *fakeCalloc(size_t n,size_t s) {return (failAllocation || allocations++==failAllocationAt)?nullptr:calloc(n,s);}
 static void favGetFilePath(char *p,int) {strcpy(p,"mc0:OPL/favourites.bin");}
 static void resetFaults() {
  readLimit=writeLimit=1000000;failReadAt=writeErrorAt=writeZeroAt=-1;
  openError=closeError=opens=opened=closes=writes=0;failSeek=failAllocation=false;
  writeFaultFile=readFaultFile=closeWriteFile=closeReadFile=openWriteFile=corruptWriteFile=reads=0;
- writeErrno=EIO;removeError=capture=false;
+ writeErrno=EIO;removeError=capture=false;allocations=0;failAllocationAt=-1;
  for(auto &f:fds)f={};
 }
 static void reset() {resetFaults();staged.clear();stagedExists=false;}
@@ -293,8 +293,21 @@ int main() {
    for(const auto &snapshot:snapshots) {
      resetFaults();disk=snapshot.main;staged=snapshot.recovery;
      primaryExists=snapshot.mainExists;stagedExists=snapshot.recoveryExists;
-     expect(1,1);
+     int n,e;auto *r=load(&n,&e);
+     assert(n==1 && e && r);
+     assert(!strcmp(r[0].text,"test") || !strcmp(r[0].text,"requested") || !strcmp(r[0].text,"next"));
+     free(r);
    }
+ }
+ // Fail every allocation reached by normal saves and recovery-only saves.
+ for(int recoveryOnly=0;recoveryOnly<2;recoveryOnly++)for(int allocation=0;allocation<16;allocation++) {
+   reset();primaryExists=true;disk=recoveryOnly?std::vector<u8>{1,2,3}:valid;
+   if(recoveryOnly){staged=requested;stagedExists=true;}
+   failAllocationAt=allocation;(void)favWriteFile(&row,1);
+   resetFaults();int n,e;auto *r=load(&n,&e);
+   assert(n==1 && e && r);
+   assert(!strcmp(r[0].text,"test") || !strcmp(r[0].text,"requested") || !strcmp(r[0].text,"next"));
+   free(r);
  }
  disk=valid;primaryExists=true;reset();
 
