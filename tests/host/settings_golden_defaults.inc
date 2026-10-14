@@ -53,6 +53,7 @@ CHECK(gFAVStartMode == (START_MODE_DISABLED));
 CHECK(gApplyGameID == (0));
 CHECK(gDefaultGameView == (GAME_VIEW_BOTH));
 CHECK(gAppsDisplay == (APPS_DISPLAY_MIXED));
+CHECK(gCfgTitlesInLists == (0));
 CHECK(gPopstarterPath[0] == '\0');
 CHECK(gBdmaSource == (VCD_BDMA_SRC_USB));
 CHECK(gBdmaApplyOnLaunch == (1));

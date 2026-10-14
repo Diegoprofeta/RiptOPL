@@ -105,6 +105,8 @@ jobs:
         run: python3 .github/scripts/test_favorites_parity.py
       - name: Refuse Favorites edits after unreadable or incomplete stores and check IO failures
         run: python3 .github/scripts/test_favorites_storage_io.py
+      - name: Check opt-in CFG title cache, source identity and refresh ordering
+        run: python3 .github/scripts/test_cfg_titles.py
 
   release-notes-tests:
     runs-on: ubuntu-24.04

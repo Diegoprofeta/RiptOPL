@@ -1505,6 +1505,7 @@ void _loadConfig()
                     configSetInt(configOPL, CONFIG_OPL_MMCE_PACING_MIGR, 1);
                 }
             }
+            gCfgTitlesInLists = gCfgTitlesInLists ? 1 : 0;
             if (gDefaultGameView < GAME_VIEW_BOTH || gDefaultGameView > GAME_VIEW_MIXED)
                 gDefaultGameView = GAME_VIEW_BOTH;
             if (gAppsDisplay < APPS_DISPLAY_MIXED || gAppsDisplay > APPS_DISPLAY_SPLIT)
@@ -2406,4 +2407,3 @@ int saveConfig(int types, int showUI)
 
     return lscret;
 }
-

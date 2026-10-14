@@ -1,5 +1,6 @@
 #include "include/host.h"
 #include "include/opl.h"
+#include "include/cfgtitle.h"
 #include "include/themes.h"
 #include "include/themeint.h"
 #include "include/themecatalog.h"
@@ -1851,7 +1852,7 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
                 color = elem->color;
 
             const char *dispText = ps->item.isFolder ? submenuItemGetText(&ps->item) :
-                                                       vcdDisplayNameForRow(list, ps->item.id, submenuItemGetText(&ps->item));
+                                                       cfgTitleDisplayName(list, ps->item.id, submenuItemGetText(&ps->item));
             char folderBuf[256];
             if (ps->item.isFolder) {
                 snprintf(folderBuf, sizeof(folderBuf), "%s/", dispText);

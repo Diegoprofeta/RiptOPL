@@ -202,6 +202,7 @@ enum {
     APPS_DISPLAY_SPLIT      // Apps <-> PS1ELF via L3; [PS1] in the title selects PS1ELF
 };
 extern int gAppsDisplay;
+extern int gCfgTitlesInLists; // default-off presentation; identity always stays source-owned
 // Ember's own settings, brought into the settings.txt files Ember reads when a game launches
 // (cueApplySettings). Each one is EMBER_SETTING_UNSET until the user CHANGES it in RiptOPL: an unset
 // setting is never written or removed, so a settings.txt somebody wrote by hand keeps working.

@@ -1449,3 +1449,9 @@ gui_strings:
   string: "Could not create this game's VMC. The game starts without one."
 - label: AUTO_VMC_TIMEOUT
   string: "VMC creation did not finish. Launch cancelled."
+
+# Appended: preserve every existing positional language ID.
+- label: CFG_TITLES
+  string: Show CFG Titles in Game Lists
+- label: HINT_CFG_TITLES
+  string: "Shows the Title from each game's CFG instead of its file name, and sorts by it. Reads every CFG when a list refreshes, so lists load slower. Display only."
