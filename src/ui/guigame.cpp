@@ -10,6 +10,7 @@
 #include "include/pad.h"
 #include "include/config.h"
 #include "include/ethsupport.h"
+#include "include/appsupport.h"
 #include "include/favsupport.h"
 #include "include/bdmsupport.h"
 #include "include/supportbase.h"

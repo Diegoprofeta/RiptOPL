@@ -1,6 +1,7 @@
 """Execute actual automatic-card policy and modal launch ownership/identity guards."""
 from pathlib import Path
 import subprocess
+import re
 import sys
 import tempfile
 
@@ -12,6 +13,8 @@ def function(source, signature):
     first = source.index(signature)
     return source[first:source.index('\n}', first) + 2]
 def run(name, program):
+    startup_limit = re.search(r'constexpr int APP_STARTUP_MAX\s*=\s*\d+;', read('include/appsupport.h')).group(0)
+    program = program.replace('@STARTUP_LIMIT@', startup_limit)
     directory = root / 'build/test-tmp'
     directory.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=directory) as temp:
@@ -30,7 +33,7 @@ enum {FAV_MODE=12, APP_MODE=10, HTTP_MODE=14, HDD_MODE=9, ETH_MODE=8, UDPFS_MODE
 enum {CONFIG_ITEM_CORE_LOADER, _STR_AUTO_VMC_FAILED, _STR_AUTO_VMC_TIMEOUT,
       _STR_AUTO_VMC_CREATING,_STR_VMC_FRAGMENTED_ON_CREATE,_STR_ERROR_SAVING_SETTINGS,
       _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING};
-constexpr int APP_STARTUP_MAX=255;
+@STARTUP_LIMIT@
 static int gAutoCreateVmc=1,gDefaultCoreLoader=0;
 struct config_set_t {int loader=2,disabled=0;char assigned[32]={};};
 struct item_list_t {int mode=0,enabled=1;void *source=nullptr;void *priv=nullptr;};
@@ -173,7 +176,7 @@ run('auto_vmc_launch', r'''
 #include <cstdio>
 #include <cstring>
 enum {SFX_CONFIRM,BDM_MODE,BDM_MODE_LAST=7,IO_MENU_UPDATE_DEFFERED};
-constexpr int APP_STARTUP_MAX=255;
+@STARTUP_LIMIT@
 static int gAutoCreateVmc=1;
 struct config_set_t {int freed=0;};
 struct item_list_t {int enabled=1,mode=9;void *owner=nullptr;};
