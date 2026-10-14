@@ -230,7 +230,10 @@ sort = menusys[menusys.index("static int submenuSortCompare("):]
 sort = sort[:sort.index("\n}\n")]
 assert "cfgTitleDisplayName(support, a->item.id, txt1)" in sort and "vcdDisplayNameForRow" not in sort
 themes = (ROOT / "src/gfx/themeelems.cpp").read_text(encoding="utf-8")
-assert "cfgTitleDisplayName(list, ps->item.id, submenuItemGetText(&ps->item))" in themes
+assert "host::library().listDisplayName(list, ps->item.id, submenuItemGetText(&ps->item))" in themes
+assert 'include/cfgtitle.h' not in themes
+host = (ROOT / "src/app/host.cpp").read_text(encoding="utf-8")
+assert "return cfgTitleDisplayName(itemList, id, text);" in host
 assert menusys.count("cfgTitleDisplayName(") >= 3  # sort + both game-menu headers
 settings = (ROOT / "src/core/settings.cpp").read_text(encoding="utf-8")
 assert "intSetting(CONFIG_OPL_CFG_TITLES, &gCfgTitlesInLists, 0)" in settings

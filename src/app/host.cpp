@@ -3,6 +3,7 @@
 // allowed to depend on all of them.
 #include "include/host.h"
 #include "include/opl.h"
+#include "include/cfgtitle.h"
 #include "include/gui.h"
 #include "include/libview.h"
 #include "include/lang.h"
@@ -86,6 +87,7 @@ public:
     void markDirty(int mode) override { libViewMarkDirty(mode); }
     int listRowView(item_list_t *itemList, int id) override { return libListRowView(itemList, id); }
     int listSourceId(item_list_t *itemList, int id) override { return libListSourceId(itemList, id); }
+    const char *listDisplayName(item_list_t *itemList, int id, const char *text) override { return cfgTitleDisplayName(itemList, id, text); }
     void bdmAttach(int mode, int bdmType) override { libViewBdmAttach(mode, bdmType); }
 };
 

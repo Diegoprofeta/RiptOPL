@@ -83,6 +83,8 @@ public:
     virtual void markDirty(int mode) = 0;
     virtual int listRowView(item_list_t *itemList, int id) = 0;
     virtual int listSourceId(item_list_t *itemList, int id) = 0;
+    // Borrowed presentation text; caller holds the GUI frame lock. Never reads CFG files.
+    virtual const char *listDisplayName(item_list_t *itemList, int id, const char *text) = 0;
     virtual void bdmAttach(int mode, int bdmType) = 0;
 };
 
