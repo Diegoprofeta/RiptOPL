@@ -134,7 +134,7 @@ int sysVMCContiguity(void)
     return -1; // anything else is the ioctl itself failing, not a verdict about the file
 }
 
-// createSize == -1 : delete, createSize == 0 : probing, createSize > 0 : creation
+// -1: explicit delete, 0: size probe, SYS_VMC_PROBE_FORMAT: validated auto probe, >0: create.
 int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock)
 {
     int size = -1;
@@ -157,32 +157,54 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
         int fd = open(path, O_RDONLY, S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH);
         if (fd >= 0) {
             size = lseek(fd, 0, SEEK_END);
-
+            const bool formatProbe = createSize == SYS_VMC_PROBE_FORMAT;
+            vmc_superblock_t autoSuperblock;
+            if (formatProbe && vmc_superblock == NULL)
+                vmc_superblock = &autoSuperblock;
+            bool valid = size > 0;
             if (vmc_superblock) {
                 memset(vmc_superblock, 0, sizeof(vmc_superblock_t));
-                lseek(fd, 0, SEEK_SET);
-                read(fd, (void *)vmc_superblock, sizeof(vmc_superblock_t));
+                valid = valid && lseek(fd, 0, SEEK_SET) == 0;
+                unsigned received = 0;
+                while (valid && received < sizeof(vmc_superblock_t)) {
+                    int got = read(fd, (char *)vmc_superblock + received, sizeof(vmc_superblock_t) - received);
+                    if (got <= 0 || (unsigned)got > sizeof(vmc_superblock_t) - received)
+                        valid = false;
+                    else
+                        received += got;
+                }
 
                 LOG("SYSTEM File size  : 0x%X\n", size);
-                LOG("SYSTEM Magic      : %s\n", vmc_superblock->magic);
+                LOG("SYSTEM Magic      : %.40s\n", vmc_superblock->magic);
                 LOG("SYSTEM Card type  : %d\n", vmc_superblock->mc_type);
                 LOG("SYSTEM Flags      : 0x%X\n", (vmc_superblock->mc_flag & 0xFF) | 0x100);
                 LOG("SYSTEM Page_size  : 0x%X\n", vmc_superblock->page_size);
                 LOG("SYSTEM Block_size : 0x%X\n", vmc_superblock->pages_per_block);
                 LOG("SYSTEM Card_size  : 0x%X\n", vmc_superblock->pages_per_cluster * vmc_superblock->clusters_per_card);
 
-                if (!strncmp(vmc_superblock->magic, "Sony PS2 Memory Card Format", 27) && vmc_superblock->mc_type == 0x2 && size == vmc_superblock->pages_per_cluster * vmc_superblock->clusters_per_card * vmc_superblock->page_size) {
+                // Widen before multiplying untrusted geometry. The formatter
+                // writes this header last, after IFC/FAT/root metadata.
+                valid = valid && !memcmp(vmc_superblock->magic, "Sony PS2 Memory Card Format", 27) &&
+                        vmc_superblock->mc_type == 0x2 && vmc_superblock->page_size != 0 &&
+                        vmc_superblock->pages_per_cluster != 0 && vmc_superblock->clusters_per_card != 0 &&
+                        (u64)size == (u64)vmc_superblock->pages_per_cluster * vmc_superblock->clusters_per_card * vmc_superblock->page_size;
+                if (formatProbe)
+                    valid = valid && vmc_superblock->page_size == 512 && vmc_superblock->pages_per_cluster == 2 &&
+                            vmc_superblock->pages_per_block >= 2 && vmc_superblock->pages_per_block % 2 == 0;
+                if (valid) {
                     LOG("SYSTEM VMC file structure valid: %s\n", path);
-                } else
-                    size = 0;
+                }
             }
-
+            if (close(fd) < 0)
+                valid = false;
+            if (formatProbe && !valid)
+                return SYS_VMC_CREATE_FAILED;
+            if (!valid)
+                size = 0;
             if (size % 1048576) // invalid size, should be a an integer (8, 16, 32, 64, ...)
                 size = 0;
             else
                 size /= 1048576;
-
-            close(fd);
 
             if (createSize > 0 && createSize != size) {
                 /* Never destroy a VMC containing saves to resize/recreate it.

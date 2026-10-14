@@ -35,6 +35,7 @@ enum {CONFIG_ITEM_CORE_LOADER, _STR_AUTO_VMC_FAILED, _STR_AUTO_VMC_TIMEOUT,
       _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING};
 @STARTUP_LIMIT@
 static int gAutoCreateVmc=1,gDefaultCoreLoader=0;
+#define SYS_VMC_PROBE_FORMAT (-4)
 struct config_set_t {int loader=2,disabled=0;char assigned[32]={};};
 struct item_list_t {int mode=0,enabled=1;void *source=nullptr;void *priv=nullptr;};
 static int rowView,kind,probe= -1,submitted= -1,probes,creates,polls,aborts,writes,dialogs,contiguity;
@@ -50,7 +51,8 @@ public:
     const char *startup(item_list_t*,int) {return title;}
     int count(item_list_t*) {return rowCount;}
     int checkVmc(item_list_t*,char *name,int size) {
-        assert(!strcmp(name,"GROUP_0")); if(size) {assert(size==8);creates++;jobStarted=true;return submitted;}
+        assert(!strcmp(name,"GROUP_0")); if(size>0) {assert(size==8);creates++;jobStarted=true;return submitted;}
+        assert(size==SYS_VMC_PROBE_FORMAT);
         probes++;return creates ? completedSize : probe;
     }
 };
