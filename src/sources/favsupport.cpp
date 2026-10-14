@@ -63,8 +63,10 @@ static void favGetFilePath(char *out, int outSize)
     int blen = (int)strlen(base);
     if (len >= blen && strcmp(fn + len - blen, base) == 0) {
         int dirLen = len - blen;
-        if (dirLen > outSize - 1)
-            dirLen = outSize - 1;
+        if (dirLen + (int)strlen("favourites.bin") >= outSize) {
+            out[0] = '\0';
+            return;
+        }
         memcpy(out, fn, dirLen);
         out[dirLen] = '\0';
         strncat(out, "favourites.bin", outSize - strlen(out) - 1);
@@ -75,34 +77,39 @@ static void favGetFilePath(char *out, int outSize)
 
 // ---- explicit little-endian scalar IO (never raw-struct) ----------------------
 
-static int rdFull(int fd, void *buf, int n)
+struct FavStream
 {
-    int got = 0;
-    while (got < n) {
-        int r = read(fd, (u8 *)buf + got, n - got);
-        if (r < 0 || r > n - got)
-            return -1;
-        if (r == 0)
-            break;
-        got += r;
-    }
-    return got;
+    const u8 *data;
+    int size;
+    int position;
+};
+
+static int rdFull(FavStream *stream, void *buf, int size)
+{
+    if (size < 0 || stream->position > stream->size)
+        return -1;
+    int available = stream->size - stream->position;
+    int count = size < available ? size : available;
+    if (count > 0)
+        memcpy(buf, stream->data + stream->position, count);
+    stream->position += count;
+    return count;
 }
 
-static int rdBytes(int fd, void *buf, int n) { return rdFull(fd, buf, n) == n; }
+static int rdBytes(FavStream *stream, void *buf, int n) { return rdFull(stream, buf, n) == n; }
 
-static int rdU16(int fd, u16 *v)
+static int rdU16(FavStream *stream, u16 *v)
 {
     u8 b[2];
-    if (!rdBytes(fd, b, 2))
+    if (!rdBytes(stream, b, 2))
         return 0;
     *v = (u16)(b[0] | (b[1] << 8));
     return 1;
 }
-static int rdU32(int fd, u32 *v)
+static int rdU32(FavStream *stream, u32 *v)
 {
     u8 b[4];
-    if (!rdBytes(fd, b, 4))
+    if (!rdBytes(stream, b, 4))
         return 0;
     *v = (u32)b[0] | ((u32)b[1] << 8) | ((u32)b[2] << 16) | ((u32)b[3] << 24);
     return 1;
@@ -144,37 +151,39 @@ static int favMapWoplMode(int m)
 // our own writes use the hardened OFAV format -- so this is a one-way carry-over that lets
 // favourites set in those builds appear in RiptOPL. Returns NULL on empty/corrupt input.
 constexpr int WOPL_FAV_STRUCT_SIZE = 32; // sizeof(submenu_item_t) on the EE: 8 x 4-byte fields
-static fav_raw_t *favReadWoplFile(int fd, int *outCount, int *complete)
+static fav_raw_t *favReadWoplFile(FavStream *stream, int *outCount, int *complete, int *recognized)
 {
     *outCount = 0;
     *complete = 0;
     fav_raw_t *recs = (fav_raw_t *)calloc(FAV_MAX_ITEMS, sizeof(fav_raw_t));
-    if (recs == NULL)
+    if (recs == NULL) {
+        *recognized = 0;
         return NULL;
+    }
 
     int got = 0, malformed = 0;
     while (got < FAV_MAX_ITEMS) {
         u8 st[WOPL_FAV_STRUCT_SIZE];
         u32 tlen = 0;
         u16 mode = 0;
-        int bytes = rdFull(fd, st, WOPL_FAV_STRUCT_SIZE);
+        int bytes = rdFull(stream, st, WOPL_FAV_STRUCT_SIZE);
         if (bytes == 0) {
             *complete = got > 0; // an empty/torn file is not a validated foreign list
             break;
         }
         if (bytes != WOPL_FAV_STRUCT_SIZE)
             break; // keep a salvageable prefix for display, but refuse edits
-        if (!rdU32(fd, &tlen))
+        if (!rdU32(stream, &tlen))
             break;
         if (tlen == 0 || tlen > FAV_TEXT_MAX) {
             LOG("FAV import: bad text_len=%u (not uOPL/wOPL format?), aborting\n", (unsigned)tlen);
             break; // desync / foreign struct size / corruption -> stop
         }
-        if (!rdBytes(fd, recs[got].text, tlen))
+        if (!rdBytes(stream, recs[got].text, tlen))
             break;
         int terminated = recs[got].text[tlen - 1] == '\0';
         recs[got].text[tlen - 1] = '\0'; // force-terminate even a salvageable malformed record
-        if (!rdU16(fd, &mode))
+        if (!rdU16(stream, &mode))
             break;
         recs[got].icon_id = rdS32le(st + 0);
         recs[got].text_id = rdS32le(st + 8);
@@ -188,7 +197,9 @@ static fav_raw_t *favReadWoplFile(int fd, int *outCount, int *complete)
     }
     if (got == FAV_MAX_ITEMS) {
         u8 tail;
-        *complete = !malformed && read(fd, &tail, 1) == 0; // never silently discard excess records on save
+        *complete = !malformed && rdFull(stream, &tail, 1) == 0; // never silently discard excess records on save
+        if (!*complete)
+            *recognized = 0;
     }
 
     if (got == 0) {
@@ -203,38 +214,32 @@ static fav_raw_t *favReadWoplFile(int fd, int *outCount, int *complete)
 // Read bounds-checked records, retaining a salvageable prefix for display. A mutation must
 // also require editable: only ENOENT or a fully read/supported list with clean EOF/close may
 // replace the file. NULL alone cannot distinguish a valid empty store from an IO/allocation error.
-static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
+static fav_raw_t *favParseImage(const u8 *data, int size, int *outCount, int *editable, int allowImport, int *recognized)
 {
-    char path[256];
+    FavStream bytes = {data, size, 0};
+    FavStream *stream = &bytes;
     *outCount = 0;
-    if (editable != NULL)
-        *editable = 0;
-    favGetFilePath(path, sizeof(path));
-
-    errno = 0;
-    int fd = open(path, O_RDONLY);
-    if (fd < 0) {
-        if (editable != NULL)
-            *editable = errno == ENOENT;
+    *editable = 0;
+    *recognized = 1;
+    if (size == 0)
         return NULL;
-    }
 
     u32 magic = 0;
     u16 ver = 0, cnt = 0;
-    int hdrOk = rdU32(fd, &magic) && rdU16(fd, &ver) && rdU16(fd, &cnt);
+    int hdrOk = rdU32(stream, &magic) && rdU16(stream, &ver) && rdU16(stream, &cnt);
     if (!hdrOk || magic != FAV_MAGIC) {
         // No OFAV header -> this may be a uOPL/wOPL favourites.bin in the shared OPL dir.
         // Rewind and import it read-only so favourites carry over from those builds.
         LOG("FAV: no OFAV header (magic=%08x) -- attempting uOPL/wOPL import\n", (unsigned)magic);
-        if (lseek(fd, 0, SEEK_SET) < 0) {
-            close(fd);
+        if (!allowImport) {
+            *recognized = 0;
             return NULL;
         }
+        stream->position = 0;
         int complete = 0;
-        fav_raw_t *imported = favReadWoplFile(fd, outCount, &complete);
-        int closed = close(fd);
+        fav_raw_t *imported = favReadWoplFile(stream, outCount, &complete, recognized);
         if (editable != NULL)
-            *editable = complete && closed >= 0;
+            *editable = complete;
         return imported;
     }
     // Range-checked against FAV_VERSION rather than listing versions. The enumerated form let the
@@ -244,24 +249,25 @@ static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
     // user's real list. Bumping the version must never again require remembering to edit this line.
     if (ver < 1 || ver > FAV_VERSION) {
         LOG("FAV reject: unsupported OFAV version %d\n", ver);
-        close(fd);
+        *recognized = 0;
         return NULL;
     }
     if (cnt == 0) {
         u8 tail;
-        int complete = read(fd, &tail, 1) == 0;
-        int closed = close(fd);
+        int complete = rdFull(stream, &tail, 1) == 0;
         if (editable != NULL)
-            *editable = complete && closed >= 0;
+            *editable = complete;
         return NULL;
     }
     int complete = cnt <= FAV_MAX_ITEMS;
-    if (cnt > FAV_MAX_ITEMS)
-        cnt = FAV_MAX_ITEMS; // never trust the stored count beyond the hard cap
+    if (cnt > FAV_MAX_ITEMS) {
+        *recognized = 0;
+        cnt = FAV_MAX_ITEMS;
+    } // never trust the stored count beyond the hard cap
 
     fav_raw_t *recs = (fav_raw_t *)calloc(cnt, sizeof(fav_raw_t));
     if (recs == NULL) {
-        close(fd);
+        *recognized = 0;
         return NULL;
     }
 
@@ -270,17 +276,17 @@ static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
         u16 mode = 0, tlen = 0;
         u32 id = 0, icon = 0, tid = 0;
         u8 kindByte = 0;
-        if (!rdU16(fd, &mode) || !rdU32(fd, &id) || !rdU32(fd, &icon) || !rdU32(fd, &tid))
+        if (!rdU16(stream, &mode) || !rdU32(stream, &id) || !rdU32(stream, &icon) || !rdU32(stream, &tid))
             break; // short read -> stop, keep what we have
-        if (ver >= 2 && !rdBytes(fd, &kindByte, 1))
+        if (ver >= 2 && !rdBytes(stream, &kindByte, 1))
             break; // v2/v3 records carry a per-record byte between text_id and text_len
-        if (!rdU16(fd, &tlen))
+        if (!rdU16(stream, &tlen))
             break;
         if (tlen == 0 || tlen > FAV_TEXT_MAX) {
             LOG("FAV bad text_len=%d, aborting parse\n", tlen);
             break; // cannot resync past an unknown-length field -> stop
         }
-        if (!rdBytes(fd, recs[got].text, tlen))
+        if (!rdBytes(stream, recs[got].text, tlen))
             break; // short read on text -> stop
         if (recs[got].text[tlen - 1] != '\0')
             complete = 0;
@@ -303,10 +309,9 @@ static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
         got++;
     }
     u8 tail;
-    complete = complete && got == (int)cnt && read(fd, &tail, 1) == 0;
-    int closed = close(fd);
+    complete = complete && got == (int)cnt && rdFull(stream, &tail, 1) == 0;
     if (editable != NULL)
-        *editable = complete && closed >= 0;
+        *editable = complete;
 
     if (got == 0) {
         free(recs);
@@ -314,6 +319,99 @@ static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
     }
     *outCount = got;
     return recs;
+}
+
+// Bound both native and foreign layouts. Read an ordinary list in one transfer;
+// positive short reads accumulate, and oversized/error inputs remain read-only.
+constexpr int FAV_FILE_MAX = 8 + FAV_MAX_ITEMS * (WOPL_FAV_STRUCT_SIZE + 4 + FAV_TEXT_MAX + 2);
+struct FavImage
+{
+    u8 *data = NULL;
+    int size = 0;
+    bool missing = false;
+    bool readable = false;
+};
+
+static FavImage favLoadImage(const char *path)
+{
+    FavImage image;
+    errno = 0;
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        image.missing = errno == ENOENT;
+        return image;
+    }
+    int size = lseek(fd, 0, SEEK_END);
+    bool exact = size >= 0 && size <= FAV_FILE_MAX;
+    int wanted = size > FAV_FILE_MAX ? FAV_FILE_MAX : size;
+    if (wanted >= 0 && lseek(fd, 0, SEEK_SET) == 0) {
+        if (wanted > 0)
+            image.data = (u8 *)malloc(wanted);
+        if (wanted == 0 || image.data != NULL) {
+            while (image.size < wanted) {
+                int count = read(fd, image.data + image.size, wanted - image.size);
+                if (count <= 0 || count > wanted - image.size)
+                    break;
+                image.size += count;
+            }
+            u8 tail;
+            image.readable = exact && image.size == wanted && read(fd, &tail, 1) == 0;
+        }
+    }
+    if (close(fd) < 0)
+        image.readable = false;
+    return image;
+}
+
+static bool favStoragePaths(char *path, int pathSize, char *staged, int stagedSize)
+{
+    favGetFilePath(path, pathSize);
+    const char *name = "favourites.bin";
+    int size = strlen(path), suffix = strlen(name);
+    return size >= suffix && strcmp(path + size - suffix, name) == 0 &&
+           (unsigned int)snprintf(staged, stagedSize, "%s.new", path) < (unsigned int)stagedSize;
+}
+
+static fav_raw_t *favReadPath(const char *path, int *count, int *complete, int *recoverable, int *missing, int allowImport)
+{
+    FavImage image = favLoadImage(path);
+    int recognized = 0, valid = 0;
+    fav_raw_t *records = favParseImage(image.data, image.size, count, &valid, allowImport, &recognized);
+    *complete = image.readable && valid;
+    *recoverable = image.readable && recognized;
+    *missing = image.missing;
+    free(image.data);
+    return records;
+}
+
+static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
+{
+    char path[256], staged[264];
+    *outCount = 0;
+    if (editable != NULL)
+        *editable = 0;
+    if (!favStoragePaths(path, sizeof(path), staged, sizeof(staged)))
+        return NULL;
+    int complete, recoverable, missing;
+    fav_raw_t *primary = favReadPath(path, outCount, &complete, &recoverable, &missing, 1);
+    if (complete) {
+        if (editable != NULL)
+            *editable = 1;
+        return primary; // A complete primary, including a PC edit or empty list, always wins.
+    }
+    int stagedCount, stagedComplete, stagedRecoverable, stagedMissing;
+    fav_raw_t *recovery = favReadPath(staged, &stagedCount, &stagedComplete, &stagedRecoverable, &stagedMissing, 0);
+    if (stagedComplete) {
+        free(primary);
+        *outCount = stagedCount;
+        if (editable != NULL)
+            *editable = missing || recoverable; // IO/unknown-version failures never authorize replacement.
+        return recovery;
+    }
+    free(recovery);
+    if (editable != NULL)
+        *editable = missing && stagedMissing;
+    return primary; // Salvage for display only when neither file is a validated editable list.
 }
 
 // Little-endian scalar appenders for the in-memory image favWriteFile builds.
@@ -341,18 +439,16 @@ static void bufU32(u8 *b, int *o, u32 v)
 
    The image is sized from the actual text lengths rather than FAV_MAX_ITEMS * FAV_TEXT_MAX, so a
    normal library allocates a few KB instead of 140. */
-static int favWriteFile(fav_raw_t *recs, int count)
+static u8 *favBuildImage(fav_raw_t *recs, int count, int *length)
 {
-    char path[256];
     int i, off = 0, size = 8; // header: magic(4) + version(2) + count(2)
-    int written, fd;
     u8 *img;
 
     if (count < 0 || count > FAV_MAX_ITEMS || (count > 0 && recs == NULL))
-        return 0;
+        return NULL;
 
     for (i = 0; i < count; i++) {
-        int tlen = (int)strlen(recs[i].text) + 1;
+        int tlen = (int)strnlen(recs[i].text, FAV_TEXT_MAX) + 1;
         if (tlen > FAV_TEXT_MAX)
             tlen = FAV_TEXT_MAX;
         size += 17 + tlen; // mode(2) id(4) icon(4) text_id(4) kind(1) text_len(2) + text
@@ -361,14 +457,14 @@ static int favWriteFile(fav_raw_t *recs, int count)
     img = (u8 *)malloc(size);
     if (img == NULL) {
         LOG("FAV write: cannot allocate %d byte image\n", size);
-        return 0;
+        return NULL;
     }
 
     bufU32(img, &off, FAV_MAGIC);
     bufU16(img, &off, FAV_VERSION);
     bufU16(img, &off, (u16)count);
     for (i = 0; i < count; i++) {
-        int tlen = (int)strlen(recs[i].text) + 1;
+        int tlen = (int)strnlen(recs[i].text, FAV_TEXT_MAX) + 1;
         if (tlen > FAV_TEXT_MAX)
             tlen = FAV_TEXT_MAX;
         bufU16(img, &off, (u16)recs[i].mode);
@@ -382,30 +478,87 @@ static int favWriteFile(fav_raw_t *recs, int count)
         off += tlen;
     }
 
-    // Open as late as possible. O_TRUNC empties the file the instant it succeeds, so anything that
-    // can fail belongs above it -- otherwise a failure here trades a good list for an empty one.
-    favGetFilePath(path, sizeof(path));
-    fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-    if (fd < 0) {
-        LOG("FAV write open failed: %s\n", path);
-        free(img);
+    *length = off;
+    return img;
+}
+
+static int favWriteWhole(const char *path, const u8 *image, int size)
+{
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0)
         return 0;
-    }
-    written = 0;
-    while (written < off) {
-        int r = write(fd, img + written, off - written);
-        if (r <= 0 || r > off - written)
+    int written = 0;
+    while (written < size) {
+        int count = write(fd, image + written, size - written);
+        if (count <= 0 || count > size - written)
             break;
-        written += r;
+        written += count;
     }
     int closed = close(fd);
-    free(img);
+    return written == size && closed >= 0;
+}
 
-    if (written != off || closed < 0) {
-        LOG("FAV write incomplete: %d of %d bytes\n", written, off);
+static bool favImageMatches(const char *path, const u8 *data, int size)
+{
+    FavImage image = favLoadImage(path);
+    bool matches = image.readable && image.size == size && memcmp(image.data, data, size) == 0;
+    free(image.data);
+    return matches;
+}
+
+static bool favImageValid(const FavImage &image, int allowImport, bool *recoverable)
+{
+    int count, complete, recognized;
+    fav_raw_t *records = favParseImage(image.data, image.size, &count, &complete, allowImport, &recognized);
+    free(records);
+    *recoverable = image.readable && recognized;
+    return image.readable && complete;
+}
+
+// Before reusing .new, restore it when it is the only complete copy. Re-read each
+// path rather than caching authority across config-path changes or PC edits.
+static bool favPrepareSave(const char *path, const char *staged)
+{
+    FavImage primary = favLoadImage(path);
+    bool recoverable;
+    bool complete = favImageValid(primary, 1, &recoverable);
+    bool missing = primary.missing;
+    free(primary.data);
+    if (complete)
+        return true;
+    FavImage recovery = favLoadImage(staged);
+    bool unused;
+    bool stagedComplete = favImageValid(recovery, 0, &unused);
+    bool ok = missing && recovery.missing;
+    if (stagedComplete && (missing || recoverable))
+        ok = favWriteWhole(path, recovery.data, recovery.size) && favImageMatches(path, recovery.data, recovery.size);
+    free(recovery.data);
+    return ok;
+}
+
+static int favWriteFile(fav_raw_t *recs, int count)
+{
+    int size;
+    u8 *image = favBuildImage(recs, count, &size);
+    if (image == NULL)
+        return 0;
+    char path[256], staged[264];
+    if (!favStoragePaths(path, sizeof(path), staged, sizeof(staged)) || !favPrepareSave(path, staged)) {
+        free(image);
         return 0;
     }
-    return 1;
+    // No ENOSPC in-place fallback: never truncate the last complete copy when
+    // staging failed. Both successful writes must close and read back exactly.
+    if (!favWriteWhole(staged, image, size) || !favImageMatches(staged, image, size)) {
+        remove(staged); // The primary has not been touched; cleanup is best effort.
+        free(image);
+        return 0;
+    }
+    bool ok = favWriteWhole(path, image, size) && favImageMatches(path, image, size);
+    free(image);
+    if (ok)
+        remove(staged); // A stale recovery file is harmless: the complete primary wins.
+    return ok;
 }
 
 // ---- resolution helpers (stateless; operate on a source list, not the store) ---
