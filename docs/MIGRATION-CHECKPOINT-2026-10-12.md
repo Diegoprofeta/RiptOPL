@@ -1,6 +1,27 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: larger RA runtime budgets
+## Current continuation: IGR pad lifetime across IOP reset
+
+Base: merged runtime-budget PR #41 at `c0c99efd`. Its final compiler/host,
+32-configuration and three-kit CI pass; all 35 final packages verify.
+
+The destination retains interrupt-driven IGR input handling. This adapts the
+buffer-lifetime subset of original PR #951 (`feb4181afdab1a21ee9dbf291cd95bf24782df1a`)
+without importing its polling worker. Reset interception disables pad-open
+callbacks and invalidates the old DMA buffer before hook rediscovery and IOP
+reset, including failed-reset paths. Pad reopen resets liveness counters and
+publishes its pointer/layout with the previous interrupt state preserved.
+Repeated installation preserves pending reset and physical-button state.
+
+Actual-function host regressions exercise standard/RA input handling, all three
+libpad layouts, reused old buffer contents, failed-reset paths and interrupt
+state. Target builds and review evidence belong in issue #20 and the PR.
+This is a source-backed safety candidate, not a confirmed fix for reported RE4
+freezes; targeted console acceptance remains required. Upstream #951 is still
+open and is not treated as accepted production behavior. No ps2build deficiency
+has been identified in this change.
+
+## Historical continuation: larger RA runtime budgets
 
 Base: merged transfer PR #40 at `0c9f198776b774b9859cee3ececccbbcf331651d`.
 Its final GCC/LLVM, hosts, all 32 configurations and three complete kits pass;
