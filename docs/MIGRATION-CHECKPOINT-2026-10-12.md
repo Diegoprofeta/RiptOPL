@@ -15,10 +15,13 @@ Repeated installation preserves pending reset and physical-button state.
 
 Actual-function host regressions exercise standard/RA input handling, all three
 libpad layouts, reused old buffer contents, failed-reset paths and interrupt
-state. Target builds and review evidence belong in issue #20 and the PR.
+state. Local 64 Python suites, HTTP and seven C++ sanitizer suites pass; mutation
+checks reject retained buffers, unconditional interrupt enabling and pending
+combo loss. Native LLVM RA compile/link/pack passed on source `44ab268d`.
+Exact PR CI and package evidence belong in issue #20 and the PR.
 This is a source-backed safety candidate, not a confirmed fix for reported RE4
-freezes; targeted console acceptance remains required. Upstream #951 is still
-open and is not treated as accepted production behavior. No ps2build deficiency
+freezes; targeted console acceptance remains required. Upstream #951 merged during validation at production `d0f4e64b`; its
+merge does not establish the cause of the reported console freeze. No ps2build deficiency
 has been identified in this change.
 
 ## Historical continuation: larger RA runtime budgets
