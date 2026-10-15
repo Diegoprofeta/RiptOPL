@@ -30,6 +30,7 @@ jobs:
           python3 .github/scripts/test_ps2build_configurations.py
           python3 .github/scripts/test_install_ports.py
           python3 .github/scripts/test_reset_failure_lifecycle.py
+          python3 .github/scripts/test_igr_pad_lifetime.py
       - name: Check RA-only Mode 6 snapshot handler and registration retries
         run: python3 .github/scripts/test_ra_mode6.py
       - name: Check UDP NIC reservation, DEV9 failure/retry and queued IP conflict notice

@@ -432,12 +432,25 @@ static int IGR_Intc_Handler(int cause)
     return 0;
 }
 
+// An IOP reset ends the DMA producer's lifetime even if the EE handler survives.
+// Preserve pending reset requests and power-button state while rearming discovery.
+void Invalidate_PadBuffer(void)
+{
+    int intr = DI();
+
+    Pad_Data.pad_buf = NULL;
+    Pad_Data.vb_count = 0;
+    Pad_Data.prev_frame = 0;
+    padOpen_hooked = 0;
+
+    if (intr)
+        EI();
+}
+
 // Install_IGR() must be run first.
 static void Set_libpad_Params(void *addr)
 {
-    DI();
-
-    Pad_Data.pad_buf = addr;
+    int intr = DI();
 
     // Set positions of pad data and pad state in buffer
     if (Pad_Data.libpad == IGR_LIBPAD) {
@@ -459,7 +472,12 @@ static void Set_libpad_Params(void *addr)
         Pad_Data.pos_frame = 124;
     }
 
-    EI();
+    Pad_Data.vb_count = 0;
+    Pad_Data.prev_frame = 0;
+    Pad_Data.pad_buf = addr;
+
+    if (intr)
+        EI();
 }
 
 // Install IGR thread, and Pad interrupt handler
@@ -467,18 +485,16 @@ void Install_IGR(void)
 {
     ee_thread_t thread_param;
 
-    // Reset power button data
-    Power_Button.press = 0;
-    Pad_Data.pad_buf = NULL;
-    Power_Button.vb_count = 0;
-
-    // Init runtime Pad_Data information
-    Pad_Data.vb_count = 0;
-    Pad_Data.combo_type = 0x00;
-    Pad_Data.prev_frame = 0x00;
-
-    // Do not install the IGR thread or interrupt handler more than once.
+    // Initialize only on first installation. Reset interception and pad reopen
+    // must not erase a pending combo or an in-progress power-button sequence.
     if (IGR_Thread_ID < 0) {
+        Power_Button.press = 0;
+        Power_Button.vb_count = 0;
+        Pad_Data.pad_buf = NULL;
+        Pad_Data.vb_count = 0;
+        Pad_Data.combo_type = 0x00;
+        Pad_Data.prev_frame = 0x00;
+
         // Create and start IGR thread
         thread_param.gp_reg = &_gp;
         thread_param.func = IGR_Thread;
