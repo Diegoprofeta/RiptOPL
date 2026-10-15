@@ -1,7 +1,7 @@
 # OPL Theme Engine — Authoring Reference
 
 This document describes the Open PS2 Loader theme format **as implemented by the parser**
-(`src/themes.c`), so you can build your own themes. It covers every block type, property,
+([src/gfx/themes.cpp](../src/gfx/themes.cpp)), so you can build your own themes. It covers every block type, property,
 value token, and built-in asset name the engine understands, including this fork's
 **`Coverflow`** render mode.
 
@@ -9,7 +9,9 @@ value token, and built-in asset name the engine understands, including this fork
   image/font assets.
 - Anything not supplied by the theme falls back to OPL's embedded defaults.
 - OPL also ships two built-in themes you can study as references: the default `<OPL>` theme
-  and this fork's `<Coverflow>` theme.
+  and this fork's optional `<Coverflow>` theme. Fresh configurations start with `<OPL>`;
+  choosing Coverflow does not change the menu aspect-ratio setting. See
+  [Fresh-start defaults](DEFAULTS.md) for this C++ branch's display and audio defaults.
 
 > Quick mental model: a theme is a flat list of **elements**, each positioned on a virtual
 > **640×480** canvas. OPL scales that canvas to the real screen, and (with `scaled=1`)

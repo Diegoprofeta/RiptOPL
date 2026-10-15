@@ -1,6 +1,28 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: IGR pad lifetime across IOP reset
+## Current continuation: page-key animation and verified defaults
+
+Base: IGR lifetime PR #42 merged at `9dc339bdc62021c54dfa295c6783af8673cb5ecb`.
+Its candidate compiler/host/32 configurations/three kits pass and all 35
+candidate packages verify. CodeRabbit completed review with no actionable
+comments; techwritescode reviewer request was verified, no human approval claimed.
+Merged-source CI/package evidence belongs in issue #20.
+
+Adapt merged original #952 (`0cf08cc1`) through C++ menu navigation: page keys
+animate Coverflow only on a changed selection, including both wraps. Flat-theme
+paging and existing page targets remain intact. The actual C++ methods run under
+ASan/UBSan, including empty/single-item and short-page cases, and in migration CI.
+The regression fails against pre-adaptation methods.
+
+Adapt original #953 documentation against actual C++ settings rather than copy
+its defaults: fresh theme is `<OPL>`, while this branch retains widescreen/audio
+on and carousel center scale 30 (original: 4:3/audio off/scale 45). Correct README
+and theme guidance; add [DEFAULTS.md](DEFAULTS.md). These three runtime-default
+differences remain explicit unfinished reconciliation; no runtime default changes.
+Original production refreshed to `0f2b5e69`. Full RA, UI/font, diagnostic,
+distribution, public documentation and console acceptance work remains open.
+
+## Historical continuation: IGR pad lifetime across IOP reset
 
 Base: merged runtime-budget PR #41 at `c0c99efd`. Its final compiler/host,
 32-configuration and three-kit CI pass; all 35 final packages verify.
