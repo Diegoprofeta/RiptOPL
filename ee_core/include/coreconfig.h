@@ -102,6 +102,7 @@ struct EECoreConfig_t
        device. Module storage is kept for the whole game: the kernel wipes
        user memory only from ModuleStorageEnd up. */
     void *raWorkArea;
+    u32 raWorkBytes; /* Actual reserved capacity, including node scratch words. */
 #endif
 };
 

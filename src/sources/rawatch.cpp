@@ -194,6 +194,8 @@ int RaWatch::setWatchList(const void *data, int len, const char *startup)
         return -7;
 
     memcpy(watchList_, (const unsigned char *)data + sizeof(*hdr), need);
+    if (!raWatchEntriesValid(watchList_, (int)hdr->count, (int)hdr->bytes))
+        return -8;
 
     watchCount_ = (int)hdr->count;
     watchBytes_ = (int)hdr->bytes;
@@ -208,7 +210,7 @@ int RaWatch::setWatchList(const void *data, int len, const char *startup)
         if (left >= (int)sizeof(struct ra_node_file)) {
             const struct ra_node_file *nf = (const struct ra_node_file *)tail;
 
-            if (nf->magic == RA_NODE_MAGIC &&
+            if (nf->magic == RA_NODE_MAGIC && nf->count <= RA_NODE_MAX &&
                 left >= (int)(sizeof(*nf) + nf->count * sizeof(struct ra_node)))
                 takeNodes((const struct ra_node *)(nf + 1), nf->count);
         }
@@ -290,6 +292,10 @@ int RaWatch::loadWatchList(const char *file, const char *startup)
         LOG("RA: short read on the list: %d of %u\n", got, (unsigned)(hdr.count * sizeof(unsigned int)));
         close(fd);
         return -7;
+    }
+    if (!raWatchEntriesValid(watchList_, (int)hdr.count, (int)hdr.bytes)) {
+        close(fd);
+        return -8;
     }
 
     watchCount_ = (int)hdr.count;

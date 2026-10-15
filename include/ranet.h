@@ -5,7 +5,7 @@
 struct sockaddr_in;
 
 // Ceiling for the watch list one ask can bring in (src/sources/ranet.cpp).
-constexpr int RA_MAX_BYTES = (16 * 1024);
+constexpr int RA_MAX_BYTES = (20 * 1024);
 
 // The menu-side PC client exchange (src/sources/ranet.cpp): discovery, the
 // hash -> watch-list ask, the telemetry network bring-up and the link test.

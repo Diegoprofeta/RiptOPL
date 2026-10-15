@@ -1077,9 +1077,10 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
        64-byte aligned, so the area is too. Same gate as the network modules:
        an untracked game reserves nothing. */
     void *raWorkArea = NULL;
-    if (gRATelemetry && host::launch().raWatchCount() > 0) {
+    unsigned int raWorkBytes = host::launch().raWorkBytes();
+    if (raWorkBytes > 0) {
         raWorkArea = (u8 *)ModuleStorage + ModuleStorageSize;
-        ModuleStorageSize += (RA_EE_WORK_BYTES + 0x3F) & ~0x3F;
+        ModuleStorageSize += (raWorkBytes + 0x3F) & ~0x3F;
     }
 #endif
 
@@ -1143,9 +1144,9 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
     config->g_ps2_ETHOpMode = gETHOpMode;
 
 #ifdef RETROACHIEVEMENTS
-    host::launch().fillCoreConfig(config, discMode, raWorkArea);
+    host::launch().fillCoreConfig(config, discMode, raWorkArea, raWorkBytes);
 #else
-    host::launch().fillCoreConfig(config, discMode, NULL);
+    host::launch().fillCoreConfig(config, discMode, NULL, 0);
 #endif
 
     sprintf(config->g_ps2_ip, "%u.%u.%u.%u", local_ip_address[0], local_ip_address[1], local_ip_address[2], local_ip_address[3]);

@@ -1,6 +1,6 @@
 /*
   RetroAchievements support inside the running game: a snapshot of the
-  watched memory addresses is taken every frame and pushed to the IOP
+  watched memory addresses is taken at a bounded frame cadence and pushed to the IOP
   over SIF DMA, where the raudp module sends it to the PC client.
 
   ee_core owns no thread once the game is running. Its only periodic code
@@ -18,6 +18,7 @@
 #include "ra.h"
 #include "ra_overlay.h"
 #include <sifdma.h>
+#include <stdint.h>
 #include "../../modules/network/common/ra_snap.h"
 #include "../../modules/network/common/ra_watch.h"
 
@@ -43,6 +44,7 @@ static unsigned int ra_snap_seq = 0;
 static unsigned int ra_snap_skip = 0;
 static unsigned int ra_snap_fail = 0;
 static unsigned int ra_frames = 0;
+static unsigned int ra_snap_every = 1;
 
 /* Own copy of the watch list. config->raWatchList points into loader
    memory, which the game overwrites, so the list is copied during init
@@ -50,8 +52,8 @@ static unsigned int ra_frames = 0;
 
    Pointer chains live in the same array, behind the entries, and so do
    the two words each chain needs while a frame is built. The array holds
-   1024 words and a real set uses a few hundred, so the chains go in the
-   space already paid for.
+   the actual entry count plus four words per node, so chains do not compete
+   with entries for the old fixed 1024-word allocation.
 
    The array is not in ee_core's .bss: it sits behind the snapshot buffer
    in config->raWorkArea. ee_core's stack is the part of ram84 left above
@@ -96,16 +98,20 @@ void RA_SetupWatchList(void)
     ra_snap_bytes = 0;
     ra_node_count = 0;
     ra_node_at = 0;
+    ra_snap_every = 1;
     ra_snap_buf = NULL;
     ra_watch = NULL;
 
     if (config->raWatchList == NULL || config->raWatchCount <= 0)
         return;
-    if (config->raWorkArea == NULL)
+    if (config->raWorkArea == NULL || ((uintptr_t)config->raWorkArea & 63) != 0)
         return;
     if (config->raWatchCount > RA_WATCH_MAX)
         return;
     if (config->raSnapBytes <= 0 || config->raSnapBytes > RA_SNAP_MAX_BYTES)
+        return;
+    if (!raWatchEntriesValid(config->raWatchList, config->raWatchCount, config->raSnapBytes) ||
+        config->raWorkBytes < (unsigned int)RA_EE_WORK_BYTES(config->raWatchCount, 0))
         return;
 
     ra_snap_buf = (u8 *)config->raWorkArea;
@@ -117,6 +123,7 @@ void RA_SetupWatchList(void)
     ra_watch_count = config->raWatchCount;
     ra_watch_bytes = config->raSnapBytes;
     ra_snap_bytes = ra_watch_bytes;
+    ra_snap_every = RA_SNAP_SEND_EVERY(ra_snap_bytes);
 
     /* Chains, if they fit behind the entries: four words each. A list
        that leaves no room keeps its direct reads and loses the chains,
@@ -125,7 +132,7 @@ void RA_SetupWatchList(void)
         return;
     if (config->raNodeCount > RA_NODE_MAX)
         return;
-    if (ra_watch_count + config->raNodeCount * 4 > RA_WATCH_MAX)
+    if (config->raWorkBytes < (unsigned int)RA_EE_WORK_BYTES(ra_watch_count, config->raNodeCount))
         return;
     if (ra_watch_bytes + config->raNodeCount * RA_NODE_PAIR_BYTES > RA_SNAP_MAX_BYTES)
         return;
@@ -133,6 +140,7 @@ void RA_SetupWatchList(void)
     ra_node_at = ra_watch_count;
     ra_node_count = config->raNodeCount;
     ra_snap_bytes = ra_watch_bytes + ra_node_count * RA_NODE_PAIR_BYTES;
+    ra_snap_every = RA_SNAP_SEND_EVERY(ra_snap_bytes);
 
     for (i = 0; i < ra_node_count; i++) {
         const struct ra_node *n = &((const struct ra_node *)config->raNodeList)[i];
@@ -210,25 +218,30 @@ static void ra_snap_send(void)
         u32 addr = RA_WATCH_ADDR(e);
         u32 size = RA_WATCH_SIZE(e);
 
+        if ((size != 1 && size != 2 && size != 4) || size > (u32)(ra_watch_bytes - off))
+            break;
+
         if (addr < RA_RAM_LOW || addr >= RA_RAM_HIGH || size > RA_RAM_HIGH - addr) {
             u32 n = (size == 4 || size == 2) ? size : 1; // exactly what the read below would pack
 
             while (n-- > 0)
                 vals[off++] = 0;
-        } else if (size == 4) {
+        } else if (size == 4 && (addr & 3) == 0) {
             u32 v = *(volatile u32 *)UNCACHED_SEG(addr);
 
             vals[off++] = (u8)v;
             vals[off++] = (u8)(v >> 8);
             vals[off++] = (u8)(v >> 16);
             vals[off++] = (u8)(v >> 24);
-        } else if (size == 2) {
+        } else if (size == 2 && (addr & 1) == 0) {
             u16 v = *(volatile u16 *)UNCACHED_SEG(addr);
 
             vals[off++] = (u8)v;
             vals[off++] = (u8)(v >> 8);
         } else {
-            vals[off++] = *(volatile u8 *)UNCACHED_SEG(addr);
+            u32 j;
+            for (j = 0; j < size; j++)
+                vals[off++] = *(volatile u8 *)UNCACHED_SEG(addr + j);
         }
     }
 
@@ -335,7 +348,7 @@ void RA_OnVblank(void)
 
     /* The probe ladder stops here: levels 1-3 have no raudp to send to
        anyway, level 4 has one and must stay quiet. */
-    if (RA_PROBE == 0 || RA_PROBE >= 5)
+    if ((RA_PROBE == 0 || RA_PROBE >= 5) && ra_frames % ra_snap_every == 0)
         ra_snap_send();
 }
 

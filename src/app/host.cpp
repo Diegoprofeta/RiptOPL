@@ -94,7 +94,19 @@ public:
 class OplLaunch final: public LaunchServices
 {
 public:
-    void fillCoreConfig(struct EECoreConfig_t *config, bool discMode, void *raWorkArea) override
+    unsigned int raWorkBytes() override
+    {
+#ifdef RETROACHIEVEMENTS
+        const int count = GetWatchCount(), nodes = GetNodeCount();
+        if (!gRATelemetry || !raWatchEntriesValid(GetWatchList(), count, GetWatchBytes()) || nodes < 0 || nodes > RA_NODE_MAX)
+            return 0;
+        return RA_EE_WORK_BYTES(count, nodes);
+#else
+        return 0;
+#endif
+    }
+
+    void fillCoreConfig(struct EECoreConfig_t *config, bool discMode, void *raWorkArea, unsigned int raWorkBytes) override
     {
         if (!discMode && GetCheatsEnabled()) {
             set_cheats_list();
@@ -116,6 +128,7 @@ public:
         config->raNodeList = GetNodeList();
         config->raNodeCount = GetNodeCount();
         config->raWorkArea = raWorkArea;
+        config->raWorkBytes = raWorkBytes;
 
         // The last point where the list is still ours: from here it goes into ee_core
         // with no feedback. A zero shows up in the launch log directly, rather than as
@@ -123,6 +136,7 @@ public:
         raLaunchNote("to-ee-core", config->raWatchCount, config->raSnapBytes);
 #else
         (void)raWorkArea;
+        (void)raWorkBytes;
 #endif
 
         struct GsmConfig_t gsm_config;
