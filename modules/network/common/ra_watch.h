@@ -23,10 +23,9 @@
 #define RA_WATCH_MAGIC   0x4C574152 /* "RAWL" in little-endian */
 #define RA_WATCH_VERSION 1
 
-/* Entry ceiling. NFS Underground 2 needs 482, X-Men 39. This leaves
-   headroom over both, and at four bytes per entry the array stays at
-   4 KB. */
-#define RA_WATCH_MAX 1024
+/* Larger achievement sets need thousands of entries. EE-core copies live in
+   protected module storage sized to the actual set, not in its low-memory BSS. */
+#define RA_WATCH_MAX 4096
 
 /* A snapshot is split across several UDP packets. One packet carries
    1472 bytes: 1500 MTU minus 20 IP minus 8 UDP, the limit without
@@ -37,7 +36,7 @@
    ra_head_build() and derives the value bytes per packet from it, so
    this constant only sizes buffers; it must not be smaller than the
    real header. */
-#define RA_SNAP_HEAD_BYTES 167
+#define RA_SNAP_HEAD_BYTES 191
 
 /* Bytes of values in one packet. */
 #define RA_SNAP_CHUNK_BYTES (1472 - RA_SNAP_HEAD_BYTES)
@@ -47,7 +46,8 @@
    The measured send ceiling is 215 packets per second at 1472 bytes
    (see the raudp.c header). Four parts per frame at 60 fps would need
    240 and drop packets; three need 180 and leave headroom. */
-#define RA_SNAP_PARTS 3
+#define RA_SNAP_PARTS           9
+#define RA_SNAP_PARTS_PER_FRAME 3
 
 #define RA_SNAP_MAX_BYTES (RA_SNAP_CHUNK_BYTES * RA_SNAP_PARTS)
 
@@ -57,6 +57,22 @@
 #define RA_WATCH_ADDR(e)          ((e)&0x0FFFFFFF)
 #define RA_WATCH_SIZE(e)          ((e) >> 28)
 #define RA_WATCH_PACK(addr, size) (((unsigned int)(size) << 28) | ((addr)&0x0FFFFFFF))
+
+/* Validate before either publishing a loader list or sampling it in an IRQ.
+   The bounded sum also proves every direct value fits its advertised region. */
+static inline int raWatchEntriesValid(const unsigned int *entries, int count, int bytes)
+{
+    int i, sum = 0;
+    if (entries == 0 || count <= 0 || count > RA_WATCH_MAX || bytes <= 0 || bytes > RA_SNAP_MAX_BYTES)
+        return 0;
+    for (i = 0; i < count; i++) {
+        unsigned int size = RA_WATCH_SIZE(entries[i]);
+        if (size != 1 && size != 2 && size != 4)
+            return 0;
+        sum += (int)size;
+    }
+    return sum == bytes;
+}
 
 /* Watch list file header. count words follow. */
 struct ra_watch_file
@@ -106,10 +122,8 @@ struct ra_watch_file
 
 #define RA_NODE_MAGIC 0x4C4E4152 /* "RANL" in little-endian */
 
-/* Node ceiling. ee_core resolves chains from its own copy, and it lives
-   in 77 KB of low memory shared with everything else the loader leaves
-   behind, so this number is what its arrays cost: 16 bytes per node
-   there. The snapshot ceiling binds next, at 8 bytes per node. */
+/* Nodes use 16 bytes each in protected module storage, including scratch.
+   The snapshot ceiling also binds, at 8 bytes per node. */
 #define RA_NODE_MAX 128
 
 /* Bytes one node adds to a snapshot: the resolved address and the value. */

@@ -1,6 +1,34 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: RA watch-list transfer integrity
+## Current continuation: larger RA runtime budgets
+
+Base: merged transfer PR #40 at `0c9f198776b774b9859cee3ececccbbcf331651d`.
+Its final GCC/LLVM, hosts, all 32 configurations and three complete kits pass;
+all 35 downloaded final integration packages independently verify.
+
+Branch `codex/ra-runtime-budgets` coordinates 4,096 entries, 128 nodes, nine
+snapshot parts and a 20 KB menu transfer limit through the existing C++ services.
+LaunchServices reserves actual entry/node capacity after the IRX data; the
+EE-core config carries that capacity and setup refuses unsafe reservations.
+No large arrays are added to EE-core BSS. Direct-entry widths and byte sums are
+validated in network/file parsers and again at setup. Unaligned values use byte
+reads. Larger snapshots run every second/third frame, preserving an average
+three-part-per-frame budget and per-frame overlay updates. See
+[RA-RUNTIME-BUDGETS.md](RA-RUNTIME-BUDGETS.md).
+
+The actual-method host tests cover maximum entries/nodes, IOP ninth-part tail,
+module-storage bounds, parser failures and pacing. Unadapted EE methods fail the
+new pacing regression when paired with the larger constants. Native/CI/package
+results belong in issue #20; this document records the implementation snapshot.
+
+Original production refreshed to `c5800e4ff026018c6bd10cca64fc2720a0e9eaad`.
+New QA credits and preserved RE4/VMC/IGR diagnostic evidence remain to adapt,
+alongside merged freeze diagnostics/About changes. Full RA commands/browser/
+ORBIT/HTTPS, peer verification, overlay changes, cache recovery, CJK/type labels,
+distribution and console acceptance remain open. Tag techwritescode with
+versions/reproduction/logs whenever a confirmed ps2build deficiency is found.
+
+## Historical continuation: RA watch-list transfer integrity
 
 Base: merged VMC format PR #38 at `3acd135c406f324b60df8a422c112388e6b87d5f`.
 Final integration GCC/LLVM, host, all 32 configurations and three complete kits

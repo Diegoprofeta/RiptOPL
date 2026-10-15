@@ -79,6 +79,15 @@ public feature parity.
 
 ## Remaining migration work
 
+The runtime-budget continuation refreshes production to
+`c5800e4ff026018c6bd10cca64fc2720a0e9eaad`, including new QA credits and preserved
+RE4/VMC/IGR evidence. Those docs/credits and prior diagnostics remain unadapted.
+Current branch coordinates 4,096 entries/128 nodes, nine parts, 20 KB transfer,
+validated set-sized protected storage and one/two/three-frame cadence through
+C++ LaunchServices. See RA-RUNTIME-BUDGETS.md and issue #20 for validation.
+Earlier notes to raise these budgets are superseded by this implementation;
+newer timing/client/peer/overlay/browser/ORBIT/HTTPS behavior remains missing.
+
 Latest refresh: production `6a3f12f2d22dbbf95bf2a1cf18f914ad6ed66145` includes
 merged freeze diagnostics #942 and About/QA layout #944. They remain unadapted.
 The current RA transfer batch adapts original `f0943360`'s exact fixed-stride

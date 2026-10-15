@@ -46,7 +46,7 @@ static char ra_game_id[16] = "SLUS_210.65";
 static u32 ra_seq, ra_fail, ra_us, ra_us_max, ra_rxq, ra_skip, ra_snap_bad, ra_sent_sq;
 static int ra_err, ra_sent_any, ra_rx_in_game = 1;
 static u32 ra_disc_us;
-static unsigned packets, failed_packet, advance_packet, busy, drains, polls, heartbeats;
+static unsigned packets, failed_packet, advance_packet, busy, drains, polls, heartbeats, sentBytes;
 static unsigned tick, limit, produce, quiet;
 static jmp_buf finished;
 static void ra_fmt(u8 *, u32, int);
@@ -83,6 +83,7 @@ static unsigned field(int id) {
 static int SMAPSendPacket(const void *p, unsigned len) {
     assert(p == ra_frame && len == RA_FRAME_LEN);
     unsigned sq = field(RA_F_SQ), nb = field(RA_F_VB);
+    sentBytes += nb;
     for (unsigned i = 0; i < nb; i++)
         assert(ra_payload[ra_head_len + i] == (u8)sq);
     packets++;
@@ -103,11 +104,13 @@ static void reset(void) {
     ra_seq = ra_fail = ra_us = ra_us_max = ra_rxq = ra_skip = ra_snap_bad = ra_sent_sq = 0;
     ra_err = ra_sent_any = 0;
     packets = failed_packet = advance_packet = busy = drains = polls = heartbeats = 0;
+    sentBytes = 0;
     tick = limit = produce = quiet = 0;
     ra_disc_us = RA_QUIET_US;
     ra_rx_in_game = 1;
     snapshot(1, 8);
     ra_head_build();
+    assert(ra_head_len <= RA_SNAP_HEAD_BYTES && ra_chunk == RA_SNAP_CHUNK_BYTES);
 }
 static void loop(unsigned count) {
     limit = count;
@@ -138,6 +141,9 @@ int main(void) {
     ra_send_one();
     assert(packets == 1 && ra_sent_sq == 1 && ra_snap_pending() == 0);
     puts("PASS: busy and torn snapshots remain pending, then send successfully");
+    reset(); snapshot(41, RA_SNAP_MAX_BYTES); ra_send_one();
+    assert(packets == 9 && sentBytes == RA_SNAP_MAX_BYTES && field(RA_F_PT) == 8 && field(RA_F_NP) == 9);
+    puts("PASS: maximum nine-part snapshot includes every byte and its final part");
     for (unsigned fail = 1; fail <= RA_SNAP_PARTS; fail++) {
         reset(); snapshot(41, RA_SNAP_MAX_BYTES); failed_packet = fail;
         ra_send_one();
