@@ -6,23 +6,23 @@ installation folder can still discover settings on another device.
 
 | Setting | Fresh default | Where to change it |
 | --- | --- | --- |
-| Menu aspect ratio | 16:9; Widescreen on | Settings ? Interface |
-| Menu video mode | Auto | Settings ? Interface |
-| Theme | Built-in `<OPL>` | Settings ? Interface ? Theme |
-| Coverflow | Optional built-in `<Coverflow>` theme | Settings ? Interface ? Theme |
-| Cover and disc artwork | On | Settings ? Interface ? Artwork Settings |
-| Notifications | On | Settings ? Interface |
-| PS2 logo | On | Settings ? Game Launching |
-| Sound effects, boot sound, background music | On; stored volume 90 | Settings ? Audio Settings |
-| Remember last played | Off | Settings ? General & System |
-| Automatic VMC creation | Off | Settings ? Game Launching |
-| GameID barcode | Off | Settings ? Interface |
+| Menu aspect ratio | 16:9; Widescreen on | Settings → Interface |
+| Menu video mode | Auto | Settings → Interface |
+| Theme | Built-in `<OPL>` | Settings → Interface → Theme |
+| Coverflow | Optional built-in `<Coverflow>` theme | Settings → Interface → Theme |
+| Cover and disc artwork | On | Settings → Interface → Artwork Settings |
+| Notifications | On | Settings → Interface |
+| PS2 logo | On | Settings → Game Launching |
+| Sound effects, boot sound, background music | On; stored volume 90 | Settings → Audio Settings |
+| Remember last played | Off | Settings → General & System |
+| Automatic VMC creation | Off | Settings → Game Launching |
+| GameID barcode | Off | Settings → Interface |
 
 Background music still needs a playable configured/default track. An enabled
 setting alone does not supply music. Storage discovery and saved configuration
 can affect the active presentation after initial defaults are applied.
 
-Select **Theme: `<Coverflow>`** under **Settings ? Interface**, apply, and save
+Select **Theme: `<Coverflow>`** under **Settings → Interface**, apply, and save
 to keep the carousel presentation. Coverflow supports both 4:3 and 16:9;
 selecting it does not toggle widescreen. Use **Widescreen: Off** for a 4:3 menu.
 The carousel starts with three covers, center scale 30, 200 ms animation and
