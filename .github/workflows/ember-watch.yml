@@ -9,7 +9,7 @@ name: Ember Watch
 #
 # On a change it downloads the asset, checks it against GitHub's digest and that it really is a 32-bit
 # little-endian MIPS ELF, updates both copies -- and the licence, which must ship with the ELF, if
-# upstream changed it -- commits to rebuild/main, and starts the three-edition Rolling Release preview itself (a
+# upstream changed it -- commits to rebuild/main, and starts the three-edition Rolling Release itself (a
 # push made with GITHUB_TOKEN starts no workflow on its own). Anything unexpected stops it without
 # touching the repo.
 
@@ -168,20 +168,39 @@ jobs:
           echo "Bundled Ember $TAG ($SHA) on rebuild/main."
 
       # A GITHUB_TOKEN push does not trigger push workflows. Retry a missing or
-      # failed preview on later ticks, but never publish or resurrect legacy
+      # failed release on later ticks, but never resurrect legacy
       # Korium branches. One run builds all three editions from one revision.
-      - name: Ensure the current bundled Ember has a three-edition preview
+      - name: Ensure the current bundled Ember has a three-edition release
         run: |
           set -eu
           R="$GITHUB_REPOSITORY"
           git fetch -q origin rebuild/main
           CURRENT_HEAD="$(git rev-parse origin/rebuild/main)"
-          COVERED="$(gh run list --repo "$R" --workflow rolling-release.yml --branch rebuild/main --limit 50 \
-            --json headSha,status,conclusion,databaseId \
-            --jq ".[] | select(.headSha == \"$CURRENT_HEAD\" and (.status != \"completed\" or .conclusion == \"success\")) | .databaseId")"
-          if [ -n "$COVERED" ]; then
-            echo "A successful or active three-edition preview covers $CURRENT_HEAD."
+          # Only published, non-draft releases at this exact head prove coverage.
+          # A green publish=false verification run must never mask a missing release.
+          COVERED=yes
+          for CHANNEL in rolling-korium rolling-ra rolling-incebtion; do
+            TAG_HEAD="$(gh api "repos/$R/git/ref/tags/$CHANNEL" --jq '.object.sha' 2>/dev/null || true)"
+            IS_DRAFT="$(gh release view "$CHANNEL" --repo "$R" --json isDraft --jq '.isDraft' 2>/dev/null || true)"
+            if [ "$TAG_HEAD" != "$CURRENT_HEAD" ] || [ "$IS_DRAFT" != false ]; then
+              COVERED=no
+              break
+            fi
+          done
+          if [ "$COVERED" = yes ]; then
+            echo "All three published release tags cover $CURRENT_HEAD."
+            exit 0
+          fi
+
+          # Pushes to rebuild/main always publish; avoid duplicating one still
+          # running. Do NOT count manual verification-only dispatches as active
+          # publication (their publish job is deliberately skipped).
+          ACTIVE_PUSH="$(gh run list --repo "$R" --workflow rolling-release.yml --branch rebuild/main --limit 50 \
+            --json headSha,status,event,databaseId \
+            --jq ".[] | select(.headSha == \"$CURRENT_HEAD\" and .event == \"push\" and .status != \"completed\") | .databaseId")"
+          if [ -n "$ACTIVE_PUSH" ]; then
+            echo "An integration push is still publishing $CURRENT_HEAD."
           else
-            echo "Building Korium, RetroAchievements and IncebtIon candidates at rebuild/main."
-            gh workflow run rolling-release.yml --repo "$R" --ref rebuild/main -f publish=false
+            echo "Publishing Korium, RetroAchievements and IncebtIon at rebuild/main."
+            gh workflow run rolling-release.yml --repo "$R" --ref rebuild/main -f publish=true
           fi
