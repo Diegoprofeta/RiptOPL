@@ -862,6 +862,8 @@ void AppSource::deleteGame(item_list_t *itemList, int id)
         return;
     if (appsList[id].legacy) {
         config_value_t *cur = appGetConfigValue(id);
+        if (cur == NULL)
+            return;
         unlink(cur->val);
         cur->key[0] = '\0';
         configApps->markModified();
@@ -883,6 +885,8 @@ void AppSource::rename(item_list_t *itemList, int id, char *newName)
 
     if (appsList[id].legacy) {
         config_value_t *cur = appGetConfigValue(id);
+        if (cur == NULL)
+            return;
 
         strncpy(value, cur->val, sizeof(value));
         configRemoveKey(configApps, cur->key);
