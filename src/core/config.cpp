@@ -242,16 +242,17 @@ static config_value_t *allocConfigItem(const char *key, const char *val)
 }
 
 /// Low level key addition. Does not check for uniqueness.
-void ConfigSet::append(const char *key, const char *val)
+bool ConfigSet::append(const char *key, const char *val)
 {
     config_value_t *it = allocConfigItem(key, val);
     if (it == NULL)
-        return;
+        return false;
     if (!tail_)
         head_ = it;
     else
         tail_->next = it;
     tail_ = it;
+    return true;
 }
 
 config_value_t *ConfigSet::find(const char *name) const
@@ -332,8 +333,12 @@ ConfigSet *ConfigSet::clone(u32 uid) const
     ConfigSet *dst = create(type_, filename_, uid);
     if (dst == NULL)
         return NULL;
-    for (const config_value_t *it = head_; it != NULL; it = it->next)
-        dst->append(it->key, it->val);
+    for (const config_value_t *it = head_; it != NULL; it = it->next) {
+        if (!dst->append(it->key, it->val)) {
+            destroy(dst);
+            return NULL;
+        }
+    }
     dst->modified_ = 0;
     return dst;
 }
@@ -362,16 +367,18 @@ int ConfigSet::setStr(const char *key, const char *value)
         return 0;
 
     config_value_t *it = find(key);
+    const char *v = value != NULL ? value : "";
 
     if (it) {
-        if (strncmp(it->val, value, sizeof(it->val)) != 0) {
-            strncpy(it->val, value, sizeof(it->val));
+        if (strncmp(it->val, v, sizeof(it->val)) != 0) {
+            strncpy(it->val, v, sizeof(it->val));
             it->val[sizeof(it->val) - 1] = '\0';
             if (it->key[0] != '#')
                 modified_ = 1;
         }
     } else {
-        append(key, value);
+        if (!append(key, v))
+            return 0;
         if (key[0] != '#')
             modified_ = 1;
     }
@@ -1108,6 +1115,9 @@ static void cfgWriteLibconfig(file_buffer_t *fileBuffer, config_set_t *configSet
 
 static int configReadFileBuffer(file_buffer_t *fileBuffer, config_set_t *configSet)
 {
+    if (fileBuffer == NULL || configSet == NULL)
+        return 0;
+
     char *line;
     unsigned int lineno = 0;
     int fmt = CFG_FMT_LEGACY, fmtLatched = 0;
@@ -1174,6 +1184,9 @@ static int configReadFileBuffer(file_buffer_t *fileBuffer, config_set_t *configS
 
 int configReadBuffer(config_set_t *configSet, const void *buffer, int size)
 {
+    if (configSet == NULL || buffer == NULL || size <= 0)
+        return 0;
+
     int ret;
     file_buffer_t *fileBuffer = openFileBufferBuffer(0, buffer, size);
     if (!fileBuffer) {
@@ -1389,14 +1402,17 @@ static file_buffer_t *configOpenCarryOver(const char *name)
 
 int configRead(config_set_t *configSet)
 {
+    if (configSet == NULL)
+        return 0;
+
     int fromOfficial = 0;
     int fromCarryOver = 0;
 
-    if (configSet != NULL && configSet->type() == CONFIG_OPL) {
+    if (configSet->type() == CONFIG_OPL) {
         configOplOfficialSeed = 0;
         configOplCarryOver = 0;
     }
-    if (configSet != NULL && configPathIsRawApa(configSet->filename())) {
+    if (configPathIsRawApa(configSet->filename())) {
         LOG("CONFIG refusing raw APA read path %s; use a mounted pfsN: path\n", configSet->filename());
         return 0;
     }
@@ -1494,6 +1510,9 @@ constexpr int CONFIG_MAX_RESTORE_BYTES = (256 * 1024);
 
 int configWrite(config_set_t *configSet)
 {
+    if (configSet == NULL)
+        return 0;
+
     // A config can be re-homed after it was read (legacy migration, missing-config recovery,
     // boot-home self-migration). configMove/configSetMove intentionally preserve the in-memory
     // values and their modified flag, so an unchanged set may now point at a destination file that

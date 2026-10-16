@@ -152,6 +152,29 @@ int main()
     config_set_t *e = configAlloc(CONFIG_GAME, NULL, (char *)(dir + "no/such/dir/e.cfg").c_str());
     CHECK(configRead(e) == 0); // unreadable file: reports failure, no crash
 
+    // NULL dereference defense-in-depth (upstream issue #961 / parity audit)
+    CHECK(configRead(NULL) == 0);
+    CHECK(configReadBuffer(NULL, "compat=1\n", 9) == 0);
+    CHECK(configReadBuffer(e, NULL, 9) == 0);
+    CHECK(configReadBuffer(e, "compat=1\n", 0) == 0);
+    CHECK(configWrite(NULL) == 0);
+    CHECK(configSetStr(NULL, "key", "val") == 0);
+    const char *strVal = NULL;
+    CHECK(configGetStr(NULL, "key", &strVal) == 0);
+    char bufVal[16];
+    CHECK(configGetStrCopy(NULL, "key", bufVal, sizeof(bufVal)) == 0);
+    int intVal = 0;
+    CHECK(configSetInt(NULL, "key", 42) == 0);
+    CHECK(configGetInt(NULL, "key", &intVal) == 0);
+    unsigned char colorVal[3] = {0};
+    CHECK(configSetColor(NULL, "key", colorVal) == 0);
+    CHECK(configGetColor(NULL, "key", colorVal) == 0);
+    CHECK(configRemoveKey(NULL, "key") == 0);
+    configMerge(NULL, e);
+    configMerge(e, NULL);
+    configClear(NULL);
+    configFree(NULL);
+
     for (config_set_t *s : {a, a2, b, b2, c, cl, dst, e})
         configFree(s);
     std::string rm = "rm -rf " + std::string(dirbuf);

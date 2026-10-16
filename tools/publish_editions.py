@@ -117,7 +117,7 @@ def main():
                 gh("release", "upload", tag, "--repo", repo, "--clobber", *assets)
             else:
                 gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", options["title"], "--notes-file", str(notes_path), *assets)
-            release = json.loads(gh("api", f"repos/{repo}/releases/tags/{tag}"))
+            release = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "id,assets"))
             remote = {a["name"]: a for a in release["assets"]}
             for asset in assets:
                 file = Path(asset)
