@@ -67,6 +67,11 @@ int main(void) {
  memset(memory,0,size);
  assert(Install_PadOpen_Hook(base,base+size,PADOPEN_HOOK)==0);
  assert(writes==0 && flushes==0);
+ /* A library ending exactly at the scan boundary is found without overread. */
+ memcpy(memory+size-sizeof(padPortOpenpattern0),padPortOpenpattern0,sizeof(padPortOpenpattern0));
+ *call=0x0c000000|((base+size-sizeof(padPortOpenpattern0))>>2);
+ assert(Install_PadOpen_Hook(base,base+size,PADOPEN_HOOK)==1);
+ assert(writes==1 && flushes==2);
  assert(munmap(memory,size)==0);
  puts("PASS: real PadOpen patch writes precede D/I flush; discovery and no-op scans do not flush");
 }

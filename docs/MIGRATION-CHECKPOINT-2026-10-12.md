@@ -14,6 +14,10 @@ The destination now retains the install latch across both events, while still
 invalidating the DMA pointer on reset. Executing pad-open callbacks marks the
 patch installed. Existing ExecPS2 scanning remains the loaded-ELF boundary.
 The actual patcher flushes data then instruction caches only after patch writes.
+Its shared masked scanner now rejects empty/short ranges before unsigned
+subtraction and includes the final valid window. The original helper fails the
+last-window assertion and produces an ASan heap-buffer-overflow for a short
+allocation; the real patcher now handles a pattern ending at the scan boundary.
 
 Standard/RA actual-method regressions cover frozen frames, retained/missing
 install flags across successful/failed resets, callback reacquisition and the

@@ -32,6 +32,7 @@ jobs:
           python3 .github/scripts/test_reset_failure_lifecycle.py
           python3 .github/scripts/test_igr_pad_lifetime.py
           python3 .github/scripts/test_pad_hook_cache.py
+          python3 .github/scripts/test_pad_pattern_bounds.py
       - name: Check C++ Coverflow page navigation
         run: python3 .github/scripts/test_page_animation.py
       - name: Check RA-only Mode 6 snapshot handler and registration retries
