@@ -1,6 +1,11 @@
 # C++/ps2build migration: production parity ledger
 
 Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+Merged original #959 (`2b838e09`) is partially adapted: PR #45 preserves EE
+pad-hook installation across IOP buffer invalidation and bounds masked scans.
+The next subset loads settings configuration in the foreground and resolves
+Favorites source-device bus policy. Async queue generations/deduplication,
+failed/null settings consumers and assembly GP/register handling remain open.
 PRs #18/#19 and the full site import #17 are merged; Pages and the independent
 wiki import are published. GCC/LLVM, host gates and all three complete release
 candidate kits pass. Publication and physical-console acceptance remain open.

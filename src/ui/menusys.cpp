@@ -509,18 +509,14 @@ static void _menuRequestConfig()
     }
 }
 
-static config_set_t *menuGetCachedCurrentConfig(void)
+// Favorites retain their own row IDs but use the owning device for bus policy.
+static int menuConfigSourceMode(item_list_t *list)
 {
-    config_set_t *cached = NULL;
-
-    WaitSema(menuSemaId);
-    if (itemConfig != NULL && selected_item != NULL && selected_item->item != NULL &&
-        selected_item->item->current != NULL && itemConfigId == selected_item->item->current->item.id &&
-        itemConfigList == selected_item->item->userdata)
-        cached = itemConfig;
-    SignalSema(menuSemaId);
-
-    return cached;
+    if (list != NULL && list->mode == FAV_MODE && selected_item != NULL &&
+        selected_item->item != NULL && selected_item->item->userdata == list &&
+        selected_item->item->current != NULL)
+        return favGetItemSourceMode(selected_item->item->current->item.id);
+    return list != NULL ? list->mode : -1;
 }
 
 config_set_t *menuLoadConfig()
@@ -565,7 +561,7 @@ config_set_t *menuLoadConfig()
     // Launch owns the storage path now. Drop speculative art before any launch I/O or cached return.
     // A zero wait requests cancellation but never kills or waits on an in-flight fileXio/SIO2 RPC;
     // that transaction is allowed to finish cleanly while no new queued art can get in front.
-    if (list->mode == MMCE_MODE)
+    if (menuConfigSourceMode(list) == MMCE_MODE)
         (void)cacheAbortMmceImageLoadsTimed(0);
     else
         (void)cacheCancelPendingImageLoadsTimed(0);
@@ -616,13 +612,11 @@ void menuInvalidateConfig()
 // we don't want a pop up when transitioning to or refreshing Game Menu gui.
 config_set_t *gameMenuLoadConfig(struct UIItem *ui)
 {
-    config_set_t *cached = menuGetCachedCurrentConfig();
-    if (cached != NULL)
-        return cached; // same fast path, without showing a fake loading phase
-
-    actionStatus = 1;
-    guiGameHandleDeferedIO(&actionStatus, ui, IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&_menuRequestConfig));
-    return itemConfig;
+    (void)ui;
+    // Settings are foreground work too: the browse settle gate can return without
+    // loading, and the shared worker may be occupied by unrelated device scans.
+    padRumbleFlush();
+    return menuLoadConfig();
 }
 
 int menuSaveConfig()
@@ -1635,10 +1629,11 @@ constexpr int MENU_MMCE_CONFIG_IDLE_FRAMES = 3;
 
 static int menuCanRequestItemConfig(item_list_t *list)
 {
-    if (list != NULL && list->mode == APP_MODE)
+    int mode = menuConfigSourceMode(list);
+    if (mode == APP_MODE)
         return guiInactiveFrames >= MENU_APP_CONFIG_IDLE_FRAMES;
 
-    if (list != NULL && list->mode == MMCE_MODE)
+    if (mode == MMCE_MODE)
         return guiInactiveFrames >= MENU_MMCE_CONFIG_IDLE_FRAMES;
 
     return 1;
