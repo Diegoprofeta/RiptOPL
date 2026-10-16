@@ -1,6 +1,6 @@
 name: Rolling Release
 
-# Preview first. Publication is an explicit dispatch from the integration branch.
+# PRs are previews. Integration pushes publish all three verified channels.
 on:
   push:
     branches: [rebuild/main]
@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: sdk-releases-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' || !inputs.publish }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.publish) }}
 
 jobs:
   build:
@@ -101,7 +101,7 @@ jobs:
 
   publish:
     needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/rebuild/main' && github.repository == 'NathanNeurotic/RiptOPL'
+    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) && github.ref == 'refs/heads/rebuild/main' && github.repository == 'NathanNeurotic/RiptOPL'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -112,6 +112,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements.txt
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*

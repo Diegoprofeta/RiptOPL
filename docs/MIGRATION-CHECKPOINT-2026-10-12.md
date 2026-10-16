@@ -1,5 +1,12 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+Release publication is enabled for integration pushes to `rebuild/main`:
+`rolling-korium`, `rolling-ra`, and `rolling-incebtion`, all using ps2build/GCC.
+PRs remain previews. Manual dispatch with `publish=false` remains verification-only;
+`publish=true` publishes. Publication verifies all three kits and matching SDK
+suites, remote asset digests, current integration head and final tag targets.
+Passing builds and published development releases do not establish console acceptance.
+
 ## Current continuation: foreground settings and Favorites bus policy
 
 PR #45 merged at `cc46de23`. Its current-head CodeRabbit review completed

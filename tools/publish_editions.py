@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish the three already verified ps2build kits from an explicit workflow dispatch."""
+"""Publish three verified ps2build kits from integration pushes or explicit dispatches."""
 import argparse
 import hashlib
 import json
@@ -14,6 +14,27 @@ from build_edition import EDITIONS, git
 
 def gh(*args):
     return subprocess.check_output(["gh", *args], text=True).strip()
+
+
+def publication_allowed(environment, sha):
+    """Reject previews, forks, other refs and mismatched workflow source commits."""
+    return (environment.get("GITHUB_REPOSITORY") == "NathanNeurotic/RiptOPL"
+            and environment.get("GITHUB_EVENT_NAME") in ("push", "workflow_dispatch")
+            and environment.get("GITHUB_REF") == "refs/heads/rebuild/main"
+            and environment.get("GITHUB_SHA") == sha)
+
+
+def update_tag(repo, tag, sha):
+    """Create a first-release tag or move an existing channel after asset verification."""
+    result = subprocess.run(["gh", "api", f"repos/{repo}/git/ref/tags/{tag}"],
+                            capture_output=True, text=True)
+    if result.returncode == 0:
+        gh("api", f"repos/{repo}/git/refs/tags/{tag}", "-X", "PATCH", "-f", "sha=" + sha, "-F", "force=true")
+    elif "HTTP 404" in result.stderr:
+        # Creating a draft release need not create its Git tag until publication.
+        gh("api", f"repos/{repo}/git/refs", "-X", "POST", "-f", "ref=refs/tags/" + tag, "-f", "sha=" + sha)
+    else:
+        raise RuntimeError(f"cannot inspect release tag {tag}: {result.stderr.strip()}")
 
 
 def verify(root, expected_sha):
@@ -70,17 +91,19 @@ def main():
         print(f"Verified all three channels at {sha}")
         return
     repo = "NathanNeurotic/RiptOPL"
-    if (os.environ.get("GITHUB_REPOSITORY") != repo or os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
-            or os.environ.get("GITHUB_REF") != "refs/heads/rebuild/main" or os.environ.get("GITHUB_SHA") != sha):
-        raise ValueError("publication is restricted to an explicit dispatch at rebuild/main")
+    if not publication_allowed(os.environ, sha):
+        raise ValueError("publication requires an integration push or explicit dispatch at rebuild/main")
     current = json.loads(gh("api", f"repos/{repo}/branches/rebuild/main"))["commit"]["sha"]
     if current != sha:
         raise ValueError("integration branch advanced during this run; publish its new tested head")
     for edition, options, path, sums in candidates:
         tag = options["tag"]
+        manifest = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+        neutrino = manifest["neutrino_archive"]["filename"].removeprefix("neutrino_").removesuffix(".7z")
         notes = (f"RiptOPL {options['title']} — C++ / ps2build development build.\n\n"
                  f"Source: [{sha[:8]}](https://github.com/{repo}/commit/{sha}). "
                  "Release compiler: GCC. See BUILD-MANIFEST.json for the resolved SDK suite and SHA256SUMS.txt for asset verification.\n\n"
+                 f"Included build: {neutrino} -- Neutrino.\n\n"
                  "Use the full install ZIP or the app PSU. Imported production documentation and passing builds do not establish console acceptance for this migration.\n\n"
                  "[Installation and guides](https://nathanneurotic.github.io/RiptOPL/) · "
                  f"[Wiki](https://github.com/{repo}/wiki)\n")
@@ -102,7 +125,7 @@ def main():
                 item = remote.get(file.name, {})
                 if item.get("size") != file.stat().st_size or item.get("digest") != "sha256:" + digest:
                     raise ValueError(f"GitHub did not retain the verified asset: {tag}/{file.name}")
-            gh("api", f"repos/{repo}/git/refs/tags/{tag}", "-X", "PATCH", "-f", "sha=" + sha, "-F", "force=true")
+            update_tag(repo, tag, sha)
             gh("release", "edit", tag, "--repo", repo, "--title", options["title"], "--notes-file", str(notes_path),
                "--draft=false", "--prerelease=false", "--latest=" + ("true" if edition == "korium" else "false"))
             reference = json.loads(gh("api", f"repos/{repo}/git/ref/tags/{tag}"))
