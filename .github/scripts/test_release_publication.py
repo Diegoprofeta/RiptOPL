@@ -48,6 +48,11 @@ class PublicationTests(unittest.TestCase):
                     publisher.update_tag("owner/repo", "rolling-ra", "commit")
                 gh.assert_not_called()
 
+    def test_draft_release_resolution_uses_release_view_json(self):
+        source = (ROOT / "tools" / "publish_editions.py").read_text(encoding="utf-8")
+        self.assertIn('gh("release", "view", tag, "--repo", repo, "--json", "id,assets")', source)
+        self.assertNotIn('repos/{repo}/releases/tags/{tag}', source)
+
 
 if __name__ == "__main__":
     unittest.main()

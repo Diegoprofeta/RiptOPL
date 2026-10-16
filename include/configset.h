@@ -66,7 +66,7 @@ public:
     void getDiscIDBinary(void *dst) const; // dst has to have 5 bytes space
 
     // Low level append: no uniqueness check, no validation, never marks modified.
-    void append(const char *key, const char *val);
+    bool append(const char *key, const char *val);
     // Empty the list and mark modified.
     void clear();
 

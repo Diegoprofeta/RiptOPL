@@ -77,9 +77,11 @@ int AppSource::appRebuildVisibleList(void)
 
 struct config_value_t *AppSource::appGetConfigValue(int id)
 {
+    if (configApps == NULL)
+        return NULL;
     config_value_t *cur = configApps->entries();
 
-    while (id--) {
+    while (id-- && cur != NULL) {
         cur = cur->next;
     }
 
@@ -624,6 +626,9 @@ int AppSource::addAppsLegacyList(struct app_info_linked **appsLinkedList)
     struct app_info_linked *app;
     int count;
 
+    if (configApps == NULL)
+        return 0;
+
     configClear(configApps);
     configRead(configApps);
 
@@ -857,6 +862,8 @@ void AppSource::deleteGame(item_list_t *itemList, int id)
         return;
     if (appsList[id].legacy) {
         config_value_t *cur = appGetConfigValue(id);
+        if (cur == NULL)
+            return;
         unlink(cur->val);
         cur->key[0] = '\0';
         configApps->markModified();
@@ -878,6 +885,8 @@ void AppSource::rename(item_list_t *itemList, int id, char *newName)
 
     if (appsList[id].legacy) {
         config_value_t *cur = appGetConfigValue(id);
+        if (cur == NULL)
+            return;
 
         strncpy(value, cur->val, sizeof(value));
         configRemoveKey(configApps, cur->key);
@@ -1193,7 +1202,11 @@ config_set_t *AppSource::config(item_list_t *itemList, int id)
 
     if (appsList[id].legacy) {
         config_value_t *cur = appGetConfigValue(id);
+        if (cur == NULL)
+            return NULL;
         config = host::app().legacyAppsInfo(appGetELFName(cur->val));
+        if (config == NULL)
+            return NULL;
         configRead(config);
 
         configSetStr(config, CONFIG_ITEM_NAME, appGetELFName(cur->val));
@@ -1212,6 +1225,8 @@ config_set_t *AppSource::config(item_list_t *itemList, int id)
         snprintf(path, sizeof(path), "%s/%s", appsList[id].path, APP_TITLE_CONFIG_FILE);
 
         config = configAlloc(0, NULL, path);
+        if (config == NULL)
+            return NULL;
         configRead(config); // Does not matter if the config file could be loaded or not.
 
         configSetStr(config, CONFIG_ITEM_NAME, appsList[id].boot);

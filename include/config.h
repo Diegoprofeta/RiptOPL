@@ -285,23 +285,59 @@ void configPrepareNotifications(const char *prefix);
 #ifdef __cplusplus
 #include "configset.h"
 // Free-function API kept for the many call sites; the work lives in ConfigSet.
-inline int configSetStr(config_set_t *s, const char *key, const char *value) { return s->setStr(key, value); }
-inline int configGetStr(config_set_t *s, const char *key, const char **value) { return s->getStr(key, value); }
-inline int configGetStrCopy(config_set_t *s, const char *key, char *value, int length) { return s->getStrCopy(key, value, length); }
-inline int configSetInt(config_set_t *s, const char *key, const int value) { return s->setInt(key, value); }
-inline int configGetInt(config_set_t *s, const char *key, int *value) { return s->getInt(key, value); }
-inline int configSetColor(config_set_t *s, const char *key, unsigned char *color) { return s->setColor(key, color); }
-inline int configGetColor(config_set_t *s, const char *key, unsigned char *color) { return s->getColor(key, color); }
-inline int configRemoveKey(config_set_t *s, const char *key) { return s->removeKey(key); }
-inline void configMerge(config_set_t *dest, const config_set_t *source) { dest->merge(*source); }
-inline void configGetDiscIDBinary(config_set_t *s, void *dst) { s->getDiscIDBinary(dst); }
-inline void configClear(config_set_t *s) { s->clear(); }
-inline void configGetVMC(config_set_t *s, char *vmc, int length, int slot) { s->getVMC(vmc, length, slot); }
-inline void configSetVMC(config_set_t *s, const char *vmc, int slot) { s->setVMC(vmc, slot); }
-inline void configRemoveVMC(config_set_t *s, int slot) { s->removeVMC(slot); }
-inline void configGetVMCDisable(config_set_t *s, int slot, int *disabled) { s->getVMCDisable(slot, disabled); }
-inline void configSetVMCDisable(config_set_t *s, int slot, int disabled) { s->setVMCDisable(slot, disabled); }
-inline void configRemoveVMCDisable(config_set_t *s, int slot) { s->removeVMCDisable(slot); }
+inline int configSetStr(config_set_t *s, const char *key, const char *value) { return s != NULL ? s->setStr(key, value) : 0; }
+inline int configGetStr(config_set_t *s, const char *key, const char **value) { return s != NULL ? s->getStr(key, value) : 0; }
+inline int configGetStrCopy(config_set_t *s, const char *key, char *value, int length) { return s != NULL ? s->getStrCopy(key, value, length) : 0; }
+inline int configSetInt(config_set_t *s, const char *key, const int value) { return s != NULL ? s->setInt(key, value) : 0; }
+inline int configGetInt(config_set_t *s, const char *key, int *value) { return s != NULL ? s->getInt(key, value) : 0; }
+inline int configSetColor(config_set_t *s, const char *key, unsigned char *color) { return s != NULL ? s->setColor(key, color) : 0; }
+inline int configGetColor(config_set_t *s, const char *key, unsigned char *color) { return s != NULL ? s->getColor(key, color) : 0; }
+inline int configRemoveKey(config_set_t *s, const char *key) { return s != NULL ? s->removeKey(key) : 0; }
+inline void configMerge(config_set_t *dest, const config_set_t *source)
+{
+    if (dest != NULL && source != NULL)
+        dest->merge(*source);
+}
+inline void configGetDiscIDBinary(config_set_t *s, void *dst)
+{
+    if (s != NULL)
+        s->getDiscIDBinary(dst);
+}
+inline void configClear(config_set_t *s)
+{
+    if (s != NULL)
+        s->clear();
+}
+inline void configGetVMC(config_set_t *s, char *vmc, int length, int slot)
+{
+    if (s != NULL)
+        s->getVMC(vmc, length, slot);
+}
+inline void configSetVMC(config_set_t *s, const char *vmc, int slot)
+{
+    if (s != NULL)
+        s->setVMC(vmc, slot);
+}
+inline void configRemoveVMC(config_set_t *s, int slot)
+{
+    if (s != NULL)
+        s->removeVMC(slot);
+}
+inline void configGetVMCDisable(config_set_t *s, int slot, int *disabled)
+{
+    if (s != NULL)
+        s->getVMCDisable(slot, disabled);
+}
+inline void configSetVMCDisable(config_set_t *s, int slot, int disabled)
+{
+    if (s != NULL)
+        s->setVMCDisable(slot, disabled);
+}
+inline void configRemoveVMCDisable(config_set_t *s, int slot)
+{
+    if (s != NULL)
+        s->removeVMCDisable(slot);
+}
 #endif
 
 #endif
