@@ -711,6 +711,8 @@ reshow_ui:
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
 
+        if (previousVMode != gVMode)
+            guiFadeCurrentScreenToBlack();
         applyConfig(themeID, langID, 1);
         if (cfgTitlesChanged) {
             guiRefreshCfgTitles();
@@ -2504,6 +2506,8 @@ reshow_interface:
 
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
+        if (previousVMode != gVMode)
+            guiFadeCurrentScreenToBlack();
         applyConfig(themeID, langID, 1);
         if (cfgTitlesChanged) {
             guiRefreshCfgTitles();
