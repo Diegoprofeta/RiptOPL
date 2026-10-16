@@ -1,13 +1,34 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: EE hook installation versus IOP buffer lifetime
+## Current continuation: foreground settings and Favorites bus policy
+
+PR #45 merged at `cc46de23`. Its current-head CodeRabbit review completed
+without actionable findings, all candidate gates passed, and all 35 downloaded
+candidate packages independently verified. Final integration evidence is tracked
+separately in issue #20; all 35 final packages now independently verify against
+the merged SHA. Final compiler, host, configuration, kit and link-sync jobs pass.
+
+Adapt another bounded subset of merged original #959 (`2b838e09`): settings
+configuration uses the existing foreground C++ GameSource load instead of the
+browse settle gate and shared IO worker. Flush pending pad rumble before storage
+work. Favorites resolve the selected row's source mode for MMCE image-load
+cancellation and APP/MMCE browse idle thresholds, while keeping Favorites row
+IDs and cache ownership. Actual-method sanitizer tests cover immediate uncached
+settings, cached returns, failed-read retry, duplicate/stale result disposal,
+invalid selection and device policies, with storage reads outside menuSemaId.
+
+This does not complete #959. Async config generation/deduplication, graceful
+handling of a genuinely failed/null config in settings consumers, and assembly
+register/GP preservation remain explicit work. No console-freeze cure is claimed.
+
+## Historical continuation: EE hook installation versus IOP buffer lifetime
 
 Base: merged navigation #43 at `f9d33e93`; final compiler/host/32 configurations
 and three kits pass, with all 35 final packages independently verified.
 Pages #44 is deployed at `32405d06`; Wiki defaults update is published at
 `de2a3c1`. Final evidence is recorded in issue #20 and the respective PRs.
 
-Original open #959 at `7af8845b` exposes a second lifetime distinction: an IOP
+Original #959 at `7af8845b` (subsequently merged at `2b838e09`) exposes a second lifetime distinction: an IOP
 reset ends the pad DMA producer, but does not erase the installed EE PadOpen
 patch. Frozen input frames likewise do not mean that patch disappeared.
 The destination now retains the install latch across both events, while still
