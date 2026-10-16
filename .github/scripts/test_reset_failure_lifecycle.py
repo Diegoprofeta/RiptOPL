@@ -65,15 +65,15 @@ static int LoadOPLModule(int id,int mode,int n,void *p) {
  (void)id;(void)mode;(void)n;(void)p;loads++;return 1;
 }
 static void Install_IGR(void) {}
-static int pad_buffer_live, invalidations;
+static int pad_buffer_live, invalidations, hook_scans;
 static void Invalidate_PadBuffer(void) {
  assert(disable_padOpen_hook == 1);
- pad_buffer_live=0;padOpen_hooked=0;invalidations++;
+ pad_buffer_live=0;invalidations++;
 }
 static int Install_PadOpen_Hook(int a,int b,int c) {
  (void)a;(void)b;(void)c;
  assert(!pad_buffer_live && disable_padOpen_hook);
- return 1;
+ hook_scans++;return 1;
 }
 #ifdef RETROACHIEVEMENTS
 static void Install_RA_Vblank(void) {ticks++;}
@@ -91,7 +91,7 @@ static void prepare(int stage) {
  fail_stage=stage;special_calls=exits=loads=wipes=sleeps=ticks=0;
  iop_reboot_count=1;set_reg_disabled=1;set_reg_hook=0;ra_snap_iop=99;
  disable_padOpen_hook=0;g_compat_mask=COMPAT_MODE_6;
- pad_buffer_live=1;invalidations=0;
+ pad_buffer_live=1;invalidations=hook_scans=0;padOpen_hooked=0;
 }
 int main(void) {
  char arg[11]="0123456789";
@@ -137,8 +137,13 @@ int main(void) {
  for(int stage=0;stage<=2;stage++) {
   prepare(stage);g_compat_mask=0;padOpen_hooked=1;
   assert(New_SifSetDma(&dma,1)==(stage==0));
-  assert(!pad_buffer_live && invalidations==1 && padOpen_hooked==1);
+  assert(!pad_buffer_live && invalidations==1 && padOpen_hooked==1 && hook_scans==0);
   assert(!disable_padOpen_hook && ticks==0);
+ }
+ for(int stage=0;stage<=2;stage++) {
+  prepare(stage);g_compat_mask=0;padOpen_hooked=0;
+  assert(New_SifSetDma(&dma,1)==(stage==0));
+  assert(!pad_buffer_live && invalidations==1 && padOpen_hooked==1 && hook_scans==1);
  }
  prepare(1);sysLoadElf("game.elf",0,NULL);
  assert(wipes==0 && loads==0 && sleeps==1 && set_reg_disabled==1);

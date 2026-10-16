@@ -313,14 +313,13 @@ static int IGR_Intc_Handler(int cause)
         // First check pad state
         if (((Pad_Data.libpad == IGR_LIBPAD) && (pad_pos_state == IGR_PAD_STABLE_V1)) ||
             ((Pad_Data.libpad == IGR_LIBPAD2) && (pad_pos_state == IGR_PAD_STABLE_V2))) {
-            // Check if pad buffer is still alive with pad data frame counter
-            // If pad frame change save it, otherwise tell to syshook to re-install padOpen hook
+            // Track pad progress without treating a pause as loss of the EE code patch.
+            // Menus and loading screens can stop the DMA frame counter; clearing
+            // the install latch would trigger a live-RAM scan on CreateThread.
             if (Pad_Data.vb_count++ >= 10) {
                 if (pad_pos_frame != Pad_Data.prev_frame) {
                     padOpen_hooked = 1;
                     Pad_Data.prev_frame = pad_pos_frame;
-                } else {
-                    padOpen_hooked = 0;
                 }
                 Pad_Data.vb_count = 0;
             }
@@ -433,7 +432,8 @@ static int IGR_Intc_Handler(int cause)
 }
 
 // An IOP reset ends the DMA producer's lifetime even if the EE handler survives.
-// Preserve pending reset requests and power-button state while rearming discovery.
+// Preserve pending reset requests, power-button state and EE patch status.
+// Resetting the IOP ends the DMA producer, not the loaded ELF's PadOpen patch.
 void Invalidate_PadBuffer(void)
 {
     int intr = DI();
@@ -441,7 +441,6 @@ void Invalidate_PadBuffer(void)
     Pad_Data.pad_buf = NULL;
     Pad_Data.vb_count = 0;
     Pad_Data.prev_frame = 0;
-    padOpen_hooked = 0;
 
     if (intr)
         EI();
@@ -564,6 +563,7 @@ static int Hook_scePadPortOpen(int port, int slot, void *addr)
     // Install IGR with libpad1 parameters
     if (port == 0 && slot == 0) {
         DPRINTF("IGR: Hook_scePadPortOpen - installing IGR...\n");
+        padOpen_hooked = 1; // Executing this callback proves the EE hook is installed.
         Install_IGR();
         Set_libpad_Params(addr);
     }
@@ -585,6 +585,7 @@ static int Hook_scePad2CreateSocket(pad2socketparam_t *SocketParam, void *addr)
 
     // Install IGR with libpad2 parameters
     if ((SocketParam == NULL) || (SocketParam->port == 0 && SocketParam->slot == 0)) {
+        padOpen_hooked = 1; // Executing this callback proves the EE hook is installed.
         Install_IGR();
         Set_libpad_Params(addr);
     }
@@ -742,6 +743,12 @@ int Install_PadOpen_Hook(u32 mem_start, u32 mem_end, int mode)
             DPRINTF("IGR: job done exiting...\n");
             break;
         }
+    }
+
+    // Make patched EE instructions visible before execution resumes.
+    if (patched) {
+        iFlushCache(0);
+        iFlushCache(2);
     }
 
     // Done
