@@ -176,11 +176,30 @@ jobs:
           R="$GITHUB_REPOSITORY"
           git fetch -q origin rebuild/main
           CURRENT_HEAD="$(git rev-parse origin/rebuild/main)"
-          COVERED="$(gh run list --repo "$R" --workflow rolling-release.yml --branch rebuild/main --limit 50 \
-            --json headSha,status,conclusion,databaseId \
-            --jq ".[] | select(.headSha == \"$CURRENT_HEAD\" and (.status != \"completed\" or .conclusion == \"success\")) | .databaseId")"
-          if [ -n "$COVERED" ]; then
-            echo "A successful or active three-edition run covers $CURRENT_HEAD."
+          # Only published, non-draft releases at this exact head prove coverage.
+          # A green publish=false verification run must never mask a missing release.
+          COVERED=yes
+          for CHANNEL in rolling-korium rolling-ra rolling-incebtion; do
+            TAG_HEAD="$(gh api "repos/$R/git/ref/tags/$CHANNEL" --jq '.object.sha' 2>/dev/null || true)"
+            IS_DRAFT="$(gh release view "$CHANNEL" --repo "$R" --json isDraft --jq '.isDraft' 2>/dev/null || true)"
+            if [ "$TAG_HEAD" != "$CURRENT_HEAD" ] || [ "$IS_DRAFT" != false ]; then
+              COVERED=no
+              break
+            fi
+          done
+          if [ "$COVERED" = yes ]; then
+            echo "All three published release tags cover $CURRENT_HEAD."
+            exit 0
+          fi
+
+          # Pushes to rebuild/main always publish; avoid duplicating one still
+          # running. Do NOT count manual verification-only dispatches as active
+          # publication (their publish job is deliberately skipped).
+          ACTIVE_PUSH="$(gh run list --repo "$R" --workflow rolling-release.yml --branch rebuild/main --limit 50 \
+            --json headSha,status,event,databaseId \
+            --jq ".[] | select(.headSha == \"$CURRENT_HEAD\" and .event == \"push\" and .status != \"completed\") | .databaseId")"
+          if [ -n "$ACTIVE_PUSH" ]; then
+            echo "An integration push is still publishing $CURRENT_HEAD."
           else
             echo "Publishing Korium, RetroAchievements and IncebtIon at rebuild/main."
             gh workflow run rolling-release.yml --repo "$R" --ref rebuild/main -f publish=true
