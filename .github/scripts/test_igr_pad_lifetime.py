@@ -2,9 +2,10 @@
 from pathlib import Path
 import subprocess
 import tempfile
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-source = (ROOT / "ee_core/src/padhook.c").read_text(encoding="utf-8")
+source = (Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "ee_core/src/padhook.c").read_text(encoding="utf-8")
 
 
 def function(signature):
@@ -33,6 +34,17 @@ typedef unsigned short u16;
 #define IGR_COMBO_R3_L3 0xf9
 #define USE_LOCAL_EECORE_CONFIG
 #define kINTC_VBLANK_END 3
+#define PADOPEN_CHECK 1
+#define DPRINTF(...) ((void)0)
+typedef struct {int port,slot;} pad2socketparam_t;
+static int checks;
+static int Install_PadOpen_Hook(unsigned a,unsigned b,int mode) {
+ assert(a==0x100000 && b==0x1ff0000 && mode==PADOPEN_CHECK);checks++;return 0;
+}
+static int original_port(int p,int slot,void *a) {(void)p;(void)slot;(void)a;return 1;}
+static int original_socket(pad2socketparam_t *p,void *a) {(void)p;(void)a;return 2;}
+static int (*scePadPortOpen)(int,int,void *)=original_port;
+static int (*scePad2CreateSocket)(pad2socketparam_t *,void *)=original_socket;
 static int intrEnabled = 1, reads;
 static int DI(void) { int previous=intrEnabled;intrEnabled=0;return previous; }
 static void EI(void) { intrEnabled=1; }
@@ -73,9 +85,17 @@ int main(void) {
  old[112]=IGR_PAD_STABLE_V1;old[3]=IGR_COMBO_R1_L1_R2_L2;
  old[2]=IGR_COMBO_START_SELECT;
  Pad_Data.vb_count=7;Pad_Data.prev_frame=44;padOpen_hooked=1;
- Invalidate_PadBuffer();assert(intrEnabled && !Pad_Data.pad_buf && !padOpen_hooked);
+ Invalidate_PadBuffer();assert(intrEnabled && !Pad_Data.pad_buf && padOpen_hooked==1);
  assert(!Pad_Data.vb_count && !Pad_Data.prev_frame);
  assert(tick()==0 && reads==0); /* reused old memory looks like a reset combo */
+ /* Frozen pad frames retain the installed patch across prompts/loading. */
+ Pad_Data.combo_type=0;old[2]=0;
+ Set_libpad_Params(old);
+ for(int i=0;i<33;i++) assert(tick()==0 && padOpen_hooked==1);
+ Invalidate_PadBuffer();assert(!Pad_Data.pad_buf && padOpen_hooked==1);
+ /* A never-installed hook remains eligible for the normal discovery path. */
+ padOpen_hooked=0;Invalidate_PadBuffer();assert(!padOpen_hooked);
+ padOpen_hooked=1;
  Power_Button.press=1;Power_Button.vb_count=17;Pad_Data.combo_type=IGR_COMBO_START_SELECT;
  intrEnabled=0;Invalidate_PadBuffer();Install_IGR();
  assert(!intrEnabled && Pad_Data.combo_type==IGR_COMBO_START_SELECT);
@@ -84,7 +104,8 @@ int main(void) {
  Pad_Data.vb_count=9;Pad_Data.prev_frame=99;
  Set_libpad_Params(fresh);
  assert(!intrEnabled && !Pad_Data.vb_count && !Pad_Data.prev_frame && Pad_Data.pad_buf==fresh);
- Pad_Data.combo_type=0;assert(tick()==0 && reads==4 && !intrEnabled);
+ Pad_Data.combo_type=0;int before_reads=reads;
+ assert(tick()==0 && reads==before_reads+4 && !intrEnabled);
  fresh[112]=IGR_PAD_STABLE_V1;fresh[3]=IGR_COMBO_R1_L1_R2_L2;
  fresh[2]=IGR_COMBO_START_SELECT;
  assert(tick()==IGR_COMBO_START_SELECT && !intrEnabled);
@@ -99,15 +120,22 @@ int main(void) {
  fresh[4]=IGR_PAD_STABLE_V2;fresh[29]=IGR_COMBO_R1_L1_R2_L2;fresh[28]=IGR_COMBO_START_SELECT;
  assert(tick()==IGR_COMBO_START_SELECT && intrEnabled);
 #ifdef RETROACHIEVEMENTS
- assert(snapshots==4);
+ assert(snapshots==37);
 #else
  assert(snapshots==0);
 #endif
+ padOpen_hooked=0;Pad_Data.combo_type=0;
+ assert(Hook_scePadPortOpen(0,0,fresh)==1 && padOpen_hooked==1 && Pad_Data.pad_buf==fresh);
+ padOpen_hooked=0;Invalidate_PadBuffer();
+ pad2socketparam_t socket={0,0};
+ assert(Hook_scePad2CreateSocket(&socket,fresh)==2 && padOpen_hooked==1 && Pad_Data.pad_buf==fresh);
+ assert(checks==2);
  puts("PASS: stale pad refusal, reopen layouts, interrupt state and pending reset/power preservation");
 }
 '''
 program = prefix + handler + "\n".join(function(sig) for sig in (
-    "void Invalidate_PadBuffer(", "static void Set_libpad_Params(", "void Install_IGR(")) + test
+    "void Invalidate_PadBuffer(", "static void Set_libpad_Params(", "void Install_IGR(",
+    "static int Hook_scePadPortOpen(", "static int Hook_scePad2CreateSocket(")) + test
 with tempfile.TemporaryDirectory() as directory:
     path = Path(directory)
     c = path / "test.c"

@@ -1,6 +1,29 @@
 # RiptOPL SDK/C++ migration checkpoint
 
-## Current continuation: page-key animation and verified defaults
+## Current continuation: EE hook installation versus IOP buffer lifetime
+
+Base: merged navigation #43 at `f9d33e93`; final compiler/host/32 configurations
+and three kits pass, with all 35 final packages independently verified.
+Pages #44 is deployed at `32405d06`; Wiki defaults update is published at
+`de2a3c1`. Final evidence is recorded in issue #20 and the respective PRs.
+
+Original open #959 at `7af8845b` exposes a second lifetime distinction: an IOP
+reset ends the pad DMA producer, but does not erase the installed EE PadOpen
+patch. Frozen input frames likewise do not mean that patch disappeared.
+The destination now retains the install latch across both events, while still
+invalidating the DMA pointer on reset. Executing pad-open callbacks marks the
+patch installed. Existing ExecPS2 scanning remains the loaded-ELF boundary.
+The actual patcher flushes data then instruction caches only after patch writes.
+
+Standard/RA actual-method regressions cover frozen frames, retained/missing
+install flags across successful/failed resets, callback reacquisition and the
+real patcher's writes/cache-flush order. Old methods fail behavioral assertions.
+This branch retains interrupt-driven input handling; the upstream polling-worker
+KSU change does not apply directly. #959's register-preservation and Favorites
+configuration changes remain separate audits; no complete #959 parity is claimed.
+No SDK deficiency or physical-console/RE4 causal acceptance is claimed.
+
+## Historical continuation: page-key animation and verified defaults
 
 Base: IGR lifetime PR #42 merged at `9dc339bdc62021c54dfa295c6783af8673cb5ecb`.
 Its candidate compiler/host/32 configurations/three kits pass and all 35
