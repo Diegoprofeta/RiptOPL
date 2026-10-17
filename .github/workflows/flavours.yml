@@ -126,6 +126,8 @@ jobs:
         run: python3 .github/scripts/test_cjk_font_fallback.py
       - name: Check opt-in [PS1]/[PS2] game-type list labels and app item preservation
         run: python3 .github/scripts/test_game_type_labels.py
+      - name: Check About dialog layout and QA tester credits
+        run: python3 .github/scripts/test_about_credits_layout.py
 
   release-notes-tests:
     runs-on: ubuntu-24.04
