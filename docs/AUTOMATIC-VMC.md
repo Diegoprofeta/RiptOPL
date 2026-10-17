@@ -19,6 +19,9 @@ APA HDD games under Neutrino have no supported VMC path, so those are skipped
 too. Favorites resolve the owning source before applying this policy.
 UDPFS and UDPBD use Neutrino regardless of the saved loader preference; SMB uses
 the native core. The same effective-loader rules govern VMC checks and warnings.
+The VMC configuration dialogs resolve the effective launch core for the selected
+title, ensuring games launching through Neutrino suppress native mcemu single-extent
+fragmentation warnings on card creation.
 
 Creation shows progress and accepts the configured Cancel button. Cancellation
 keeps the menu open and does not assign the card. The formatter removes its
