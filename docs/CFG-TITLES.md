@@ -21,10 +21,10 @@ Changing the setting queues fresh device, HTTP and Favorites lists even when
 automatic refresh is disabled. Turning it off restores names immediately.
 
 This adapts original Open-PS2-Loader PR #932 at
-`dea980ef4549de41dd1ee5e1261238a22da2080b` to the C++ GameSource API. It does
-**not** implement the original repository's separate optional `font_CJK.ttf`
-fallback from #917. That font feature remains migration work; UTF-8 parsing
-alone cannot supply missing glyphs.
+`dea980ef4549de41dd1ee5e1261238a22da2080b` to the C++ GameSource API.
+FontSystem now includes the separate optional `font_CJK.ttf` fallback from #917,
+allowing game titles with CJK glyphs to display correctly when an optional font
+file is placed in the settings home directory.
 
 Host regressions execute the actual standard/RA cache, allocation failures,
 UTF-8 cleanup, list sorting and settings refresh order. PS2 native builds, CI

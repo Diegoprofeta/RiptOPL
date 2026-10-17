@@ -19,6 +19,11 @@ void fntEnd();
  * @return font slot id (negative value means error happened) */
 int fntLoadFile(char *path, int fontSize);
 
+/** Loads an optional Unicode fallback font
+ * @param path The path to the font file
+ * @return 0 on success, negative value on error */
+int fntLoadFallback(char *path);
+
 /** Reloads the default font */
 int fntLoadDefault(char *path);
 

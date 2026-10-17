@@ -31,6 +31,7 @@ public:
     void init();
     void end();
     int loadFile(char *path, int fontSize);
+    int loadFallback(char *path);
     int loadDefault(char *path);
     void release(int id);
     void updateAspectRatio();
@@ -116,6 +117,7 @@ private:
     FT_Library library_ = NULL;
     GSCLUT clut_ = {};
     font_t fonts_[FNT_MAX_COUNT] = {};
+    int fallbackFontId_ = FNT_ERROR;
     // ONE LOCK FOR ALL FONT STATE (see the long note on lock() in fntsys.cpp).
     s32 semaId_ = 0;
 };
