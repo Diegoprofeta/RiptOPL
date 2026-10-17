@@ -16,6 +16,7 @@ int guiGameAltStartupNameHandler(char *text, int maxLen);
 
 char *gameConfigSource(void);
 
+int guiGameResolveEffectiveCore(item_list_t *support, int id);
 int guiGameVmcNameHandler(char *text, int maxLen);
 void guiGameShowVMCMenu(int id, item_list_t *support);
 int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet);

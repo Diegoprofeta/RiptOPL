@@ -244,35 +244,67 @@ void bdmLaunchVcd(item_list_t *itemList, const char *vcdName, config_set_t *conf
 // support files), including both udp block transports (udpbd + udpfsbd depend on i_bdm), so the
 // ioctl is always valid here. The budget itself is NeutrinoLauncher::kMaxFrags
 // (include/neutrinolauncher.h): NOT OPL's BDM_MAX_FRAGS -- same value today, different owner.
-int NeutrinoLauncher::fragBudgetOk(const char *isoPath, const neutrino_vmc_args_t *vmcArgs, int isUdp)
+int NeutrinoLauncher::fragBudgetOk(const char *isoPath, neutrino_vmc_args_t *vmcArgs, int isUdp)
 {
-    const char *paths[1 + NEUTRINO_VMC_SLOTS];
-    int nPaths = 0, total = 0, i;
+    int isoFrags = 0, total = 0, i;
+    int vmcFrags[NEUTRINO_VMC_SLOTS] = {0};
+    const char *vmcPaths[NEUTRINO_VMC_SLOTS] = {NULL};
 
-    paths[nPaths++] = isoPath;
-    for (i = 0; i < NEUTRINO_VMC_SLOTS; i++) {
-        const char *eq = vmcArgs->arg[i][0] ? strchr(vmcArgs->arg[i], '=') : NULL;
-        if (eq != NULL && eq[1] != '\0')
-            paths[nPaths++] = eq + 1; // "-mcN=<path>"; Δ2 already verified the file exists
-    }
-
-    for (i = 0; i < nPaths; i++) {
-        int fd = open(paths[i], O_RDONLY);
-        if (fd < 0) { // advisory check only: never veto the launch on a probe failure
-            LOG("[NEUTRINO] frag pre-count: open(%s) failed, file skipped\n", paths[i]);
-            continue;
-        }
-        int frags = fileXioIoctl2(ps2sdk_get_iop_fd(fd), USBMASS_IOCTL_GET_FRAGLIST, NULL, 0, NULL, 0);
+    int fd = open(isoPath, O_RDONLY);
+    if (fd >= 0) {
+        isoFrags = fileXioIoctl2(ps2sdk_get_iop_fd(fd), USBMASS_IOCTL_GET_FRAGLIST, NULL, 0, NULL, 0);
         close(fd);
-        if (frags < 0) {
-            LOG("[NEUTRINO] frag pre-count: ioctl(%s) = %d, file skipped\n", paths[i], frags);
-            continue;
+        if (isoFrags < 0)
+            isoFrags = 0;
+    }
+    total = isoFrags;
+
+    for (i = 0; i < NEUTRINO_VMC_SLOTS; i++) {
+        const char *eq = (vmcArgs != NULL && vmcArgs->arg[i][0]) ? strchr(vmcArgs->arg[i], '=') : NULL;
+        if (eq != NULL && eq[1] != '\0') {
+            vmcPaths[i] = eq + 1; // "-mcN=<path>"; Δ2 already verified the file exists
+            fd = open(vmcPaths[i], O_RDONLY);
+            if (fd >= 0) {
+                int frags = fileXioIoctl2(ps2sdk_get_iop_fd(fd), USBMASS_IOCTL_GET_FRAGLIST, NULL, 0, NULL, 0);
+                close(fd);
+                if (frags > 0)
+                    vmcFrags[i] = frags;
+            }
+            total += vmcFrags[i];
         }
-        total += frags;
     }
 
     if (total > kMaxFrags) { // == is fine: neutrino packs exactly-full tables
-        char msg[256];       // headroom for the lng/fork overlay's longer translations
+        LOG("[NEUTRINO] frag budget exceeded: %d/%d (ISO=%d, VMC0=%d, VMC1=%d)\n",
+            total, kMaxFrags, isoFrags, vmcFrags[0], vmcFrags[1]);
+
+        // If the ISO itself fits within the budget, but VMCs pushed it over:
+        if (isoFrags <= kMaxFrags && (vmcFrags[0] > 0 || vmcFrags[1] > 0)) {
+            for (i = 0; i < NEUTRINO_VMC_SLOTS && total > kMaxFrags; i++) {
+                if (vmcFrags[i] > 0) {
+                    char vmcName[32];
+                    const char *slash = strrchr(vmcPaths[i], '/');
+                    const char *dot = strrchr(vmcPaths[i], '.');
+                    const char *start = slash ? slash + 1 : vmcPaths[i];
+                    int nlen = dot && dot > start ? (int)(dot - start) : (int)strlen(start);
+                    snprintf(vmcName, sizeof(vmcName), "%.*s", nlen, start);
+
+                    if (gAutoLaunchBDMGame == NULL) {
+                        char error[256];
+                        snprintf(error, sizeof(error), _l(_STR_ERR_VMC_FRAGMENTED_CONTINUE), vmcName, (i + 1));
+                        if (!host::ui().msgBox(error, 1, NULL))
+                            return -1; // Abort launch to menu
+                    }
+                    total -= vmcFrags[i];
+                    vmcArgs->arg[i][0] = '\0';
+                    LOG("[NEUTRINO] VMC slot %d (%s) dropped due to fragment budget: new total=%d\n", i, vmcName, total);
+                }
+            }
+            if (total <= kMaxFrags)
+                return 1;
+        }
+
+        char msg[256]; // headroom for the lng/fork overlay's longer translations
         LOG("[NEUTRINO] frag budget exceeded: %d/%d across ISO + VMCs\n", total, kMaxFrags);
         // Match the Δ8 abort-message convention: the udp outcome is a consumed launch, the
         // local outcome is a native-core fallback (which usually boots: OPL's own 64-frag
@@ -365,8 +397,12 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
 
     // Δ9: neutrino only discovers a blown fragment budget after its own IOP reset (debug
     // printf + exit = black screen). Count it now: udp consumes the launch, local falls native.
-    if (!fragBudgetOk(partname, &neutrinoVmc, isUdp))
+    int fragCheck = fragBudgetOk(partname, &neutrinoVmc, isUdp);
+    if (fragCheck <= 0) {
+        if (fragCheck < 0)
+            failResult = 1; // User declined prompt: abort launch, do not fall back to native core
         return abortLaunch(failResult, configSet);
+    }
     if (gLaunchDiag)
         launchDiagMark(2);
 

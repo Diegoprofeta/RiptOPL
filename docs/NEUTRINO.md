@@ -441,8 +441,12 @@ Rules that follow from Neutrino's design (verified against `rickgaiser/neutrino`
   comes from raw APA (`-bsd=ata -bsdfs=hdl`), and there is no pfs backend for the `.bin`.
 - **UDPFS VMCs are writable network files**: the card lives at `VMC/<name>.bin` under the PC
   server's shared folder, and the server must not run in read-only mode or saves fail.
-- **Block devices share Neutrino's 64-fragment budget** across ISO + VMCs; OPL pre-counts and
-  falls back/aborts with a message when it can't fit (defragment the drive if you see it).
+- **Block devices share Neutrino's 64-fragment budget** across ISO + VMCs. OPL pre-counts
+  fragments before IOP reset. If the ISO alone fits within 64 extents but VMCs exceed the budget,
+  OPL prompts to proceed with the physical memory card. If accepted, the fragmented VMC argument
+  is dropped and Neutrino boots cleanly. If declined, the launch aborts cleanly to the menu.
+  If the ISO itself exceeds 64 extents, local launches fall back to the native core while UDP
+  launches abort with a fragmentation warning.
 - **Upstream caveats** (Neutrino's `mc_emu`, as of mid-2026): only **port 1 (`-mc0`) is actually
   emulated** — `-mc1` is accepted and opened but the second port's emulation is left inactive —
   and the advertised card geometry is hardcoded (8192 pages ≈ first 4 MB of the image addressed)

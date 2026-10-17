@@ -30,7 +30,7 @@ private:
     // Pre-count the same fragment budget Neutrino itself discovers only after its own IOP reset
     // (debug printf + exit = black screen), using the count-only form of the same ioctl, while the
     // menu can still explain the abort. Returns 1 when the budget holds.
-    int fragBudgetOk(const char *isoPath, const neutrino_vmc_args_t *vmcArgs, int isUdp);
+    int fragBudgetOk(const char *isoPath, neutrino_vmc_args_t *vmcArgs, int isUdp);
 
     // Abort path of tryLaunch: back to a live menu so a later launch from another device does not
     // inherit this one's markers. Returns failResult (1 = launch consumed on udp, 0 = fall back to
