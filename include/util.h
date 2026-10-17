@@ -28,7 +28,7 @@ typedef struct
     char *lastPtr;
     short allocResult;
     int writeError;           // sticky first write errno (EIO for short writes);
-                             // restored by closeFileBuffer
+                              // restored by closeFileBuffer
     unsigned int totalQueued; // total bytes ever handed to writeFileBuffer; when == available at close
                               // time, the WHOLE content still sits in buffer (no intermediate flush) --
                               // configWrite's read-back verify uses that to capture the intended bytes
