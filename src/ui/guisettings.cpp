@@ -1785,6 +1785,7 @@ static void guiShowArtworkConfig(void)
 {
     diaSetInt(diaArtworkConfig, UICFG_COVERART, gEnableArt);
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_DISCART, gEnableDiscArt);
+    diaSetInt(diaArtworkConfig, UICFG_ENABLE_LOGOART, gEnableLogoArt);
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_BGART, gEnableBGArt);
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_ART_TAR, gEnableArtTar);
     diaSetEnum(diaArtworkConfig, UICFG_ART_DELAY, artDelayNames);
@@ -1794,6 +1795,7 @@ static void guiShowArtworkConfig(void)
     if (ret) {
         diaGetInt(diaArtworkConfig, UICFG_COVERART, &gEnableArt);
         diaGetInt(diaArtworkConfig, UICFG_ENABLE_DISCART, &gEnableDiscArt);
+        diaGetInt(diaArtworkConfig, UICFG_ENABLE_LOGOART, &gEnableLogoArt);
         diaGetInt(diaArtworkConfig, UICFG_ENABLE_BGART, &gEnableBGArt);
         {
             // Re-arm the .tar probe when the toggle actually flips. tarFind's "no archive anywhere"

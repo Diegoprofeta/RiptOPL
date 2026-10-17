@@ -14,6 +14,7 @@ CHECK(gRABadges == (1));
 #endif
 CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));
+CHECK(gEnableLogoArt == (1));
 CHECK(gWideScreen == (1));
 CHECK(gVMode == (0));
 CHECK(gXOff == (0));

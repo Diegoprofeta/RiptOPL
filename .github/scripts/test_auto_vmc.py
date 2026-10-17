@@ -1,5 +1,6 @@
 """Execute actual automatic-card policy and modal launch ownership/identity guards."""
 from pathlib import Path
+import os
 import subprocess
 import re
 import sys
@@ -20,8 +21,10 @@ def run(name, program):
     with tempfile.TemporaryDirectory(dir=directory) as temp:
         cpp, exe = Path(temp) / (name+'.cpp'), Path(temp) / name
         cpp.write_text(program, encoding='utf-8')
-        subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',
-                        '-fno-sanitize-recover=undefined',str(cpp),'-o',str(exe)], check=True)
+        flags = ['-std=c++17', '-Wall', '-Wextra', '-Werror']
+        if os.name != 'nt':
+            flags += ['-fsanitize=address,undefined', '-fno-sanitize-recover=undefined']
+        subprocess.run(['c++', *flags, str(cpp), '-o', str(exe)], check=True)
         subprocess.run([str(exe)], check=True, timeout=20)
 
 run('auto_vmc', r'''
@@ -207,6 +210,9 @@ static int ioPutRequest(int,void*) {return 0;}
 static void itemInitSupport(item_list_t*) {}
 static opl_io_module_t *oplGetModule(int) {return nullptr;}
 static int guiMsgBox(const char*,int,void*) {return 0;}
+static void guiLock() {}
+static void guiUnlock() {}
+static int menuCheckGameParentalLock(config_set_t*) {return 0;}
 static int guiGameAutoCreateVmc(item_list_t*,int,config_set_t *cfg) {
     autoCalls++;assert(cfg==&config && itemConfig==nullptr && !cfg->freed);
     // Simulate background cache replacement while the progress screen yields.

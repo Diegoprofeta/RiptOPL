@@ -114,6 +114,12 @@ jobs:
         run: python3 .github/scripts/test_favorites_storage_io.py
       - name: Check opt-in CFG title cache, source identity and refresh ordering
         run: python3 .github/scripts/test_cfg_titles.py
+      - name: Check logo artwork toggle and cache isolation
+        run: python3 .github/scripts/test_logo_art_toggle.py
+      - name: Check VMC and PADEMU SIO2MAN version and alias isolation
+        run: python3 .github/scripts/test_sio2man_hooks.py
+      - name: Check per-game parental lock and test/autolaunch paths
+        run: python3 .github/scripts/test_game_parental_lock.py
 
   release-notes-tests:
     runs-on: ubuntu-24.04

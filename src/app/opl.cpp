@@ -235,6 +235,7 @@ int gRABadges;
 #endif
 int gEnableArt;
 int gEnableDiscArt;
+int gEnableLogoArt;
 int gWideScreen;
 int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
 int gXOff;

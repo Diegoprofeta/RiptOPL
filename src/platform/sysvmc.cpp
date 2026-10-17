@@ -161,6 +161,29 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
             vmc_superblock_t autoSuperblock;
             if (formatProbe && vmc_superblock == NULL)
                 vmc_superblock = &autoSuperblock;
+
+            // Size alone also matches an erased image left by failed formatting/cleanup.
+            // Validate whole-MB cards even for size-only callers (automatic assignment).
+            // Odd-size Neutrino cards retain their existing probe result and launch policy.
+            if (vmc_superblock == NULL && size > 0 && size % 1048576 == 0) {
+                vmc_superblock_t header;
+                bool headerValid = lseek(fd, 0, SEEK_SET) == 0;
+                unsigned received = 0;
+                while (headerValid && received < sizeof(header)) {
+                    int got = read(fd, (char *)&header + received, sizeof(header) - received);
+                    if (got <= 0 || (unsigned)got > sizeof(header) - received)
+                        headerValid = false;
+                    else
+                        received += got;
+                }
+                if (!headerValid || memcmp(header.magic, "Sony PS2 Memory Card Format", 27) != 0 ||
+                    header.mc_type != 2 || header.page_size != 512 || header.pages_per_cluster == 0 ||
+                    (u64)header.pages_per_cluster * header.clusters_per_card * header.page_size != (u64)size) {
+                    close(fd);
+                    return createSize > 0 ? SYS_VMC_REPLACE_REQUIRES_DELETE : SYS_VMC_CREATE_FAILED;
+                }
+            }
+
             bool valid = size > 0;
             if (vmc_superblock) {
                 memset(vmc_superblock, 0, sizeof(vmc_superblock_t));

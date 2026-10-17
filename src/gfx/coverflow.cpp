@@ -281,7 +281,7 @@ static void drawCoverFlow(struct menu_list *menu, struct submenu_list *item, con
         // only the cache + overlay are redirected; frame-inset math uses THIS cover's own dims.
         theme_element_t *coverElem = thmGetElemForItem(menu, covers[i], elem);
         mutable_image_t *cimg = (mutable_image_t *)coverElem->extended;
-        if (!cimg)
+        if (!cimg || isHiddenArtworkCache(cimg->cache))
             continue;
         int csw = (coverElem->width > 0) ? coverElem->width : 1;   // div-guard
         int csh = (coverElem->height > 0) ? coverElem->height : 1; // div-guard
