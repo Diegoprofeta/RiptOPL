@@ -66,7 +66,7 @@ typedef struct
 IRX_ID("pademu", 1, 1);
 
 PtrRegisterLibraryEntires pRegisterLibraryEntires; /* Pointer to RegisterLibraryEntires routine */
-Sio2McProc pSio2man25, pSio2man51;                 /* Pointers to SIO2MAN routines */
+Sio2McProc pSio2man25[2], pSio2man51[2];           /* Pointers to SIO2MAN routines */
 pad_status_t pad[MAX_PORTS];
 
 static u8 pad_inited = 0;
@@ -81,8 +81,10 @@ static u8 mtap_port = 0;
 int install_sio2hook();
 
 int hookRegisterLibraryEntires(iop_library_t *lib);
-void hookSio2man25(sio2_transfer_data_t *sd);
-void hookSio2man51(sio2_transfer_data_t *sd);
+static void hookSio2man25_1(sio2_transfer_data_t *sd);
+static void hookSio2man25_2(sio2_transfer_data_t *sd);
+static void hookSio2man51_1(sio2_transfer_data_t *sd);
+static void hookSio2man51_2(sio2_transfer_data_t *sd);
 void InstallSio2manHook(void *exp, int ver);
 
 void pademu_hookSio2man(sio2_transfer_data_t *td, Sio2McProc sio2proc);
@@ -164,13 +166,21 @@ int install_sio2hook()
     /* hooking LOADCORE's RegisterLibraryEntires routine */
     pRegisterLibraryEntires = (PtrRegisterLibraryEntires)HookExportEntry(exp, 6, hookRegisterLibraryEntires);
 
-    /* searching for a SIO2MAN export table */
-    exp = GetExportTable("sio2man", 0x201);
+    /* searching for SIO2MAN export tables */
+    exp = GetExportTable("sio2man", 0x100);
     if (exp != NULL) {
-        /* hooking SIO2MAN's routines */
+        /* hooking v1 SIO2MAN's routines */
+        InstallSio2manHook(exp, 0);
+    } else {
+        DPRINTF("SIO2MAN v1 exports not found.\n");
+    }
+
+    exp = GetExportTable("sio2man", 0x200);
+    if (exp != NULL) {
+        /* hooking v2 SIO2MAN's routines */
         InstallSio2manHook(exp, 1);
     } else {
-        DPRINTF("SIO2MAN exports not found.\n");
+        DPRINTF("SIO2MAN v2 exports not found.\n");
     }
 
     return 1;
@@ -178,10 +188,23 @@ int install_sio2hook()
 
 void InstallSio2manHook(void *exp, int ver)
 {
+    Sio2McProc hook25, hook51;
+    void *old;
+
+    ver = ver ? 1 : 0;
+    hook25 = ver ? hookSio2man25_2 : hookSio2man25_1;
+    hook51 = ver ? hookSio2man51_2 : hookSio2man51_1;
+
     /* hooking SIO2MAN entry #25 (used by MCMAN and old PADMAN) */
-    pSio2man25 = HookExportEntry(exp, 25, hookSio2man25);
-    /* hooking SIO2MAN entry #51 (used by MC2_* modules and PADMAN) */
-    pSio2man51 = HookExportEntry(exp, 49 + (ver * 2), hookSio2man51);
+    old = HookExportEntry(exp, 25, hook25);
+    if (old != hook25 && old != hook51)
+        pSio2man25[ver] = old;
+    /* hooking SIO2MAN entry #49/#51 (used by MC2_* modules and PADMAN) */
+    old = HookExportEntry(exp, 49 + (ver * 2), hook51);
+    if (old != hook25 && old != hook51)
+        pSio2man51[ver] = old;
+    else if (old == hook25)
+        pSio2man51[ver] = pSio2man25[ver];
 }
 
 /* Hook for the LOADCORE's RegisterLibraryEntires call */
@@ -207,15 +230,25 @@ int hookRegisterLibraryEntires(iop_library_t *lib)
 }
 
 /* Hook for SIO2MAN entry #25 */
-void hookSio2man25(sio2_transfer_data_t *sd)
+static void hookSio2man25_1(sio2_transfer_data_t *sd)
 {
-    pademu_hookSio2man(sd, pSio2man25);
+    pademu_hookSio2man(sd, pSio2man25[0]);
 }
 
-/* Hook for SIO2MAN entry #51 */
-void hookSio2man51(sio2_transfer_data_t *sd)
+static void hookSio2man25_2(sio2_transfer_data_t *sd)
 {
-    pademu_hookSio2man(sd, pSio2man51);
+    pademu_hookSio2man(sd, pSio2man25[1]);
+}
+
+/* Hook for SIO2MAN entry #49/#51 */
+static void hookSio2man51_1(sio2_transfer_data_t *sd)
+{
+    pademu_hookSio2man(sd, pSio2man51[0]);
+}
+
+static void hookSio2man51_2(sio2_transfer_data_t *sd)
+{
+    pademu_hookSio2man(sd, pSio2man51[1]);
 }
 
 void pademu_hookSio2man(sio2_transfer_data_t *td, Sio2McProc sio2proc)

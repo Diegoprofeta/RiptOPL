@@ -1461,3 +1461,17 @@ gui_strings:
   string: "This game's existing VMC cannot be used by this loader. It was preserved. Choose a card in Game Settings."
 - label: AUTO_VMC_STILL_RUNNING
   string: "VMC creation is still running. Stay in the menu and wait before retrying."
+
+# Per-game logo artwork is independent of ICO disc artwork and boot logo.
+- label: LOGOART
+  string: "Logo Artwork"
+- label: HINT_LOGOART
+  string: "Shows a game's logo (<ID>_LGO) when the theme uses it. Off also hides its default image, but keeps covers, disc art and backgrounds."
+
+- label: PARENLOCK_GAME
+  string: Parental Lock
+- label: PARENLOCK_GAME_HINT
+  string: Require the parental lock password to start this game.
+- label: PARENLOCK_GAME_NO_PASSWORD
+  string: Set a parental lock password, or this game will not be locked.
+

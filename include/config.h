@@ -44,6 +44,7 @@ enum CONFIG_INDEX {
 #define CONFIG_ITEM_SYSTEM           "#System"   // console axis (PS1/PS2); #Media stays the disc axis (CD/DVD) -- FR #49
 #define CONFIG_ITEM_DISCTYPE         "#DiscType" // combined console+media token (PS1CD/PS2CD/PS2DVD) so one AttributeImage glyph distinguishes PS1-CD from PS2-CD (both report #Media=CD) -- issue #49
 #define CONFIG_ITEM_STARTUP          "#Startup"
+#define CONFIG_ITEM_PARENTAL_LOCK    "$ParentalLock"
 #define CONFIG_ITEM_ALTSTARTUP       "$AltStartup"
 #define CONFIG_ITEM_VMC              "$VMC"
 #define CONFIG_ITEM_VMC_DISABLE      "$VMCDisable" // per-slot ("$VMCDisable_0"/"_1"): launch WITHOUT this slot's VMC while keeping its card name configured (Neutrino -mc path only)
@@ -99,6 +100,7 @@ enum CONFIG_INDEX {
 #define CONFIG_OPL_ENABLE_NOTIFICATIONS       "enable_notifications"
 #define CONFIG_OPL_ENABLE_COVERART            "enable_coverart"
 #define CONFIG_OPL_ENABLE_DISCART             "enable_discart"
+#define CONFIG_OPL_ENABLE_LOGOART             "enable_logoart"
 #define CONFIG_OPL_ENABLE_BGART               "enable_bgart"
 #define CONFIG_OPL_ENABLE_ART_TAR             "enable_art_tar"
 #define CONFIG_OPL_ENABLE_ANALOG_NAV          "enable_analog_nav"

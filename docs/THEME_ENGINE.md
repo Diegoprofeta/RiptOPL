@@ -240,11 +240,18 @@ Elements are drawn in the order the theme declares them, with one exception: eve
 moved to the end of its screen's list, so the selected item's startup filename is never painted over by
 art declared after it.
 
-Images keyed on the **`ICO`** suffix — an `ItemIcon`, a `GameImage` with `pattern=ICO`, or an
-`ItemsList` with `decorator=ICO` — are the theme's disc art. The user can hide them with **Disc Artwork**
-(*Settings → Interface → Artwork Settings*, on by default), and that removes the element's `default=`
-image as well, so plan a layout that still reads without them. Art keyed on any other suffix, such
-as `COV` covers and `BG` backgrounds, is unaffected; a `Background` with `pattern=ICO` is hidden too.
+Images keyed on the **`ICO`** suffix (an `ItemIcon`, a `GameImage` with `pattern=ICO`, or an
+`ItemsList` with `decorator=ICO`) are the theme's disc art. The user can hide them with **Disc Artwork**
+(*Settings -> Interface -> Artwork Settings*, on by default), including the element's `default=` image.
+The independent **Logo Artwork** option similarly controls art keyed on **`LGO`**, such as
+`<GAME_ID>_LGO.png` files in `ART/` used by `GameImage pattern=LGO`, `ItemsList decorator=LGO`,
+or a theme's custom image element. Disabling it also suppresses the default image and overlays
+for those elements, including custom Coverflow elements with an `LGO` pattern. It does **not**
+affect `COV` covers, `ICO` disc artwork, `BG` backgrounds, or the separate boot-splash
+`logo` / `logo0` to `logo6` theme textures. Both toggles default to on and persist in
+`settings_riptopl.cfg` as `enable_discart` and `enable_logoart`, respectively. Art keyed on any other
+suffix, such as `COV` covers and `BG` backgrounds, is unaffected; a `Background` with `pattern=ICO` is
+hidden too.
 
 ### Text element extras
 

@@ -81,6 +81,7 @@ mutable_image_t *initMutableImage(const char *themePath, config_set_t *themeConf
 void endMutableImage(struct theme_element *elem);
 GSTEXTURE *getGameImageTextureEx(image_cache_t *cache, void *support, struct submenu_item *item, int isPriority);
 GSTEXTURE *getGameImageTexture(image_cache_t *cache, void *support, struct submenu_item *item);
+int isHiddenArtworkCache(const image_cache_t *cache);
 void *thmGetItemSource(struct menu_list *menu, struct submenu_list *item);
 theme_element_t *thmGetElemForItem(struct menu_list *menu, struct submenu_list *item, theme_element_t *elem);
 

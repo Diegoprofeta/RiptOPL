@@ -115,6 +115,8 @@ int main(void) {
     for(int erasedByte : {0,255}) {
         memset(&header,erasedByte,sizeof(header));
         assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+        assert(sysCheckVMC("mass0:/", "/", name, 0, NULL)==SYS_VMC_CREATE_FAILED);
+        assert(sysCheckVMC("mass0:/", "/", name, 8, NULL)==SYS_VMC_REPLACE_REQUIRES_DELETE);
         assert(!erased && !jobs);
     }
     memset(&header,0,sizeof(header));
@@ -135,6 +137,8 @@ int main(void) {
     readErrorAt=-1;readLimit=0;
     readLimit=7;readEOFAt=14;
     assert(sysCheckVMC("mass0:/", "/", name, SYS_VMC_PROBE_FORMAT, NULL)==SYS_VMC_CREATE_FAILED);
+    assert(sysCheckVMC("mass0:/", "/", name, 0, NULL)==SYS_VMC_CREATE_FAILED);
+    assert(sysCheckVMC("mass0:/", "/", name, 8, NULL)==SYS_VMC_REPLACE_REQUIRES_DELETE);
     readEOFAt=-1;readLimit=0;
     for(int fault : {1,2,3}) {
         seekError=fault<3 ? fault : 0;closeError=fault==3;
@@ -204,10 +208,11 @@ int main(void) {
 '''.replace("@FUNCTION@", function).replace("@SUPERBLOCK@", (root / "include/mcemu.h").read_text(encoding="utf-8"))
 with tempfile.TemporaryDirectory() as d:
     src = Path(d) / "test.cpp"
-    out = Path(d) / "test"
+    out = Path(d) / "test.exe"
     src.write_text(program, encoding="utf-8")
     legacy_flags = ["-Wno-error=sign-compare"] if len(sys.argv)>1 else []
+    san_flags = ["-fsanitize=address,undefined", "-fno-sanitize-recover=undefined"] if sys.platform != "win32" else []
     subprocess.run(["g++", "-std=c++17", "-Wno-write-strings", "-Wall", "-Wextra", "-Wno-unused-parameter", "-Werror",
-                    "-fsanitize=address,undefined", "-fno-sanitize-recover=undefined", *legacy_flags,
+                    *san_flags, *legacy_flags,
                     str(src), "-o", str(out)], check=True)
     subprocess.run([str(out)], check=True, timeout=10)

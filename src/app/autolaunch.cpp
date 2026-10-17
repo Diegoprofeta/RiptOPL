@@ -114,7 +114,8 @@ void autoLaunchHDDGame(char *argv[])
     // never stores '#' keys. sbGetCompatModes needs it to find a title's default compatibility modes.
     configSetStr(configSet, CONFIG_ITEM_STARTUP, gAutoLaunchGame->startup);
 
-    hddLaunchGame(NULL, -1, configSet);
+    if (!menuGameRequiresParentalLock(configSet))
+        hddLaunchGame(NULL, -1, configSet);
 
     // Only reached when the launch was refused. hddLaunchGame tears the mini session down only on the
     // way to a handoff, so finish it here: main() then boots the menu, which must not inherit a live
@@ -274,14 +275,21 @@ void autoLaunchBDMGame(char *argv[])
 
 
     configSet = configAlloc(0, NULL, path);
-    if (configSet != NULL) {
-        configRead(configSet);
-        // A menu launch gets #Startup from sbPopulateConfig; this config came straight from the CFG file, which
-        // never stores '#' keys. sbGetCompatModes needs it to find a title's default compatibility modes.
-        configSetStr(configSet, CONFIG_ITEM_STARTUP, gAutoLaunchBDMGame->startup);
+    if (configSet == NULL) {
+        free(gAutoLaunchDeviceData);
+        gAutoLaunchDeviceData = NULL;
+        free(gAutoLaunchBDMGame);
+        gAutoLaunchBDMGame = NULL;
+        miniDeinit(NULL);
+        return;
     }
+    configRead(configSet);
+    // A menu launch gets #Startup from sbPopulateConfig; this config came straight from the CFG file, which
+    // never stores '#' keys. sbGetCompatModes needs it to find a title's default compatibility modes.
+    configSetStr(configSet, CONFIG_ITEM_STARTUP, gAutoLaunchBDMGame->startup);
 
-    bdmLaunchGame(NULL, -1, configSet);
+    if (!menuGameRequiresParentalLock(configSet))
+        bdmLaunchGame(NULL, -1, configSet);
 
     // Only reached when the launch was refused (missing ISO, fragmented image, unusable device).
     // bdmLaunchGame tears the mini session down only on the way to a handoff; a Neutrino abort that

@@ -69,6 +69,7 @@ constexpr Setting kSettings[] = {
 #endif
     intSetting(CONFIG_OPL_ENABLE_COVERART, &gEnableArt, 1),
     intSetting(CONFIG_OPL_ENABLE_DISCART, &gEnableDiscArt, 1), // preserve existing ItemIcon/ICO behavior unless the user disables it
+    intSetting(CONFIG_OPL_ENABLE_LOGOART, &gEnableLogoArt, 1), // preserve existing LGO artwork unless the user disables it
     intSetting(CONFIG_OPL_WIDESCREEN, &gWideScreen, 1),
     intSetting(CONFIG_OPL_VMODE, &gVMode, 0, /*loadPlain=*/false),
     intSetting(CONFIG_OPL_XOFF, &gXOff, 0),

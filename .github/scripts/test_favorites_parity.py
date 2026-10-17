@@ -229,7 +229,7 @@ static bool gFAVStartMode, gEnableDiscArt;
 static int gDefaultCol, starDraws, starPosition;
 static GSTEXTURE texture{&texture};
 static GSTEXTURE *thmGetTexture(int) { return &texture; }
-static bool isDiscArtCache(void*) { return true; }
+static bool isHiddenArtworkCache(void*) { return false; }
 static int rmUnScaleX(int value) { return value; }
 static int fntCalcDimensions(int, const char *text) { return strlen(text) * 10; }
 static void rmDrawPixmap(GSTEXTURE*, int x, int, int align, int, int, int, int, int) {

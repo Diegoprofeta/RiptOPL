@@ -101,16 +101,36 @@ static void itemExecSelect(struct menu_item *curMenu)
                     return;
                 }
                 config_set_t *configSet = menuLoadConfig();
-                if (curMenu->current == NULL)
+                if (configSet == NULL)
+                    return;
+                guiLock();
+                if (curMenu->current == NULL) {
+                    guiUnlock();
                     return; // a deferred source refresh replaced the row while config IO was pending
+                }
                 int launchId = curMenu->current->item.id;
-                char gameIdStartup[128] = {0};
+                char gameIdStartup[APP_STARTUP_MAX + 1] = {0};
                 char launchIdentity[APP_STARTUP_MAX + 1] = {0};
-                char *startup = gsOf(support)->startup(support, launchId);
+                char *startup = !curMenu->current->item.isFolder ? gsOf(support)->startup(support, launchId) : NULL;
                 if (startup != NULL) {
-                    if ((unsigned int)snprintf(launchIdentity, sizeof(launchIdentity), "%s", startup) >= sizeof(launchIdentity))
+                    if ((unsigned int)snprintf(launchIdentity, sizeof(launchIdentity), "%s", startup) >= sizeof(launchIdentity)) {
+                        guiUnlock();
                         return;
+                    }
                     snprintf(gameIdStartup, sizeof(gameIdStartup), "%s", startup);
+                }
+                guiUnlock();
+                if (menuCheckGameParentalLock(configSet) != 0)
+                    return;
+                if (gameIdStartup[0] != '\0') {
+                    guiLock();
+                    startup = curMenu->current != NULL && !curMenu->current->item.isFolder ? gsOf(support)->startup(support, curMenu->current->item.id) : NULL;
+                    int sameGame = startup != NULL && strcmp(startup, gameIdStartup) == 0;
+                    if (sameGame)
+                        launchId = curMenu->current->item.id;
+                    guiUnlock();
+                    if (!sameGame)
+                        return;
                 }
                 int ownsConfig = 0;
                 if (gAutoCreateVmc) {
