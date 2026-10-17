@@ -1475,3 +1475,6 @@ gui_strings:
 - label: PARENLOCK_GAME_NO_PASSWORD
   string: Set a parental lock password, or this game will not be locked.
 
+- label: GAME_TYPE_LABELS
+  string: Show [PS1]/[PS2] Labels
+
