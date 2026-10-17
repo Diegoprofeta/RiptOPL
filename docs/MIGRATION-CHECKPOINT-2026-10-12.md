@@ -1,5 +1,24 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: low-memory config/file IO from original #971
+
+Source comparison: original `eab6c37c`, destination `82a11663`. The local release
+review edits were superseded by merged #47 and preserved in recovery commit
+`3de7c3de`; they were not applied over newer migration work. Destination #48-#55
+already contain fades, config allocation safety, SIO2MAN/parental/logo-art ports,
+VMC budget/reuse, CJK fallback, type labels and About/QA layout.
+
+The next missing safety boundary is upstream #971: allocation failures must not
+truncate an existing config, buffered close must preserve the first real errno,
+and failed font/file reads must close descriptors. Adapt its four file-IO methods
+to the C++ source layout and skip unused MC/PFS verification snapshots, retaining
+ConfigSet, MC single-open behavior and existing failure recovery. The adapted
+fault-injection harness compiles the actual C++ bodies and fails on the old
+implementation. This is not a claim about the cause of a reported hardware error.
+
+The refreshed parity ledger records newer upstream work and remaining DESR/CF,
+RA/client/ORBIT/HTTPS, SaveIcon, docs/defaults and hardware acceptance tasks.
+
 Release publication is enabled for integration pushes to `rebuild/main`:
 `rolling-korium`, `rolling-ra`, and `rolling-incebtion`, all using ps2build/GCC.
 PRs remain previews. Manual dispatch with `publish=false` remains verification-only;
