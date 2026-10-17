@@ -1739,28 +1739,21 @@ struct UIItem diaAbout[] = {
     {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"darkladark - techwritescode (PSUManager) - ... and the anonymous ...", -1}}},
     {UI_BREAK},
 
-    {UI_BREAK},
-
     // Quality Assurance
     {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {NULL, _STR_QANDA}}},
     {UI_BREAK},
 
     {UI_SPACER},
-    // Blade1984 and zackcage6 sit here rather than in a fork-testers block of their own: the About
-    // cannot scroll (its only navigable control is the trailing OK, and diaRenderUI pins
-    // diaScrollOffset to 0 while focus is on the first control), so a new heading + name row pushed
-    // the content bottom from 367px to 442px -- past visibleBottom (gTheme->usedHeight - 40 = 440,
-    // and only 408 on a 448-line theme). That would have rendered the credit, and the OK button,
-    // off-screen. APPEND fork testers to an existing row; never add a row.
-    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"algol - Berion - Blade1984 - El_Patas - EP - gledson999 - jolek - lee4", -1}}},
+    // Keep QA names on short rows in the non-scrolling About dialog.
+    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"algol, Berion, Blade1984, El_Patas, EP, gledson999, jolek, lee4, Vapor", -1}}},
     {UI_BREAK},
 
     {UI_SPACER},
-    // 68 chars, still shorter than the 70-char row above it, so this stays inside the width the
-    // block already proved safe on a 448-line theme.
-    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"LocalH - RandQalan - ShaolinAssassin - yoshi314 - zero35 - zackcage6", -1}}},
+    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"LocalH, RandQalan, ShaolinAssassin, yoshi314, zero35, zackcage6", -1}}},
     {UI_BREAK},
 
+    {UI_SPACER},
+    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"Akilluminati47, eliminator", -1}}},
     {UI_BREAK},
 
     // Network update
@@ -1771,24 +1764,13 @@ struct UIItem diaAbout[] = {
     {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"icyson55", -1}}},
     {UI_BREAK},
 
-    // Financial Support (RiptOPL fork)
-    {UI_BREAK},
-    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {NULL, _STR_FINANCIAL_SUPPORT}}},
-    {UI_BREAK},
-
-    {UI_SPACER},
-    {UI_LABEL, 0, 1, 1, -1, 0, 15, {.label = {"Akilluminati47", -1}}},
-    {UI_BREAK},
-
     // Build Options
-    {UI_BREAK},
     {UI_LABEL, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_BUILD_DETAILS}}},
     {UI_SPACER},
     {UI_LABEL, ABOUT_BUILD_DETAILS, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
     {UI_BREAK},
 
     // Support details
-    {UI_BREAK},
     {UI_LABEL, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_FORUM_DETAILS}}},
     {UI_SPACER},
     {UI_LABEL, 0, 1, 1, -1, 0, 0, {.label = {"psx-place.com", -1}}},
