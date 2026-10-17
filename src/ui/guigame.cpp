@@ -308,7 +308,7 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, char *VMCName, int
                 if (vmc_check_layout) {
                     vmc_check_layout = 0;
                     coreLoader = guiGameResolveEffectiveCore(support, id);
-                    if (coreLoader != 1 &&
+                    if ((coreLoader == 2 ? gDefaultCoreLoader : coreLoader) != 1 &&
                         vmc_status.VMC_error == 0 && sysVMCContiguity() == 0)
                         guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, diaVMC);
                 }
