@@ -19,7 +19,7 @@ print("PASS: sbTitleCompatDefaults covers Beat Down: Fists of Vengeance across r
 
 # 2. Verify guiGameResolveEffectiveCore exists in src/ui/guigame.cpp and is called in VMC dialogs
 assert 'guiGameResolveEffectiveCore' in src_gui, "guiGameResolveEffectiveCore must exist in src/ui/guigame.cpp"
-assert 'coreLoader = guiGameResolveEffectiveCore(support, id);' in src_gui, "guiGameResolveEffectiveCore must update coreLoader in VMC paths"
+assert 'coreLoader = guiGameResolveEffectiveCore(configSet, support, id);' in src_gui, "guiGameResolveEffectiveCore must update coreLoader in VMC paths"
 
 print("PASS: guiGameResolveEffectiveCore resolves effective core in VMC dialogs")
 
@@ -75,8 +75,13 @@ static int testFragBudget(int isoFrags, int vmc0Frags, int vmc1Frags, neutrino_v
 
     if (total > NEUTRINO_BDM_MAX_FRAGS) {
         if (isoFrags <= NEUTRINO_BDM_MAX_FRAGS && (vmcFrags[0] > 0 || vmcFrags[1] > 0)) {
+            int only = -1;
+            for (int i = 0; i < NEUTRINO_VMC_SLOTS; i++)
+                if (vmcFrags[i] > 0 && total - vmcFrags[i] <= NEUTRINO_BDM_MAX_FRAGS &&
+                    (only < 0 || vmcFrags[i] < vmcFrags[only]))
+                    only = i;
             for (int i = 0; i < NEUTRINO_VMC_SLOTS && total > NEUTRINO_BDM_MAX_FRAGS; i++) {
-                if (vmcFrags[i] > 0) {
+                if (vmcFrags[i] > 0 && (only < 0 || i == only)) {
                     char vmcName[32];
                     const char *slash = strrchr(vmcPaths[i], '/');
                     const char *dot = strrchr(vmcPaths[i], '.');
@@ -133,6 +138,28 @@ int main(void) {
     strcpy(vmc.arg[0], "-mc0=mass0:/VMC/game_0.bin");
     vmc.arg[1][0] = '\0';
     assert(testFragBudget(65, 2, 0, &vmc, 0) == 0);
+
+    // Case 5: Selective dropping - dropping slot 1 alone fits budget (ISO=40, VMC0=2, VMC1=30, total=72)
+    // Slot 0 should be retained, slot 1 dropped. Only 1 prompt should appear.
+    strcpy(vmc.arg[0], "-mc0=mass0:/VMC/slot0.bin");
+    strcpy(vmc.arg[1], "-mc1=mass0:/VMC/slot1.bin");
+    msgBoxCalled = 0;
+    msgBoxResponse = 1;
+    assert(testFragBudget(40, 2, 30, &vmc, 0) == 1);
+    assert(msgBoxCalled == 1);
+    assert(strstr(lastMsgBox, "slot1") != NULL);
+    assert(vmc.arg[0][0] != '\0');
+    assert(vmc.arg[1][0] == '\0');
+
+    // Case 6: Both slots need to be dropped (ISO=60, VMC0=5, VMC1=5, total=70)
+    strcpy(vmc.arg[0], "-mc0=mass0:/VMC/slot0.bin");
+    strcpy(vmc.arg[1], "-mc1=mass0:/VMC/slot1.bin");
+    msgBoxCalled = 0;
+    msgBoxResponse = 1;
+    assert(testFragBudget(60, 5, 5, &vmc, 0) == 1);
+    assert(msgBoxCalled == 2);
+    assert(vmc.arg[0][0] == '\0');
+    assert(vmc.arg[1][0] == '\0');
 
     return 0;
 }
