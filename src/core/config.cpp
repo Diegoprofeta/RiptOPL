@@ -1543,9 +1543,8 @@ int configWrite(config_set_t *configSet)
         }
 
         // The write is NON-ATOMIC: openFileBuffer opens with O_TRUNC, emptying the existing good file
-        // BEFORE the new content is flushed. On flaky media (a wedged HDD -- the reported case) the
-        // flush -- or even openFileBuffer's own buffer malloc, AFTER openFile's O_TRUNC already
-        // emptied the file -- can fail, leaving a 0-byte config that reads back as all-defaults
+        // BEFORE the new content is flushed. Buffers now allocate before truncation, but a failed
+        // flush can still leave a 0-byte config that reads back as all-defaults
         // ("configuration appeared WIPED"); the old code cleared modified + returned success
         // regardless. PS2 filesystems lack reliable atomic rename (see system.c sysSyncNeutrinoIp), so
         // snapshot the current on-disk bytes first and restore them if the save fails for ANY reason.
@@ -1615,13 +1614,12 @@ int configWrite(config_set_t *configSet)
                 }
             }
 
-            // Capture the exact bytes about to be flushed, for the read-back verify below. The capture
-            // is COMPLETE only when nothing was flushed early (totalQueued == available) -- true for
-            // every real config (< 4 KB buffer). On a partial capture the rescue is skipped entirely;
-            // it never guesses.
+            // MC and PFS skip read-back verification: do not allocate an unused
+            // snapshot on these devices. Capture only a complete buffered write.
             char *intended = NULL;
             unsigned int intendedLen = 0;
-            if (fileBuffer->available > 0 && fileBuffer->totalQueued == fileBuffer->available) {
+            if (!singleOpenDevice && strncmp(configSet->filename(), "pfs", 3) != 0 &&
+                fileBuffer->available > 0 && fileBuffer->totalQueued == fileBuffer->available) {
                 intended = (char *)malloc(fileBuffer->available);
                 if (intended != NULL) {
                     memcpy(intended, fileBuffer->buffer, fileBuffer->available);
@@ -1680,8 +1678,7 @@ int configWrite(config_set_t *configSet)
         }
 
         if (!ok) {
-            // The save failed -- either openFileBuffer failed AFTER openFile's O_TRUNC emptied the
-            // file (OOM on the buffer alloc), or the flush itself failed post-truncate. Restore the
+            // The save failed; a flush failure can damage the file after truncation. Restore the
             // original bytes ONLY if the file is actually damaged now (shorter than the snapshot): a
             // plain open-failure leaves the file intact, and O_TRUNC+rewriting an intact file could
             // itself corrupt it on a second failure. Keep modified=1 so a later save retries, and

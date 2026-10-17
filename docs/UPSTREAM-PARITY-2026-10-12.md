@@ -1,6 +1,28 @@
 # C++/ps2build migration: production parity ledger
 
 Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+
+## Refresh at original `eab6c37c` (2026-10-17)
+
+Destination comparison base: `82a11663` (through merged destination PR #55).
+Release enablement and later work landed elsewhere while an older checkout was
+preserved locally; inspect current source before treating old ledger rows as gaps.
+
+| Original work | Current migration status |
+| --- | --- |
+| #971 low-memory config/file IO | Adapted in this continuation: allocate before truncation, retain the first write/close errno, close failed file reads, and skip unused MC/PFS verification snapshots. Actual C++ method fault injection fails on the old body and passes on the new one. No storage-driver or recovery-policy replacement. |
+| #962 SIO2MAN, #963/#966 parental locks, #964 logo-art control | Implementations and focused tests are present through destination #50; not reimplemented in this batch. |
+| #967 black handoff/video-mode fades | Present through destination #48. |
+| Config allocation/null wrappers | Destination #49 already guards the read/allocation boundary and ConfigSet free-function wrappers, with host tests. Do not redo the earlier #961 null-read report; audit settings-state behavior separately. |
+| #968/#970 VMC budget/config reuse | Present through destination #51/#52. |
+| #917 CJK fallback, #845 game-type labels, About/QA layout | Present through destination #53/#54/#55. |
+| #947 DESR/DVR and merged #955 PC CARD CF | Still require explicit C++ GameSource/platform comparison and adaptation. #955 is now merged upstream, no longer merely an open plan. Do not import #965's explicitly unmerged runtime replacement. |
+| Older #959, RA/browser/ORBIT/HTTPS, SaveIcon, defaults, docs | Continue capability-by-capability auditing; these newer ports do not establish full migration parity. Old rows below are historical comparison evidence, not a fresh absence claim. |
+
+All builds, release packages and hardware acceptance remain distinct gates.
+
+## Historical continuation records
+
 Merged original #959 (`2b838e09`) is partially adapted: PR #45 preserves EE
 pad-hook installation across IOP buffer invalidation and bounds masked scans.
 The next subset loads settings configuration in the foreground and resolves
