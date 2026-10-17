@@ -193,6 +193,7 @@ int gNeutrinoElfArg;         // default-on (settings key only, no UI): auto-emit
 int gDefaultGameView;
 int gAppsDisplay;
 int gCfgTitlesInLists;
+int gGameTypeLabels;
 int gEmberDisplay;
 int gEmberTiming;
 int gEmberDither;
@@ -1422,6 +1423,7 @@ static void setDefaults(void)
     gNeutrinoElfArg = 1; // auto-emit the game ELF for Neutrino compatibility lookup by default
     gPopstarterDevice = POPS_DEV_DEFAULT;
     gPopstarterRetroGemGameID = 1;
+    gGameTypeLabels = 0;
     // Nothing is set until the user changes it here, so no device's settings.txt is touched until asked.
     gEmberDisplay = EMBER_SETTING_UNSET;
     gEmberTiming = EMBER_SETTING_UNSET;
