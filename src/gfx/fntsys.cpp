@@ -100,7 +100,7 @@ void FontSystem::cacheFlush(font_t *font)
 int FontSystem::prepareGlyphCachePage(font_t *font, int pageid)
 {
     if (pageid > font->cacheMaxPageID) {
-        fnt_glyph_cache_entry_t **np = static_cast<fnt_glyph_cache_entry_t**>(realloc(font->glyphCache, (pageid + 1) * sizeof(fnt_glyph_cache_entry_t *)));
+        fnt_glyph_cache_entry_t **np = static_cast<fnt_glyph_cache_entry_t **>(realloc(font->glyphCache, (pageid + 1) * sizeof(fnt_glyph_cache_entry_t *)));
 
         if (!np)
             return 0;
@@ -119,7 +119,7 @@ int FontSystem::prepareGlyphCachePage(font_t *font, int pageid)
         return 1;
 
     // allocate the page
-    font->glyphCache[pageid] = static_cast<fnt_glyph_cache_entry_t*>(malloc(sizeof(fnt_glyph_cache_entry_t) * GLYPH_CACHE_PAGE_SIZE));
+    font->glyphCache[pageid] = static_cast<fnt_glyph_cache_entry_t *>(malloc(sizeof(fnt_glyph_cache_entry_t) * GLYPH_CACHE_PAGE_SIZE));
     if (!font->glyphCache[pageid])
         return 0; // out of memory: the caller treats this as "page not available" (it used to dereference NULL)
 
@@ -137,7 +137,7 @@ void FontSystem::prepareCLUT()
 {
     clut_.PSM = GS_PSM_T8;
     clut_.ClutPSM = GS_PSM_CT32;
-    clut_.Clut = static_cast<u32*>(memalign(128, 256 * 4));
+    clut_.Clut = static_cast<u32 *>(memalign(128, 256 * 4));
     clut_.VramClut = 0;
 
     // generate the clut table
@@ -183,6 +183,9 @@ void FontSystem::deleteSlot(font_t *font)
         free(font->dataPtr);
         font->dataPtr = NULL;
     }
+
+    if (fallbackFontId_ != FNT_ERROR && font == &fonts_[fallbackFontId_])
+        fallbackFontId_ = FNT_ERROR;
 
     font->isValid = 0;
     font->fontSize = 0;
@@ -261,8 +264,30 @@ void FontSystem::init()
     int i = 0;
     for (; i < FNT_MAX_COUNT; ++i)
         initSlot(&fonts_[i]);
+    fallbackFontId_ = FNT_ERROR;
 
     loadDefault(NULL);
+}
+
+// Keep this font independent of language and theme switching. Missing optional
+// font files are harmless: loadFile leaves the current default untouched.
+int FontSystem::loadFallback(char *path)
+{
+    if (path == NULL)
+        return FNT_ERROR;
+
+    // Called during language initialization, before theme files are admitted.
+    if (fallbackFontId_ != FNT_ERROR)
+        return 0;
+
+    int id = loadFile(path, FNTSYS_DEFAULT_SIZE);
+    if (id == FNT_ERROR)
+        return FNT_ERROR;
+
+    lock();
+    fallbackFontId_ = id;
+    unlock();
+    return 0;
 }
 
 int FontSystem::loadFile(char *path, int fontSize)
@@ -321,6 +346,7 @@ void FontSystem::end()
     lock();
     for (id = 0; id < FNT_MAX_COUNT; ++id)
         deleteSlot(&fonts_[id]);
+    fallbackFontId_ = FNT_ERROR;
     unlock();
 
     // deinit freetype system
@@ -382,6 +408,16 @@ int FontSystem::glyphAtlasPlace(font_t *font, fnt_glyph_cache_entry_t *glyph)
 /** Internal method. Makes sure the bitmap data for particular character are pre-rendered to the glyph cache */
 fnt_glyph_cache_entry_t *FontSystem::cacheGlyph(font_t *font, uint32_t gid)
 {
+    // Select a second face only for characters missing from the active font.
+    // The font mutex is held by every caller, including measurement. No I/O
+    // and no font switching occurs on the frame-rendering path.
+    if (gid >= 0x80 && fallbackFontId_ > FNT_DEFAULT &&
+        fallbackFontId_ < FNT_MAX_COUNT && font != &fonts_[fallbackFontId_] &&
+        fonts_[fallbackFontId_].isValid && fonts_[fallbackFontId_].face != NULL &&
+        font->face != NULL && FT_Get_Char_Index(font->face, gid) == 0 &&
+        FT_Get_Char_Index(fonts_[fallbackFontId_].face, gid) != 0)
+        font = &fonts_[fallbackFontId_];
+
     // calc page id and in-page index from glyph id
     int pageid = gid / GLYPH_CACHE_PAGE_SIZE;
     int idx = gid % GLYPH_CACHE_PAGE_SIZE;
@@ -939,6 +975,11 @@ void fntEnd()
 int fntLoadFile(char *path, int fontSize)
 {
     return gFonts.loadFile(path, fontSize);
+}
+
+int fntLoadFallback(char *path)
+{
+    return gFonts.loadFallback(path);
 }
 
 int fntLoadDefault(char *path)

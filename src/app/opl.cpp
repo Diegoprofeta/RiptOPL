@@ -25,8 +25,8 @@
 #include "include/menusys.h"
 #include "include/system.h"
 #include "include/debug.h"
-#ifdef __OPLDIAG
 #include "include/fntsys.h"
+#ifdef __OPLDIAG
 #include <delaythread.h>
 #endif
 #include "include/config.h"
@@ -1235,6 +1235,7 @@ void deinitEx(int exception, int modeSelected, int modeSelected2)
     guiEnd();
     menuEnd();
     lngEnd();
+    fntEnd();
     thmEnd();
     rmEnd();
     configEnd();
@@ -1312,6 +1313,7 @@ void deinit(int exception, int modeSelected)
     guiEnd();
     menuEnd();
     lngEnd();
+    fntEnd();
     thmEnd();
     rmEnd();
     configEnd();
