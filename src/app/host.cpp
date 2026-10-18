@@ -34,6 +34,7 @@ public:
         guiMsgBox(text, 0, NULL);
     }
     void warning(const char *text, int count) override { guiWarning(text, count); }
+    void missingFileId(int strId, const char *path) override { missingFile(_l(strId), path); }
     void warningId(int strId, int count) override { guiWarning(_l(strId), count); }
     void raNotice(const char *line1, const char *line2) override
     {

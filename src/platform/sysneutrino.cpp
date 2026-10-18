@@ -367,7 +367,7 @@ static int sysNeutrinoDvrPreflight(const char *neutrinoPath, const char *extraAr
 
     const char *slash = sysLastPathSeparator(neutrinoPath);
     if (slash == NULL) {
-        host::ui().missingFile(_l(_STR_NEUTRINO_DVR_FILE_MISSING), neutrinoPath);
+        host::ui().missingFileId(_STR_NEUTRINO_DVR_FILE_MISSING, neutrinoPath);
         return -1;
     }
     const int dirLen = (int)(slash - neutrinoPath);
@@ -377,7 +377,7 @@ static int sysNeutrinoDvrPreflight(const char *neutrinoPath, const char *extraAr
         int n = i < 0 ? snprintf(path, sizeof(path), "%.*s%cconfig%cbsd-dvr.toml", dirLen, neutrinoPath, *slash, *slash) :
                         snprintf(path, sizeof(path), "%.*s%cmodules%c%s", dirLen, neutrinoPath, *slash, *slash, modules[i]);
         if (n < 0 || n >= (int)sizeof(path)) {
-            host::ui().missingFile(_l(_STR_NEUTRINO_DVR_FILE_MISSING), path);
+            host::ui().missingFileId(_STR_NEUTRINO_DVR_FILE_MISSING, path);
             return -1;
         }
         int fd = open(path, O_RDONLY);
@@ -387,7 +387,7 @@ static int sysNeutrinoDvrPreflight(const char *neutrinoPath, const char *extraAr
                 fd = open(path, O_RDONLY);
         }
         if (fd < 0) {
-            host::ui().missingFile(_l(_STR_NEUTRINO_DVR_FILE_MISSING), path);
+            host::ui().missingFileId(_STR_NEUTRINO_DVR_FILE_MISSING, path);
             return -1;
         }
         close(fd);

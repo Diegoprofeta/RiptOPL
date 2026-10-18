@@ -38,6 +38,7 @@ struct NullUi final: UiServices
 {
     int msgBox(const char *, int, struct UIItem *) override { return 0; }
     void missingFile(const char *, const char *) override {}
+    void missingFileId(int, const char *) override {}
     void warning(const char *, int) override {}
     void warningId(int, int) override {}
     void raNotice(const char *, const char *) override {}

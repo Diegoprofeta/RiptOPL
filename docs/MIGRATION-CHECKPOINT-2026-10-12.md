@@ -26,6 +26,14 @@ must complete before merge. Original preflight at `eab6c37c` was exercised with
 the same file mocks: `-qb` returned -1 with no opens; active `-bsdfs=bd`
 returned 0 after four companion opens. The new preflight refuses both.
 
+PR #57 CI follow-up: GCC and LLVM compilation succeeded, but both jobs failed
+the coupling gate because the DVR missing-file messages called `_l` directly
+from the platform layer. Added `UiServices::missingFileId`, implemented by the
+application UI and mirrored in host fixtures, so translation stays above the
+platform layer. The coupling baseline is unchanged and its check now passes;
+DVR, filesystem-preflight and argv tests pass with the interface correction.
+CI must rerun on the follow-up commit; the native SHA above predates this fix.
+
 ## Current continuation: low-memory config/file IO from original #971
 
 Source comparison: original `eab6c37c`, destination `82a11663`. The local release
