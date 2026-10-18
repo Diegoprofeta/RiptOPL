@@ -1279,6 +1279,7 @@ static void menuFolderResetLeaving(struct menu_list *leaving)
 
 static void menuNextH()
 {
+    raii::SemaLock lock(menuSemaId);
     struct menu_list *next = selected_item->next;
     while (next != NULL && next->item->visible == 0)
         next = next->next;
@@ -1295,6 +1296,7 @@ static void menuNextH()
 
 static void menuPrevH()
 {
+    raii::SemaLock lock(menuSemaId);
     struct menu_list *prev = selected_item->prev;
     while (prev != NULL && prev->item->visible == 0)
         prev = prev->prev;

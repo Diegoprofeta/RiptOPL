@@ -1,5 +1,19 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## PR #58 review follow-up
+
+Address CodeRabbit review 5562101248: horizontal tab navigation now takes
+menuSemaId across selected-row/invalidation updates. The input path does not
+already hold that lock; folder reset does not reacquire it, and IO enqueue uses
+the queue's short-lived end semaphore rather than its processing semaphore.
+The prefetch fixture now executes its recorded callback, exercises the waiter
+callback, and checks lock ownership, hidden-tab skipping and generation changes.
+
+Python syntax validation passes. Local C++ reruns encountered WSL service
+E_UNEXPECTED before test execution; do not claim those runs passed. Linux CI
+must validate this follow-up before merge. Prior revision's full local host and
+native results remain historical evidence only.
+
 ## Current continuation: browse-config generation ownership from original #959
 
 Independent branch `codex/config-prefetch-generation`, based on merged #56

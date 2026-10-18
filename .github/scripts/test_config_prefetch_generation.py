@@ -12,7 +12,7 @@ def function(signature):
 
 methods = "\n".join(function(s) for s in (
     "static void _menuLoadConfigAsync()", "static void _menuRequestConfig()",
-    "void menuInvalidateConfig()",
+    "void menuInvalidateConfig()", "static void menuNextH()", "static void menuPrevH()",
 ))
 program = r'''
 #include <cassert>
@@ -21,15 +21,17 @@ program = r'''
 struct config_set_t { int serial; };
 struct item_list_t { int delay; } first{1}, second{1};
 struct Row { struct { int id; } item; } row{{1}};
-struct Item { void *userdata; Row *current; } item{&first,&row};
-struct Menu { Item *item; } menu{&item};
+struct Item { void *userdata; Row *current; int visible=1; } item{&first,&row};
+struct menu_list { Item *item; menu_list *next=nullptr, *prev=nullptr; };
+using Menu=menu_list;
+static Menu menu{&item};
 static Menu *selected_item=&menu;
 static config_set_t *itemConfig;
 static item_list_t *itemConfigList;
 static int itemConfigId=-1, menuSemaId, actionStatus, guiInactiveFrames=9, depth;
 static unsigned char itemConfigWorkerPending;
 static unsigned int itemConfigGeneration;
-static int reads, frees, queues, scenario;
+static int reads, frees, queues, scenario, waiterCalls, moves;
 static bool failQueue, failRead;
 static std::vector<void *> pending;
 constexpr int IO_CUSTOM_SIMPLEACTION=1, IO_OK=0;
@@ -37,7 +39,10 @@ static void WaitSema(int) { assert(depth++==0); }
 static void SignalSema(int) { assert(--depth==0); }
 namespace raii { struct SemaLock { int id; SemaLock(int n):id(n) {WaitSema(id);} ~SemaLock(){SignalSema(id);} }; }
 static void configFree(config_set_t *p) { assert(p); ++frees; delete p; }
-static void _menuLoadConfig() {}
+static void _menuLoadConfig() { assert(!depth); ++waiterCalls; actionStatus=0; }
+static void menuFolderResetLeaving(Menu *) { assert(depth==1); ++moves; }
+constexpr int SFX_CURSOR=1;
+static void sfxPlay(int sound) { assert(depth==1 && sound==SFX_CURSOR); }
 static void _menuRequestConfig();
 static void menuInvalidateConfig();
 static int ioPutRequest(int type,void *fn) { assert(!depth && type==IO_CUSTOM_SIMPLEACTION); ++queues; if(failQueue)return -1; pending.push_back(fn); return IO_OK; }
@@ -60,7 +65,12 @@ static void reset() {
     row.item.id=1; item.userdata=&first; item.current=&row; menu.item=&item; selected_item=&menu;
     actionStatus=0; guiInactiveFrames=9; reads=frees=queues=scenario=0; failQueue=failRead=false; pending.clear();
 }
-static void run() { assert(pending.size()==1); pending.clear(); _menuLoadConfigAsync(); assert(!itemConfigWorkerPending && !depth); }
+static void run() {
+    assert(pending.size()==1);
+    auto callback=reinterpret_cast<void (*)()>(pending.front());
+    pending.clear(); callback();
+    assert(!itemConfigWorkerPending && !depth);
+}
 int main() {
     reset(); _menuRequestConfig(); _menuRequestConfig(); assert(queues==1); run();
     assert(reads==1 && itemConfig && itemConfig->serial==1); _menuRequestConfig(); assert(queues==1);
@@ -78,6 +88,16 @@ int main() {
     reset(); _menuRequestConfig(); selected_item=nullptr; run(); assert(!reads && !itemConfig);
     reset(); _menuRequestConfig(); actionStatus=7; run(); assert(actionStatus==7); // browse worker cannot release a dialog waiter
     reset(); itemConfigList=&first; itemConfigId=0; guiInactiveFrames=0; _menuRequestConfig(); assert(!queues);
+    reset(); actionStatus=1; _menuRequestConfig(); run();
+    assert(waiterCalls==1 && !reads && !actionStatus);
+    reset(); Item hiddenItem{&first,&row,0}, lastItem{&second,&row,1};
+    Menu hidden{&hiddenItem}, last{&lastItem};
+    menu.next=&hidden;hidden.prev=&menu;hidden.next=&last;last.prev=&hidden;
+    auto generation=itemConfigGeneration;
+    menuNextH(); assert(selected_item==&last && itemConfigId==-1 && itemConfigGeneration==generation+1 && moves==1);
+    menuNextH(); assert(selected_item==&last && itemConfigGeneration==generation+1 && !depth);
+    menuPrevH(); assert(selected_item==&menu && itemConfigGeneration==generation+2 && moves==2 && !depth);
+    menu.next=nullptr;
     reset(); puts("PASS: one browse worker, latest target, ABA invalidation, refusal retry and waiter isolation");
 }
 '''.replace("@METHODS@", methods)
