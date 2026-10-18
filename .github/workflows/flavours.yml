@@ -60,6 +60,7 @@ jobs:
         run: |
           python3 .github/scripts/test_vmc_preserve_existing.py
           python3 .github/scripts/test_bdm_private_allocation.py
+          python3 .github/scripts/test_ilink_readiness.py
       - name: Check image cache, menu allocation and queue lifetime failures
         run: |
           python3 .github/scripts/test_cache_allocation.py
