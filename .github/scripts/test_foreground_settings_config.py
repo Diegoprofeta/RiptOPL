@@ -37,6 +37,7 @@ struct Menu { Item *item; } menu;
 static Menu *selected_item = &menu;
 static config_set_t *itemConfig;
 static item_list_t *itemConfigList;
+static unsigned int itemConfigGeneration;
 static int itemConfigId = -1, actionStatus, menuSemaId, depth, reads, frees, flushes;
 static int guiInactiveFrames, ownerMode, mmceCancels, otherCancels;
 static bool failRead, duplicate, switchList;

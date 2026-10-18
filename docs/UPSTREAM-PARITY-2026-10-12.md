@@ -40,7 +40,7 @@ All builds, release packages and hardware acceptance remain distinct gates.
 Merged original #959 (`2b838e09`) is partially adapted: PR #45 preserves EE
 pad-hook installation across IOP buffer invalidation and bounds masked scans.
 The next subset loads settings configuration in the foreground and resolves
-Favorites source-device bus policy. Async queue generations/deduplication,
+Favorites source-device bus policy. Async queue generations/deduplication are adapted in the current prefetch port;
 failed/null settings consumers and assembly GP/register handling remain open.
 PRs #18/#19 and the full site import #17 are merged; Pages and the independent
 wiki import are published. GCC/LLVM, host gates and all three complete release
