@@ -2,6 +2,21 @@
 
 Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
 
+## EE hook context prerequisite (2026-10-18)
+
+Independent base merged #58 `1c4822fc`; upstream reference `b35ff38c`.
+Port only `_SifSetDma`, `Hook_ExecPS2` and `Hook_CreateThread` GP/register
+context from the original assembly. Load EE core `_gp` before entering C;
+returning DMA/thread hooks restore caller GP/SP/RA, and the thread hook also
+preserves argument/temporary registers across hook discovery. Keep DMA's C
+return value. ExecPS2 retains its non-returning register-scrub behavior.
+
+A source-instruction fixture models delay slots, C-call register clobbers,
+stack-frame bounds, bypass paths, forwarded arguments and DMA return values.
+It fails on the old GP context and passes with the port. This model is not
+native instruction execution or console evidence. GCC/LLVM assembly/link and
+hardware behavior remain distinct checks. No alarm-sampling or shutdown change.
+
 ## Refresh at original `eab6c37c` (2026-10-17)
 
 Destination comparison base: `82a11663` (through merged destination PR #55).

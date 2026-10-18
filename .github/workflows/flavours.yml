@@ -31,6 +31,7 @@ jobs:
           python3 .github/scripts/test_install_ports.py
           python3 .github/scripts/test_reset_failure_lifecycle.py
           python3 .github/scripts/test_igr_pad_lifetime.py
+          python3 .github/scripts/test_ee_hook_context.py
           python3 .github/scripts/test_pad_hook_cache.py
           python3 .github/scripts/test_pad_pattern_bounds.py
           python3 .github/scripts/test_foreground_settings_config.py
