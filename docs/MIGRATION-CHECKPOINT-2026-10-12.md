@@ -34,6 +34,14 @@ platform layer. The coupling baseline is unchanged and its check now passes;
 DVR, filesystem-preflight and argv tests pass with the interface correction.
 CI must rerun on the follow-up commit; the native SHA above predates this fix.
 
+The UI-service revision `828507c5` also passed native LLVM RA build (ELF
+SHA-256 `ae694e359044bcaa4cecd2d6b6650f38a59e7554d7a1bb9e8ead8df1e3528292`).
+A full host rerun exposed an existing release-note fixture timing race: Git
+commits with equal timestamps can omit the branch fix from the ten-entry
+history. The fixture now assigns distinct ordered dates; release-note
+production behavior is unchanged. Repeated fixture runs and full-suite rerun
+are required for this follow-up.
+
 ## Current continuation: low-memory config/file IO from original #971
 
 Source comparison: original `eab6c37c`, destination `82a11663`. The local release
