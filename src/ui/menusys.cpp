@@ -92,6 +92,9 @@ static config_set_t *itemConfig;
 // list, so (id == id) across two tabs is not the same game/config. This also lets X/Triangle safely
 // reuse the browse-prefetched config instead of forcing a second device read.
 static item_list_t *itemConfigList;
+// Protected by menuSemaId; generations distinguish invalidation followed by the same list/id.
+static unsigned char itemConfigWorkerPending;
+static unsigned int itemConfigGeneration;
 // One Info/#Size worker at a time, with a latest-wins target. Repeated enter/back/enter on the
 // SAME row does not queue duplicate CFG+stat reads; moving to another row while one is active replaces
 // the requested target and the worker loops to that newest row before releasing its latch.
@@ -268,38 +271,45 @@ static void _menuLoadConfig()
 // as _menuResolveInfoSize below.
 static void _menuLoadConfigAsync()
 {
-    item_list_t *list = NULL;
-    config_set_t *loadedConfig = NULL;
-    int configId = -1;
-
-    WaitSema(menuSemaId);
-    if (itemConfig == NULL && selected_item != NULL && selected_item->item != NULL && itemConfigId >= 0) {
-        list = static_cast<item_list_t *>(selected_item->item->userdata);
-        configId = itemConfigId;
+    for (;;) {
+        item_list_t *list = NULL;
+        config_set_t *loadedConfig = NULL;
+        int configId = -1;
+        unsigned int generation;
+        {
+            raii::SemaLock lock(menuSemaId);
+            if (itemConfig == NULL && itemConfigId >= 0 && selected_item != NULL &&
+                selected_item->item != NULL && selected_item->item->current != NULL &&
+                selected_item->item->userdata == itemConfigList &&
+                selected_item->item->current->item.id == itemConfigId) {
+                list = itemConfigList;
+                configId = itemConfigId;
+            }
+            generation = itemConfigGeneration;
+        }
+        if (list != NULL) {
+            loadedConfig = gsOf(list)->config(list, configId);
+            {
+                raii::SemaLock lock(menuSemaId);
+                if (loadedConfig != NULL && itemConfig == NULL && itemConfigGeneration == generation &&
+                    itemConfigId == configId && itemConfigList == list && selected_item != NULL &&
+                    selected_item->item != NULL && selected_item->item->current != NULL &&
+                    selected_item->item->userdata == list && selected_item->item->current->item.id == configId) {
+                    itemConfig = loadedConfig;
+                    loadedConfig = NULL;
+                }
+            }
+            if (loadedConfig != NULL)
+                configFree(loadedConfig);
+        }
+        raii::SemaLock lock(menuSemaId);
+        if (itemConfigGeneration == generation) {
+            itemConfigWorkerPending = 0;
+            return;
+        }
+        // The target changed during IO. Keep the latch and process the newest target
+        // directly instead of queuing a second worker behind unrelated device work.
     }
-    SignalSema(menuSemaId);
-
-    // Nothing wanted (already cached, or the id was invalidated while this request sat in the
-    // queue). Deliberately does NOT touch actionStatus: this variant is only ever queued when no
-    // waiter exists, and a dialog that armed one in the meantime queues its own _menuLoadConfig.
-    if (list == NULL)
-        return;
-
-    loadedConfig = gsOf(list)->config(list, configId);
-
-    // Publish only if this is still exactly what the menu wants. The id alone is NOT enough: ids are
-    // per-list indices, so a tab switch mid-read yields the same number from a different device --
-    // re-check the owning list too, or device A's per-game config lands on device B's row.
-    WaitSema(menuSemaId);
-    if (loadedConfig != NULL && itemConfig == NULL && itemConfigId == configId && itemConfigList == list &&
-        selected_item != NULL && selected_item->item != NULL && selected_item->item->userdata == list) {
-        itemConfig = loadedConfig;
-        loadedConfig = NULL;
-    }
-    SignalSema(menuSemaId);
-
-    if (loadedConfig != NULL)
-        configFree(loadedConfig); // lost the race -- drop it, never publish another row's config
 }
 
 // True while this request is still the newest target AND its row is still the selected one.
@@ -343,6 +353,7 @@ static void menuResolveInfoSizeRequest(item_list_t *list, int configId, unsigned
             itemConfig = loadedConfig;
             itemConfigId = configId;
             itemConfigList = list;
+            itemConfigGeneration++;
             loadedConfig = NULL;
         }
     }
@@ -451,6 +462,7 @@ static void _menuSaveConfig()
     WaitSema(menuSemaId);
     result = configWrite(itemConfig);
     itemConfigId = -1;       // to invalidate cache and force reload
+    itemConfigGeneration++;
     menuSaveResult = result; // publish BEFORE actionStatus=0 -- that flag is the waiter's release signal
     actionStatus = 0;
     SignalSema(menuSemaId);
@@ -490,13 +502,19 @@ static void _menuRequestConfig()
             itemConfig = NULL;
         }
         item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
-        if (itemConfigId == -1 || guiInactiveFrames >= list->delay) {
+        if (waiterPending || itemConfigId == -1 || guiInactiveFrames >= list->delay) {
             itemConfigId = selected_item->item->current->item.id;
             itemConfigList = list;
-            shouldQueueLoad = 1;
+            itemConfigGeneration++;
+            if (waiterPending || !itemConfigWorkerPending) {
+                if (!waiterPending)
+                    itemConfigWorkerPending = 1;
+                shouldQueueLoad = 1;
+            }
         } else
             actionStatus = 0; // still settling: nothing queued, so release the waiter now
     } else if (itemConfig == NULL && actionStatus != 0) {
+        itemConfigGeneration++;
         shouldQueueLoad = 1; // right row, but its config never landed -- ask again
     } else
         actionStatus = 0;
@@ -506,8 +524,11 @@ static void _menuRequestConfig()
     // Queue OUTSIDE the sema: both load variants take it too.
     if (shouldQueueLoad && ioPutRequest(IO_CUSTOM_SIMPLEACTION, waiterPending ? (void *)&_menuLoadConfig : (void *)&_menuLoadConfigAsync) != IO_OK) {
         WaitSema(menuSemaId);
+        if (!waiterPending)
+            itemConfigWorkerPending = 0;
         if (itemConfig == NULL) {
             itemConfigId = -1; // let the next pass retry rather than caching a row that never loaded
+            itemConfigGeneration++;
             itemConfigList = NULL;
         }
         actionStatus = 0;
@@ -549,6 +570,7 @@ config_set_t *menuLoadConfig()
             }
             itemConfigId = configId;
             itemConfigList = list;
+            itemConfigGeneration++;
         }
     } else {
         if (itemConfig != NULL) {
@@ -556,6 +578,7 @@ config_set_t *menuLoadConfig()
             itemConfig = NULL;
         }
         itemConfigId = -1;
+        itemConfigGeneration++;
         itemConfigList = NULL;
     }
     actionStatus = 0;
@@ -602,6 +625,7 @@ config_set_t *menuTakeLaunchConfig(config_set_t *expected, item_list_t *list, in
         owned = itemConfig;
         itemConfig = NULL;
         itemConfigId = -1;
+        itemConfigGeneration++;
         itemConfigList = NULL;
     }
     SignalSema(menuSemaId);
@@ -612,6 +636,7 @@ void menuInvalidateConfig()
 {
     WaitSema(menuSemaId);
     itemConfigId = -1; // a modal launch may have persisted after an old prefetch completed
+    itemConfigGeneration++;
     SignalSema(menuSemaId);
 }
 
@@ -779,8 +804,10 @@ void menuInit()
     menu = NULL;
     selected_item = NULL;
     itemConfigId = -1;
+    itemConfigGeneration++;
     itemConfig = NULL;
     itemConfigList = NULL;
+    itemConfigWorkerPending = 0;
     infoSizeWorkerPending = 0;
     infoSizeRequestList = NULL;
     infoSizeRequestId = -1;
@@ -1252,6 +1279,7 @@ static void menuFolderResetLeaving(struct menu_list *leaving)
 
 static void menuNextH()
 {
+    raii::SemaLock lock(menuSemaId);
     struct menu_list *next = selected_item->next;
     while (next != NULL && next->item->visible == 0)
         next = next->next;
@@ -1261,12 +1289,14 @@ static void menuNextH()
         menuFolderResetLeaving(selected_item);
         selected_item = next;
         itemConfigId = -1;
+        itemConfigGeneration++;
         sfxPlay(SFX_CURSOR);
     }
 }
 
 static void menuPrevH()
 {
+    raii::SemaLock lock(menuSemaId);
     struct menu_list *prev = selected_item->prev;
     while (prev != NULL && prev->item->visible == 0)
         prev = prev->prev;
@@ -1275,6 +1305,7 @@ static void menuPrevH()
         menuFolderResetLeaving(selected_item);
         selected_item = prev;
         itemConfigId = -1;
+        itemConfigGeneration++;
         sfxPlay(SFX_CURSOR);
     }
 }

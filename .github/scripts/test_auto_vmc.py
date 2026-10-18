@@ -190,6 +190,7 @@ struct menu_item {void *userdata=nullptr;row *current=nullptr;};
 struct opl_io_module_t {item_list_t *support;};
 static config_set_t config,replacement,*itemConfig;
 static item_list_t support,*itemConfigList;
+static unsigned int itemConfigGeneration;
 static int itemConfigId,menuSemaId=1,sema=1,launches,autoCalls,autoResult=1,mutation,gameIds;
 static menu_item menu;
 static row selected;

@@ -42,6 +42,42 @@ history. The fixture now assigns distinct ordered dates; release-note
 production behavior is unchanged. Repeated fixture runs and full-suite rerun
 are required for this follow-up.
 
+## PR #58 review follow-up
+
+Address CodeRabbit review 5562101248: horizontal tab navigation now takes
+menuSemaId across selected-row/invalidation updates. The input path does not
+already hold that lock; folder reset does not reacquire it, and IO enqueue uses
+the queue's short-lived end semaphore rather than its processing semaphore.
+The prefetch fixture now executes its recorded callback, exercises the waiter
+callback, and checks lock ownership, hidden-tab skipping and generation changes.
+
+Python syntax validation passes. Local C++ reruns encountered WSL service
+E_UNEXPECTED before test execution; do not claim those runs passed. Linux CI
+must validate this follow-up before merge. Prior revision's full local host and
+native results remain historical evidence only.
+
+## Current continuation: browse-config generation ownership from original #959
+
+Independent branch `codex/config-prefetch-generation`, based on merged #56
+`b56e0b19`; pending DVR PR #57 remains separate. Original comparison is still
+`eab6c37c`. Adapt #959's remaining single browse-worker latch and latest-target
+loop through C++ GameSource and scoped semaphore locks. Reads run outside the
+menu lock. Publish requires the same generation, owning list and selected row;
+row/tab invalidation and launch ownership changes invalidate older reads.
+Foreground settings remain direct rather than being sent back to the IO queue.
+
+The actual-method ASan/UBSan fixture covers repeated requests, row/tab changes,
+A-to-B-to-A changes, explicit invalidation, stale cursor reads, queue refusal,
+read failure/retry and dialog-waiter isolation. The old implementation fails
+this fixture; the adapted worker passes. Native LLVM RA passed (ELF SHA-256
+`96e0c63ebe59d896b850ba53ad70bbe2c244ccc31057e30802fd62ea8e1346d7`).
+The first full host run exposed the VMC extraction fixture missing the new
+generation state; its fixture declaration is updated. Final validation passes all 78 Python
+host tests, HTTP tests and seven C++ host suites. The coupling gate passes
+without changing its baseline.
+This does not establish device latency, menu shutdown ownership, full #959
+assembly parity or console acceptance. No SDK deficiency has been identified.
+
 ## Current continuation: low-memory config/file IO from original #971
 
 Source comparison: original `eab6c37c`, destination `82a11663`. The local release
