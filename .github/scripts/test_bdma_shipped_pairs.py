@@ -43,6 +43,7 @@ int main() {
             if(other!=mode)assert(!vcdBdmaManualPairMatches(other));
         markerMode=0;assert(!vcdBdmaEnvironmentValid(mode));
         ++pairSize[1];assert(!vcdBdmaManualPairMatches(mode));
+        pairSize[1]-=2;assert(!vcdBdmaManualPairMatches(mode));
         pairSize[1]=-1;assert(!vcdBdmaManualPairMatches(mode));
         markerMode=mode;assert(!vcdBdmaEnvironmentValid(mode));
     }
