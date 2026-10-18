@@ -1491,9 +1491,20 @@ static const bdma_pair_sig_t vcdBdmaPairSig[VCD_BDMA_MODE_COUNT] = {
     {48500, 14993}, // mx4sio
     {11841, 19733}, // mmce
     {42749, 21837}, // ata
-    {48500, 23452}, // iLink
+    {48500, 21609}, // iLink
     {76365, 34508}  // UDPFS Alpha
 };
+
+// Keep recognizing the older iLink pair accepted before the shipped-size fix.
+// This preserves the existing size-based policy; it does not authenticate a module.
+static int vcdBdmaPairMatches(int mode, int usbdSize, int hdfsdSize)
+{
+    if (mode <= VCD_BDMA_FAT32 || mode >= VCD_BDMA_MODE_COUNT)
+        return 0;
+    if (usbdSize == vcdBdmaPairSig[mode].usbdSize && hdfsdSize == vcdBdmaPairSig[mode].hdfsdSize)
+        return 1;
+    return mode == VCD_BDMA_ILINK && usbdSize == 48500 && hdfsdSize == 23452;
+}
 
 // Returns file size in bytes, or -1 if absent / unreadable.
 static int vcdGetFileSize(const char *path)
@@ -1537,10 +1548,7 @@ static int vcdBdmaEnvironmentValid(int mode)
     if (vcdReadBdmaMode() != mode)
         return 0;
 
-    if (sz0 != vcdBdmaPairSig[mode].usbdSize || sz1 != vcdBdmaPairSig[mode].hdfsdSize)
-        return 0;
-
-    return 1;
+    return vcdBdmaPairMatches(mode, sz0, sz1);
 }
 
 // Check if an unmarked manual pair on the card matches the requested family.
@@ -1568,10 +1576,7 @@ static int vcdBdmaManualPairMatches(int mode)
     int sz1 = vcdGetFileSize(p1);
 
     // Positively identify if the unmarked pair belongs to the requested mode
-    if (sz0 == vcdBdmaPairSig[mode].usbdSize && sz1 == vcdBdmaPairSig[mode].hdfsdSize)
-        return 1;
-
-    return 0;
+    return vcdBdmaPairMatches(mode, sz0, sz1);
 }
 
 // Best-effort auto-equip of the device-matching BDMA driver before a VCD launch (POPSLoader's
