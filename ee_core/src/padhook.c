@@ -482,11 +482,10 @@ static void Set_libpad_Params(void *addr)
 // Install IGR thread, and Pad interrupt handler
 void Install_IGR(void)
 {
-    ee_thread_t thread_param;
-
     // Initialize only on first installation. Reset interception and pad reopen
     // must not erase a pending combo or an in-progress power-button sequence.
     if (IGR_Thread_ID < 0) {
+        ee_thread_t thread_param = {0};
         Power_Button.press = 0;
         Power_Button.vb_count = 0;
         Pad_Data.pad_buf = NULL;
@@ -502,13 +501,20 @@ void Install_IGR(void)
         thread_param.initial_priority = 127;
         IGR_Thread_ID = CreateThread(&thread_param);
 
-        StartThread(IGR_Thread_ID, NULL);
+        if (IGR_Thread_ID >= 0 && StartThread(IGR_Thread_ID, NULL) < 0) {
+            DeleteThread(IGR_Thread_ID);
+            IGR_Thread_ID = -1;
+        }
     }
 
-    if (IGR_Intc_ID < 0) {
-        // Create IGR interrupt handler
-        IGR_Intc_ID = AddIntcHandler(kINTC_VBLANK_END, IGR_Intc_Handler, 0);
-        EnableIntc(kINTC_VBLANK_END);
+    // Never arm a callback whose shutdown worker failed to start. Failed
+    // registration remains retryable on the next pad-open, without a duplicate worker.
+    if (IGR_Thread_ID >= 0 && IGR_Intc_ID < 0) {
+        int handler = AddIntcHandler(kINTC_VBLANK_END, IGR_Intc_Handler, 0);
+        if (handler >= 0) {
+            IGR_Intc_ID = handler;
+            EnableIntc(kINTC_VBLANK_END);
+        }
     }
 }
 
