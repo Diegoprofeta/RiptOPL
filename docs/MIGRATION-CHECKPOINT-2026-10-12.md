@@ -1,5 +1,31 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: DVR external-core launch contract
+
+Base: merged #56 at `b56e0b19`; original comparison remains `eab6c37c`.
+Adapt the safely host-testable launch subset of #947/#955 through the C++ host
+UI interface: exact DVR backend mapping, companion-file preflight, no automatic
+quickboot/logo/raw-filesystem override, and bounded argv composition. DVR also
+rejects active user backend overrides before teardown, avoiding a last-token
+replacement of its filesystem contract. Existing argument-scope behavior stays
+intact. Actual-method preflight tests cover refusal paths and descriptor cleanup;
+the actual argv builder verifies the DVR filesystem tuple.
+
+This does not enable discovery, load drivers, mount partitions or expose DVR
+game rows. The later GameSource/platform port must preserve read-only discovery
+and mount ownership, use a matching DVR-capable companion and retain a hardware
+acceptance gate. Installed SDK `dvr`/`dvrfile` packages exist; absence of a custom
+PCCF package is not a confirmed SDK deficiency. See docs/DESR-DVR.md.
+
+Validation for this checkpoint: all 78 Python host tests, the HTTP tests and
+seven C++ host suites passed. Native ps2build LLVM RetroAchievements linked,
+stripped and packed successfully after language regeneration; its ELF SHA-256
+is `73de2ea70739a2d8effec968c596cab3e41ccce750b2818467fbe596a4f7d789`.
+This is local build evidence, not console acceptance. GitHub checks and review
+must complete before merge. Original preflight at `eab6c37c` was exercised with
+the same file mocks: `-qb` returned -1 with no opens; active `-bsdfs=bd`
+returned 0 after four companion opens. The new preflight refuses both.
+
 ## Current continuation: low-memory config/file IO from original #971
 
 Source comparison: original `eab6c37c`, destination `82a11663`. The local release

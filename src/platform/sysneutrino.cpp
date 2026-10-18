@@ -87,6 +87,8 @@ static const char *getDeviceName(const char *driver)
         return "apa";
     if (!strcmp(driver, "mmce"))
         return "mmce";
+    if (!strcmp(driver, "dvr"))
+        return "dvr";
     if (!strcmp(driver, "udp"))
         // Both BLOCK transports register the "udp" BDM token; the RESIDENT protocol picks the Neutrino
         // backing store: -bsd=udpbd (smap_udpbd / SUDPBDv2) vs -bsd=udpfsbd (the udpfs_bd UDPRDMA toml).
@@ -241,7 +243,7 @@ static int neutrinoEffectiveBsdfs(const char *deviceName, int neutrinoBsdfs, con
             p = end;
         }
     }
-    if (!strcmp(deviceName, "mmce") || !strcmp(deviceName, "udpfs"))
+    if (!strcmp(deviceName, "mmce") || !strcmp(deviceName, "udpfs") || !strcmp(deviceName, "dvr"))
         return 0;
     if (typed)
         return value;
@@ -347,6 +349,52 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
     return 0;
 }
 
+static int sysNeutrinoDvrPreflight(const char *neutrinoPath, const char *extraArgs)
+{
+    // This runs before teardown. DVR needs Neutrino's PSX-mode transition;
+    // quickboot and a user-supplied block backend would bypass that contract.
+    const char *sources[] = {gNeutrinoArgs, extraArgs};
+    for (int i = 0; i < 2; i++) {
+        if (neutrinoArgHasActiveFlag(sources[i], "-qb")) {
+            host::ui().warningId(_STR_NEUTRINO_DVR_QUICKBOOT, 6);
+            return -1;
+        }
+        if (neutrinoArgHasActiveFlag(sources[i], "-bsd=") || neutrinoArgHasActiveFlag(sources[i], "-bsdfs=")) {
+            host::ui().warningId(_STR_NEUTRINO_DVR_BACKEND_ARGS, 6);
+            return -1;
+        }
+    }
+
+    const char *slash = sysLastPathSeparator(neutrinoPath);
+    if (slash == NULL) {
+        host::ui().missingFile(_l(_STR_NEUTRINO_DVR_FILE_MISSING), neutrinoPath);
+        return -1;
+    }
+    const int dirLen = (int)(slash - neutrinoPath);
+    static const char *const modules[] = {"dvrdrv.irx", "dvrfile.irx", "dvrfile_fhi.irx"};
+    for (int i = -1; i < 3; i++) {
+        char path[336] = {0};
+        int n = i < 0 ? snprintf(path, sizeof(path), "%.*s%cconfig%cbsd-dvr.toml", dirLen, neutrinoPath, *slash, *slash) :
+                        snprintf(path, sizeof(path), "%.*s%cmodules%c%s", dirLen, neutrinoPath, *slash, *slash, modules[i]);
+        if (n < 0 || n >= (int)sizeof(path)) {
+            host::ui().missingFile(_l(_STR_NEUTRINO_DVR_FILE_MISSING), path);
+            return -1;
+        }
+        int fd = open(path, O_RDONLY);
+        if (fd < 0 && i < 0) {
+            n = snprintf(path, sizeof(path), "%.*s%cbsd-dvr.toml", dirLen, neutrinoPath, *slash);
+            if (n >= 0 && n < (int)sizeof(path))
+                fd = open(path, O_RDONLY);
+        }
+        if (fd < 0) {
+            host::ui().missingFile(_l(_STR_NEUTRINO_DVR_FILE_MISSING), path);
+            return -1;
+        }
+        close(fd);
+    }
+    return 0;
+}
+
 // Δ6 (NHDDL parity): everything that can FAIL a Neutrino launch and is checkable pre-teardown runs
 // HERE, called by every device leg BEFORE deinitEx -- the GUI is alive for a toast and nothing has
 // been torn down, so a failure is "stay in the menu", not a post-teardown black screen. Returns
@@ -363,6 +411,9 @@ int sysNeutrinoPreflight(const char *driver, const char *neutrinoPath, int neutr
         host::ui().warningId(_STR_NEUTRINO_DEV_UNSUPPORTED, 6);
         return -1;
     }
+
+    if (!strcmp(deviceName, "dvr") && sysNeutrinoDvrPreflight(neutrinoPath, extraArgs) < 0)
+        return -1;
 
     // -bsdfs=bd names the raw bdm device "<driver><devNr>p0". A mount that never reported its device
     // number cannot be named, and guessing 0 opens the WRONG device when two share a driver (a second
@@ -420,7 +471,7 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
     // per-game Neutrino args still passes through the tokenizer untouched.
     if (EnablePS2Logo &&
         (!strcmp(deviceName, "mmce") || !strcmp(deviceName, "udpfs") || !strcmp(deviceName, "udpfsbd") ||
-         !strcmp(deviceName, "udpbd"))) {
+         !strcmp(deviceName, "udpbd") || !strcmp(deviceName, "dvr"))) {
         LOG("[NEUTRINO] -logo suppressed on %s (issue #56 class: PS2LOGO pass reboots the IOP)\n", deviceName);
         EnablePS2Logo = 0;
     }
