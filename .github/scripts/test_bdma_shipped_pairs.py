@@ -18,7 +18,7 @@ program=r'''
 #include <cassert>
 #include <cstdio>
 #include <cstring>
-constexpr int VCD_BDMA_MODE_COUNT=7, VCD_BDMA_FAT32=0, O_RDONLY=0;
+constexpr int VCD_BDMA_MODE_COUNT=7, VCD_BDMA_FAT32=0, VCD_BDMA_ILINK=5, O_RDONLY=0;
 #define VCD_BDMA_MARKER "bdma.mode"
 struct bdma_pair_sig_t {int usbdSize,hdfsdSize;};
 static const char *vcdBdmaModule[]={"usbd.irx","usbhdfsd.irx"};
@@ -47,6 +47,13 @@ int main() {
         pairSize[1]=-1;assert(!vcdBdmaManualPairMatches(mode));
         markerMode=mode;assert(!vcdBdmaEnvironmentValid(mode));
     }
+    pairSize[0]=48500;pairSize[1]=23452;markerMode=VCD_BDMA_ILINK;markerExists=true;
+    assert(vcdBdmaEnvironmentValid(VCD_BDMA_ILINK));
+    markerExists=false;assert(vcdBdmaManualPairMatches(VCD_BDMA_ILINK));
+    for(int other=1;other<VCD_BDMA_MODE_COUNT;++other)
+        if(other!=VCD_BDMA_ILINK)assert(!vcdBdmaManualPairMatches(other));
+    --pairSize[0];assert(!vcdBdmaManualPairMatches(VCD_BDMA_ILINK));
+    assert(!vcdBdmaPairMatches(-1,48500,23452)&&!vcdBdmaPairMatches(7,48500,23452));
     pairSize[0]=pairSize[1]=-1;assert(vcdBdmaEnvironmentValid(0));
     pairSize[0]=48500;assert(!vcdBdmaEnvironmentValid(0));
     cardExists=false;assert(!vcdBdmaEnvironmentValid(1)&&!vcdBdmaManualPairMatches(1));
@@ -54,7 +61,7 @@ int main() {
     assert(!vcdBdmaManualPairMatches(0)&&!vcdBdmaManualPairMatches(7));
     puts("PASS: all six shipped BDMA pairs accepted by actual validators; family/marker/missing/truncated pairs refused");
 }
-'''.replace('@TABLE@',table).replace('@FUNCTIONS@','\n'.join(function(s) for s in ['static int vcdBdmaEnvironmentValid(', 'static int vcdBdmaManualPairMatches('])).replace('@SIZES@','{'+','.join('{'+','.join(map(str,p))+'}' for p in sizes)+'}')
+'''.replace('@TABLE@',table).replace('@FUNCTIONS@','\n'.join(function(s) for s in ['static int vcdBdmaPairMatches(', 'static int vcdBdmaEnvironmentValid(', 'static int vcdBdmaManualPairMatches('])).replace('@SIZES@','{'+','.join('{'+','.join(map(str,p))+'}' for p in sizes)+'}')
 with tempfile.TemporaryDirectory() as tmp:
     cpp=Path(tmp)/'pairs.cpp';exe=Path(tmp)/('pairs.exe' if os.name=='nt' else 'pairs')
     cpp.write_text(program,encoding='utf-8')

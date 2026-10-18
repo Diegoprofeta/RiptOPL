@@ -19,9 +19,12 @@ this identifies the current channel, not the tester's binary.
 `ship/POPS/usbhdfsd.irx.ilink` is 21609 bytes. USBD is 48500 bytes. Every other
 shipped pair matches its table entry. Thus marked validation and unmarked manual
 pair recognition can reject our own iLink release files. Correct the expected
-length to 21609 and exercise both actual validators against sizes obtained from
+canonical length to 21609 while preserving the previously accepted 23452-byte
+iLink pair with its matching 48500-byte USBD module. Exercise both actual validators against sizes obtained from
 all six shipped pairs. Old code fails; corrected code passes under ASan/UBSan.
-Wrong family/marker, missing or truncated pairs remain rejected.
+Wrong family/marker, missing or truncated pairs remain rejected. The previous
+iLink size is accepted only for iLink with the matching USBD size. This retains
+the existing size-based recognition policy; it does not authenticate IRXs.
 
 **Code-addressed, awaiting hardware confirmation.** Preparation is best-effort
 and may continue with the current MC pair, so this defect does not establish why
