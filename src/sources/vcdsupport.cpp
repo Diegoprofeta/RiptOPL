@@ -1822,11 +1822,34 @@ int vcdPopsUdpfsCleanModules(void)
         return 0;
     for (int volume = 0; volume < count; volume++) {
         snprintf(path, sizeof(path), "%s/MODULE_9.IRX", homes[volume]);
+        errno = 0;
         int fd = open(path, O_RDONLY);
         if (fd < 0) {
             if (errno == ENOENT)
                 continue;
-            return 0;
+            // Original #975: FatFs can leak FR_NO_FILE (4) as EINTR. Only
+            // accept absence after a complete readable-directory enumeration.
+            // Real IO errors and an existing but unreadable module stay guarded.
+            if (errno != EINTR)
+                return 0;
+            DIR *dir = opendir(homes[volume]);
+            if (dir == NULL)
+                return 0;
+            struct dirent *entry;
+            int found = 0;
+            errno = 0;
+            while ((entry = readdir(dir)) != NULL) {
+                if (strcasecmp(entry->d_name, "MODULE_9.IRX") == 0) {
+                    found = 1;
+                    break;
+                }
+                errno = 0;
+            }
+            int readErr = errno;
+            int closeErr = closedir(dir);
+            if (found || readErr != 0 || closeErr < 0)
+                return 0;
+            continue;
         }
         int got, matched = 0, owned = 0;
         while ((got = read(fd, buf, sizeof(buf))) > 0) {
