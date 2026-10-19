@@ -16,6 +16,24 @@ and `c8df6515875c22d398821cabdb45854bfb2867159d4dc8a80fbe6d5c05336e0b`.
 The unchanged architecture coupling gate passes. No ABI, sampling or shutdown-context change;
 standard builds still use VBLANK. The remainder of the #973 alarm port needs its
 own callback-generation/reset/RA-context review. No SDK deficiency identified.
+## Current continuation: EE syscall-hook GP/register context
+
+Branch `codex/ee-hook-gp-context`, merged #58 base `1c4822fc`. Adapt original
+`b35ff38c`'s three syscall-hook C-entry contexts while preserving migration
+assembler compatibility and unrelated hooks. Returning hooks restore caller
+context; the DMA trampoline preserves C success/failure and ExecPS2 retains
+its deliberate non-returning register scrub.
+
+The instruction-level regression fails on the old DMA C-entry GP and passes
+with the change. It models delay slots, ABI-width register clobbers, stack
+bounds, bypasses, forwarding and return values; it is not R5900 execution.
+All 79 Python host tests, HTTP tests and seven C++ suites pass. Local
+working-tree LLVM Korium/RA assembly and linking pass, with ELF SHA-256
+`a44316bc0e0f34d1ec21d5554fa4e1fac82f3faf5f883474d6aa260835f83440`
+and `216cc08776c4d69caea50430d596c58bbe735bc86b134307682ec2235a47bb8b`.
+The unchanged architecture coupling gate passes. PR-head CI remains required.
+No SDK deficiency or console result claimed. Alarm callback generation,
+registration/cancellation, allocation recovery and sampling remain separate.
 ## Current priority: first hardware launch report
 
 Track https://github.com/NathanNeurotic/RiptOPL/issues/63 and
