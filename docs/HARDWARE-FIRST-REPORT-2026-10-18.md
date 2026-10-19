@@ -82,3 +82,27 @@ accept/reject and short-read rejection after correction. Synthetic bytes contain
 no game/ROM data. This does not establish that tester build 4009 received fd zero,
 and it cannot explain Neutrino's separate logo behavior. No console fix or SDK
 deficiency is claimed.
+
+## Native BDM alignment audit and matched test procedure (2026-10-19)
+
+Original commit `35af507b6a78a10c6b567c70e067742cf59097cf` ports upstream OPL
+#1783: ZSO reads can provide an unaligned destination to a block driver that
+requires word-aligned buffers. This migration still passed those buffers through.
+An actual-function host fixture fails at offsets 1-3 against the old source and
+passes with the original's 64-byte-aligned 2 KiB bounce buffer. Aligned requests
+remain direct; incomplete bounce reads never copy their failed sector into the
+destination. Synthetic driver data does not establish DMA behavior, console
+success, or that the reported iLink title used ZSO or an unaligned buffer.
+
+For an authorized console test, retain the ELF SHA-256 and source commit from
+the edition's `BUILD-MANIFEST.json`, companion version, console model, adapter,
+filesystem, game ID and effective per-game configuration. Compare the same
+title/device/configuration on the known-good original, the pre-fix migration and
+the candidate. For native OPL, use equivalent ISO/ZSO images where available;
+record the last visible stage, logo result, boot and IGR separately. Do not infer
+Neutrino behavior from the native BDM change. Keep MMCE Neutrino title/modes/argv
+and APA POPStarter partition/selector/MC-driver comparisons as separate rows.
+
+Before publishing a console claim, record the actual tested hash rather than
+identifying it only by a moving rolling tag. No console run or SDK deficiency
+is established by this host regression.

@@ -1,5 +1,28 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Native BDM read alignment continuation (2026-10-19)
+
+Port only `DeviceReadSectors` from original commit
+`35af507b6a78a10c6b567c70e067742cf59097cf` (upstream OPL #1783).
+Aligned requests retain the direct multi-sector call. Unaligned requests use
+a static 64-byte-aligned 2 KiB buffer under the existing semaphore, copying
+only complete sectors and returning the existing read error on a failed call.
+No heap allocation, mode mapping, quickboot, timing or public API changes.
+
+The actual-function regression fails against the previous source on its first
+unaligned driver call. The port passes offsets 0-3, multi-sector data and guards,
+direct-call counts, zero/partial failures on each bounce read, detached devices,
+zero-sector requests and semaphore balance under ASan/UBSan. Local LSan cannot
+run under the sandbox's ptrace; local runs disable leak detection only. CI keeps
+the normal sanitizer settings. Compiler, matrix, package and publication results
+must be recorded against their exact commits separately.
+
+This is a reproduced alignment contract gap, not proof of FifthFox's iLink
+failure cause. #63 remains open for matched console tests; native iLink module
+initialization/binding/raw reads, MMCE Neutrino modes, APA POPStarter and each
+loader's logo path remain separate questions. See the hardware report for the
+comparison procedure. PRs #62/#60/#59/#57 retain their independent scopes.
+
 ## Current priority: first hardware launch report
 
 Track https://github.com/NathanNeurotic/RiptOPL/issues/63 and
