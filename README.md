@@ -1,28 +1,13 @@
 
 <p align="center"><a href="#"><img alt="RiptOPL" src="https://raw.githubusercontent.com/NathanNeurotic/RiptOPL/rebuild/main/docs/assets/riptopl.png" /></a></p>
 
-<p align="center">
-  <a href="#"><img width="400" height="92" alt="AI-Assisted-Software-Lovers-Only" src="https://github.com/user-attachments/assets/71335775-9fe3-4507-ac2c-caa851abb24c" /></a>
-</p>
-
-> **Our daughter project: [RIPPS2](https://github.com/akilluminati47/RIPPS2) by Akilluminati47.** It is a PS2-inspired front end with a [web-theme beta](https://akilluminati47.github.io/RIPPS2/) available now. A custom OPL theme and `RIPPS2.elf` are planned next; the project is still alpha, but we recommend it as an alternative with features intended to be on par with RiptOPL.
-
-> **ps2build C++ edition.** This repository is RiptOPL's C++ edition on ps2build, built in collaboration with **[techwritescode](https://git.techwritescode.dev/techwritescode/PSUManager)**.
+> **Check out our daughter project: [RIPPS2](https://github.com/akilluminati47/RIPPS2) by Akilluminati47.** It is a PS2-inspired front end, the project is still alpha, but we recommend it as an alternative with features intended to be on par with RiptOPL.
 
 ## Community Contributors
 
 A heartfelt thank you to developers who have contributed pull requests directly to this fork. Anyone who opens a pull request against RiptOPL is featured here at the top of the README in recognition of their support for the project and solidarity with its maintainer:
-
 ### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
-- **[#795](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/795)** (`fix(sound)`): **MMCE Background Music Recovery** — Made the music decoder recover when SD2PSX/MMCE firmware invalidates its long-lived file descriptor after a failed lookup. Added tracked stream position/size, bounded reopen-and-resume handling for failed reads/seeks, and host coverage for descriptor loss so theme music keeps playing instead of stopping permanently.
-- **[#789](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/789)** (`fix(fntsys)`): **Font Lock Concurrency Fix** — Held the font semaphore lock across draw, measure, and load operations in `src/fntsys.c`. This resolved a critical boot-freeze race condition where background font/theme loading on the IO worker thread freed glyph caches and texture atlases while the GUI rendering thread was actively drawing text. Tested across 111 consecutive clean boots on real hardware (SCPH-50001 with SD2PSX and exFAT BDM HDD).
-- **[#705](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/705)** (`dialogs`): **RetroAchievements Settings UI** — Restored the RetroAchievements configuration rows to the Network settings dialog page where they are displayed, configured, and persisted.
-- **[#704](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/704)** (`RA`): **Menu Network Telemetry Initialization** — Safely initialized and brought the networking stack up from the menu prior to cold telemetry game launches.
-- **[#703](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/703)** (`Makefile`): **MMCE DEV9 Integration** — Linked MMCE's CDVD driver with the in-game DEV9 network stack in RetroAchievements builds.
-- **[#702](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/702)** (`ee_core`): **EE Core Stack Protection** — Relocated RetroAchievements buffers out of `.bss` to protect the EE stack from memory pressure and instability during game execution.
-
 ### [@dnunezx](https://github.com/dnunezx) (darkladark)
-- **[#733](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/733)** (`Cover art flow`): **LUNA Collection View** — Brought LUNA's Collection cover-art screen into RiptOPL's renderer, adapting it to RiptOPL's existing game lists, settings, and launch callbacks. Added R3 access to Collection, moved the existing favorite shortcut to L2 + R3, fixed artwork handling while scrolling, and built/tested the result in PCSX2.
 
 # RiptOPL
 
