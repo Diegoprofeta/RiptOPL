@@ -2,6 +2,19 @@
 
 Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
 
+## Refresh at original `b35ff38c` (2026-10-18)
+
+New original work after `eab6c37c`:
+
+| Original work | Migration status |
+| --- | --- |
+| #975 false exFAT PS1 module warning | Adapted to `vcdPopsUdpfsCleanModules` across all enumerated USB volumes: only ambiguous EINTR opens get a complete POPS-directory absence check. Real IO errors, found/unreadable modules and failed directory scans remain guarded; no module deletion. Focused host tests pass. |
+| #973 IGR alarm/input starvation | Newly merged upstream; needs a separate source/ABI audit against the migration's current pad-hook lifetime, reset and RA snapshot changes. Not imported or claimed fixed by the #975 port. |
+
+Pending destination PRs #57 (DVR launch contract) and #58 (generation-checked
+browse prefetch) remain independent of this checkpoint. Both pass CI but require
+completed review evidence before merge. The older comparison rows below retain
+their historical source baseline.
 ## IGR #973 installation prerequisite (2026-10-18)
 
 Source baseline: original `b35ff38c`; independent destination base #56 `b56e0b19`.

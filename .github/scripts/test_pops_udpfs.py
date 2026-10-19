@@ -39,6 +39,9 @@ HARNESS = r'''
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <dirent.h>
+#include <strings.h>
+#include <initializer_list>
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
@@ -47,6 +50,7 @@ HARNESS = r'''
 static int volumes=1, renameCall, failRename, failWrite, failRestoreRename;
 static int failPark, failReturn;
 static int markedReady, manualReady;
+static int moduleErr, dirOpenErr, dirReadErr, dirCloseErr, dirOpens, dirCloses;
 #define LOG(...) ((void)0)
 #define VCD_BDMA_UDPFS 6
 static int vcdBdmaEnvironmentValid(int mode) {return mode==VCD_BDMA_UDPFS && markedReady;}
@@ -57,7 +61,19 @@ static const char *mapped(const char *p) {
  if(!strncmp(p,"mass4:/",7)) {char*b=buffers[(next++)%4];snprintf(b,512,"USB4/%s",p+7);return b;}
  return p;
 }
-static int hostOpen(const char *p,int f) { return open(mapped(p),f|O_BINARY,0644); }
+static int hostOpen(const char *p,int f) {
+ if(moduleErr && strstr(p,"MODULE_9.IRX")){errno=moduleErr;return -1;}
+ return open(mapped(p),f|O_BINARY,0644);
+}
+static DIR *hostOpendir(const char *p) {
+ ++dirOpens; if(dirOpenErr){errno=dirOpenErr;return nullptr;} return opendir(mapped(p));
+}
+static struct dirent *hostReaddir(DIR *dir) {
+ if(dirReadErr){errno=dirReadErr;return nullptr;} return readdir(dir);
+}
+static int hostClosedir(DIR *dir) {
+ ++dirCloses; int r=closedir(dir); if(dirCloseErr){errno=dirCloseErr;return -1;} return r;
+}
 static int hostMkdir(const char *p,int mode) {
 #ifdef _WIN32
  (void)mode; return mkdir(mapped(p));
@@ -86,6 +102,9 @@ static int vcdSafeWriteFile(const char *p,const void *buf,int len) {
  FILE *f=fopen(mapped(p),"wb");if(!f)return -3;
  int ok=fwrite(buf,1,len,f)==(size_t)len;fclose(f);return ok?0:-3;
 }
+#define opendir hostOpendir
+#define readdir hostReaddir
+#define closedir hostClosedir
 #define open hostOpen
 #define mkdir hostMkdir
 #define unlink hostUnlink
@@ -100,6 +119,15 @@ int main(void) {
  vcd_pops_udpfs_t c, changed; char root[64];
  mkdir("POPS",0777);
  CHECK(vcdPopsUdpfsCleanModules());
+ moduleErr=EINTR; CHECK(vcdPopsUdpfsCleanModules()); CHECK(dirOpens==1 && dirCloses==1);
+ for(int err: {EIO,EACCES,EBUSY,ENODEV}) {moduleErr=err;CHECK(!vcdPopsUdpfsCleanModules());}
+ CHECK(dirOpens==1); // real IO errors do not invoke absence fallback
+ moduleErr=EINTR;dirOpenErr=EACCES;CHECK(!vcdPopsUdpfsCleanModules());dirOpenErr=0;
+ dirReadErr=EIO;CHECK(!vcdPopsUdpfsCleanModules());dirReadErr=0;
+ dirCloseErr=EIO;CHECK(!vcdPopsUdpfsCleanModules());dirCloseErr=0;
+ put("POPS/module_9.irx","unreadable mixed-case module");
+ CHECK(!vcdPopsUdpfsCleanModules());unlink("POPS/module_9.irx");
+ moduleErr=0;
  put("POPS/MODULE_9.IRX","user-owned module");
  CHECK(vcdPopsUdpfsCleanModules());
  put("POPS/MODULE_9.IRX","RRIPTRA01");

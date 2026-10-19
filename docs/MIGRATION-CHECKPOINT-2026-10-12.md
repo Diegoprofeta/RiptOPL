@@ -1,5 +1,23 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: original #975 POPS module absence guard
+
+Branch `codex/pops-module-absence-975`, based independently on merged #56
+`b56e0b19`. Original advanced to `b35ff38c` (merged #973 and #975). Adapt #975
+through the C++ all-USB-volume POPS check: ENOENT remains ordinary absence;
+only EINTR invokes directory confirmation. Found modules (case-insensitive),
+real IO errors, unreadable directories, enumeration errors and close errors
+remain guarded. No files are deleted. All 77 Python host tests, HTTP tests, seven C++
+host suites and the unchanged architecture gate pass. Native LLVM RA passes
+(ELF SHA-256 `64ba8b7f60ef7a0e41b29f29acc99fe2ac292bfc2beaf8ab537897a3f0af2cc5`).
+The expanded fixture fails on the prior C++ implementation at the ambiguous
+missing-module case and passes with this guard.
+
+Expanded actual-function POPS fixture passes 132 config/rollback/error checks
+plus source wiring checks. This emulates ambiguous errno behavior and does not
+prove the installed SDK leaks that error. No new SDK deficiency is confirmed.
+The new #973 IGR alarm/input-starvation port remains a separate task; audit its
+callback generations and teardown against the current migrated hooks first.
 ## Current continuation: safe IGR installation from original #973
 
 Independent branch `codex/igr-install-failure-973`, merged #56 base `b56e0b19`.
