@@ -2,6 +2,16 @@
 
 Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
 
+## Native BDM read alignment (2026-10-19)
+
+Original `35af507b6a78a10c6b567c70e067742cf59097cf` includes upstream OPL #1783's
+unaligned-read fix, absent from this migration. This continuation ports only
+that BDM read change, excluding the same commit's unrelated game patch entries.
+The actual-function host regression fails on the old driver-facing buffer
+alignment and passes with the aligned bounce buffer, including short reads,
+destination guards and semaphore checks. Aligned reads keep their fast path.
+This does not establish iLink hardware acceptance or a causal link to #63.
+Compiler/package validation and the existing PR queue remain separate gates.
 ## Refresh at original `b35ff38c` (2026-10-18)
 
 New original work after `eab6c37c`:

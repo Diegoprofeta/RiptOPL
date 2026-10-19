@@ -65,6 +65,7 @@ jobs:
           python3 .github/scripts/test_bdm_private_allocation.py
           python3 .github/scripts/test_ilink_readiness.py
           python3 .github/scripts/test_ps2_logo_validation.py
+          python3 .github/scripts/test_bdm_read_alignment.py
       - name: Check image cache, menu allocation and queue lifetime failures
         run: |
           python3 .github/scripts/test_cache_allocation.py
