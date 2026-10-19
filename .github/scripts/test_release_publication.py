@@ -11,6 +11,32 @@ import publish_editions as publisher
 
 
 class PublicationTests(unittest.TestCase):
+    def test_concise_notes_for_all_three_editions(self):
+        sha = "a" * 40
+        history = "b" * 40 + "\x00Fix [launch] <edge>"
+        for options in publisher.EDITIONS.values():
+            with patch.object(publisher, "git", return_value=history) as git:
+                body = publisher.release_notes(options, sha, "v1.8.0")
+            git.assert_called_once_with("log", "--no-merges", "-10", "--format=%H%x00%s", sha, "--")
+            self.assertIn("## Changes\n\n", body)
+            self.assertIn(r"Fix \[launch\] \<edge\>", body)
+            self.assertIn("/commit/" + "b" * 40, body)
+            self.assertIn("/commits/" + sha, body)
+            self.assertIn(f"/releases/download/{options['tag']}/RIPTOPL-{options['title']}.zip", body)
+            elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
+            psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
+            self.assertIn(f"/{elf})", body)
+            self.assertIn(f"/{psu})", body)
+            self.assertEqual(3, sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
+            self.assertIn("Included build: v1.8.0 ", body)
+            self.assertNotIn("Release compiler", body)
+            self.assertNotIn("Imported production documentation", body)
+            self.assertLess(len(body), 1800)
+
+    def test_notes_refuse_empty_history(self):
+        with patch.object(publisher, "git", return_value=""), self.assertRaises(ValueError):
+            publisher.release_notes(publisher.EDITIONS["korium"], "a" * 40, "v1")
+
     def test_only_matching_integration_push_or_dispatch_can_publish(self):
         environment = {
             "GITHUB_REPOSITORY": "NathanNeurotic/RiptOPL",
@@ -29,6 +55,12 @@ class PublicationTests(unittest.TestCase):
         ):
             self.assertFalse(publisher.publication_allowed(dict(environment, **{key: value}), "abc123"))
         self.assertFalse(publisher.publication_allowed({}, "abc123"))
+
+    def test_only_incebtion_is_designated_latest(self):
+        self.assertEqual(set(publisher.EDITIONS), {"korium", "ra", "incebtion"})
+        for edition in publisher.EDITIONS:
+            expected = "--latest=true" if edition == "incebtion" else "--latest=false"
+            self.assertEqual(publisher.latest_release_arg(edition), expected)
 
     def test_first_draft_release_creates_missing_tag(self):
         result = subprocess.CompletedProcess([], 1, "", "gh: Not Found (HTTP 404)")
