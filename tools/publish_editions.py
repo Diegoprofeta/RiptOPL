@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
@@ -80,6 +81,40 @@ def verify(root, expected_sha):
     return candidates
 
 
+
+def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
+    """Keep release changes visible; installation detail belongs in the guides."""
+    base = f"https://github.com/{repo}"
+    history = git("log", "--no-merges", "-10", "--format=%H%x00%s", sha, "--")
+    changes = []
+    for record in history.splitlines():
+        commit, title = record.split("\x00", 1)
+        title = re.sub(r"([\\`*_[\]<>])", r"\\\1", title)
+        changes.append(f"- {title} ([{commit[:8]}]({base}/commit/{commit}))")
+    if not changes:
+        raise ValueError("Release commit has no changelog entries")
+    elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
+    psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
+    downloads = f"{base}/releases/download/{options['tag']}"
+    return (
+        f"**RiptOPL {options['title']}** - Development build [{sha[:8]}]({base}/commit/{sha}).\n\n"
+        "## Changes\n\n" + "\n".join(changes)
+        + f"\n\n[Full history]({base}/commits/{sha})\n\n"
+        "## Downloads\n\n"
+        f"- [Full install kit]({downloads}/RIPTOPL-{options['title']}.zip) - loader and companions.\n"
+        f"- [Loader ELF]({downloads}/{elf}) - update an existing installation.\n"
+        f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n\n"
+        f"Included build: {neutrino} -- Neutrino.\n\n"
+        "[Installation and guides](https://nathanneurotic.github.io/RiptOPL/) - "
+        f"[Wiki]({base}/wiki)\n"
+    )
+
+
+def latest_release_arg(edition):
+    """Only IncebtIon is presented as GitHub's Latest release."""
+    return "--latest=" + ("true" if edition == "incebtion" else "false")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("artifacts", type=Path)
@@ -100,13 +135,7 @@ def main():
         tag = options["tag"]
         manifest = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
         neutrino = manifest["neutrino_archive"]["filename"].removeprefix("neutrino_").removesuffix(".7z")
-        notes = (f"RiptOPL {options['title']} — C++ / ps2build development build.\n\n"
-                 f"Source: [{sha[:8]}](https://github.com/{repo}/commit/{sha}). "
-                 "Release compiler: GCC. See BUILD-MANIFEST.json for the resolved SDK suite and SHA256SUMS.txt for asset verification.\n\n"
-                 f"Included build: {neutrino} -- Neutrino.\n\n"
-                 "Use the full install ZIP or the app PSU. Imported production documentation and passing builds do not establish console acceptance for this migration.\n\n"
-                 "[Installation and guides](https://nathanneurotic.github.io/RiptOPL/) · "
-                 f"[Wiki](https://github.com/{repo}/wiki)\n")
+        notes = release_notes(options, sha, neutrino, repo)
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".md", delete=False) as stream:
             stream.write(notes)
             notes_path = Path(stream.name)
@@ -127,7 +156,7 @@ def main():
                     raise ValueError(f"GitHub did not retain the verified asset: {tag}/{file.name}")
             update_tag(repo, tag, sha)
             gh("release", "edit", tag, "--repo", repo, "--title", options["title"], "--notes-file", str(notes_path),
-               "--draft=false", "--prerelease=false", "--latest=" + ("true" if edition == "korium" else "false"))
+               "--draft=false", "--prerelease=false", latest_release_arg(edition))
             reference = json.loads(gh("api", f"repos/{repo}/git/ref/tags/{tag}"))
             if reference["object"]["sha"] != sha:
                 raise ValueError(f"release tag drifted: {tag}")
