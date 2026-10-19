@@ -18,6 +18,40 @@ plus source wiring checks. This emulates ambiguous errno behavior and does not
 prove the installed SDK leaks that error. No new SDK deficiency is confirmed.
 The new #973 IGR alarm/input-starvation port remains a separate task; audit its
 callback generations and teardown against the current migrated hooks first.
+## Current continuation: safe IGR installation from original #973
+
+Independent branch `codex/igr-install-failure-973`, merged #56 base `b56e0b19`.
+Source reference `b35ff38c`. Port only installation safety: initialize the entire
+EE thread descriptor, never start an invalid thread, discard a thread whose
+start fails, retry registration without creating duplicate workers, and enable
+VBLANK only for a successfully registered handler with a running worker.
+
+Expanded actual-function lifetime tests pass in standard and RA modes with
+creation, startup and registration failure injection. All 77 Python host tests, HTTP tests and seven C++ suites pass. Native LLVM
+Korium and RA both pass; ELF SHA-256 values are
+`aa695ab01b0b93df4c9a0b8eb51204f4da8cabf26fe8ec5ab6cd29ebc5d2fdfb`
+and `c8df6515875c22d398821cabdb45854bfb2867159d4dc8a80fbe6d5c05336e0b`.
+The unchanged architecture coupling gate passes. No ABI, sampling or shutdown-context change;
+standard builds still use VBLANK. The remainder of the #973 alarm port needs its
+own callback-generation/reset/RA-context review. No SDK deficiency identified.
+## Current continuation: EE syscall-hook GP/register context
+
+Branch `codex/ee-hook-gp-context`, merged #58 base `1c4822fc`. Adapt original
+`b35ff38c`'s three syscall-hook C-entry contexts while preserving migration
+assembler compatibility and unrelated hooks. Returning hooks restore caller
+context; the DMA trampoline preserves C success/failure and ExecPS2 retains
+its deliberate non-returning register scrub.
+
+The instruction-level regression fails on the old DMA C-entry GP and passes
+with the change. It models delay slots, ABI-width register clobbers, stack
+bounds, bypasses, forwarding and return values; it is not R5900 execution.
+All 79 Python host tests, HTTP tests and seven C++ suites pass. Local
+working-tree LLVM Korium/RA assembly and linking pass, with ELF SHA-256
+`a44316bc0e0f34d1ec21d5554fa4e1fac82f3faf5f883474d6aa260835f83440`
+and `216cc08776c4d69caea50430d596c58bbe735bc86b134307682ec2235a47bb8b`.
+The unchanged architecture coupling gate passes. PR-head CI remains required.
+No SDK deficiency or console result claimed. Alarm callback generation,
+registration/cancellation, allocation recovery and sampling remain separate.
 ## Current priority: first hardware launch report
 
 Track https://github.com/NathanNeurotic/RiptOPL/issues/63 and

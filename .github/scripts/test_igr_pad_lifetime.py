@@ -54,17 +54,19 @@ static struct { u16 libpad,libversion;u8 *pad_buf;int vb_count;
  int pos_combo1,pos_combo2,pos_state,pos_frame;u8 combo_type,prev_frame; } Pad_Data;
 static struct { int press,vb_count; } Power_Button;
 static int IGR_Thread_ID=-1, IGR_Intc_ID=-1, padOpen_hooked;
-static int creates, starts, handlers, enables, snapshots;
+static int creates, starts, handlers, enables, snapshots, deletes;
+static int createResult=5, startResult=0, handlerResult=7;
 static int _gp;
 static u8 IGR_Stack[4096];
 #define IGR_STACK_SIZE sizeof(IGR_Stack)
 typedef struct { void *gp_reg;void (*func)(void *);void *stack;
- unsigned stack_size;int initial_priority; } ee_thread_t;
+ unsigned stack_size;int initial_priority; unsigned attr,option; int current_priority; } ee_thread_t;
 static void IGR_Thread(void *p) {(void)p;}
-static int CreateThread(ee_thread_t *p) {assert(p->func==IGR_Thread);creates++;return 5;}
-static void StartThread(int id,void *p) {assert(id==5 && !p);starts++;}
+static int CreateThread(ee_thread_t *p) {assert(p->func==IGR_Thread);assert(!p->attr && !p->option && !p->current_priority);creates++;return createResult;}
+static int StartThread(int id,void *p) {assert(id==5 && !p);starts++;return startResult;}
+static int DeleteThread(int id) {assert(id==5);deletes++;return 0;}
 static int AddIntcHandler(int cause,int (*fn)(int),int n) {
- assert(cause==kINTC_VBLANK_END && fn && !n);handlers++;return 7;
+ assert(cause==kINTC_VBLANK_END && fn && !n);handlers++;return handlerResult;
 }
 static void EnableIntc(int n) {assert(n==kINTC_VBLANK_END);enables++;}
 #ifdef RETROACHIEVEMENTS
@@ -79,6 +81,16 @@ static int tick(void) {
 }
 int main(void) {
  u8 old[128]={0}, fresh[128]={0};
+ createResult=-1;Install_IGR();
+ assert(IGR_Thread_ID<0 && !starts && !handlers && !enables && !deletes);
+ createResult=5;startResult=-1;Install_IGR();
+ assert(IGR_Thread_ID<0 && starts==1 && deletes==1 && !handlers && !enables);
+ startResult=0;handlerResult=-1;Install_IGR();
+ assert(IGR_Thread_ID==5 && IGR_Intc_ID<0 && handlers==1 && !enables);
+ int created=creates,started=starts;handlerResult=7;Install_IGR();
+ assert(creates==created && starts==started && IGR_Intc_ID==7 && enables==1);
+ Install_IGR();assert(creates==created && starts==started && handlers==2 && enables==1);
+ IGR_Thread_ID=IGR_Intc_ID=-1;creates=starts=handlers=enables=deletes=0;
  Install_IGR();assert(creates==1 && starts==1 && handlers==1 && enables==1);
  Pad_Data.libpad=IGR_LIBPAD;Pad_Data.libversion=0x160;
  Set_libpad_Params(old);assert(intrEnabled && Pad_Data.pos_state==112);

@@ -15,6 +15,33 @@ Pending destination PRs #57 (DVR launch contract) and #58 (generation-checked
 browse prefetch) remain independent of this checkpoint. Both pass CI but require
 completed review evidence before merge. The older comparison rows below retain
 their historical source baseline.
+## IGR #973 installation prerequisite (2026-10-18)
+
+Source baseline: original `b35ff38c`; independent destination base #56 `b56e0b19`.
+The current port adapts zero-initialized worker descriptors, failed creation/start
+handling, failed-start cleanup and retryable interrupt registration. A VBLANK
+handler is enabled only after a live worker and successful registration exist.
+The existing lifetime regression now injects those failures in standard and RA
+modes, retaining pending-combo/power state and reopen tests.
+
+This does not migrate standard builds from VBLANK to EE alarms. Input sampling,
+shutdown context, reset callback generation/cancellation and alarm-allocation
+recovery from original #973 remain unported. No hardware compatibility or input
+starvation fix is claimed by this installation-only prerequisite.
+## EE hook context prerequisite (2026-10-18)
+
+Independent base merged #58 `1c4822fc`; upstream reference `b35ff38c`.
+Port only `_SifSetDma`, `Hook_ExecPS2` and `Hook_CreateThread` GP/register
+context from the original assembly. Load EE core `_gp` before entering C;
+returning DMA/thread hooks restore caller GP/SP/RA, and the thread hook also
+preserves argument/temporary registers across hook discovery. Keep DMA's C
+return value. ExecPS2 retains its non-returning register-scrub behavior.
+
+A source-instruction fixture models delay slots, C-call register clobbers,
+stack-frame bounds, bypass paths, forwarded arguments and DMA return values.
+It fails on the old GP context and passes with the port. This model is not
+native instruction execution or console evidence. GCC/LLVM assembly/link and
+hardware behavior remain distinct checks. No alarm-sampling or shutdown change.
 
 ## Refresh at original `eab6c37c` (2026-10-17)
 
