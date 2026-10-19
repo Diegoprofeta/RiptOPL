@@ -31,12 +31,14 @@ jobs:
           python3 .github/scripts/test_install_ports.py
           python3 .github/scripts/test_reset_failure_lifecycle.py
           python3 .github/scripts/test_igr_pad_lifetime.py
+          python3 .github/scripts/test_ee_hook_context.py
           python3 .github/scripts/test_pad_hook_cache.py
           python3 .github/scripts/test_pad_pattern_bounds.py
           python3 .github/scripts/test_foreground_settings_config.py
           python3 .github/scripts/test_config_prefetch_generation.py
           python3 .github/scripts/test_release_publication.py
           python3 .github/scripts/test_config_save_integrity.py
+          python3 .github/scripts/test_neutrino_dvr_contract.py
           python3 .github/scripts/test_bdma_shipped_pairs.py
       - name: Check C++ Coverflow page navigation
         run: python3 .github/scripts/test_page_animation.py

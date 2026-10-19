@@ -3,6 +3,7 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -22,6 +23,7 @@ class ReleaseNotesTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = pathlib.Path(self.temp.name)
+        self.git_time = 1700000000
         self.patch = patch.object(notes, "ROOT", self.root)
         self.patch.start()
         self.addCleanup(self.patch.stop)
@@ -49,8 +51,14 @@ class ReleaseNotesTests(unittest.TestCase):
         ]
 
     def git(self, *args):
+        env = os.environ.copy()
+        if args[0] in ("commit", "merge"):
+            # Distinct, ordered dates keep the bounded-history assertion independent
+            # of host speed and Git's traversal order for equal-timestamp parents.
+            self.git_time += 1
+            env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = f"{self.git_time} +0000"
         return subprocess.check_output(["git", *args], cwd=self.root,
-                                       text=True, encoding="utf-8").strip()
+                                       text=True, encoding="utf-8", env=env).strip()
 
     def render(self, tag="rolling", assets=None):
         return notes.render(self.assets if assets is None else assets, tag, "refs/tags/v-test",

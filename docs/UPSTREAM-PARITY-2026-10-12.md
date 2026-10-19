@@ -12,6 +12,46 @@ alignment and passes with the aligned bounce buffer, including short reads,
 destination guards and semaphore checks. Aligned reads keep their fast path.
 This does not establish iLink hardware acceptance or a causal link to #63.
 Compiler/package validation and the existing PR queue remain separate gates.
+## Refresh at original `b35ff38c` (2026-10-18)
+
+New original work after `eab6c37c`:
+
+| Original work | Migration status |
+| --- | --- |
+| #975 false exFAT PS1 module warning | Adapted to `vcdPopsUdpfsCleanModules` across all enumerated USB volumes: only ambiguous EINTR opens get a complete POPS-directory absence check. Real IO errors, found/unreadable modules and failed directory scans remain guarded; no module deletion. Focused host tests pass. |
+| #973 IGR alarm/input starvation | Newly merged upstream; needs a separate source/ABI audit against the migration's current pad-hook lifetime, reset and RA snapshot changes. Not imported or claimed fixed by the #975 port. |
+
+Pending destination PRs #57 (DVR launch contract) and #58 (generation-checked
+browse prefetch) remain independent of this checkpoint. Both pass CI but require
+completed review evidence before merge. The older comparison rows below retain
+their historical source baseline.
+## IGR #973 installation prerequisite (2026-10-18)
+
+Source baseline: original `b35ff38c`; independent destination base #56 `b56e0b19`.
+The current port adapts zero-initialized worker descriptors, failed creation/start
+handling, failed-start cleanup and retryable interrupt registration. A VBLANK
+handler is enabled only after a live worker and successful registration exist.
+The existing lifetime regression now injects those failures in standard and RA
+modes, retaining pending-combo/power state and reopen tests.
+
+This does not migrate standard builds from VBLANK to EE alarms. Input sampling,
+shutdown context, reset callback generation/cancellation and alarm-allocation
+recovery from original #973 remain unported. No hardware compatibility or input
+starvation fix is claimed by this installation-only prerequisite.
+## EE hook context prerequisite (2026-10-18)
+
+Independent base merged #58 `1c4822fc`; upstream reference `b35ff38c`.
+Port only `_SifSetDma`, `Hook_ExecPS2` and `Hook_CreateThread` GP/register
+context from the original assembly. Load EE core `_gp` before entering C;
+returning DMA/thread hooks restore caller GP/SP/RA, and the thread hook also
+preserves argument/temporary registers across hook discovery. Keep DMA's C
+return value. ExecPS2 retains its non-returning register-scrub behavior.
+
+A source-instruction fixture models delay slots, C-call register clobbers,
+stack-frame bounds, bypass paths, forwarded arguments and DMA return values.
+It fails on the old GP context and passes with the port. This model is not
+native instruction execution or console evidence. GCC/LLVM assembly/link and
+hardware behavior remain distinct checks. No alarm-sampling or shutdown change.
 
 ## Refresh at original `eab6c37c` (2026-10-17)
 
@@ -27,7 +67,7 @@ preserved locally; inspect current source before treating old ledger rows as gap
 | Config allocation/null wrappers | Destination #49 already guards the read/allocation boundary and ConfigSet free-function wrappers, with host tests. Do not redo the earlier #961 null-read report; audit settings-state behavior separately. |
 | #968/#970 VMC budget/config reuse | Present through destination #51/#52. |
 | #917 CJK fallback, #845 game-type labels, About/QA layout | Present through destination #53/#54/#55. |
-| #947 DESR/DVR and merged #955 PC CARD CF | Still require explicit C++ GameSource/platform comparison and adaptation. #955 is now merged upstream, no longer merely an open plan. Do not import #965's explicitly unmerged runtime replacement. |
+| #947 DESR/DVR and merged #955 PC CARD CF | DVR device mapping, companion/unsafe-argument preflight and filesystem argv contract are now adapted and host-tested. Discovery, GameSource rows, driver loading, mount ownership, cleanup and hardware acceptance remain unported; see DESR-DVR.md. #955's custom PCCF targets/driver/handoff remain separate. Do not import #965's explicitly unmerged runtime replacement. |
 | Older #959, RA/browser/ORBIT/HTTPS, SaveIcon, defaults, docs | Continue capability-by-capability auditing; these newer ports do not establish full migration parity. Old rows below are historical comparison evidence, not a fresh absence claim. |
 
 All builds, release packages and hardware acceptance remain distinct gates.
