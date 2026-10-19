@@ -106,8 +106,9 @@ def run(name, *, result=1, disabled=0, hooked=0, priority=0, current=0, compat=0
         assert [regs[r] for r in ('a0','a1','a2','a3')]==[initial[r] for r in ('a0','a1','a2','a3')]
         frame=0
     for loc,width in stores:
-        if loc>=SYMS['_end']-0x100:
-            assert SYMS['_end']-frame<=loc and loc+width<=SYMS['_end'],(name,'frame overflow',loc)
+        if loc==SYMS['padOpen_hooked'] and width==4 and name in ('Hook_CreateThread','Hook_ExecPS2'):
+            continue
+        assert SYMS['_end']-frame<=loc and loc+width<=SYMS['_end'],(name,'frame overflow',loc)
     return calls
 
 for result in (0,1):
@@ -119,4 +120,17 @@ for args in ({'disabled':1},{'hooked':1},{'priority':5},{'priority':1,'current':
 assert run('Hook_ExecPS2')==['Reset_Padhook','Install_PadOpen_Hook','InitRegsExecPS2']
 assert run('Hook_ExecPS2',compat=0x20)==[]
 assert run('Hook_ExecPS2',entry=0x80000)==[]
+# Prove both sides of the frame are enforced, including stores below the former cutoff.
+valid_source = source
+for offset in ('-0x200', '0x0020'):
+    source = valid_source.replace('sd      $ra, 0x0000($sp)',
+                                 f'sd      $t0, {offset}($sp)\n    sd      $ra, 0x0000($sp)', 1)
+    assert source != valid_source
+    try:
+        run('_SifSetDma')
+    except AssertionError as error:
+        assert 'frame overflow' in str(error), error
+    else:
+        raise AssertionError(('out-of-frame store accepted', offset))
+source = valid_source
 print('PASS: EE hook GP context, caller registers, delay slots, stack bounds, bypass and DMA return preservation')
