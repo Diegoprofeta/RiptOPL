@@ -16,6 +16,23 @@ and `c8df6515875c22d398821cabdb45854bfb2867159d4dc8a80fbe6d5c05336e0b`.
 The unchanged architecture coupling gate passes. No ABI, sampling or shutdown-context change;
 standard builds still use VBLANK. The remainder of the #973 alarm port needs its
 own callback-generation/reset/RA-context review. No SDK deficiency identified.
+## Current priority: first hardware launch report
+
+Track https://github.com/NathanNeurotic/RiptOPL/issues/63 and
+`docs/HARDWARE-FIRST-REPORT-2026-10-18.md`. Nathan identifies the test build as
+likely latest rolling Korium; exact binary and original comparison remain unknown.
+Native OPL/iLink launch, Neutrino compatibility and non-USB POPStarter remain
+reported, not confirmed fixed. Faster UI is not proof of a timing cause.
+
+Confirmed independent defect: the iLink BDMA signature expects 23452 bytes for
+usbhdfsd while our shipped file is 21609 bytes. Correct the constant and validate
+all six real shipped sizes through both production validators. Old code fails,
+corrected code passes under ASan/UBSan. Wrong-family/marker/missing/truncated
+pairs remain refused. Retain the previously accepted 23452-byte iLink pair
+only for iLink with its matching 48500-byte USBD, to avoid invalidating existing
+card installations when fixing shipped-file recognition. Existing POPS config/rollback/wiring checks pass.
+This is not a native PS2/iLink fix or a hardware-confirmed POPStarter fix.
+No SDK deficiency identified. Full target builds remain a PR-CI gate.
 
 ## PR #58 review follow-up
 
