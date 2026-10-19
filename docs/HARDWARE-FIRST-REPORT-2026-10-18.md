@@ -54,3 +54,31 @@ VMC/cheat/pademu settings, last visible stage, and the matching known-good origi
 build. Change one variable per comparison. Exact tester details are useful for
 reproduction but do not block source auditing. Do not deploy/reset a console merely
 to investigate this report without an authorized hardware test.
+
+## Follow-up: build 4009 and native-logo audit
+
+FifthFox's later report names C++ 4009 (exact ELF hash/channel unverified).
+After removing MC0's POPStarter directory and configuring assault drivers,
+POPStarter reportedly works on iLink and other tested devices except APA SSD,
+which reaches POPStarter and crashes. This supersedes the tentative USB-only
+finding; do not attribute it to PR #64, because build/MC environment changed.
+Ember works on tested devices, explicitly excluding APA SSD. USB/APA OPL and
+Neutrino work without extra modes; MX4SIO OPL works; MMCE Neutrino needs modes.
+Other core/device combinations are not established. Logo remains absent despite
+selection and a visible Neutrino -logo argument. Details are preserved in issue #63.
+
+The native CheckPS2Logo routine differed from original b35ff38c only in C++
+pointer arithmetic and UI calls. It validates decrypted checksum and console
+region before enabling PS2LOGO, which must also exist in ROM. Neutrino separately
+handles its own logo; -qb is deliberately generated on USB/iLink to preserve the
+inherited IOP. Neither logo absence nor a visible token proves launch execution.
+
+A confirmed inherited native edge case: fd > 0 refused a valid file descriptor
+zero, even though BDM launch accepts fd >= 0. Change only the file-backed logo
+branch to fd >= 0; HDD remains selected by fd == 0 and lba > 0. A synthetic-logo
+fixture compiles the actual validator and fails on the old fd-zero condition,
+then passes normal/fd-zero reads, invalid descriptor, 48-sector HDD bound, region
+accept/reject and short-read rejection after correction. Synthetic bytes contain
+no game/ROM data. This does not establish that tester build 4009 received fd zero,
+and it cannot explain Neutrino's separate logo behavior. No console fix or SDK
+deficiency is claimed.
