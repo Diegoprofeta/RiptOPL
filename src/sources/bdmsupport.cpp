@@ -1272,6 +1272,23 @@ void bdmLoadBlockDeviceModules(void)
         bdmProbeMassSlots("after-usb-settle"); // forces FatFs's lazy mount on every slot
         bdmForceDeviceRefresh();               // exactly one second probe, covering every slot
     }
+
+    // Recheck late iLink roots once per enabled session on the IO worker.
+    // Refresh even for immediate readiness or absence; mount events may precede the menu.
+    static int ilinkProbeDone = 0;
+    if (!gEnableILK)
+        ilinkProbeDone = 0;
+    else if (iLinkModLoaded && !ilinkProbeDone) {
+        char ilkRoot[16];
+        int waitedMs;
+
+        ilinkProbeDone = 1;
+        for (waitedMs = 0; waitedMs < 3000 && !bdmGetDeviceRootByType(BDM_TYPE_ILINK, ilkRoot, sizeof(ilkRoot)); waitedMs += 250)
+            DelayThread(250 * 1000);
+        if (waitedMs > 0)
+            LOG("[BDM] iLink root %s after ~%d ms\n", waitedMs < 3000 ? "appeared" : "not found", waitedMs);
+        bdmForceDeviceRefresh(); // publish either a newly ready root or the final absent result
+    }
 }
 
 // Bring up only the common BDM infrastructure. Literal massN: boot resolution uses this path so an
