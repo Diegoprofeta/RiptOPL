@@ -77,6 +77,8 @@ static int bdmGetLoadedNetProtocol(void) { return 0; }
 static const char *_l(int id) { lastWarning = id; return ""; }
 static void guiWarning(const char *msg, int secs) { (void)msg; (void)secs; }
 static int sysSyncNeutrinoUdpfsToml(const char *path, const char *dev) { (void)path; (void)dev; return 0; }
+// DVR companion IO has its own actual-method harness; existing transports never call it.
+static int sysNeutrinoDvrPreflight(const char *path, const char *args) { (void)path; (void)args; return 0; }
 
 @FUNCTIONS@
 

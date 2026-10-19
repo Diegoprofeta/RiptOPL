@@ -1478,3 +1478,10 @@ gui_strings:
 - label: GAME_TYPE_LABELS
   string: Show [PS1]/[PS2] Labels
 
+- label: NEUTRINO_DVR_QUICKBOOT
+  string: DVR launches require the PSX-mode reset. Remove active -qb options.
+- label: NEUTRINO_DVR_BACKEND_ARGS
+  string: DVR launches use their filesystem backend. Remove active -bsd and -bsdfs overrides.
+- label: NEUTRINO_DVR_FILE_MISSING
+  string: The DVR Neutrino companion is incomplete. Required file missing or path too long
+

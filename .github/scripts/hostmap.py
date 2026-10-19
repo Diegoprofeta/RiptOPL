@@ -30,11 +30,13 @@ HOST_TO_OLD = {
 _RX = re.compile('|'.join(re.escape(k) for k in sorted(HOST_TO_OLD, key=len, reverse=True)))
 
 
+_MISSING_ID = re.compile(r'host::ui\(\)\.missingFileId\(\s*(_STR_\w+)\s*,')
 _WARN_ID = re.compile(r'host::ui\(\)\.warningId\(\s*(_STR_\w+)\s*,')
 
 
 def unhost(text):
     # warningId(_STR_X, n) was guiWarning(_l(_STR_X), n)
+    text = _MISSING_ID.sub(lambda m: 'guiMsgBoxMissing(_l(%s),' % m.group(1), text)
     text = _WARN_ID.sub(lambda m: 'guiWarning(_l(%s),' % m.group(1), text)
     return _RX.sub(lambda m: HOST_TO_OLD[m.group(0)], text)
 

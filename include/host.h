@@ -29,6 +29,7 @@ public:
     virtual ~UiServices() = default;
     virtual int msgBox(const char *text, int addAccept, struct UIItem *ui) = 0;
     virtual void missingFile(const char *message, const char *path) = 0;
+    virtual void missingFileId(int strId, const char *path) = 0;
     virtual void warning(const char *text, int count) = 0;
     // Same, for a translatable string id (the UI layer owns the language tables).
     virtual void warningId(int strId, int count) = 0;

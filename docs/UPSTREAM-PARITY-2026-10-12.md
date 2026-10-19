@@ -57,7 +57,7 @@ preserved locally; inspect current source before treating old ledger rows as gap
 | Config allocation/null wrappers | Destination #49 already guards the read/allocation boundary and ConfigSet free-function wrappers, with host tests. Do not redo the earlier #961 null-read report; audit settings-state behavior separately. |
 | #968/#970 VMC budget/config reuse | Present through destination #51/#52. |
 | #917 CJK fallback, #845 game-type labels, About/QA layout | Present through destination #53/#54/#55. |
-| #947 DESR/DVR and merged #955 PC CARD CF | Still require explicit C++ GameSource/platform comparison and adaptation. #955 is now merged upstream, no longer merely an open plan. Do not import #965's explicitly unmerged runtime replacement. |
+| #947 DESR/DVR and merged #955 PC CARD CF | DVR device mapping, companion/unsafe-argument preflight and filesystem argv contract are now adapted and host-tested. Discovery, GameSource rows, driver loading, mount ownership, cleanup and hardware acceptance remain unported; see DESR-DVR.md. #955's custom PCCF targets/driver/handoff remain separate. Do not import #965's explicitly unmerged runtime replacement. |
 | Older #959, RA/browser/ORBIT/HTTPS, SaveIcon, defaults, docs | Continue capability-by-capability auditing; these newer ports do not establish full migration parity. Old rows below are historical comparison evidence, not a fresh absence claim. |
 
 All builds, release packages and hardware acceptance remain distinct gates.

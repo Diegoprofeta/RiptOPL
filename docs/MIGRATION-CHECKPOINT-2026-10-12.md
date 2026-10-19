@@ -1,5 +1,46 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: DVR external-core launch contract
+
+Base: merged #56 at `b56e0b19`; original comparison remains `eab6c37c`.
+Adapt the safely host-testable launch subset of #947/#955 through the C++ host
+UI interface: exact DVR backend mapping, companion-file preflight, no automatic
+quickboot/logo/raw-filesystem override, and bounded argv composition. DVR also
+rejects active user backend overrides before teardown, avoiding a last-token
+replacement of its filesystem contract. Existing argument-scope behavior stays
+intact. Actual-method preflight tests cover refusal paths and descriptor cleanup;
+the actual argv builder verifies the DVR filesystem tuple.
+
+This does not enable discovery, load drivers, mount partitions or expose DVR
+game rows. The later GameSource/platform port must preserve read-only discovery
+and mount ownership, use a matching DVR-capable companion and retain a hardware
+acceptance gate. Installed SDK `dvr`/`dvrfile` packages exist; absence of a custom
+PCCF package is not a confirmed SDK deficiency. See docs/DESR-DVR.md.
+
+Validation for this checkpoint: all 78 Python host tests, the HTTP tests and
+seven C++ host suites passed. Native ps2build LLVM RetroAchievements linked,
+stripped and packed successfully after language regeneration; its ELF SHA-256
+is `73de2ea70739a2d8effec968c596cab3e41ccce750b2818467fbe596a4f7d789`.
+This is local build evidence, not console acceptance. GitHub checks and review
+must complete before merge. Original preflight at `eab6c37c` was exercised with
+the same file mocks: `-qb` returned -1 with no opens; active `-bsdfs=bd`
+returned 0 after four companion opens. The new preflight refuses both.
+
+PR #57 CI follow-up: GCC and LLVM compilation succeeded, but both jobs failed
+the coupling gate because the DVR missing-file messages called `_l` directly
+from the platform layer. Added `UiServices::missingFileId`, implemented by the
+application UI and mirrored in host fixtures, so translation stays above the
+platform layer. The coupling baseline is unchanged and its check now passes;
+DVR, filesystem-preflight and argv tests pass with the interface correction.
+CI must rerun on the follow-up commit; the native SHA above predates this fix.
+
+The UI-service revision `828507c5` also passed native LLVM RA build (ELF
+SHA-256 `ae694e359044bcaa4cecd2d6b6650f38a59e7554d7a1bb9e8ead8df1e3528292`).
+A full host rerun exposed an existing release-note fixture timing race: Git
+commits with equal timestamps can omit the branch fix from the ten-entry
+history. The fixture now assigns distinct ordered dates; release-note
+production behavior is unchanged. Repeated fixture runs and full-suite rerun
+are required for this follow-up.
 ## Current continuation: original #975 POPS module absence guard
 
 Branch `codex/pops-module-absence-975`, based independently on merged #56

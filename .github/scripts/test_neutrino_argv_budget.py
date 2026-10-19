@@ -124,6 +124,20 @@ int main(void)
         puts("FAIL actual launch must refuse an overfull argv even if preflight was bypassed");
         failures++;
     }
+    /* DVR is a filesystem path, never a bdfs tuple or an automatic quickboot/logo pass. */
+    gNeutrinoArgs[0] = '\0';
+    beforeLoads = loads;
+    if (sysRunNeutrinoLaunch("dvr", "dvr_pfs0:/DVD/SLUS_123.45.iso", "SLUS_123.45", 0, 1,
+                             "mc0:/NEUTRINO/neutrino.elf", "", 0, 0, 3, -1, NULL, 0) != 0 || loads != beforeLoads + 1)
+        failures++;
+    int sawDvr = 0, sawPath = 0;
+    for (int i = 0; i < lastArgc; i++) {
+        if (!strcmp(lastArgs[i], "-bsd=dvr")) sawDvr++;
+        if (!strcmp(lastArgs[i], "-dvd=dvr_pfs0:/DVD/SLUS_123.45.iso")) sawPath++;
+        if (!strcmp(lastArgs[i], "-qb") || !strcmp(lastArgs[i], "-logo") || !strncmp(lastArgs[i], "-bsdfs=", 7))
+            failures++;
+    }
+    if (sawDvr != 1 || sawPath != 1) failures++;
     return failures ? 1 : 0;
 }
 '''
