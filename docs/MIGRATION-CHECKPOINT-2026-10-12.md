@@ -1,5 +1,21 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Current continuation: safe IGR installation from original #973
+
+Independent branch `codex/igr-install-failure-973`, merged #56 base `b56e0b19`.
+Source reference `b35ff38c`. Port only installation safety: initialize the entire
+EE thread descriptor, never start an invalid thread, discard a thread whose
+start fails, retry registration without creating duplicate workers, and enable
+VBLANK only for a successfully registered handler with a running worker.
+
+Expanded actual-function lifetime tests pass in standard and RA modes with
+creation, startup and registration failure injection. All 77 Python host tests, HTTP tests and seven C++ suites pass. Native LLVM
+Korium and RA both pass; ELF SHA-256 values are
+`aa695ab01b0b93df4c9a0b8eb51204f4da8cabf26fe8ec5ab6cd29ebc5d2fdfb`
+and `c8df6515875c22d398821cabdb45854bfb2867159d4dc8a80fbe6d5c05336e0b`.
+The unchanged architecture coupling gate passes. No ABI, sampling or shutdown-context change;
+standard builds still use VBLANK. The remainder of the #973 alarm port needs its
+own callback-generation/reset/RA-context review. No SDK deficiency identified.
 ## Current continuation: EE syscall-hook GP/register context
 
 Branch `codex/ee-hook-gp-context`, merged #58 base `1c4822fc`. Adapt original

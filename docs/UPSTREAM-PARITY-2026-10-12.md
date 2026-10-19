@@ -2,6 +2,19 @@
 
 Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
 
+## IGR #973 installation prerequisite (2026-10-18)
+
+Source baseline: original `b35ff38c`; independent destination base #56 `b56e0b19`.
+The current port adapts zero-initialized worker descriptors, failed creation/start
+handling, failed-start cleanup and retryable interrupt registration. A VBLANK
+handler is enabled only after a live worker and successful registration exist.
+The existing lifetime regression now injects those failures in standard and RA
+modes, retaining pending-combo/power state and reopen tests.
+
+This does not migrate standard builds from VBLANK to EE alarms. Input sampling,
+shutdown context, reset callback generation/cancellation and alarm-allocation
+recovery from original #973 remain unported. No hardware compatibility or input
+starvation fix is claimed by this installation-only prerequisite.
 ## EE hook context prerequisite (2026-10-18)
 
 Independent base merged #58 `1c4822fc`; upstream reference `b35ff38c`.
