@@ -52,30 +52,6 @@ Review the LICENSE file for further details.<br><br>
 
 > 📖 **Full documentation & guides:** **<https://nathanneurotic.github.io/RiptOPL/>** — searchable setup and reference guides covering storage backends, the Neutrino core, PS1/VCD, the Theme Engine (with worked examples and an annotated sample theme), a full settings reference, and troubleshooting.
 
-> 🌙 **Our #1 recommended alternative: [LUNA](https://github.com/dnunezx/LUNA) by [darkladark](https://github.com/dnunezx).** *Lightweight Unified Neutrino Access* is a visual loader built on NHDDL and Neutrino for **lightweight, customized Neutrino gameplay**. If RiptOPL is more loader than you need, start there. darkladark also contributes to RiptOPL itself; see [Acknowledgements](#acknowledgements).
-
-## Community Contributors
-
-A heartfelt thank you to developers who have contributed pull requests directly to this fork:
-
-### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
-- **[#789](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/789)** (`fix(fntsys)`): **Font Lock Concurrency Fix** — Held the font semaphore lock across draw, measure, and load operations in `src/fntsys.c`. This resolved a critical boot-freeze race condition where background font/theme loading on the IO worker thread freed glyph caches and texture atlases while the GUI rendering thread was actively drawing text. Tested across 111 consecutive clean boots on real hardware (SCPH-50001 with SD2PSX and exFAT BDM HDD).
-- **[#705](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/705)** (`dialogs`): **RetroAchievements Settings UI** — Restored the RetroAchievements configuration rows to the Network settings dialog page where they are displayed, configured, and persisted.
-- **[#704](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/704)** (`RA`): **Menu Network Telemetry Initialization** — Safely initialized and brought the networking stack up from the menu prior to cold telemetry game launches.
-- **[#703](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/703)** (`Makefile`): **MMCE DEV9 Integration** — Linked MMCE's CDVD driver with the in-game DEV9 network stack in RetroAchievements builds.
-- **[#702](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/702)** (`ee_core`): **EE Core Stack Protection** — Relocated RetroAchievements buffers out of `.bss` to protect the EE stack from memory pressure and instability during game execution.
-
-## Contents
-
-[Community Contributors](#community-contributors) · [Releases](#releases) · [Quick Start](#quick-start) · [Sources and cores](#introduction) ·
-[Features](#major-features-overview) · [Fork additions](#this-forks-additions) ·
-[PS1](#ps1-games-two-cores-one-list) · [HTTP](docs/HTTP.md) · [RetroAchievements](docs/RETROACHIEVEMENTS.md) ·
-[Controls & IGR](#controls-and-in-game-reset) · [GSM](docs/GSM.md) · [PADEMU](docs/PADEMU.md) ·
-[Interface](docs/INTERFACE.md) · [Apps](#apps) · [Files and folders](#how-to-use) · [USB/MMCE/MX4SIO/iLink](#usbmmcemx4sioilink) ·
-[SMB](#smb) · [HDD](#hdd) · [APPS](#apps) · [Cheats](#cheats) · [NBD](#nbd-server) ·
-[ZSO](#zso-format) · [PS3 BC](#ps3-bc) · [Troubleshooting](#frequent-issues) ·
-[Companion tools](#external-tools--services) · [Credits](#acknowledgements)
-
 ## Releases
 
 This repository builds **Korium**, **RetroAchievements** and **IncebtIon** on the
@@ -118,13 +94,8 @@ client and ORBIT integration remain in the [parity ledger](docs/UPSTREAM-PARITY-
 - **Core switching is source-dependent:** SMB and HTTP use OPL; UDPFS/UDPBD use Neutrino. See the [source table](#introduction).
 
 ## Introduction
-
 Open PS2 Loader (OPL) is a 100% Open source game and application loader for
 the PS2 and supported backward-compatible PS3 units (see [PS3 BC](#ps3-bc)). RiptOPL source is AFL-3.0; bundled third-party components retain their own licences.
-Major capabilities include GSM video mode fixes, Virtual Memory Cards (VMC), PS2RD cheats, DS3/DS4 pad emulation, themes, and homebrew app launching.
-
-RiptOPL supports local USB, MMCE, MX4SIO, iLink and internal ATA storage, plus
-SMB, UDPFS, UDPBD and HTTP over Ethernet. Capabilities depend on both the source and loader core:
 
 | PS2 game source | Loader core | Image/layout | VMC notes |
 | --- | --- | --- | --- |
