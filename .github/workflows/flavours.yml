@@ -63,6 +63,7 @@ jobs:
         run: |
           python3 .github/scripts/test_vmc_preserve_existing.py
           python3 .github/scripts/test_native_vmc_layout.py
+          python3 .github/scripts/test_mmce_sio2man_pack.py
           python3 .github/scripts/test_bdm_private_allocation.py
           python3 .github/scripts/test_ilink_readiness.py
           python3 .github/scripts/test_ps2_logo_validation.py
