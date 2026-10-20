@@ -114,6 +114,8 @@ jobs:
         run: python3 .github/scripts/test_neutrino_args_editor.py
       - name: Check Neutrino launch arguments fit before teardown without dropping tokens
         run: python3 .github/scripts/test_neutrino_argv_budget.py
+      - name: Check Neutrino TOML rewrites and rollback on memory cards and FAT
+        run: python3 .github/scripts/test_neutrino_toml_sync.py
       - name: Check that turning Network Connectivity off and on keeps the chosen protocol
         run: python3 .github/scripts/test_net_protocol_pick.py
       - name: Check that long theme text stops at the next element and scrolls instead of overlapping

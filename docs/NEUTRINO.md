@@ -362,6 +362,12 @@ effect** (OPL shows the usual restart-to-apply notice).
 > launch**, so no hand-edit is needed; if the toml has been restructured so the `"ip=` token isn't
 > found, OPL logs it and leaves the file alone (the old hand-edit contract applies).
 
+For Neutrino installed on `mc0:` or `mc1:`, an IP rewrite recreates the TOML
+so a shorter IP cannot leave bytes from its previous ending. The short-write
+restore uses the same flags. Already matching files are not rewritten. This
+prevents new stale tails; automatic repair of files damaged by an older build
+is still pending. This follows the write-flag portion of original OPL #1011.
+
 > **Hardware note:** the UDPRDMA path (both Files and Image) is validated on emulator only so far —
 > real-PS2 confirmation is pending.
 

@@ -1,5 +1,33 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Reset integration and Neutrino memory-card writes (2026-10-20)
+
+#72 is merged as `d50a9c24`; #73 as `2d097b91`. The latter exact head
+`374e2d72` had 48 successful checks/statuses and the expected publication skip.
+Manual review verified installer idempotency, Mode 6 exclusion, failure cleanup
+and missing-patch-only scanning. No unresolved review threads or objections;
+techwritescode was requested. CodeRabbit was rate-limited and did not review
+#73. The repository has no required-review rule; the manual review and tests
+established readiness, correcting older comments that treated bot quota as a gate.
+
+Original main advanced to `2082cac3` with #1011 Neutrino memory-card TOML writes,
+#1012 menu one-shot sound replacement, #1013 HDD mini autolaunch resolution and
+#1014 PFS VMC allocation/committed inode mapping. These need separate adaptation.
+
+This change ports only #1011's two write flags into C++ `sysneutrino.cpp`:
+`O_CREAT | O_TRUNC` with mode `0666`, including short-write restoration.
+No new parser, allocation, worker, retry or launch delay. Existing matching-IP,
+missing-file and read-only behavior remains. The actual C++ function fixture
+fails on the previous source and passes MC/FAT shrink/grow, paths, no-op,
+descriptor-zero and failure/restore cases. Existing bsdfs, argument-editor,
+argv-budget and DVR fixtures and the unchanged coupling check pass locally.
+Exact-head target/host CI remains to run; no console acceptance is claimed.
+
+Automatic repair of old damaged TOML tails remains pending. Keep that separate
+from this prevention fix and verify preservation of all user-authored settings.
+Other remaining work includes the new original HDD/PFS/sound fixes, IGR worker
+request-latch parity, SDK MMCE EOF package status, and console issue #63.
+
 ## Native VMC layout and retry safety (2026-10-20)
 
 Reconciled remote integration at `796eb835`: #57/#59/#60/#62/#67 and the
