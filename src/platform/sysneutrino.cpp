@@ -325,7 +325,8 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
 
     snprintf(updated, sizeof(updated), "%.*s%s%s", (int)(valStart - toml), toml, newIp, valEnd);
 
-    fd = open(tomlPath, O_WRONLY | O_TRUNC);
+    // mcman truncates an existing file only in its O_CREAT branch.
+    fd = open(tomlPath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
     if (fd < 0) {
         LOG("[NEUTRINO] cannot rewrite %s (%d) -- ip= left as-is\n", tomlPath, fd);
         return 0; // write-protected media: proceed on the old hand-edit contract
@@ -338,7 +339,7 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         // recovery without atomic-rename support across every PS2 filesystem: put the ORIGINAL
         // content back so the user is no worse off than before the sync (old hand-edit contract).
         LOG("[NEUTRINO] short write to %s (%d/%d) -- restoring original toml\n", tomlPath, written, expected);
-        fd = open(tomlPath, O_WRONLY | O_TRUNC);
+        fd = open(tomlPath, O_WRONLY | O_CREAT | O_TRUNC, 0666);
         if (fd >= 0) {
             write(fd, toml, len);
             close(fd);
