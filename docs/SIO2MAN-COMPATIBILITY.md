@@ -20,8 +20,9 @@ Before this fix:
 
 ### 1. Preload PS2SDK `sio2man` for VMC, PADEMU, and MX4SIO
 
-- `src/platform/system.cpp` now packs `sio2man_irx` (`OPL_MODULE_ID_SIO2MAN`) whenever `CORE_IRX_MX4SIO`, `CORE_IRX_VMC`, or `PADEMU` is active.
+- `src/platform/system.cpp` now packs `sio2man_irx` (`OPL_MODULE_ID_SIO2MAN`) when `CORE_IRX_MX4SIO`, `CORE_IRX_VMC`, or `PADEMU` is active, except in native MMCE games.
 - `ee_core/src/iopmgr.c` loads `OPL_MODULE_ID_SIO2MAN` in `ResetIopSpecial()` before the game-mode switch and before `VMC` (`mcemu`), `PADEMU`, or `MX4SIO` (`mx4sio_bd`) modules start.
+- MMCE games use their own SIO2MAN: preloading the SDK copy can leave the in-game driver waiting on a lock. This follows original commit `11a5150e`; its hardware A/B result does not establish migration console acceptance.
 - `OPL_MODULE_ID_MX4SIOBD` is only started if `OPL_MODULE_ID_SIO2MAN` loaded cleanly (`sio2manLoaded > 0`).
 
 ### 2. Separate v1 and v2 Callback Storage and Wrappers

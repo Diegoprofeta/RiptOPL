@@ -63,8 +63,8 @@ def check_static_wiring() -> None:
     if "if (sio2manLoaded > 0)" not in reset_fn:
         raise AssertionError("ResetIopSpecial must gate OPL_MODULE_ID_MX4SIOBD on sio2manLoaded > 0")
 
-    if "if ((modules & (CORE_IRX_MX4SIO | CORE_IRX_VMC)) PADEMU_ARG)" not in system_text:
-        raise AssertionError("system.cpp must pack OPL_MODULE_ID_SIO2MAN when MX4SIO, VMC, or PADEMU is enabled")
+    if "if (!(modules & CORE_IRX_MMCE) && ((modules & (CORE_IRX_MX4SIO | CORE_IRX_VMC)) PADEMU_ARG))" not in system_text:
+        raise AssertionError("system.cpp must pack OPL_MODULE_ID_SIO2MAN for non-MMCE MX4SIO, VMC, or PADEMU launches")
 
     for label, text in (("mcemu.c", mcemu_text), ("pademu.c", pademu_text)):
         if 'GetExportTable("sio2man", 0x100)' not in text or 'GetExportTable("sio2man", 0x200)' not in text:
