@@ -1,5 +1,18 @@
 # Auto Loading global settings (#545)
 
+## HDD HDL mini launch resolution
+
+An OPL-Launcher/HDD-OSD-style `mini` launch supplies a startup and HDL data LBA,
+without the HDL partition name needed by Neutrino. Before handoff, RiptOPL
+matches that LBA against the existing read-only HDD game-list walk and copies
+the complete row. It preserves the launcher's startup because its CFG was
+already loaded under that key. Zero, unmatched or unreadable LBAs refuse the
+launch and use the existing cleanup/menu fallback. Menu launches and rows that
+already name a partition do not add a scan. This adapts original OPL #1013;
+physical-console verification remains separate.
+
+## Settings discovery
+
 Issue [#545](https://github.com/NathanNeurotic/Open-PS2-Loader/issues/545) tracks
 [CosmicScale's upstream report](https://github.com/ps2homebrew/Open-PS2-Loader/issues/1768)
 on an SCPH-50001: options saved as **Global** did not apply when a game was started by Auto

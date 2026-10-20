@@ -1,5 +1,33 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## HDD mini row resolution continuation (2026-10-20)
+
+#74 merged as `15c440a5` after exact `72118cb5` head passed 46 checks/statuses,
+the expected PR publication skip, completed CodeRabbit coverage and manual
+source review. No actionable inline comments or unresolved review threads;
+techwritescode reviewer request verified. This branch is based on that merge.
+
+Adapt original #1013 / `5aa7e0df` through C++ `HddSource::launch`: resolve an
+unnamed autolaunch row's data LBA through the existing read-only HDL listing
+before either core. Copy the row and preserve the launcher startup already
+used to load CFG. Zero, missing or unreadable matches refuse the handoff and
+retain the existing mini-session cleanup. Menu and named rows add no scan.
+The cold mini path adds one existing directory/header walk, no fixed wait,
+disk write, worker, cache or new public interface.
+
+The actual C++ selection/Neutrino copy fixture fails against the old empty
+partition path and passes matching-row metadata, startup preservation,
+empty/partial-error lists, refusal/cleanup and menu no-scan cases. Existing
+autolaunch settings and parental-lock fixtures and the coupling gate pass.
+Native target/matrix CI remains pending; no console result claimed.
+
+Newly identified separate gap: original `1e321048` passes the real media sector
+count in the common CDVDMAN settings. Migration still reads that bound from
+the ISO PVD and lacks the common field. Port all producers/consumers and HTTP
+layout assertions together; do not fold an ABI change into this row resolver.
+The earlier #1011 damaged-tail repair, #1012 sound and #1014 PFS VMC follow-ups
+remain open, together with SDK MMCE EOF status and console issue #63.
+
 ## Reset integration and Neutrino memory-card writes (2026-10-20)
 
 #72 is merged as `d50a9c24`; #73 as `2d097b91`. The latter exact head

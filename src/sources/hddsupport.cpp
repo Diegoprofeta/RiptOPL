@@ -2097,6 +2097,33 @@ static int hddTryNeutrinoLaunch(hdl_game_info_t *game, config_set_t *configSet)
 
 static int hddMcemuSlots[2] = {-2, -2};
 
+// A mini argv launch carries only startup + data LBA. Resolve the complete HDL
+// row through the same read-only walk as the HDD tab before either core sees it.
+static int hddResolveAutoLaunchGame(hdl_game_info_t *game)
+{
+    if (game->start_sector == 0)
+        return -1;
+
+    hdl_games_list_t list = {0, NULL};
+    int found = 0;
+    if (hddGetHDLGamelist(&list) == 0) {
+        for (u32 i = 0; i < list.count; i++) {
+            if (list.games[i].start_sector != game->start_sector)
+                continue;
+            // Its CFG was already read under the launcher's startup.
+            char startup[sizeof(game->startup)];
+            snprintf(startup, sizeof(startup), "%s", game->startup);
+            *game = list.games[i];
+            if (startup[0] != '\0')
+                snprintf(game->startup, sizeof(game->startup), "%s", startup);
+            found = 1;
+            break;
+        }
+    }
+    hddFreeHDLGamelist(&list);
+    return found ? 0 : -1;
+}
+
 void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 {
     int i, size_irx = 0;
@@ -2141,8 +2168,13 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         game = gHddSupport.activeHdl(id);
         if (game == &gHddSupport.emptyHdl)
             return; // stale/invalid id -> nothing to launch
-    } else
+    } else {
         game = gAutoLaunchGame;
+        if (game->partition_name[0] == '\0' && hddResolveAutoLaunchGame(game) < 0) {
+            LOG("HDD mini launch: no proven HDL partition at sector %u; refusing\n", (unsigned int)game->start_sector);
+            return;
+        }
+    }
 
     // D8: Neutrino core gets its own lean path FIRST -- everything below is native-core prep it
     // neither needs nor should be able to die on (see hddTryNeutrinoLaunch).
