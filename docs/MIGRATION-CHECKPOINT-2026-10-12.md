@@ -1,5 +1,46 @@
 # RiptOPL SDK/C++ migration checkpoint
 
+## Native VMC layout and retry safety (2026-10-20)
+
+Reconciled remote integration at `796eb835`: #57/#59/#60/#62/#67 and the
+native BDM alignment fix #70 are merged; there was no remaining open PR queue
+at this audit. Issue #61 is closed and the published releases use the persistent
+changelog/download format. The main compiler, host and release workflows passed.
+Do not reuse the older pending-review queue descriptions below as current state.
+
+Original reference advanced to `a23a6d77`. Adapt `fc0aba7b`'s native VMC
+extent validation to C++ `BdmLauncher` and `HddSource`: require written LBA and
+fragment outputs, a single extent covering the whole card, matching start,
+and a last sector within the native core's 32-bit address space. Mapping
+failures and PFS block-map capacity errors have separate appended messages.
+Rejected cards remain inactive; no card is created, resized, deleted or moved.
+
+The embedded module patch markers are overwritten by their first slot write.
+Retain bounded offsets for BDM/PFS so retries can clear an old card after
+mapping failure or removal. Every offset must leave room for the complete
+slot payload. This port does not enable other storage families or change
+Neutrino VMC arguments, the SDK driver, or the launch core selection.
+
+Actual production launch blocks are exercised in the C++ host fixture, including
+both slots, manual continue/cancel, autolaunch, missing/partial mapping output,
+fragmentation, mismatched/short extent, address boundaries, invalid cards,
+PFS error classification and repeated valid-to-invalid/absent transitions.
+All 85 Python host checks, HTTP tests and seven C++ suites pass. Final focused
+ASan/UBSan and language-placement checks also pass; local leak detection is
+disabled due to the existing sandbox ptrace limitation, while CI retains normal
+sanitizer behavior. The unchanged coupling-baseline check passes. Local native
+ps2build LLVM Korium links and packs (working tree based on `796eb835`, before
+this commit; dirty builds are not published): ELF SHA-256
+`a239663df106391c9df4fcda1221c1f5de6d2074d2f7a8bd01ac6882398def8c`.
+Exact-head GCC/LLVM/matrix/package CI and review remain gates before merge.
+
+Remaining priorities: installed-ps2build FAT walker evidence and any resulting
+maintainer report; current original IGR VBLANK/IOP-reset lifecycle changes
+(the original alarm design has since changed again); MMCE module/EOF fixes;
+new title defaults; native iLink/Neutrino/logo and APA POPStarter console cases.
+Source, host tests, native builds and physical console acceptance remain separate.
+No new SDK deficiency or hardware success is claimed.
+
 ## Native BDM read alignment continuation (2026-10-19)
 
 Port only `DeviceReadSectors` from original commit
