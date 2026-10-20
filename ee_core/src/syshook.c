@@ -53,10 +53,11 @@ u32 New_SifSetDma(SifDmaTransfer_t *sdd, s32 len)
     disable_padOpen_hook = 1;
     Invalidate_PadBuffer();
 
-    // Hook padOpen function to install In Game Reset
-    if (!(g_compat_mask & COMPAT_MODE_6) && padOpen_hooked == 0) {
+    // A retained pad patch does not prove the kernel worker/handler still exists.
+    if (!(g_compat_mask & COMPAT_MODE_6)) {
         Install_IGR();
-        padOpen_hooked = Install_PadOpen_Hook(0x00100000, 0x01ff0000, PADOPEN_HOOK);
+        if (padOpen_hooked == 0)
+            padOpen_hooked = Install_PadOpen_Hook(0x00100000, 0x01ff0000, PADOPEN_HOOK);
     }
 
     struct _iop_reset_pkt *reset_pkt = (struct _iop_reset_pkt *)sdd->src;

@@ -147,6 +147,12 @@ in normal play can trigger IGR by accident. Set **Mode 6 — Disable IGR** for t
 | `ee_core/src/igs_api.c` | Screenshot capture and BMP writing |
 | `include/iosupport.h` | `COMPAT_MODE_6` — the Disable IGR flag |
 
+IOP-reset interception in `ee_core/src/syshook.c` ensures the existing IGR
+worker/handler is installed whenever Mode 6 is off. A retained PadOpen patch
+is not proof that those kernel objects survived. The installer is idempotent;
+the pad-memory scan still runs only when the patch is missing. This follows
+original `dc04f59c`; migration console verification remains separate.
+
 ## See also
 
 * [CONTROLS.md](CONTROLS.md) — the full button reference

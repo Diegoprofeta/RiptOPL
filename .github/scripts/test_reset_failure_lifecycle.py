@@ -64,7 +64,8 @@ static void SifExitRpc(void) {exits++;}
 static int LoadOPLModule(int id,int mode,int n,void *p) {
  (void)id;(void)mode;(void)n;(void)p;loads++;return 1;
 }
-static void Install_IGR(void) {}
+static int igr_installs;
+static void Install_IGR(void) {igr_installs++;}
 static int pad_buffer_live, invalidations, hook_scans;
 static void Invalidate_PadBuffer(void) {
  assert(disable_padOpen_hook == 1);
@@ -91,7 +92,7 @@ static void prepare(int stage) {
  fail_stage=stage;special_calls=exits=loads=wipes=sleeps=ticks=0;
  iop_reboot_count=1;set_reg_disabled=1;set_reg_hook=0;ra_snap_iop=99;
  disable_padOpen_hook=0;g_compat_mask=COMPAT_MODE_6;
- pad_buffer_live=1;invalidations=hook_scans=0;padOpen_hooked=0;
+ pad_buffer_live=1;invalidations=hook_scans=igr_installs=0;padOpen_hooked=0;
 }
 int main(void) {
  char arg[11]="0123456789";
@@ -124,11 +125,11 @@ int main(void) {
  for(int stage=1;stage<=2;stage++) {
   prepare(stage);assert(New_SifSetDma(&dma,1)==0);
   assert(!disable_padOpen_hook && ticks==0 && loads==0);
-  assert(!pad_buffer_live && invalidations==1);
+  assert(!pad_buffer_live && invalidations==1 && igr_installs==0);
  }
  prepare(0);assert(New_SifSetDma(&dma,1)==1);
  assert(!disable_padOpen_hook);
- assert(!pad_buffer_live && invalidations==1);
+ assert(!pad_buffer_live && invalidations==1 && igr_installs==0);
 #ifdef RETROACHIEVEMENTS
  assert(ticks==1);
 #else
@@ -138,13 +139,16 @@ int main(void) {
   prepare(stage);g_compat_mask=0;padOpen_hooked=1;
   assert(New_SifSetDma(&dma,1)==(stage==0));
   assert(!pad_buffer_live && invalidations==1 && padOpen_hooked==1 && hook_scans==0);
-  assert(!disable_padOpen_hook && ticks==0);
+  assert(!disable_padOpen_hook && ticks==0 && igr_installs==1);
  }
  for(int stage=0;stage<=2;stage++) {
   prepare(stage);g_compat_mask=0;padOpen_hooked=0;
   assert(New_SifSetDma(&dma,1)==(stage==0));
-  assert(!pad_buffer_live && invalidations==1 && padOpen_hooked==1 && hook_scans==1);
+  assert(!pad_buffer_live && invalidations==1 && padOpen_hooked==1 && hook_scans==1 && igr_installs==1);
  }
+ prepare(0);g_compat_mask=0;padOpen_hooked=1;
+ assert(New_SifSetDma(&dma,1)==1 && igr_installs==1 && hook_scans==0);
+ assert(New_SifSetDma(&dma,1)==1 && igr_installs==2 && hook_scans==0);
  prepare(1);sysLoadElf("game.elf",0,NULL);
  assert(wipes==0 && loads==0 && sleeps==1 && set_reg_disabled==1);
  prepare(0);sysLoadElf("game.elf",0,NULL);
