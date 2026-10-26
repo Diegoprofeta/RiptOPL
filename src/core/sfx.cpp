@@ -64,17 +64,17 @@ void sfxSetCursorChannelsVolume(int volume)
         audsrv_adpcm_set_volume_and_pan(sfxGetCursorChannel(i), volume, 0);
 }
 
-// COALESCE the one-shot UI sounds instead of interrupting them.
+// The one-shot UI sounds (confirm / cancel / message / transition): THE NEWEST PRESS CUTS THE OLD ONE.
+//
+// Original #1012 (fixing #504) needed a fifteen-voice pool with mute/restore RPCs because stock audsrv
+// refuses to replay a voice that is still sounding. The ps2build audsrv-compat contract replaces what
+// is playing on the given channel instead, so all four share one voice and a replay is the cut: one
+// RPC, no layering of confirm over cancel, and no silent press inside the previous sound.
 //
 // #575 is two of these raised on the SAME frame -- confirming a rename plays SFX_CONFIRM in
-// diaShowKeyb and then SFX_TRANSITION from the guiSwitchScreen right after it -- which stacked into
-// one distorted noise. Sharing a channel fixed that but broke worse: audsrv has no way to stop an
-// adpcm voice, so replaying a BUSY channel left it wedged and the NEXT press went silent (#504, and
-// #575's own follow-up).
-//
-// So never interrupt. Each sound keeps its own channel, and a one-shot arriving within a frame of
-// the previous one is simply dropped -- that is the double-raise, and one sound is what was asked
-// for either way. Deliberate presses are far more than a frame apart and all still play.
+// diaShowKeyb and then SFX_TRANSITION from the guiSwitchScreen right after it. A one-shot arriving
+// within a frame of the previous one is dropped: that is the double-raise, not a press, and one
+// sound is what was asked for. Deliberate presses are far more than a frame apart and all play.
 constexpr int SFX_ONESHOT_COALESCE_MS = 50;
 
 static int sfxIsUiOneShot(int id)
@@ -386,14 +386,14 @@ void SoundEffects::play(int id)
             // Volumes are configured once by audioSetVolume(). Replaying a
             // rotation channel replaces its old sample in one SIF RPC.
             audsrv_ch_play_adpcm(channel, &adpcm_[id]);
+        } else if (sfxIsUiOneShot(id)) { // see SFX_ONESHOT_COALESCE_MS
+            static u32 lastOneShotTicks = 0;
+            if (lastOneShotTicks != 0 &&
+                (sfxStartTicks - lastOneShotTicks) / SFX_CLOCKS_PER_MS < SFX_ONESHOT_COALESCE_MS)
+                return;
+            lastOneShotTicks = sfxStartTicks;
+            audsrv_ch_play_adpcm(SFX_CANCEL, &adpcm_[id]); // one shared voice: the replay is the cut
         } else {
-            if (sfxIsUiOneShot(id)) { // see SFX_ONESHOT_COALESCE_MS
-                static u32 lastOneShotTicks = 0;
-                if (lastOneShotTicks != 0 &&
-                    (sfxStartTicks - lastOneShotTicks) / SFX_CLOCKS_PER_MS < SFX_ONESHOT_COALESCE_MS)
-                    return;
-                lastOneShotTicks = sfxStartTicks;
-            }
             audsrv_ch_play_adpcm(id, &adpcm_[id]);
         }
 
