@@ -449,3 +449,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: ペアレンタルロックのパスワードを設定してください。設定しないとこのゲームはロックされません。
   SAVE_ICONS: 3D セーブアイコン
   HINT_SAVE_ICONS: テーマに場所があれば、選んだゲームのセーブアイコンを回転させて表示します。まずゲーム自身の VMC を、次にメモリーカードを読みます。
+  HINT_NET_PROTOCOL: RiptOPL が使うネットワークサービス：SMB 共有、UDPFS、UDPBD、HTTP。ゲームソースの設定と同じです。動作中のものから切り替えるには再起動が必要です。
+  HINT_UDPFS_ACCESS: UDPFS のみ。「ファイル」はサーバーのゲームフォルダから個別の ISO を読み、IMG はディスクイメージをドライブとして読みます。SMB と HTTP は常に「ファイル」、UDPBD は常に IMG です。
+  HINT_SMB_VERSION: PC の共有と話す SMB のバージョン。
+  HINT_NET_ADVANCED: イーサネットのリンクモードと SMB ポートを編集できるようにします。
+  HINT_ETH_LINK_MODE: ネットワークのリンク速度とデュプレックスを固定します。リンクが切れ続けるのでなければ自動のままにしてください。
+  HINT_IP_ADDR_TYPE: 固定は下のアドレスを使い、DHCP はルーターに尋ねます。UDPFS と UDPBD は常に固定です。
+  HINT_PS2_IP: PS2 自身の IP アドレス。PC と同じ範囲で、ほかの機器が使っていないものを選んでください。
+  HINT_NETMASK: サブネットマスク。通常は 255.255.255.0。
+  HINT_GATEWAY: ルーターのアドレス。通常は最初の 3 つの数字が同じで、.1 で終わります。
+  HINT_DNS: DNS サーバーのアドレス。通常はゲートウェイと同じです。
+  HINT_SMB_ADDR_TYPE: PC に IP アドレスで接続するか、NetBIOS（コンピューター）名で接続するか。
+  HINT_SMB_ADDRESS: ゲームを共有している PC：その IP アドレス、またはアドレスの種類が NetBIOS ならコンピューター名。
+  HINT_SMB_PORT: SMB ポート。PC と一致させる必要があります：PS2 Servers は 1111、Windows と Samba の共有は 445 を使います。
+  HINT_SMB_USER: SMB のユーザー名。ほとんどの共有では guest で動きます。
+  HINT_HTTP_SERVER: HTTP ゲームサーバーの IP アドレス。
+  HINT_HTTP_PORT: HTTP ゲームサーバーが待ち受けるポート。
+  HINT_HTTP_BASE: HTTP サーバー上で games.csv を置いているフォルダ。/ はサーバーのルートです。
+  HINT_HTTP_TEST: 上の値で HTTP サーバーを試し、結果を報告します。
+  HINT_RA_TELEMETRY: RetroAchievements のメインスイッチ。オフではネットワークスタックもスナップショットもなしでゲームを起動し、通常のビルドと同じです。
+  HINT_RA_BADGES: リストで実績のあるゲームに印を付けます。テレメトリーがオフの間は暗いままです。
+  HINT_POPS_NET_BUTTON: SMB での PS1 ゲームに必要な、POPSTARTER 自身のネットワークファイル（IPCONFIG.DAT、SMBCONFIG.DAT）を編集します。
+  HINT_POPS_IP_TYPE: PS1 ゲームを SMB で動かす間に PS2 がアドレスを得る方法：固定か DHCP。
+  HINT_POPS_IP: PS1 ゲームを SMB で動かす間の PS2 の IP アドレス。
+  HINT_POPS_SMB_IP: PS1 ゲームを共有している PC の IP アドレス。
+  HINT_POPS_SMB_SHARE: その PC で POPS フォルダを置いている共有の名前。
+  HINT_LASTPLAYED: 前回起動したゲームから始めます。
+  HINT_LANGUAGE: メニューの言語。lang_*.lng ファイルを LNG フォルダに入れると増やせます。
+  HINT_DEFDEVICE: 起動時に RiptOPL が開くページ。
+  HINT_MMCE_MODE: SD2PSX や MemCard PRO2 上のゲーム。自動は起動時に、手動はページを開いたときに開始し、オフでは非表示にします。
+  HINT_ENABLE_USB: USB ストレージのドライバーを読み込みます。
+  HINT_ENABLE_MX4SIO: MX4SIO SD カードアダプターのドライバーを読み込みます。
+  HINT_ENABLE_ILINK: iLink（FireWire）ストレージのドライバーを読み込みます。
+  HINT_NETSTART: ネットワークを開始します：自動は起動時、手動はそのページを開いたとき。オフではネットワークアダプターに触れません。
+  HINT_APPMODE: アプリのページ。自動は起動時に、手動は開いたときに開始し、オフでは非表示にします。
+  HINT_FAVMODE: お気に入りゲームのページ。自動は起動時に、手動は開いたときに開始し、オフでは非表示にします。
+  HINT_VCD_LIST_BUTTON: PS1 ゲームの並べ方：ゲーム ID を隠す、ディスク 1 だけを表示、HDD の PP パーティションを表示。
+  HINT_MMCE_SLOT: MMCE デバイスが挿さっているメモリーカードスロット。自動で見つけます。
+  HINT_MMCE_GAMEID: 起動するゲームを MMCE デバイスに伝え、そのゲームのメモリーカードに切り替えられるようにします。
+  HINT_MMCE_PREFIX: MMCE カード上で CD、DVD、そのほかの OPL フォルダを置いているサブフォルダ。空欄ならカードのルートを使います。
+  HINT_GAME_TYPE_LABELS: 各ゲーム名の先頭に [PS1] か [PS2] を付けます。表示のみ。
+  HINT_MENU_VMODE: メニューの映像出力。ゲームは代わりに GSM を使います。新しいモードを維持するには決定を押し続けてください。
+  HINT_THEME: メニューの見た目。テーマは各デバイスの THM フォルダから読み込みます。
+  HINT_COVERFLOW_BUTTON: Coverflow テーマのカバーの数、大きさ、アニメーション、暗さ。
+  HINT_ARTWORK_BUTTON: 読み込むアート：カバー、ディスクアート、背景、セーブアイコン。
+  HINT_COLORS_BUTTON: 文字、ハイライト、ダイアログ、背景の色。
+  HINT_NOTIFICATIONS: 設定、テーマ、言語ファイルを読み込んだときの短いお知らせ。
+  HINT_AUTOSORT: ゲームリストを A から Z に並べます。オフでは見つかった順のままです。
+  HINT_AUTOREFRESH: 手動で更新しなくても、新しくつないだデバイスのゲームを加えます。
+  HINT_COVERART: ART フォルダからカバーアートを読み込みます。
+  HINT_DISCART: ディスクアート（<ID>_ICO）を表示します。オフではディスクを隠し、カバーと背景は残します。
+  HINT_BGART: テーマが背景を使う場合、ゲームの背景（<ID>_BG）を表示します。
+  HINT_ART_TAR: ART/art.tar にまとめたアートも読み込みます。
+  HINT_ART_DELAY: カーソルがゲームに止まってからアートを読み込むまでの時間。長いほど、速くスクロールしたときにアートを飛ばします。
+  HINT_TXTCOLOR: 通常のメニュー文字の色。
+  HINT_SELCOLOR: ハイライトした項目の色。
+  HINT_UICOLOR: ダイアログボックスの背景の色合い。
+  HINT_TITLECOLOR: リストのゲームタイトルの色。
+  HINT_BGCOLOR: メニューの背景色。
+  HINT_PLASCOLOR: 動く背景に混ぜる色。
+  HINT_RESETCOLOR: テーマのものではなく、RiptOPL の内蔵の色に戻します。
+  HINT_WIDESCREEN: 16:9 のテレビ向けにメニューを描きます。
+  HINT_XOFF: 画面上でメニューを左右に動かします。
+  HINT_YOFF: 画面上でメニューを上下に動かします。
+  HINT_MENU_OVERSCAN: テレビが端を切ってしまう場合に、メニューを内側に縮めます。
+  HINT_APPLYGAMEID: ゲームの起動時にバーコードを表示し、Pixel FX、RetroGEM、PS2Digital の機器がプロファイルを切り替えられるようにします。
+  HINT_ENWRITEOP: ゲームの名前変更と削除、VMC の作成を許可します。HDD のパーティションテーブルには決して触れません。
+  HINT_DEBUG: 開発者向け：ゲームの起動中に色付きの画面を出し、メニューにアート読み込みのカウンターを表示します。
+  HINT_BDMPREFIX: USB、MX4SIO、iLink、exFAT のドライブでゲームフォルダを置いているサブフォルダ。空欄ならドライブのルートを使います。
+  HINT_ETHPREFIX: SMB 共有でゲームフォルダを置いているサブフォルダ。空欄なら共有のルートを使います。
+  HINT_HDDGAMELISTCACHE: APA HDD のゲームリストを覚えておき、次回以降のスキャンを速くします。
+  HINT_BDMCACHE: ゲーム中の USB などの BDM ドライブの先読みキャッシュ。大きいほどストリーミングが滑らかになることがありますが、メモリーを多く使います。
+  HINT_HDDCACHE: ゲーム中の内蔵 HDD の先読みキャッシュ。
+  HINT_SMBCACHE: ゲーム中の SMB の先読みキャッシュ。
+  HINT_CORE_LOADER: 両方に対応する場合にこのゲームで使うコア。UDPFS/UDPBD は Neutrino のみ、SMB/HTTP は <OPL> のみ。既定は「ゲームの起動」に従います。
+  HINT_DMA_MODE: このゲームの内蔵 HDD の転送モード。ゲームがカクついたり固まったりするなら下げてください。
+  HINT_DNAS_GAMEID: DNAS オンラインゲームのディスク ID。「ディスクから読み込む」は元のディスクから読みます。
+  HINT_LOAD_FROM_DISC: ドライブに入っている元のディスクから DNAS ID を読みます。
+  HINT_ALTSTARTUP: SYSTEM.CNF が指定するものの代わりに、ディスクイメージからこの ELF を起動します。
+  HINT_VMC_DEFINE: このスロットの仮想メモリーカードを選ぶ、作る、またはサイズを変えます。
+  HINT_VMC_ACTION: 「共通を使う」はこのスロットに共有のカードを割り当て、「リセット」は選択を解除します。
+  HINT_VMC_NAME: VMC フォルダに置くカードファイルの名前。
+  HINT_VMC_CREATE: カードを作成するか、新しいサイズを適用します。
+  HINT_VMC_DELETE: このカードファイルを削除します。
+  HINT_SFX: メニューの効果音。
+  HINT_BOOT_SND: RiptOPL の起動時に音を鳴らします。
+  HINT_BGM: テーマの音楽、またはデフォルトのテーマ音楽ファイルを再生します。
+  HINT_SFX_VOLUME: メニューの効果音の音量。
+  HINT_BOOT_SND_VOLUME: 起動音の音量。
+  HINT_BGM_VOLUME: BGM の音量。
+  HINT_SCROLL: 方向を押し続けたときにリストがスクロールする速さ。
+  HINT_SELECTBUTTON: 決定ボタン：バツか丸か。
+  HINT_XSENSITIVITY: 左スティックでカーソルが左右に動く感度。オフでは無視します。
+  HINT_YSENSITIVITY: 左スティックでカーソルが上下に動く感度。オフでは無視します。

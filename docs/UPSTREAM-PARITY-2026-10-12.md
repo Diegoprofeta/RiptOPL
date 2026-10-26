@@ -30,13 +30,16 @@ row is source/host-tested only; none is hardware-tested.
 | #1005 MMCE end of directory | Ported in `f5fa0b2` as an embedded `mmceman_fork`. The ps2build package also lacked the close-slot and ENOENT fixes, so all four ship. |
 | Original PS1 scan hardening (pre-`b35ff38c`) | Ported with this refresh: a listing cut short, an unreadable game folder or a failed allocation keeps the last-good Ember list, and rows grow on demand instead of reserving 2,048. |
 | Original 3D `SaveIcon` element (fork-gaps OR1) | Ported with this refresh. Each source names a PS1 row's VMC folder through `GameSource::ps1SaveDir`, and favourites resolve VMC paths through `rowPrefix`, so the element adds no upward dependency. Ethernet and HDD rows, Ember and POPSTARTER, are covered as in the original. Default off. NOT TESTED on hardware. |
+| Original settings hint sweep (`-1` hints) | Ported with this refresh: 138 dialog rows now carry the original's hint (93 strings, translations carried over). Rows for features RiptOPL does not have yet (DVR, PC CARD CF, RA mode/host IP/experimental cards, Neutrino argument preview) get theirs with those features. |
 | #1044 release build versions | Already covered: every RiptOPL build job checks out with `fetch-depth: 0`. |
 | #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
 | #1047, #998, #1025 | Original-only documentation; nothing to port. |
 
 Remaining gaps found by this audit:
 - RA mode/host IP/experimental cards and PS1 watch keys in the RA badge, the
-  INGAMEDIAG freeze report, `-1` dialog hints and `audit_translations.py`.
+  INGAMEDIAG freeze report and `audit_translations.py`.
+- The Neutrino argument preview (`neutrino_show_args`: show the composed argv and ask
+  before each Neutrino launch), from the original's #966 era.
 
 ## Refresh at original `b35ff38c` (2026-10-18)
 

@@ -459,3 +459,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Állíts be szülői zár jelszót, különben ez a játék nem lesz zárolva.
   SAVE_ICONS: 3D mentésikonok
   HINT_SAVE_ICONS: A kiválasztott játék mentésikonját forogva mutatja ott, ahol a téma helyet ad neki. Előbb a játék saját VMC-jét olvassa, aztán a memóriakártyákat.
+  HINT_NET_PROTOCOL: 'Melyik hálózati szolgáltatást használja a RiptOPL: SMB megosztás, UDPFS, UDPBD vagy HTTP. Ugyanaz a beállítás, mint a Játékforrásokban. Egy már futóról váltáshoz újraindítás kell.'
+  HINT_UDPFS_ACCESS: Csak UDPFS. A Fájlok a szerver játékmappájából olvas különálló ISO-kat; az IMG egy lemezképet meghajtóként olvas. Az SMB és a HTTP mindig Fájlokat, az UDPBD mindig IMG-t használ.
+  HINT_SMB_VERSION: Melyik SMB verzióval beszéljen a PC megosztásával.
+  HINT_NET_ADVANCED: Szerkeszthetővé teszi az Ethernet kapcsolati módot és az SMB portot.
+  HINT_ETH_LINK_MODE: Kényszeríti a hálózati kapcsolat sebességét és duplex módját. Hagyd Automatikuson, hacsak a kapcsolat nem szakad meg folyton.
+  HINT_IP_ADDR_TYPE: A Statikus az alábbi címet használja; a DHCP a routertől kér. Az UDPFS és az UDPBD mindig Statikust használ.
+  HINT_PS2_IP: A PS2 saját IP-címe. Válassz olyat, amelyet más eszköz nem használ, a PC-ddel azonos tartományban.
+  HINT_NETMASK: Alhálózati maszk, általában 255.255.255.0.
+  HINT_GATEWAY: A routered címe, általában ugyanazzal az első három számmal, .1-re végződve.
+  HINT_DNS: A DNS szerver címe. Általában ugyanaz, mint az átjáró.
+  HINT_SMB_ADDR_TYPE: A PC elérése az IP-címével vagy a NetBIOS (számítógép-) nevével.
+  HINT_SMB_ADDRESS: 'A játékaidat megosztó PC: az IP-címe, vagy a számítógép neve, ha a Címtípus NetBIOS.'
+  HINT_SMB_PORT: 'SMB port. Egyeznie kell a PC-vel: a PS2 Servers 1111-et, a Windows és Samba megosztások 445-öt használnak.'
+  HINT_SMB_USER: SMB felhasználónév. A legtöbb megosztásnál a guest működik.
+  HINT_HTTP_SERVER: A HTTP játékszerver IP-címe.
+  HINT_HTTP_PORT: A port, amelyen a HTTP játékszerver figyel.
+  HINT_HTTP_BASE: A HTTP szerver azon mappája, amely a games.csv fájlt tartalmazza. A / a szerver gyökere.
+  HINT_HTTP_TEST: Kipróbálja a HTTP szervert a fenti értékekkel, és jelenti, mit talált.
+  HINT_RA_TELEMETRY: A RetroAchievements főkapcsolója. Kikapcsolva a játékok hálózati verem és pillanatképek nélkül indulnak, ugyanúgy, mint egy normál buildben.
+  HINT_RA_BADGES: Megjelöli a listában a teljesítményekkel rendelkező játékokat. Amíg a telemetria ki van kapcsolva, sötét marad.
+  HINT_POPS_NET_BUTTON: Szerkeszti a POPSTARTER saját hálózati fájljait (IPCONFIG.DAT, SMBCONFIG.DAT), amelyekre az SMB-n futó PS1 játékoknak szükségük van.
+  HINT_POPS_IP_TYPE: 'Hogyan kap címet a PS2, amíg egy PS1 játék SMB-n fut: Statikus vagy DHCP.'
+  HINT_POPS_IP: A PS2 IP-címe, amíg egy PS1 játék SMB-n fut.
+  HINT_POPS_SMB_IP: A PS1 játékaidat megosztó PC IP-címe.
+  HINT_POPS_SMB_SHARE: Annak a megosztásnak a neve azon a PC-n, amelyik a POPS mappát tartalmazza.
+  HINT_LASTPLAYED: A legutóbb indított játéknál kezd.
+  HINT_LANGUAGE: A menü nyelve. Továbbiakat lang_*.lng fájlok LNG mappába tételével adhatsz hozzá.
+  HINT_DEFDEVICE: Az oldal, amelyet a RiptOPL indításkor megnyit.
+  HINT_MMCE_MODE: SD2PSX-en vagy MemCard PRO2-n lévő játékok. Az Automatikus indításkor, a Kézi az oldal megnyitásakor indul, a Ki elrejti.
+  HINT_ENABLE_USB: Betölti az USB tároló illesztőprogramját.
+  HINT_ENABLE_MX4SIO: Betölti az MX4SIO SD kártya adapter illesztőprogramját.
+  HINT_ENABLE_ILINK: Betölti az iLink (FireWire) tároló illesztőprogramját.
+  HINT_NETSTART: 'Elindítja a hálózatot: Automatikus indításkor, Kézi az oldala megnyitásakor. A Ki nem nyúl a hálózati adapterhez.'
+  HINT_APPMODE: Az Alkalmazások oldal. Az Automatikus indításkor, a Kézi megnyitáskor indul, a Ki elrejti.
+  HINT_FAVMODE: A Kedvenc játékok oldal. Az Automatikus indításkor, a Kézi megnyitáskor indul, a Ki elrejti.
+  HINT_VCD_LIST_BUTTON: 'Hogyan listázódnak a PS1 játékok: játékazonosítók elrejtése, csak az 1. lemez mutatása, a HDD PP partícióinak mutatása.'
+  HINT_MMCE_SLOT: Melyik memóriakártya-foglalatban van az MMCE eszköz. Az Automatikus megtalálja.
+  HINT_MMCE_GAMEID: Megmondja az MMCE eszköznek, melyik játék indul, hogy átválthasson annak a játéknak a memóriakártyájára.
+  HINT_MMCE_PREFIX: Az MMCE kártya azon almappája, amely a CD, DVD és a többi OPL mappát tartalmazza. Üresen a kártya gyökerét használja.
+  HINT_GAME_TYPE_LABELS: Minden játéknév elé [PS1] vagy [PS2] jelölést tesz. Csak megjelenítés.
+  HINT_MENU_VMODE: A menü videókimenete. A játékok ehelyett GSM-et használnak. Új mód megtartásához tartsd lenyomva az Elfogadást.
+  HINT_THEME: A menü kinézete. A témák minden eszköz THM mappájából olvasódnak be.
+  HINT_COVERFLOW_BUTTON: Borítók száma, mérete, animációja és sötétítése a Coverflow témához.
+  HINT_ARTWORK_BUTTON: 'Mely képek töltődnek be: borítók, lemezképek, hátterek és mentésikonok.'
+  HINT_COLORS_BUTTON: Szöveg, kiemelés, párbeszédablak és háttér színei.
+  HINT_NOTIFICATIONS: Rövid értesítések beállítás-, téma- vagy nyelvfájl betöltésekor.
+  HINT_AUTOSORT: A játéklistákat A-tól Z-ig rendezi. Kikapcsolva megtartja a megtalálás sorrendjét.
+  HINT_AUTOREFRESH: Kézi frissítés nélkül hozzáadja az újonnan csatlakoztatott eszközök játékait.
+  HINT_COVERART: Borítókat tölt be az ART mappából.
+  HINT_DISCART: Lemezképet mutat (<ID>_ICO). Kikapcsolva elrejti a lemezt, de a borítókat és háttereket megtartja.
+  HINT_BGART: Megmutatja a játék hátterét (<ID>_BG), ha a téma használ hátteret.
+  HINT_ART_TAR: Az ART/art.tar fájlba csomagolt képeket is beolvassa.
+  HINT_ART_DELAY: Mennyi ideig áll a kurzor egy játékon, mielőtt a képei betöltődnek. A nagyobb érték gyors görgetéskor kihagyja a képeket.
+  HINT_TXTCOLOR: A normál menüszöveg színe.
+  HINT_SELCOLOR: A kiemelt elem színe.
+  HINT_UICOLOR: A párbeszédablakok háttérárnyalata.
+  HINT_TITLECOLOR: A játékcímek színe a listában.
+  HINT_BGCOLOR: A menü háttérszíne.
+  HINT_PLASCOLOR: A mozgó háttérbe kevert szín.
+  HINT_RESETCOLOR: A RiptOPL beépített színeit állítja vissza, nem a témáét.
+  HINT_WIDESCREEN: 16:9-es tévéhez rajzolja a menüt.
+  HINT_XOFF: Balra vagy jobbra mozgatja a menüt a képernyőn.
+  HINT_YOFF: Fel vagy le mozgatja a menüt a képernyőn.
+  HINT_MENU_OVERSCAN: Befelé zsugorítja a menüt, ha a tévé levágja a széleit.
+  HINT_APPLYGAMEID: Játékindításkor vonalkódot mutat, hogy a Pixel FX, RetroGEM és PS2Digital eszközök profilt váltsanak.
+  HINT_ENWRITEOP: Engedélyezi a játékok átnevezését és törlését, valamint VMC-k létrehozását. A HDD partíciós táblájához sosem nyúl.
+  HINT_DEBUG: 'Fejlesztői segítség: színes képernyők a játék indulása közben, és képbetöltési számlálók a menüben.'
+  HINT_BDMPREFIX: Az USB, MX4SIO, iLink és exFAT meghajtók azon almappája, amely a játékmappákat tartalmazza. Üresen a meghajtó gyökerét használja.
+  HINT_ETHPREFIX: Az SMB megosztás azon almappája, amely a játékmappákat tartalmazza. Üresen a megosztás gyökerét használja.
+  HINT_HDDGAMELISTCACHE: Megjegyzi az APA HDD játéklistáját a későbbi beolvasások gyorsításához.
+  HINT_BDMCACHE: Előreolvasó gyorsítótár USB-hez és más BDM meghajtókhoz játék közben. A nagyobb simábbá teheti az adatfolyamot, de több memóriát használ.
+  HINT_HDDCACHE: Előreolvasó gyorsítótár a belső HDD-hez játék közben.
+  HINT_SMBCACHE: Előreolvasó gyorsítótár az SMB-hez játék közben.
+  HINT_CORE_LOADER: A játék magja ott, ahol mindkettő támogatott. Az UDPFS/UDPBD csak Neutrino; az SMB/HTTP csak <OPL>. Az alapértelmezett a Játékindítást követi.
+  HINT_DMA_MODE: A belső HDD átviteli módja ehhez a játékhoz. Csökkentsd, ha a játék akad vagy lefagy.
+  HINT_DNAS_GAMEID: Lemezazonosító DNAS online játékokhoz. A Betöltés lemezről az eredeti lemezről olvassa be.
+  HINT_LOAD_FROM_DISC: A DNAS azonosítót a meghajtóban lévő eredeti lemezről olvassa be.
+  HINT_ALTSTARTUP: Ezt az ELF-et indítja a lemezképről a SYSTEM.CNF által megnevezett helyett.
+  HINT_VMC_DEFINE: A foglalat virtuális memóriakártyájának kiválasztása, létrehozása vagy átméretezése.
+  HINT_VMC_ACTION: Az Általános használata közös kártyát ad ennek a foglalatnak; az Alaphelyzet törli a választást.
+  HINT_VMC_NAME: A kártyafájl neve, a VMC mappában tárolva.
+  HINT_VMC_CREATE: Létrehozza a kártyát, vagy új méretet alkalmaz rá.
+  HINT_VMC_DELETE: Törli ezt a kártyafájlt.
+  HINT_SFX: A menü hangeffektusai.
+  HINT_BOOT_SND: Hangot játszik le a RiptOPL indulásakor.
+  HINT_BGM: A téma zenéjét vagy az Alapértelmezett témazene fájlodat játssza le.
+  HINT_SFX_VOLUME: A menü hangeffektusainak hangereje.
+  HINT_BOOT_SND_VOLUME: Az indítóhang hangereje.
+  HINT_BGM_VOLUME: A háttérzene hangereje.
+  HINT_SCROLL: Milyen gyorsan görögnek a listák, amikor nyomva tartasz egy irányt.
+  HINT_SELECTBUTTON: 'Melyik gomb fogad el: X vagy Kör.'
+  HINT_XSENSITIVITY: Milyen könnyen mozgatja a bal kar a kurzort balra és jobbra. Kikapcsolva figyelmen kívül hagyja.
+  HINT_YSENSITIVITY: Milyen könnyen mozgatja a bal kar a kurzort fel és le. Kikapcsolva figyelmen kívül hagyja.

@@ -371,3 +371,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Defina un contrasinal de control parental, ou este xogo non quedará bloqueado.
   SAVE_ICONS: Iconas 3D de gardados
   HINT_SAVE_ICONS: Mostra a icona de gardado do xogo escollido, xirando, onde o tema ten sitio para ela. Le primeiro o propio VMC do xogo, e despois as tarxetas de memoria.
+  HINT_NET_PROTOCOL: 'Que servizo de rede usa RiptOPL: un recurso SMB, UDPFS, UDPBD ou HTTP. O mesmo axuste que en Orixes de xogos. Cambiar desde un que xa estea funcionando require reiniciar.'
+  HINT_UDPFS_ACCESS: Só UDPFS. Ficheiros le ISO soltos do cartafol de xogos do servidor; IMG le unha imaxe de disco como unidade. SMB e HTTP usan sempre Ficheiros, UDPBD sempre IMG.
+  HINT_SMB_VERSION: Que versión de SMB falar co recurso do PC.
+  HINT_NET_ADVANCED: Desbloquea para editar o modo de ligazón Ethernet e o porto SMB.
+  HINT_ETH_LINK_MODE: Forza a velocidade e o dúplex da ligazón de rede. Déixeo en Auto salvo que a ligazón caia a miúdo.
+  HINT_IP_ADDR_TYPE: Estática usa o enderezo de abaixo; DHCP pregúntallo ao seu router. UDPFS e UDPBD usan sempre Estática.
+  HINT_PS2_IP: O enderezo IP propio da PS2. Escolla un que non use ningún outro dispositivo, no mesmo rango que o seu PC.
+  HINT_NETMASK: Máscara de subrede, normalmente 255.255.255.0.
+  HINT_GATEWAY: O enderezo do seu router, normalmente os mesmos tres primeiros números rematando en .1.
+  HINT_DNS: Enderezo do servidor DNS. Normalmente o mesmo que a pasarela.
+  HINT_SMB_ADDR_TYPE: Chegar ao PC polo seu enderezo IP ou polo seu nome NetBIOS (nome do ordenador).
+  HINT_SMB_ADDRESS: 'O PC que comparte os seus xogos: o seu enderezo IP, ou o nome do ordenador cando o Tipo de enderezo é NetBIOS.'
+  HINT_SMB_PORT: 'Porto SMB. Debe coincidir co PC: PS2 Servers usa 1111, os recursos de Windows e Samba usan 445.'
+  HINT_SMB_USER: Nome de usuario SMB. guest funciona na maioría dos recursos.
+  HINT_HTTP_SERVER: Enderezo IP do servidor de xogos HTTP.
+  HINT_HTTP_PORT: Porto no que escoita o servidor de xogos HTTP.
+  HINT_HTTP_BASE: Cartafol do servidor HTTP que contén games.csv. / é a raíz do servidor.
+  HINT_HTTP_TEST: Proba o servidor HTTP cos valores de arriba e informa do que atopou.
+  HINT_RA_TELEMETRY: Interruptor xeral de RetroAchievements. Desactivado inicia os xogos sen pila de rede nin instantáneas, igual que unha compilación normal.
+  HINT_RA_BADGES: Marca na lista os xogos que teñen logros. Queda escuro mentres a telemetría está desactivada.
+  HINT_POPS_NET_BUTTON: Edita os propios ficheiros de rede de POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), que precisan os xogos de PS1 por SMB.
+  HINT_POPS_IP_TYPE: 'Como obtén a PS2 o seu enderezo mentres un xogo de PS1 funciona por SMB: Estática ou DHCP.'
+  HINT_POPS_IP: O enderezo IP da PS2 mentres un xogo de PS1 funciona por SMB.
+  HINT_POPS_SMB_IP: Enderezo IP do PC que comparte os seus xogos de PS1.
+  HINT_POPS_SMB_SHARE: Nome do recurso compartido nese PC que contén o cartafol POPS.
+  HINT_LASTPLAYED: Comeza no xogo que iniciou a última vez.
+  HINT_LANGUAGE: Idioma do menú. Engada máis poñendo ficheiros lang_*.lng nun cartafol LNG.
+  HINT_DEFDEVICE: A páxina na que abre RiptOPL ao arrincar.
+  HINT_MMCE_MODE: Xogos nun SD2PSX ou MemCard PRO2. Auto inicia ao arrincar, Manual ao abrir a páxina, Desactivado ocúltaa.
+  HINT_ENABLE_USB: Carga o controlador de almacenamento USB.
+  HINT_ENABLE_MX4SIO: Carga o controlador do adaptador de tarxetas SD MX4SIO.
+  HINT_ENABLE_ILINK: Carga o controlador de almacenamento iLink (FireWire).
+  HINT_NETSTART: 'Inicia a rede: Auto ao arrincar, Manual ao abrir a súa páxina. Desactivado non toca o adaptador de rede.'
+  HINT_APPMODE: A páxina de aplicacións. Auto inicia ao arrincar, Manual ao abrila, Desactivado ocúltaa.
+  HINT_FAVMODE: A páxina de Xogos favoritos. Auto inicia ao arrincar, Manual ao abrila, Desactivado ocúltaa.
+  HINT_VCD_LIST_BUTTON: 'Como se listan os xogos de PS1: ocultar os ID, mostrar só o disco 1, mostrar as particións PP do HDD.'
+  HINT_MMCE_SLOT: En que ranura de tarxeta de memoria está o dispositivo MMCE. Auto atópao.
+  HINT_MMCE_GAMEID: Indica ao dispositivo MMCE que xogo comeza, para que poida cambiar á tarxeta de memoria dese xogo.
+  HINT_MMCE_PREFIX: Subcartafol da tarxeta MMCE que contén CD, DVD e os outros cartafoles de OPL. Baleiro usa a raíz da tarxeta.
+  HINT_GAME_TYPE_LABELS: Comeza cada nome de xogo con [PS1] ou [PS2]. Só para a vista.
+  HINT_MENU_VMODE: Saída de vídeo do menú. Os xogos usan GSM no seu lugar. Manteña Confirmar para conservar un modo novo.
+  HINT_THEME: O aspecto do menú. Os temas lense do cartafol THM de cada dispositivo.
+  HINT_COVERFLOW_BUTTON: Número de portadas, tamaño, animación e escurecemento para o tema Coverflow.
+  HINT_ARTWORK_BUTTON: 'Que imaxes se cargan: portadas, imaxes de disco, fondos e iconas de gardados.'
+  HINT_COLORS_BUTTON: Cores de texto, resalte, diálogo e fondo.
+  HINT_NOTIFICATIONS: Avisos breves cando se carga un ficheiro de configuración, tema ou idioma.
+  HINT_AUTOSORT: Ordena as listas de xogos de A a Z. Desactivado mantén a orde en que se atoparon.
+  HINT_AUTOREFRESH: Engade xogos de dispositivos recén conectados sen actualizar a man.
+  HINT_COVERART: Carga as portadas do cartafol ART.
+  HINT_DISCART: Mostra a imaxe do disco (<ID>_ICO). Desactivado oculta o disco pero mantén portadas e fondos.
+  HINT_BGART: Mostra o fondo dun xogo (<ID>_BG) cando o tema o usa.
+  HINT_ART_TAR: Le tamén as imaxes empaquetadas en ART/art.tar.
+  HINT_ART_DELAY: Canto tempo descansa o cursor nun xogo antes de cargar as súas imaxes. Un valor maior omite imaxes mentres se despraza rápido.
+  HINT_TXTCOLOR: Cor do texto normal do menú.
+  HINT_SELCOLOR: Cor do elemento resaltado.
+  HINT_UICOLOR: Ton de fondo das caixas de diálogo.
+  HINT_TITLECOLOR: Cor dos títulos dos xogos na lista.
+  HINT_BGCOLOR: Cor de fondo do menú.
+  HINT_PLASCOLOR: Cor mesturada no fondo animado.
+  HINT_RESETCOLOR: Restablece as cores integradas de RiptOPL, non as do tema.
+  HINT_WIDESCREEN: Debuxa o menú para un televisor 16:9.
+  HINT_XOFF: Move o menú á esquerda ou á dereita na pantalla.
+  HINT_YOFF: Move o menú arriba ou abaixo na pantalla.
+  HINT_MENU_OVERSCAN: Encolle o menú cara a dentro se o televisor corta os bordos.
+  HINT_APPLYGAMEID: Mostra un código de barras ao comezar un xogo, para que os dispositivos Pixel FX, RetroGEM e PS2Digital cambien de perfil.
+  HINT_ENWRITEOP: Permite renomear e borrar xogos e crear VMC. Nunca toca a táboa de particións do HDD.
+  HINT_DEBUG: 'Axuda para desenvolvedores: pantallas de cores mentres arrinca un xogo, e contadores de carga de imaxes no menú.'
+  HINT_BDMPREFIX: Subcartafol en unidades USB, MX4SIO, iLink e exFAT que contén os cartafoles de xogos. Baleiro usa a raíz da unidade.
+  HINT_ETHPREFIX: Subcartafol no recurso SMB que contén os cartafoles de xogos. Baleiro usa a raíz do recurso.
+  HINT_HDDGAMELISTCACHE: Lembra a lista de xogos do HDD APA para acelerar as buscas posteriores.
+  HINT_BDMCACHE: Caché de lectura anticipada para USB e outras unidades BDM durante o xogo. Maior pode suavizar a transmisión pero usa máis memoria.
+  HINT_HDDCACHE: Caché de lectura anticipada para o HDD interno durante o xogo.
+  HINT_SMBCACHE: Caché de lectura anticipada para SMB durante o xogo.
+  HINT_CORE_LOADER: Núcleo para este xogo onde se admiten os dous. UDPFS/UDPBD só Neutrino; SMB/HTTP só <OPL>. Predeterminado segue Inicio de xogos.
+  HINT_DMA_MODE: Modo de transferencia do HDD interno para este xogo. Báixeo se o xogo vai a saltos ou se conxela.
+  HINT_DNAS_GAMEID: ID do disco para xogos en liña DNAS. Cargar desde o disco leo do disco orixinal.
+  HINT_LOAD_FROM_DISC: Le o ID DNAS do disco orixinal da unidade.
+  HINT_ALTSTARTUP: Arrinca este ELF desde a imaxe do disco en vez do que indica SYSTEM.CNF.
+  HINT_VMC_DEFINE: Escolla, cree ou redimensione a tarxeta de memoria virtual desta ranura.
+  HINT_VMC_ACTION: Usar xenérica dá a esta ranura unha tarxeta compartida; Restablecer quita a escolla.
+  HINT_VMC_NAME: Nome do ficheiro da tarxeta, gardado no cartafol VMC.
+  HINT_VMC_CREATE: Crea a tarxeta, ou aplícalle un tamaño novo.
+  HINT_VMC_DELETE: Borra este ficheiro de tarxeta.
+  HINT_SFX: Efectos de son do menú.
+  HINT_BOOT_SND: Reproduce un son cando arrinca RiptOPL.
+  HINT_BGM: Reproduce a música do tema, ou o seu ficheiro de Música de tema predeterminada.
+  HINT_SFX_VOLUME: Volume dos efectos de son do menú.
+  HINT_BOOT_SND_VOLUME: Volume do son de arranque.
+  HINT_BGM_VOLUME: Volume da música de fondo.
+  HINT_SCROLL: Que rápido se desprazan as listas mentres mantén unha dirección.
+  HINT_SELECTBUTTON: 'Que botón confirma: Cruz ou Círculo.'
+  HINT_XSENSITIVITY: Con que facilidade move a panca esquerda o cursor á esquerda e á dereita. Desactivado ignóraa.
+  HINT_YSENSITIVITY: Con que facilidade move a panca esquerda o cursor arriba e abaixo. Desactivado ignóraa.

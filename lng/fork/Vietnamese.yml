@@ -494,3 +494,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Hãy đặt mật khẩu khóa phụ huynh, nếu không trò chơi này sẽ không bị khóa.
   SAVE_ICONS: Biểu tượng bản lưu 3D
   HINT_SAVE_ICONS: Hiện biểu tượng bản lưu của trò chơi đang chọn, xoay tròn, ở chỗ chủ đề dành cho nó. Đọc VMC riêng của trò chơi trước, rồi tới thẻ nhớ.
+  HINT_NET_PROTOCOL: 'Dịch vụ mạng mà RiptOPL dùng: thư mục chia sẻ SMB, UDPFS, UDPBD hoặc HTTP. Cùng cài đặt với ở Nguồn trò chơi. Đổi khỏi dịch vụ đang chạy cần khởi động lại.'
+  HINT_UDPFS_ACCESS: Chỉ UDPFS. Tệp đọc từng ISO rời từ thư mục trò chơi của máy chủ; IMG đọc một ảnh đĩa như một ổ. SMB và HTTP luôn dùng Tệp, UDPBD luôn dùng IMG.
+  HINT_SMB_VERSION: Phiên bản SMB dùng để nói chuyện với thư mục chia sẻ trên PC.
+  HINT_NET_ADVANCED: Mở khóa Chế độ liên kết Ethernet và Cổng SMB để sửa.
+  HINT_ETH_LINK_MODE: Ép tốc độ và chế độ song công của liên kết mạng. Hãy để Tự động trừ khi liên kết hay rớt.
+  HINT_IP_ADDR_TYPE: Tĩnh dùng địa chỉ bên dưới; DHCP hỏi bộ định tuyến của bạn. UDPFS và UDPBD luôn dùng Tĩnh.
+  HINT_PS2_IP: Địa chỉ IP riêng của PS2. Hãy chọn một địa chỉ không thiết bị nào khác dùng, cùng dải với PC của bạn.
+  HINT_NETMASK: Mặt nạ mạng con, thường là 255.255.255.0.
+  HINT_GATEWAY: Địa chỉ bộ định tuyến của bạn, thường cùng ba số đầu và kết thúc bằng .1.
+  HINT_DNS: Địa chỉ máy chủ DNS. Thường giống cổng mạng.
+  HINT_SMB_ADDR_TYPE: Kết nối PC qua địa chỉ IP hay qua tên NetBIOS (tên máy tính).
+  HINT_SMB_ADDRESS: 'PC chia sẻ trò chơi của bạn: địa chỉ IP của nó, hoặc tên máy tính khi Kiểu địa chỉ là NetBIOS.'
+  HINT_SMB_PORT: 'Cổng SMB. Phải khớp với PC: PS2 Servers dùng 1111, thư mục chia sẻ Windows và Samba dùng 445.'
+  HINT_SMB_USER: Tên người dùng SMB. guest dùng được cho hầu hết thư mục chia sẻ.
+  HINT_HTTP_SERVER: Địa chỉ IP của máy chủ trò chơi HTTP.
+  HINT_HTTP_PORT: Cổng mà máy chủ trò chơi HTTP lắng nghe.
+  HINT_HTTP_BASE: Thư mục trên máy chủ HTTP chứa games.csv. / là gốc của máy chủ.
+  HINT_HTTP_TEST: Thử máy chủ HTTP với các giá trị ở trên và báo kết quả.
+  HINT_RA_TELEMETRY: Công tắc chính của RetroAchievements. Tắt thì trò chơi chạy không có ngăn xếp mạng hay ảnh chụp trạng thái, giống bản dựng thường.
+  HINT_RA_BADGES: Đánh dấu các trò chơi có thành tích trong danh sách. Vẫn tối khi đo đạc đang tắt.
+  HINT_POPS_NET_BUTTON: Sửa các tệp mạng riêng của POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), thứ trò chơi PS1 qua SMB cần.
+  HINT_POPS_IP_TYPE: 'Cách PS2 lấy địa chỉ khi trò chơi PS1 chạy qua SMB: Tĩnh hoặc DHCP.'
+  HINT_POPS_IP: Địa chỉ IP của PS2 khi trò chơi PS1 chạy qua SMB.
+  HINT_POPS_SMB_IP: Địa chỉ IP của PC chia sẻ trò chơi PS1 của bạn.
+  HINT_POPS_SMB_SHARE: Tên thư mục chia sẻ trên PC đó chứa thư mục POPS.
+  HINT_LASTPLAYED: Bắt đầu ở trò chơi bạn chạy lần trước.
+  HINT_LANGUAGE: Ngôn ngữ menu. Thêm ngôn ngữ bằng cách đặt tệp lang_*.lng vào thư mục LNG.
+  HINT_DEFDEVICE: Trang RiptOPL mở khi khởi động.
+  HINT_MMCE_MODE: Trò chơi trên SD2PSX hoặc MemCard PRO2. Tự động khởi động khi bật máy, Thủ công khi bạn mở trang, Tắt thì ẩn nó.
+  HINT_ENABLE_USB: Nạp trình điều khiển lưu trữ USB.
+  HINT_ENABLE_MX4SIO: Nạp trình điều khiển bộ chuyển thẻ SD MX4SIO.
+  HINT_ENABLE_ILINK: Nạp trình điều khiển lưu trữ iLink (FireWire).
+  HINT_NETSTART: 'Khởi động mạng: Tự động khi bật máy, Thủ công khi bạn mở trang của nó. Tắt thì không động đến bộ chuyển mạng.'
+  HINT_APPMODE: Trang Ứng dụng. Tự động khởi động khi bật máy, Thủ công khi bạn mở nó, Tắt thì ẩn nó.
+  HINT_FAVMODE: Trang Trò chơi gắn sao. Tự động khởi động khi bật máy, Thủ công khi bạn mở nó, Tắt thì ẩn nó.
+  HINT_VCD_LIST_BUTTON: 'Cách liệt kê trò chơi PS1: ẩn ID trò chơi, chỉ hiện đĩa 1, hiện phân vùng PP của HDD.'
+  HINT_MMCE_SLOT: Thiết bị MMCE cắm ở khe thẻ nhớ nào. Tự động sẽ tìm nó.
+  HINT_MMCE_GAMEID: Báo cho thiết bị MMCE trò chơi nào đang chạy, để nó chuyển sang thẻ nhớ của trò chơi đó.
+  HINT_MMCE_PREFIX: Thư mục con trên thẻ MMCE chứa CD, DVD và các thư mục OPL khác. Để trống thì dùng gốc của thẻ.
+  HINT_GAME_TYPE_LABELS: Thêm [PS1] hoặc [PS2] trước mỗi tên trò chơi. Chỉ ảnh hưởng hiển thị.
+  HINT_MENU_VMODE: Đầu ra video của menu. Trò chơi dùng GSM thay thế. Giữ Xác nhận để giữ chế độ mới.
+  HINT_THEME: Diện mạo của menu. Chủ đề được đọc từ thư mục THM trên mỗi thiết bị.
+  HINT_COVERFLOW_BUTTON: Số ảnh bìa, kích thước, hoạt ảnh và làm tối cho chủ đề Coverflow.
+  HINT_ARTWORK_BUTTON: 'Những ảnh được nạp: ảnh bìa, ảnh đĩa, ảnh nền và biểu tượng bản lưu.'
+  HINT_COLORS_BUTTON: Màu chữ, tô sáng, hộp thoại và nền.
+  HINT_NOTIFICATIONS: Thông báo ngắn khi nạp tệp cấu hình, chủ đề hoặc ngôn ngữ.
+  HINT_AUTOSORT: Sắp xếp danh sách trò chơi từ A đến Z. Tắt thì giữ thứ tự lúc tìm thấy.
+  HINT_AUTOREFRESH: Thêm trò chơi từ thiết bị mới nối mà không cần làm mới thủ công.
+  HINT_COVERART: Nạp ảnh bìa từ thư mục ART.
+  HINT_DISCART: Hiện ảnh đĩa (<ID>_ICO). Tắt thì ẩn đĩa nhưng giữ ảnh bìa và ảnh nền.
+  HINT_BGART: Hiện ảnh nền của trò chơi (<ID>_BG) khi chủ đề dùng nó.
+  HINT_ART_TAR: Cũng đọc ảnh đóng gói trong ART/art.tar.
+  HINT_ART_DELAY: Con trỏ dừng trên trò chơi bao lâu thì ảnh của nó mới nạp. Càng cao càng bỏ qua ảnh khi bạn cuộn nhanh.
+  HINT_TXTCOLOR: Màu chữ menu thường.
+  HINT_SELCOLOR: Màu của mục được tô sáng.
+  HINT_UICOLOR: Sắc nền của hộp thoại.
+  HINT_TITLECOLOR: Màu tiêu đề trò chơi trong danh sách.
+  HINT_BGCOLOR: Màu nền menu.
+  HINT_PLASCOLOR: Màu pha vào nền chuyển động.
+  HINT_RESETCOLOR: Trả về màu có sẵn của RiptOPL, không phải màu của chủ đề.
+  HINT_WIDESCREEN: Vẽ menu cho TV 16:9.
+  HINT_XOFF: Dời menu sang trái hoặc phải trên màn hình.
+  HINT_YOFF: Dời menu lên hoặc xuống trên màn hình.
+  HINT_MENU_OVERSCAN: Thu menu vào trong nếu TV cắt mất mép.
+  HINT_APPLYGAMEID: Hiện mã vạch khi trò chơi bắt đầu, để thiết bị Pixel FX, RetroGEM và PS2Digital đổi hồ sơ.
+  HINT_ENWRITEOP: Cho phép đổi tên và xóa trò chơi, và tạo VMC. Không bao giờ động đến bảng phân vùng HDD.
+  HINT_DEBUG: 'Hỗ trợ nhà phát triển: màn hình màu khi trò chơi khởi động, và bộ đếm nạp ảnh trong menu.'
+  HINT_BDMPREFIX: Thư mục con trên ổ USB, MX4SIO, iLink và exFAT chứa các thư mục trò chơi. Để trống thì dùng gốc của ổ.
+  HINT_ETHPREFIX: Thư mục con trên thư mục chia sẻ SMB chứa các thư mục trò chơi. Để trống thì dùng gốc của thư mục chia sẻ.
+  HINT_HDDGAMELISTCACHE: Nhớ danh sách trò chơi của HDD APA để các lần quét sau nhanh hơn.
+  HINT_BDMCACHE: Bộ đệm đọc trước cho USB và các ổ BDM khác khi đang chơi. Lớn hơn có thể giúp truyền mượt hơn nhưng tốn bộ nhớ hơn.
+  HINT_HDDCACHE: Bộ đệm đọc trước cho HDD trong khi đang chơi.
+  HINT_SMBCACHE: Bộ đệm đọc trước cho SMB khi đang chơi.
+  HINT_CORE_LOADER: Lõi cho trò chơi này khi cả hai đều được hỗ trợ. UDPFS/UDPBD chỉ dùng Neutrino; SMB/HTTP chỉ dùng <OPL>. Mặc định theo Chạy trò chơi.
+  HINT_DMA_MODE: Chế độ truyền của HDD trong cho trò chơi này. Hạ xuống nếu trò chơi giật hoặc treo.
+  HINT_DNAS_GAMEID: ID đĩa cho trò chơi trực tuyến DNAS. Nạp từ đĩa sẽ đọc nó từ đĩa gốc.
+  HINT_LOAD_FROM_DISC: Đọc ID DNAS từ đĩa gốc trong ổ.
+  HINT_ALTSTARTUP: Khởi động ELF này từ ảnh đĩa thay cho tệp mà SYSTEM.CNF chỉ định.
+  HINT_VMC_DEFINE: Chọn, tạo hoặc đổi kích thước thẻ nhớ ảo của khe này.
+  HINT_VMC_ACTION: Dùng chung cho khe này một thẻ dùng chung; Đặt lại xóa lựa chọn.
+  HINT_VMC_NAME: Tên tệp thẻ, giữ trong thư mục VMC.
+  HINT_VMC_CREATE: Tạo thẻ, hoặc áp kích thước mới cho nó.
+  HINT_VMC_DELETE: Xóa tệp thẻ này.
+  HINT_SFX: Hiệu ứng âm thanh của menu.
+  HINT_BOOT_SND: Phát một âm thanh khi RiptOPL khởi động.
+  HINT_BGM: Phát nhạc của chủ đề, hoặc tệp Nhạc chủ đề mặc định của bạn.
+  HINT_SFX_VOLUME: Âm lượng hiệu ứng âm thanh của menu.
+  HINT_BOOT_SND_VOLUME: Âm lượng âm thanh khởi động.
+  HINT_BGM_VOLUME: Âm lượng nhạc nền.
+  HINT_SCROLL: Danh sách cuộn nhanh cỡ nào khi bạn giữ một hướng.
+  HINT_SELECTBUTTON: 'Nút nào để xác nhận: Chéo hay Tròn.'
+  HINT_XSENSITIVITY: Cần trái di con trỏ sang trái phải dễ cỡ nào. Tắt thì bỏ qua nó.
+  HINT_YSENSITIVITY: Cần trái di con trỏ lên xuống dễ cỡ nào. Tắt thì bỏ qua nó.

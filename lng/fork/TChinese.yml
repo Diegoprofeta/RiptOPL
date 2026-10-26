@@ -459,3 +459,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: 請設定家長鎖密碼，否則這個遊戲不會被鎖定。
   SAVE_ICONS: 3D 存檔圖示
   HINT_SAVE_ICONS: 在主題留有位置的地方顯示所選遊戲的旋轉存檔圖示。先讀取遊戲自己的 VMC，再讀取記憶卡。
+  HINT_NET_PROTOCOL: RiptOPL 使用哪種網路服務：SMB 共用、UDPFS、UDPBD 或 HTTP。與「遊戲來源」中的設定相同。從已在執行的服務切換走需要重新啟動。
+  HINT_UDPFS_ACCESS: 僅 UDPFS。「檔案」從伺服器的遊戲資料夾讀取個別的 ISO；IMG 把磁碟映像當作磁碟機讀取。SMB 與 HTTP 一律使用「檔案」，UDPBD 一律使用 IMG。
+  HINT_SMB_VERSION: 與電腦共用資料夾通訊時使用的 SMB 版本。
+  HINT_NET_ADVANCED: 解鎖乙太網路連線模式與 SMB 連接埠的編輯。
+  HINT_ETH_LINK_MODE: 強制網路連線的速度與雙工模式。除非連線經常中斷，否則請保持自動。
+  HINT_IP_ADDR_TYPE: 靜態使用下面的位址；DHCP 向你的路由器取得。UDPFS 與 UDPBD 一律使用靜態。
+  HINT_PS2_IP: PS2 自己的 IP 位址。請選一個沒有其他裝置使用、與電腦在同一網段的位址。
+  HINT_NETMASK: 子網路遮罩，通常為 255.255.255.0。
+  HINT_GATEWAY: 你路由器的位址，通常前三段相同、以 .1 結尾。
+  HINT_DNS: DNS 伺服器位址。通常與閘道相同。
+  HINT_SMB_ADDR_TYPE: 透過 IP 位址或 NetBIOS 名稱（電腦名稱）連到電腦。
+  HINT_SMB_ADDRESS: 分享你遊戲的電腦：它的 IP 位址；位址類型為 NetBIOS 時為電腦名稱。
+  HINT_SMB_PORT: SMB 連接埠。必須與電腦一致：PS2 Servers 使用 1111，Windows 與 Samba 共用使用 445。
+  HINT_SMB_USER: SMB 使用者名稱。大多數共用可用 guest。
+  HINT_HTTP_SERVER: HTTP 遊戲伺服器的 IP 位址。
+  HINT_HTTP_PORT: HTTP 遊戲伺服器監聽的連接埠。
+  HINT_HTTP_BASE: HTTP 伺服器上存放 games.csv 的資料夾。/ 表示伺服器根目錄。
+  HINT_HTTP_TEST: 用上面的值測試 HTTP 伺服器並回報結果。
+  HINT_RA_TELEMETRY: RetroAchievements 總開關。關閉時遊戲啟動不帶網路堆疊與快照，與一般版本相同。
+  HINT_RA_BADGES: 在清單中標出有成就的遊戲。遙測關閉時保持暗色。
+  HINT_POPS_NET_BUTTON: 編輯 POPSTARTER 自己的網路檔案（IPCONFIG.DAT、SMBCONFIG.DAT），透過 SMB 執行 PS1 遊戲時需要。
+  HINT_POPS_IP_TYPE: PS1 遊戲透過 SMB 執行時 PS2 取得位址的方式：靜態或 DHCP。
+  HINT_POPS_IP: PS1 遊戲透過 SMB 執行時 PS2 的 IP 位址。
+  HINT_POPS_SMB_IP: 分享你 PS1 遊戲的電腦的 IP 位址。
+  HINT_POPS_SMB_SHARE: 那台電腦上存放 POPS 資料夾的共用名稱。
+  HINT_LASTPLAYED: 從你上次啟動的遊戲開始。
+  HINT_LANGUAGE: 選單語言。把 lang_*.lng 檔案放進 LNG 資料夾即可新增更多語言。
+  HINT_DEFDEVICE: RiptOPL 開機時開啟的頁面。
+  HINT_MMCE_MODE: SD2PSX 或 MemCard PRO2 上的遊戲。自動在開機時啟動，手動在開啟頁面時啟動，關閉則隱藏它。
+  HINT_ENABLE_USB: 載入 USB 儲存裝置驅動程式。
+  HINT_ENABLE_MX4SIO: 載入 MX4SIO SD 卡轉接器驅動程式。
+  HINT_ENABLE_ILINK: 載入 iLink（FireWire）儲存裝置驅動程式。
+  HINT_NETSTART: 啟動網路：自動在開機時，手動在開啟其頁面時。關閉則不碰網路轉接器。
+  HINT_APPMODE: 應用程式頁面。自動在開機時啟動，手動在開啟時啟動，關閉則隱藏。
+  HINT_FAVMODE: 最愛遊戲頁面。自動在開機時啟動，手動在開啟時啟動，關閉則隱藏。
+  HINT_VCD_LIST_BUTTON: PS1 遊戲的列出方式：隱藏遊戲 ID、只顯示光碟 1、顯示硬碟的 PP 分割區。
+  HINT_MMCE_SLOT: MMCE 裝置插在哪個記憶卡插槽。自動會找到它。
+  HINT_MMCE_GAMEID: 告訴 MMCE 裝置正在啟動哪個遊戲，讓它切換到該遊戲的記憶卡。
+  HINT_MMCE_PREFIX: MMCE 卡上存放 CD、DVD 與其他 OPL 資料夾的子資料夾。留空使用卡的根目錄。
+  HINT_GAME_TYPE_LABELS: 在每個遊戲名稱前加上 [PS1] 或 [PS2]。僅影響顯示。
+  HINT_MENU_VMODE: 選單的視訊輸出。遊戲改用 GSM。按住確認可保留新模式。
+  HINT_THEME: 選單的外觀。主題從各裝置的 THM 資料夾讀取。
+  HINT_COVERFLOW_BUTTON: Coverflow 主題的封面數量、大小、動畫與變暗。
+  HINT_ARTWORK_BUTTON: 載入哪些圖片：封面、光碟圖、背景與存檔圖示。
+  HINT_COLORS_BUTTON: 文字、醒目提示、對話方塊與背景的顏色。
+  HINT_NOTIFICATIONS: 載入設定、主題或語言檔案時的簡短通知。
+  HINT_AUTOSORT: 依 A 到 Z 排序遊戲清單。關閉則保持找到時的順序。
+  HINT_AUTOREFRESH: 不必手動重新整理即可加入新連接裝置上的遊戲。
+  HINT_COVERART: 從 ART 資料夾載入封面。
+  HINT_DISCART: 顯示光碟圖（<ID>_ICO）。關閉會隱藏光碟，但保留封面與背景。
+  HINT_BGART: 主題使用背景時顯示遊戲的背景（<ID>_BG）。
+  HINT_ART_TAR: 也讀取打包在 ART/art.tar 中的圖片。
+  HINT_ART_DELAY: 游標停在遊戲上多久後才載入其圖片。數值越高，快速捲動時越會略過圖片。
+  HINT_TXTCOLOR: 一般選單文字的顏色。
+  HINT_SELCOLOR: 醒目提示項目的顏色。
+  HINT_UICOLOR: 對話方塊的背景色調。
+  HINT_TITLECOLOR: 清單中遊戲標題的顏色。
+  HINT_BGCOLOR: 選單背景色。
+  HINT_PLASCOLOR: 混入動態背景的顏色。
+  HINT_RESETCOLOR: 恢復 RiptOPL 的內建顏色，而不是主題的顏色。
+  HINT_WIDESCREEN: 依 16:9 電視繪製選單。
+  HINT_XOFF: 在螢幕上左右移動選單。
+  HINT_YOFF: 在螢幕上上下移動選單。
+  HINT_MENU_OVERSCAN: 如果電視切掉邊緣，就把選單向內縮小。
+  HINT_APPLYGAMEID: 遊戲啟動時顯示條碼，讓 Pixel FX、RetroGEM 與 PS2Digital 裝置切換設定檔。
+  HINT_ENWRITEOP: 允許重新命名和刪除遊戲以及建立 VMC。從不改動硬碟分割表。
+  HINT_DEBUG: 開發輔助：遊戲開機時顯示彩色畫面，並在選單中顯示圖片載入計數。
+  HINT_BDMPREFIX: USB、MX4SIO、iLink 與 exFAT 磁碟機上存放遊戲資料夾的子資料夾。留空使用磁碟機根目錄。
+  HINT_ETHPREFIX: SMB 共用上存放遊戲資料夾的子資料夾。留空使用共用根目錄。
+  HINT_HDDGAMELISTCACHE: 記住 APA 硬碟的遊戲清單，加快之後的掃描。
+  HINT_BDMCACHE: 遊戲中 USB 與其他 BDM 磁碟機的預先讀取快取。越大越能讓串流順暢，但佔用更多記憶體。
+  HINT_HDDCACHE: 遊戲中內建硬碟的預先讀取快取。
+  HINT_SMBCACHE: 遊戲中 SMB 的預先讀取快取。
+  HINT_CORE_LOADER: 兩者都支援時此遊戲使用的核心。UDPFS/UDPBD 僅限 Neutrino；SMB/HTTP 僅限 <OPL>。預設依照「遊戲啟動」。
+  HINT_DMA_MODE: 此遊戲的內建硬碟傳輸模式。遊戲卡頓或當機時調低。
+  HINT_DNAS_GAMEID: DNAS 連線遊戲的光碟 ID。「從光碟載入」會從原版光碟讀取。
+  HINT_LOAD_FROM_DISC: 從光碟機中的原版光碟讀取 DNAS ID。
+  HINT_ALTSTARTUP: 從光碟映像啟動這個 ELF，而不是 SYSTEM.CNF 指定的那個。
+  HINT_VMC_DEFINE: 選擇、建立或調整此插槽虛擬記憶卡的大小。
+  HINT_VMC_ACTION: 「使用通用」給此插槽一張共用記憶卡；「重設」清除選擇。
+  HINT_VMC_NAME: 記憶卡檔案的名稱，存放在 VMC 資料夾中。
+  HINT_VMC_CREATE: 建立記憶卡，或為它套用新大小。
+  HINT_VMC_DELETE: 刪除這個記憶卡檔案。
+  HINT_SFX: 選單音效。
+  HINT_BOOT_SND: RiptOPL 啟動時播放聲音。
+  HINT_BGM: 播放主題的音樂，或你的預設主題音樂檔案。
+  HINT_SFX_VOLUME: 選單音效的音量。
+  HINT_BOOT_SND_VOLUME: 啟動聲音的音量。
+  HINT_BGM_VOLUME: 背景音樂的音量。
+  HINT_SCROLL: 按住方向時清單捲動的速度。
+  HINT_SELECTBUTTON: 哪個按鍵確認：叉或圓圈。
+  HINT_XSENSITIVITY: 左搖桿左右移動游標的靈敏度。關閉則忽略它。
+  HINT_YSENSITIVITY: 左搖桿上下移動游標的靈敏度。關閉則忽略它。

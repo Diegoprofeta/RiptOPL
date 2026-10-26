@@ -472,3 +472,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Vendos një fjalëkalim për kyçin prindëror, përndryshe kjo lojë nuk do të kyçet.
   SAVE_ICONS: Ikonat 3D të ruajtjeve
   HINT_SAVE_ICONS: Shfaq ikonën e ruajtjes së lojës së zgjedhur, duke u rrotulluar, aty ku tema ka vend për të. Lexon së pari VMC-në e vetë lojës, pastaj kartat e memories.
+  HINT_NET_PROTOCOL: 'Cilin shërbim rrjeti përdor RiptOPL: një dosje të ndarë SMB, UDPFS, UDPBD ose HTTP. I njëjti cilësim si te Burimet e lojërave. Largimi nga një që është tashmë në punë kërkon rinisje.'
+  HINT_UDPFS_ACCESS: Vetëm UDPFS. Skedarët lexon ISO të veçanta nga dosja e lojërave të serverit; IMG lexon një imazh disku si njësi. SMB dhe HTTP përdorin gjithmonë Skedarët, UDPBD gjithmonë IMG.
+  HINT_SMB_VERSION: Me cilin version SMB të flitet me dosjen e ndarë të kompjuterit.
+  HINT_NET_ADVANCED: Zhbllokon për ndryshim mënyrën e lidhjes Ethernet dhe portën SMB.
+  HINT_ETH_LINK_MODE: Detyron shpejtësinë dhe dupleksin e lidhjes së rrjetit. Lëre në Auto përveç nëse lidhja bie vazhdimisht.
+  HINT_IP_ADDR_TYPE: Statike përdor adresën më poshtë; DHCP pyet ruterin tënd. UDPFS dhe UDPBD përdorin gjithmonë Statike.
+  HINT_PS2_IP: Adresa IP e vetë PS2. Zgjidh një që nuk e përdor asnjë pajisje tjetër, në të njëjtin interval me kompjuterin tënd.
+  HINT_NETMASK: Maska e nënrrjetit, zakonisht 255.255.255.0.
+  HINT_GATEWAY: Adresa e ruterit tënd, zakonisht me të njëjtat tre numra të parë që mbaron me .1.
+  HINT_DNS: Adresa e serverit DNS. Zakonisht e njëjtë me portën e kalimit.
+  HINT_SMB_ADDR_TYPE: Arrij kompjuterin me adresën e tij IP ose me emrin e tij NetBIOS (emri i kompjuterit).
+  HINT_SMB_ADDRESS: 'Kompjuteri që ndan lojërat e tua: adresa e tij IP, ose emri i kompjuterit kur Lloji i adresës është NetBIOS.'
+  HINT_SMB_PORT: 'Porta SMB. Duhet të përputhet me kompjuterin: PS2 Servers përdor 1111, dosjet e ndara Windows dhe Samba përdorin 445.'
+  HINT_SMB_USER: Emri i përdoruesit SMB. guest punon për shumicën e dosjeve të ndara.
+  HINT_HTTP_SERVER: Adresa IP e serverit HTTP të lojërave.
+  HINT_HTTP_PORT: Porta ku dëgjon serveri HTTP i lojërave.
+  HINT_HTTP_BASE: Dosja në serverin HTTP që mban games.csv. / është rrënja e serverit.
+  HINT_HTTP_TEST: Provon serverin HTTP me vlerat më sipër dhe raporton çfarë gjeti.
+  HINT_RA_TELEMETRY: Çelësi kryesor për RetroAchievements. Fikur nis lojërat pa stivë rrjeti ose fotografi, njësoj si një ndërtim normal.
+  HINT_RA_BADGES: Shënon në listë lojërat që kanë arritje. Mbetet i errët ndërsa telemetria është fikur.
+  HINT_POPS_NET_BUTTON: Ndryshon skedarët e rrjetit të vetë POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), që u duhen lojërave PS1 përmes SMB.
+  HINT_POPS_IP_TYPE: 'Si e merr PS2 adresën e saj ndërsa një lojë PS1 punon përmes SMB: Statike ose DHCP.'
+  HINT_POPS_IP: Adresa IP e PS2 ndërsa një lojë PS1 punon përmes SMB.
+  HINT_POPS_SMB_IP: Adresa IP e kompjuterit që ndan lojërat e tua PS1.
+  HINT_POPS_SMB_SHARE: Emri i dosjes së ndarë në atë kompjuter që mban dosjen POPS.
+  HINT_LASTPLAYED: Fillon te loja që nise herën e fundit.
+  HINT_LANGUAGE: Gjuha e menysë. Shto të tjera duke vendosur skedarë lang_*.lng në një dosje LNG.
+  HINT_DEFDEVICE: Faqja ku hapet RiptOPL në nisje.
+  HINT_MMCE_MODE: Lojëra në një SD2PSX ose MemCard PRO2. Auto niset në nisje, Manuale kur hap faqen, Fikur e fsheh.
+  HINT_ENABLE_USB: Ngarkon drajverin e ruajtjes USB.
+  HINT_ENABLE_MX4SIO: Ngarkon drajverin e përshtatësit të kartave SD MX4SIO.
+  HINT_ENABLE_ILINK: Ngarkon drajverin e ruajtjes iLink (FireWire).
+  HINT_NETSTART: 'Nis rrjetin: Auto në nisje, Manuale kur hap faqen e tij. Fikur nuk e prek përshtatësin e rrjetit.'
+  HINT_APPMODE: Faqja e aplikacioneve. Auto niset në nisje, Manuale kur e hap, Fikur e fsheh.
+  HINT_FAVMODE: Faqja e Lojërave të preferuara. Auto niset në nisje, Manuale kur e hap, Fikur e fsheh.
+  HINT_VCD_LIST_BUTTON: 'Si listohen lojërat PS1: fshih ID-të e lojërave, shfaq vetëm diskun 1, shfaq particionet PP të HDD.'
+  HINT_MMCE_SLOT: Në cilën fole të kartës së memories është pajisja MMCE. Auto e gjen.
+  HINT_MMCE_GAMEID: I tregon pajisjes MMCE cila lojë po fillon, që të kalojë te karta e memories së asaj loje.
+  HINT_MMCE_PREFIX: Nëndosja në kartën MMCE që mban CD, DVD dhe dosjet e tjera OPL. Bosh përdor rrënjën e kartës.
+  HINT_GAME_TYPE_LABELS: Fillon çdo emër loje me [PS1] ose [PS2]. Vetëm për shfaqje.
+  HINT_MENU_VMODE: Dalja e videos për menynë. Lojërat përdorin GSM në vend të saj. Mbaj Konfirmo për të mbajtur një mënyrë të re.
+  HINT_THEME: Pamja e menysë. Temat lexohen nga dosja THM në çdo pajisje.
+  HINT_COVERFLOW_BUTTON: Numri i kopertinave, madhësia, animacioni dhe errësimi për temën Coverflow.
+  HINT_ARTWORK_BUTTON: 'Cilat imazhe ngarkohen: kopertinat, imazhet e disqeve, sfondet dhe ikonat e ruajtjeve.'
+  HINT_COLORS_BUTTON: Ngjyrat e tekstit, theksimit, dialogut dhe sfondit.
+  HINT_NOTIFICATIONS: Njoftime të shkurtra kur ngarkohet një skedar konfigurimi, teme ose gjuhe.
+  HINT_AUTOSORT: Rendit listat e lojërave nga A në Z. Fikur mban rendin në të cilin u gjetën.
+  HINT_AUTOREFRESH: Shton lojëra nga pajisjet e sapolidhura pa rifreskim me dorë.
+  HINT_COVERART: Ngarkon kopertinat nga dosja ART.
+  HINT_DISCART: Shfaq imazhin e diskut (<ID>_ICO). Fikur fsheh diskun por mban kopertinat dhe sfondet.
+  HINT_BGART: Shfaq sfondin e një loje (<ID>_BG) kur tema e përdor.
+  HINT_ART_TAR: Lexon edhe imazhet e paketuara në ART/art.tar.
+  HINT_ART_DELAY: Sa gjatë qëndron kursori mbi një lojë para se të ngarkohen imazhet e saj. Më e lartë anashkalon imazhet ndërsa lëviz shpejt.
+  HINT_TXTCOLOR: Ngjyra e tekstit normal të menysë.
+  HINT_SELCOLOR: Ngjyra e elementit të theksuar.
+  HINT_UICOLOR: Nuanca e sfondit të kutive të dialogut.
+  HINT_TITLECOLOR: Ngjyra e titujve të lojërave në listë.
+  HINT_BGCOLOR: Ngjyra e sfondit të menysë.
+  HINT_PLASCOLOR: Ngjyra e përzier në sfondin e animuar.
+  HINT_RESETCOLOR: Rikthen ngjyrat e integruara të RiptOPL, jo ato të temës.
+  HINT_WIDESCREEN: Vizaton menynë për një televizor 16:9.
+  HINT_XOFF: Lëviz menynë majtas ose djathtas në ekran.
+  HINT_YOFF: Lëviz menynë lart ose poshtë në ekran.
+  HINT_MENU_OVERSCAN: Tkurr menynë drejt brendësisë nëse televizori i pret skajet.
+  HINT_APPLYGAMEID: Shfaq një barkod kur fillon një lojë, që pajisjet Pixel FX, RetroGEM dhe PS2Digital të ndërrojnë profil.
+  HINT_ENWRITEOP: Lejon riemërtimin dhe fshirjen e lojërave dhe krijimin e VMC-ve. Nuk e prek kurrë tabelën e particioneve të HDD.
+  HINT_DEBUG: 'Ndihmë për zhvilluesit: ekrane me ngjyra ndërsa niset një lojë, dhe numërues të ngarkimit të imazheve në meny.'
+  HINT_BDMPREFIX: Nëndosja në njësitë USB, MX4SIO, iLink dhe exFAT që mban dosjet e lojërave. Bosh përdor rrënjën e njësisë.
+  HINT_ETHPREFIX: Nëndosja në dosjen e ndarë SMB që mban dosjet e lojërave. Bosh përdor rrënjën e saj.
+  HINT_HDDGAMELISTCACHE: Mban mend listën e lojërave të HDD APA për të shpejtuar skanimet e mëvonshme.
+  HINT_BDMCACHE: Memorie leximi paraprak për USB dhe njësitë e tjera BDM gjatë lojës. Më e madhe mund ta bëjë transmetimin më të butë por përdor më shumë memorie.
+  HINT_HDDCACHE: Memorie leximi paraprak për HDD-në e brendshme gjatë lojës.
+  HINT_SMBCACHE: Memorie leximi paraprak për SMB gjatë lojës.
+  HINT_CORE_LOADER: Bërthama për këtë lojë aty ku mbështeten të dyja. UDPFS/UDPBD vetëm Neutrino; SMB/HTTP vetëm <OPL>. Parazgjedhja ndjek Nisja e lojërave.
+  HINT_DMA_MODE: Mënyra e transferimit të HDD-së së brendshme për këtë lojë. Uleje nëse loja ngec ose ngrin.
+  HINT_DNAS_GAMEID: ID e diskut për lojërat online DNAS. Ngarko nga disku e lexon nga disku origjinal.
+  HINT_LOAD_FROM_DISC: Lexon ID-në DNAS nga disku origjinal në njësi.
+  HINT_ALTSTARTUP: Nis këtë ELF nga imazhi i diskut në vend të atij që emërton SYSTEM.CNF.
+  HINT_VMC_DEFINE: Zgjidh, krijo ose ndrysho madhësinë e kartës virtuale të memories së kësaj foleje.
+  HINT_VMC_ACTION: Përdor të përgjithshmen i jep kësaj foleje një kartë të përbashkët; Rivendos fshin zgjedhjen.
+  HINT_VMC_NAME: Emri i skedarit të kartës, i mbajtur në dosjen VMC.
+  HINT_VMC_CREATE: Krijon kartën, ose i zbaton një madhësi të re.
+  HINT_VMC_DELETE: Fshin këtë skedar karte.
+  HINT_SFX: Efektet zanore të menysë.
+  HINT_BOOT_SND: Luan një tingull kur niset RiptOPL.
+  HINT_BGM: Luan muzikën e temës, ose skedarin tënd të Muzikës së parazgjedhur të temës.
+  HINT_SFX_VOLUME: Volumi i efekteve zanore të menysë.
+  HINT_BOOT_SND_VOLUME: Volumi i tingullit të nisjes.
+  HINT_BGM_VOLUME: Volumi i muzikës së sfondit.
+  HINT_SCROLL: Sa shpejt lëvizin listat ndërsa mban një drejtim.
+  HINT_SELECTBUTTON: 'Cili buton konfirmon: Kryqi ose Rrethi.'
+  HINT_XSENSITIVITY: Sa lehtë e lëviz leva e majtë kursorin majtas dhe djathtas. Fikur e shpërfill.
+  HINT_YSENSITIVITY: Sa lehtë e lëviz leva e majtë kursorin lart dhe poshtë. Fikur e shpërfill.

@@ -504,3 +504,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Setează o parolă de control parental, altfel acest joc nu va fi blocat.
   SAVE_ICONS: Pictograme de salvare 3D
   HINT_SAVE_ICONS: Arată pictograma de salvare a jocului ales, rotindu-se, acolo unde tema are loc pentru ea. Citește întâi VMC-ul jocului, apoi cardurile de memorie.
+  HINT_NET_PROTOCOL: 'Ce serviciu de rețea folosește RiptOPL: o partajare SMB, UDPFS, UDPBD sau HTTP. Aceeași setare ca în Surse de jocuri. Trecerea de la unul care rulează deja cere repornire.'
+  HINT_UDPFS_ACCESS: Doar UDPFS. Fișiere citește ISO-uri separate din folderul de jocuri al serverului; IMG citește o imagine de disc ca unitate. SMB și HTTP folosesc mereu Fișiere, UDPBD mereu IMG.
+  HINT_SMB_VERSION: Ce versiune SMB să folosească pentru partajarea de pe PC.
+  HINT_NET_ADVANCED: Deblochează editarea modului de legătură Ethernet și a portului SMB.
+  HINT_ETH_LINK_MODE: Forțează viteza și duplexul legăturii de rețea. Las-o pe Auto, dacă legătura nu cade mereu.
+  HINT_IP_ADDR_TYPE: Static folosește adresa de mai jos; DHCP o cere routerului tău. UDPFS și UDPBD folosesc mereu Static.
+  HINT_PS2_IP: Adresa IP proprie a PS2. Alege una pe care nu o folosește alt dispozitiv, în același interval ca PC-ul tău.
+  HINT_NETMASK: Mască de subrețea, de obicei 255.255.255.0.
+  HINT_GATEWAY: Adresa routerului tău, de obicei cu aceleași prime trei numere și terminată în .1.
+  HINT_DNS: Adresa serverului DNS. De obicei aceeași cu gateway-ul.
+  HINT_SMB_ADDR_TYPE: Accesează PC-ul după adresa IP sau după numele NetBIOS (al computerului).
+  HINT_SMB_ADDRESS: 'PC-ul care îți partajează jocurile: adresa lui IP sau numele computerului când Tipul adresei este NetBIOS.'
+  HINT_SMB_PORT: 'Portul SMB. Trebuie să se potrivească cu PC-ul: PS2 Servers folosește 1111, partajările Windows și Samba folosesc 445.'
+  HINT_SMB_USER: Numele de utilizator SMB. guest merge pentru majoritatea partajărilor.
+  HINT_HTTP_SERVER: Adresa IP a serverului de jocuri HTTP.
+  HINT_HTTP_PORT: Portul pe care ascultă serverul de jocuri HTTP.
+  HINT_HTTP_BASE: Folderul de pe serverul HTTP care conține games.csv. / este rădăcina serverului.
+  HINT_HTTP_TEST: Încearcă serverul HTTP cu valorile de mai sus și raportează ce a găsit.
+  HINT_RA_TELEMETRY: Comutatorul principal pentru RetroAchievements. Oprit lansează jocurile fără stivă de rețea sau instantanee, la fel ca o versiune normală.
+  HINT_RA_BADGES: Marchează în listă jocurile care au realizări. Rămâne întunecat cât timp telemetria este oprită.
+  HINT_POPS_NET_BUTTON: Editează fișierele de rețea proprii ale POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), de care au nevoie jocurile PS1 prin SMB.
+  HINT_POPS_IP_TYPE: 'Cum își ia PS2 adresa cât timp un joc PS1 rulează prin SMB: Static sau DHCP.'
+  HINT_POPS_IP: Adresa IP a PS2 cât timp un joc PS1 rulează prin SMB.
+  HINT_POPS_SMB_IP: Adresa IP a PC-ului care îți partajează jocurile PS1.
+  HINT_POPS_SMB_SHARE: Numele partajării de pe acel PC care conține folderul POPS.
+  HINT_LASTPLAYED: Pornește de la jocul lansat data trecută.
+  HINT_LANGUAGE: Limba meniului. Adaugă altele punând fișiere lang_*.lng într-un folder LNG.
+  HINT_DEFDEVICE: Pagina pe care se deschide RiptOPL la pornire.
+  HINT_MMCE_MODE: Jocuri de pe un SD2PSX sau MemCard PRO2. Auto pornește la pornire, Manual când deschizi pagina, Oprit o ascunde.
+  HINT_ENABLE_USB: Încarcă driverul de stocare USB.
+  HINT_ENABLE_MX4SIO: Încarcă driverul adaptorului de card SD MX4SIO.
+  HINT_ENABLE_ILINK: Încarcă driverul de stocare iLink (FireWire).
+  HINT_NETSTART: 'Pornește rețeaua: Auto la pornire, Manual când îi deschizi pagina. Oprit lasă adaptorul de rețea în pace.'
+  HINT_APPMODE: Pagina Aplicații. Auto pornește la pornire, Manual când o deschizi, Oprit o ascunde.
+  HINT_FAVMODE: Pagina Jocuri favorite. Auto pornește la pornire, Manual când o deschizi, Oprit o ascunde.
+  HINT_VCD_LIST_BUTTON: 'Cum sunt listate jocurile PS1: ascunde ID-urile jocurilor, arată doar discul 1, arată partițiile PP de pe HDD.'
+  HINT_MMCE_SLOT: În ce slot de card de memorie este dispozitivul MMCE. Auto îl găsește.
+  HINT_MMCE_GAMEID: Spune dispozitivului MMCE ce joc pornește, ca să poată trece la cardul de memorie al acelui joc.
+  HINT_MMCE_PREFIX: Subfolderul de pe cardul MMCE care conține CD, DVD și celelalte foldere OPL. Gol folosește rădăcina cardului.
+  HINT_GAME_TYPE_LABELS: Începe numele fiecărui joc cu [PS1] sau [PS2]. Doar afișare.
+  HINT_MENU_VMODE: Ieșirea video a meniului. Jocurile folosesc în schimb GSM. Ține apăsat Confirmă ca să păstrezi un mod nou.
+  HINT_THEME: Aspectul meniului. Temele sunt citite din folderul THM de pe fiecare dispozitiv.
+  HINT_COVERFLOW_BUTTON: Numărul de coperți, mărimea, animația și întunecarea pentru tema Coverflow.
+  HINT_ARTWORK_BUTTON: 'Ce imagini se încarcă: coperți, imagini de disc, fundaluri și pictograme de salvare.'
+  HINT_COLORS_BUTTON: Culorile textului, evidențierii, dialogurilor și fundalului.
+  HINT_NOTIFICATIONS: Notificări scurte când se încarcă un fișier de configurație, temă sau limbă.
+  HINT_AUTOSORT: Sortează listele de jocuri de la A la Z. Oprit păstrează ordinea în care au fost găsite.
+  HINT_AUTOREFRESH: Adaugă jocurile de pe dispozitivele nou conectate fără reîmprospătare manuală.
+  HINT_COVERART: Încarcă coperțile din folderul ART.
+  HINT_DISCART: Arată imaginea discului (<ID>_ICO). Oprit ascunde discul, dar păstrează coperțile și fundalurile.
+  HINT_BGART: Arată fundalul unui joc (<ID>_BG) când tema folosește unul.
+  HINT_ART_TAR: Citește și imaginile împachetate în ART/art.tar.
+  HINT_ART_DELAY: Cât stă cursorul pe un joc înainte să i se încarce imaginile. O valoare mai mare sare peste imagini când derulezi repede.
+  HINT_TXTCOLOR: Culoarea textului obișnuit din meniu.
+  HINT_SELCOLOR: Culoarea elementului evidențiat.
+  HINT_UICOLOR: Nuanța de fundal a casetelor de dialog.
+  HINT_TITLECOLOR: Culoarea titlurilor jocurilor din listă.
+  HINT_BGCOLOR: Culoarea de fundal a meniului.
+  HINT_PLASCOLOR: Culoarea amestecată în fundalul animat.
+  HINT_RESETCOLOR: Readuce culorile integrate ale RiptOPL, nu pe cele ale temei.
+  HINT_WIDESCREEN: Desenează meniul pentru un televizor 16:9.
+  HINT_XOFF: Mută meniul la stânga sau la dreapta pe ecran.
+  HINT_YOFF: Mută meniul în sus sau în jos pe ecran.
+  HINT_MENU_OVERSCAN: Micșorează meniul spre interior dacă televizorul îi taie marginile.
+  HINT_APPLYGAMEID: Arată un cod de bare când pornește un joc, ca dispozitivele Pixel FX, RetroGEM și PS2Digital să schimbe profilul.
+  HINT_ENWRITEOP: Permite redenumirea și ștergerea jocurilor și crearea de VMC-uri. Nu atinge niciodată tabelul de partiții al HDD-ului.
+  HINT_DEBUG: 'Ajutor pentru dezvoltatori: ecrane colorate cât timp pornește un joc și contoare de încărcare a imaginilor în meniu.'
+  HINT_BDMPREFIX: Subfolderul de pe unitățile USB, MX4SIO, iLink și exFAT care conține folderele jocurilor. Gol folosește rădăcina unității.
+  HINT_ETHPREFIX: Subfolderul de pe partajarea SMB care conține folderele jocurilor. Gol folosește rădăcina partajării.
+  HINT_HDDGAMELISTCACHE: Ține minte lista de jocuri de pe HDD-ul APA ca să grăbească scanările ulterioare.
+  HINT_BDMCACHE: Cache de citire anticipată pentru USB și alte unități BDM în joc. Mai mare poate netezi redarea în flux, dar folosește mai multă memorie.
+  HINT_HDDCACHE: Cache de citire anticipată pentru HDD-ul intern în joc.
+  HINT_SMBCACHE: Cache de citire anticipată pentru SMB în joc.
+  HINT_CORE_LOADER: Nucleul pentru acest joc acolo unde ambele sunt acceptate. UDPFS/UDPBD doar Neutrino; SMB/HTTP doar <OPL>. Implicit urmează Lansare jocuri.
+  HINT_DMA_MODE: Modul de transfer al HDD-ului intern pentru acest joc. Coboară-l dacă jocul se sacadează sau se blochează.
+  HINT_DNAS_GAMEID: ID-ul discului pentru jocurile online DNAS. Încarcă de pe disc îl citește de pe discul original.
+  HINT_LOAD_FROM_DISC: Citește ID-ul DNAS de pe discul original din unitate.
+  HINT_ALTSTARTUP: Pornește acest ELF din imaginea discului în locul celui numit de SYSTEM.CNF.
+  HINT_VMC_DEFINE: Alege, creează sau redimensionează cardul de memorie virtual al acestui slot.
+  HINT_VMC_ACTION: Folosește general dă acestui slot un card comun; Resetează șterge alegerea.
+  HINT_VMC_NAME: Numele fișierului cardului, păstrat în folderul VMC.
+  HINT_VMC_CREATE: Creează cardul sau îi aplică o mărime nouă.
+  HINT_VMC_DELETE: Șterge acest fișier de card.
+  HINT_SFX: Efectele sonore ale meniului.
+  HINT_BOOT_SND: Redă un sunet când pornește RiptOPL.
+  HINT_BGM: Redă muzica temei sau fișierul tău Muzică implicită a temei.
+  HINT_SFX_VOLUME: Volumul efectelor sonore ale meniului.
+  HINT_BOOT_SND_VOLUME: Volumul sunetului de pornire.
+  HINT_BGM_VOLUME: Volumul muzicii de fundal.
+  HINT_SCROLL: Cât de repede derulează listele cât ții apăsată o direcție.
+  HINT_SELECTBUTTON: 'Ce buton confirmă: X sau Cerc.'
+  HINT_XSENSITIVITY: Cât de ușor mută stickul stâng cursorul la stânga și la dreapta. Oprit îl ignoră.
+  HINT_YSENSITIVITY: Cât de ușor mută stickul stâng cursorul în sus și în jos. Oprit îl ignoră.

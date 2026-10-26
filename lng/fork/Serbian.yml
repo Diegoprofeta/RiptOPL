@@ -360,3 +360,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Postavite lozinku roditeljske zaštite, inače ova igra neće biti zaključana.
   SAVE_ICONS: 3D ikone sačuvanih igara
   HINT_SAVE_ICONS: Prikazuje ikonu sačuvane igre izabrane igre, kako se okreće, gde tema ima mesto za nju. Prvo čita sopstveni VMC igre, pa memorijske kartice.
+  HINT_NET_PROTOCOL: 'Koju mrežnu uslugu RiptOPL koristi: SMB deljenje, UDPFS, UDPBD ili HTTP. Isto podešavanje kao u Izvorima igara. Prelazak sa usluge koja već radi zahteva ponovno pokretanje.'
+  HINT_UDPFS_ACCESS: Samo UDPFS. Datoteke čita pojedinačne ISO datoteke iz fascikle igara na serveru; IMG čita sliku diska kao uređaj. SMB i HTTP uvek koriste Datoteke, UDPBD uvek IMG.
+  HINT_SMB_VERSION: Kojom verzijom SMB-a se razgovara sa deljenjem na računaru.
+  HINT_NET_ADVANCED: Otključava režim Ethernet veze i SMB port za uređivanje.
+  HINT_ETH_LINK_MODE: Nameće brzinu i dupleks mrežne veze. Ostavite Auto osim ako veza stalno pada.
+  HINT_IP_ADDR_TYPE: Statička koristi adresu ispod; DHCP pita vaš ruter. UDPFS i UDPBD uvek koriste statičku.
+  HINT_PS2_IP: Sopstvena IP adresa konzole PS2. Izaberite onu koju ne koristi nijedan drugi uređaj, u istom opsegu kao vaš računar.
+  HINT_NETMASK: Maska podmreže, obično 255.255.255.0.
+  HINT_GATEWAY: Adresa vašeg rutera, obično ista prva tri broja sa .1 na kraju.
+  HINT_DNS: Adresa DNS servera. Obično ista kao mrežni prolaz.
+  HINT_SMB_ADDR_TYPE: Pristup računaru preko njegove IP adrese ili NetBIOS imena (imena računara).
+  HINT_SMB_ADDRESS: 'Računar koji deli vaše igre: njegova IP adresa ili ime računara kada je Vrsta adrese NetBIOS.'
+  HINT_SMB_PORT: 'SMB port. Mora da se poklapa sa računarom: PS2 Servers koristi 1111, Windows i Samba deljenja koriste 445.'
+  HINT_SMB_USER: SMB korisničko ime. guest radi za većinu deljenja.
+  HINT_HTTP_SERVER: IP adresa HTTP servera igara.
+  HINT_HTTP_PORT: Port na kojem HTTP server igara sluša.
+  HINT_HTTP_BASE: Fascikla na HTTP serveru u kojoj je games.csv. / je koren servera.
+  HINT_HTTP_TEST: Proba HTTP server sa vrednostima iznad i javlja šta je pronašao.
+  HINT_RA_TELEMETRY: Glavni prekidač za RetroAchievements. Isključeno pokreće igre bez mrežnog steka i snimaka, isto kao obična verzija.
+  HINT_RA_BADGES: Označava igre sa dostignućima u listi. Ostaje tamno dok je telemetrija isključena.
+  HINT_POPS_NET_BUTTON: Uređuje sopstvene mrežne datoteke POPSTARTER-a (IPCONFIG.DAT, SMBCONFIG.DAT), koje trebaju PS1 igrama preko SMB-a.
+  HINT_POPS_IP_TYPE: 'Kako PS2 dobija adresu dok PS1 igra radi preko SMB-a: statička ili DHCP.'
+  HINT_POPS_IP: IP adresa konzole PS2 dok PS1 igra radi preko SMB-a.
+  HINT_POPS_SMB_IP: IP adresa računara koji deli vaše PS1 igre.
+  HINT_POPS_SMB_SHARE: Ime deljenja na tom računaru u kojem je fascikla POPS.
+  HINT_LASTPLAYED: Počinje na igri koju ste prošli put pokrenuli.
+  HINT_LANGUAGE: Jezik menija. Dodajte još stavljanjem datoteka lang_*.lng u fasciklu LNG.
+  HINT_DEFDEVICE: Stranica na kojoj se RiptOPL otvara pri pokretanju.
+  HINT_MMCE_MODE: Igre na SD2PSX ili MemCard PRO2. Auto pokreće pri pokretanju, Ručno kada otvorite stranicu, Isključeno je skriva.
+  HINT_ENABLE_USB: Učitava USB drajver za skladište.
+  HINT_ENABLE_MX4SIO: Učitava drajver za MX4SIO adapter SD kartica.
+  HINT_ENABLE_ILINK: Učitava iLink (FireWire) drajver za skladište.
+  HINT_NETSTART: 'Pokreće mrežu: Auto pri pokretanju, Ručno kada otvorite njenu stranicu. Isključeno ne dira mrežni adapter.'
+  HINT_APPMODE: Stranica Aplikacije. Auto pokreće pri pokretanju, Ručno kada je otvorite, Isključeno je skriva.
+  HINT_FAVMODE: Stranica Omiljene igre. Auto pokreće pri pokretanju, Ručno kada je otvorite, Isključeno je skriva.
+  HINT_VCD_LIST_BUTTON: 'Kako se prikazuju PS1 igre: skrivanje ID-a igara, samo disk 1, HDD PP particije.'
+  HINT_MMCE_SLOT: U kojem slotu za memorijsku karticu je MMCE uređaj. Auto ga pronalazi.
+  HINT_MMCE_GAMEID: Javlja MMCE uređaju koja igra počinje, da bi prešao na memorijsku karticu te igre.
+  HINT_MMCE_PREFIX: Podfascikla na MMCE kartici u kojoj su CD, DVD i ostale OPL fascikle. Prazno koristi koren kartice.
+  HINT_GAME_TYPE_LABELS: Počinje svako ime igre sa [PS1] ili [PS2]. Samo prikaz.
+  HINT_MENU_VMODE: Video izlaz za meni. Igre umesto toga koriste GSM. Držite Potvrdi da zadržite novi režim.
+  HINT_THEME: Izgled menija. Teme se čitaju iz fascikle THM na svakom uređaju.
+  HINT_COVERFLOW_BUTTON: Broj omota, veličina, animacija i zatamnjenje za temu Coverflow.
+  HINT_ARTWORK_BUTTON: 'Koje slike se učitavaju: omoti, slike diskova, pozadine i ikone sačuvanih igara.'
+  HINT_COLORS_BUTTON: Boje teksta, isticanja, dijaloga i pozadine.
+  HINT_NOTIFICATIONS: Kratka obaveštenja kada se učita datoteka konfiguracije, teme ili jezika.
+  HINT_AUTOSORT: Ređa liste igara od A do Z. Isključeno zadržava redosled kojim su pronađene.
+  HINT_AUTOREFRESH: Dodaje igre sa novopovezanih uređaja bez ručnog osvežavanja.
+  HINT_COVERART: Učitava omote iz fascikle ART.
+  HINT_DISCART: Prikazuje sliku diska (<ID>_ICO). Isključeno skriva disk, ali zadržava omote i pozadine.
+  HINT_BGART: Prikazuje pozadinu igre (<ID>_BG) kada je tema koristi.
+  HINT_ART_TAR: Čita i slike spakovane u ART/art.tar.
+  HINT_ART_DELAY: Koliko dugo kursor stoji na igri pre nego što se učitaju njene slike. Veća vrednost preskače slike dok brzo listate.
+  HINT_TXTCOLOR: Boja običnog teksta menija.
+  HINT_SELCOLOR: Boja istaknute stavke.
+  HINT_UICOLOR: Nijansa pozadine okvira dijaloga.
+  HINT_TITLECOLOR: Boja naslova igara u listi.
+  HINT_BGCOLOR: Boja pozadine menija.
+  HINT_PLASCOLOR: Boja umešana u animiranu pozadinu.
+  HINT_RESETCOLOR: Vraća ugrađene boje RiptOPL-a, ne boje teme.
+  HINT_WIDESCREEN: Crta meni za TV 16:9.
+  HINT_XOFF: Pomera meni levo ili desno na ekranu.
+  HINT_YOFF: Pomera meni gore ili dole na ekranu.
+  HINT_MENU_OVERSCAN: Sužava meni ka unutra ako TV odseca ivice.
+  HINT_APPLYGAMEID: Prikazuje bar-kod dok igra počinje, da bi Pixel FX, RetroGEM i PS2Digital uređaji promenili profil.
+  HINT_ENWRITEOP: Dozvoljava preimenovanje i brisanje igara i pravljenje VMC-ova. Nikad ne dira tabelu particija HDD-a.
+  HINT_DEBUG: 'Pomoć za programere: obojeni ekrani dok se igra pokreće i brojači učitavanja slika u meniju.'
+  HINT_BDMPREFIX: Podfascikla na USB, MX4SIO, iLink i exFAT uređajima u kojoj su fascikle igara. Prazno koristi koren uređaja.
+  HINT_ETHPREFIX: Podfascikla na SMB deljenju u kojoj su fascikle igara. Prazno koristi koren deljenja.
+  HINT_HDDGAMELISTCACHE: Pamti listu igara na APA HDD-u da bi kasnija skeniranja bila brža.
+  HINT_BDMCACHE: Keš unapred čitanja za USB i druge BDM uređaje u igri. Veći može da ujednači strimovanje, ali troši više memorije.
+  HINT_HDDCACHE: Keš unapred čitanja za unutrašnji HDD u igri.
+  HINT_SMBCACHE: Keš unapred čitanja za SMB u igri.
+  HINT_CORE_LOADER: Jezgro za ovu igru gde su podržana oba. UDPFS/UDPBD su samo za Neutrino; SMB/HTTP samo za <OPL>. Podrazumevano prati Pokretanje igara.
+  HINT_DMA_MODE: Režim prenosa unutrašnjeg HDD-a za ovu igru. Smanjite ga ako igra secka ili se zamrzava.
+  HINT_DNAS_GAMEID: ID diska za DNAS onlajn igre. Učitaj sa diska ga čita sa originalnog diska.
+  HINT_LOAD_FROM_DISC: Čita DNAS ID sa originalnog diska u uređaju.
+  HINT_ALTSTARTUP: Pokreće ovaj ELF iz slike diska umesto onog koji navodi SYSTEM.CNF.
+  HINT_VMC_DEFINE: Izaberite, napravite ili promenite veličinu virtuelne memorijske kartice ovog slota.
+  HINT_VMC_ACTION: Koristi opštu daje ovom slotu zajedničku karticu; Resetuj briše izbor.
+  HINT_VMC_NAME: Ime datoteke kartice, čuva se u fascikli VMC.
+  HINT_VMC_CREATE: Pravi karticu ili joj primenjuje novu veličinu.
+  HINT_VMC_DELETE: Briše ovu datoteku kartice.
+  HINT_SFX: Zvučni efekti menija.
+  HINT_BOOT_SND: Pušta zvuk kada se RiptOPL pokrene.
+  HINT_BGM: Pušta muziku teme ili vašu datoteku podrazumevane muzike teme.
+  HINT_SFX_VOLUME: Jačina zvučnih efekata menija.
+  HINT_BOOT_SND_VOLUME: Jačina zvuka pri pokretanju.
+  HINT_BGM_VOLUME: Jačina pozadinske muzike.
+  HINT_SCROLL: Koliko brzo se liste pomeraju dok držite smer.
+  HINT_SELECTBUTTON: 'Koje dugme potvrđuje: Krstić ili Krug.'
+  HINT_XSENSITIVITY: Koliko lako leva palica pomera kursor levo i desno. Isključeno je zanemaruje.
+  HINT_YSENSITIVITY: Koliko lako leva palica pomera kursor gore i dole. Isključeno je zanemaruje.

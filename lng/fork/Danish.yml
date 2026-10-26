@@ -465,3 +465,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Angiv en adgangskode til forældrelåsen, ellers bliver dette spil ikke låst.
   SAVE_ICONS: 3D-gemmeikoner
   HINT_SAVE_ICONS: Viser det valgte spils gemmeikon, snurrende, hvor temaet har plads til det. Læser spillets egen VMC først, derefter memorykortene.
+  HINT_NET_PROTOCOL: 'Hvilken netværkstjeneste RiptOPL bruger: en SMB-deling, UDPFS, UDPBD eller HTTP. Samme indstilling som i Spilkilder. At skifte væk fra en, der allerede kører, kræver en genstart.'
+  HINT_UDPFS_ACCESS: Kun UDPFS. Filer læser løse ISO'er fra serverens spilmappe; IMG læser et diskbillede som et drev. SMB og HTTP bruger altid Filer, UDPBD altid IMG.
+  HINT_SMB_VERSION: Hvilken SMB-version der bruges over for pc-delingen.
+  HINT_NET_ADVANCED: Låser Ethernet-forbindelsestilstand og SMB-porten op for redigering.
+  HINT_ETH_LINK_MODE: Tvinger netværksforbindelsens hastighed og duplex. Lad den stå på Auto, medmindre forbindelsen bliver ved med at falde ud.
+  HINT_IP_ADDR_TYPE: Statisk bruger adressen nedenfor; DHCP spørger din router. UDPFS og UDPBD bruger altid Statisk.
+  HINT_PS2_IP: PS2'ens egen IP-adresse. Vælg en, som ingen anden enhed bruger, i samme område som din pc.
+  HINT_NETMASK: Undernetmaske, som regel 255.255.255.0.
+  HINT_GATEWAY: Din routers adresse, som regel med de samme første tre tal og slutter på .1.
+  HINT_DNS: DNS-serverens adresse. Som regel den samme som gatewayen.
+  HINT_SMB_ADDR_TYPE: Nå pc'en via dens IP-adresse eller dens NetBIOS-navn (computernavn).
+  HINT_SMB_ADDRESS: 'Pc''en, der deler dine spil: dens IP-adresse, eller dens computernavn, når Adressetype er NetBIOS.'
+  HINT_SMB_PORT: 'SMB-port. Den skal passe til pc''en: PS2 Servers bruger 1111, Windows- og Samba-delinger bruger 445.'
+  HINT_SMB_USER: SMB-brugernavn. guest virker til de fleste delinger.
+  HINT_HTTP_SERVER: HTTP-spilserverens IP-adresse.
+  HINT_HTTP_PORT: Porten, HTTP-spilserveren lytter på.
+  HINT_HTTP_BASE: Mappen på HTTP-serveren, der indeholder games.csv. / er serverens rod.
+  HINT_HTTP_TEST: Prøver HTTP-serveren med værdierne ovenfor og melder, hvad den fandt.
+  HINT_RA_TELEMETRY: Hovedkontakt for RetroAchievements. Fra starter spil uden netværksstak eller øjebliksbilleder, ligesom en normal build.
+  HINT_RA_BADGES: Markerer spil med præstationer i listen. Forbliver mørkt, mens telemetrien er slået fra.
+  HINT_POPS_NET_BUTTON: Redigerer POPSTARTER's egne netværksfiler (IPCONFIG.DAT, SMBCONFIG.DAT), som PS1-spil over SMB har brug for.
+  HINT_POPS_IP_TYPE: 'Hvordan PS2''en får sin adresse, mens et PS1-spil kører over SMB: Statisk eller DHCP.'
+  HINT_POPS_IP: PS2'ens IP-adresse, mens et PS1-spil kører over SMB.
+  HINT_POPS_SMB_IP: IP-adressen på pc'en, der deler dine PS1-spil.
+  HINT_POPS_SMB_SHARE: Navnet på delingen på den pc, der indeholder POPS-mappen.
+  HINT_LASTPLAYED: Starter på det spil, du startede sidst.
+  HINT_LANGUAGE: Menusprog. Tilføj flere ved at lægge lang_*.lng-filer i en LNG-mappe.
+  HINT_DEFDEVICE: Den side, RiptOPL åbner ved opstart.
+  HINT_MMCE_MODE: Spil på en SD2PSX eller MemCard PRO2. Auto starter ved opstart, Manuel når du åbner siden, Fra skjuler den.
+  HINT_ENABLE_USB: Indlæser driveren til USB-lager.
+  HINT_ENABLE_MX4SIO: Indlæser driveren til SD-kortadapteren MX4SIO.
+  HINT_ENABLE_ILINK: Indlæser driveren til iLink-lager (FireWire).
+  HINT_NETSTART: 'Starter netværket: Auto ved opstart, Manuel når du åbner dets side. Fra lader netværksadapteren være.'
+  HINT_APPMODE: Appsiden. Auto starter ved opstart, Manuel når du åbner den, Fra skjuler den.
+  HINT_FAVMODE: Siden Stjernemarkerede spil. Auto starter ved opstart, Manuel når du åbner den, Fra skjuler den.
+  HINT_VCD_LIST_BUTTON: 'Hvordan PS1-spil vises: skjul spil-id''er, vis kun disk 1, vis HDD''ens PP-partitioner.'
+  HINT_MMCE_SLOT: Hvilket memorykortstik MMCE-enheden sidder i. Auto finder det.
+  HINT_MMCE_GAMEID: Fortæller MMCE-enheden, hvilket spil der starter, så den kan skifte til det spils memorykort.
+  HINT_MMCE_PREFIX: Undermappe på MMCE-kortet, der indeholder CD, DVD og de andre OPL-mapper. Tom bruger kortets rod.
+  HINT_GAME_TYPE_LABELS: Indleder hvert spilnavn med [PS1] eller [PS2]. Kun visning.
+  HINT_MENU_VMODE: Menuens videoudgang. Spil bruger GSM i stedet. Hold Bekræft nede for at beholde en ny tilstand.
+  HINT_THEME: Menuens udseende. Temaer læses fra THM-mappen på hver enhed.
+  HINT_COVERFLOW_BUTTON: Antal covers, størrelse, animation og dæmpning for Coverflow-temaet.
+  HINT_ARTWORK_BUTTON: 'Hvilke billeder der indlæses: covers, diskbilleder, baggrunde og gemmeikoner.'
+  HINT_COLORS_BUTTON: Farver for tekst, fremhævning, dialoger og baggrund.
+  HINT_NOTIFICATIONS: Korte meddelelser, når en konfigurations-, tema- eller sprogfil indlæses.
+  HINT_AUTOSORT: Sorterer spillister fra A til Å. Fra beholder den rækkefølge, de blev fundet i.
+  HINT_AUTOREFRESH: Tilføjer spil fra nyligt tilsluttede enheder uden manuel opdatering.
+  HINT_COVERART: Indlæser covers fra ART-mappen.
+  HINT_DISCART: Viser diskbilleder (<ID>_ICO). Fra skjuler disken, men beholder covers og baggrunde.
+  HINT_BGART: Viser et spils baggrund (<ID>_BG), når temaet bruger en.
+  HINT_ART_TAR: Læser også billeder pakket i ART/art.tar.
+  HINT_ART_DELAY: Hvor længe markøren hviler på et spil, før dets billeder indlæses. Højere springer billeder over, når du ruller hurtigt.
+  HINT_TXTCOLOR: Farve på almindelig menutekst.
+  HINT_SELCOLOR: Farve på det fremhævede element.
+  HINT_UICOLOR: Baggrundsnuance for dialogbokse.
+  HINT_TITLECOLOR: Farve på spiltitler i listen.
+  HINT_BGCOLOR: Menuens baggrundsfarve.
+  HINT_PLASCOLOR: Farve, der blandes ind i den animerede baggrund.
+  HINT_RESETCOLOR: Gendanner RiptOPL's indbyggede farver, ikke temaets.
+  HINT_WIDESCREEN: Tegner menuen til et 16:9-tv.
+  HINT_XOFF: Flytter menuen til venstre eller højre på skærmen.
+  HINT_YOFF: Flytter menuen op eller ned på skærmen.
+  HINT_MENU_OVERSCAN: Gør menuen mindre indad, hvis tv'et skærer kanterne af.
+  HINT_APPLYGAMEID: Viser en stregkode, når et spil starter, så Pixel FX-, RetroGEM- og PS2Digital-enheder skifter profil.
+  HINT_ENWRITEOP: Tillader at omdøbe og slette spil og at oprette VMC'er. Rører aldrig HDD'ens partitionstabel.
+  HINT_DEBUG: 'Hjælp til udviklere: farvede skærme, mens et spil starter, og tællere for billedindlæsning i menuen.'
+  HINT_BDMPREFIX: Undermappe på USB-, MX4SIO-, iLink- og exFAT-drev, der indeholder spilmapperne. Tom bruger drevets rod.
+  HINT_ETHPREFIX: Undermappe på SMB-delingen, der indeholder spilmapperne. Tom bruger delingens rod.
+  HINT_HDDGAMELISTCACHE: Husker spillisten fra APA-HDD'en for at gøre senere scanninger hurtigere.
+  HINT_BDMCACHE: Forudlæsningscache til USB og andre BDM-drev i spillet. Større kan gøre streaming jævnere, men bruger mere hukommelse.
+  HINT_HDDCACHE: Forudlæsningscache til den interne HDD i spillet.
+  HINT_SMBCACHE: Forudlæsningscache til SMB i spillet.
+  HINT_CORE_LOADER: Kerne til dette spil, hvor begge understøttes. UDPFS/UDPBD er kun Neutrino; SMB/HTTP er kun <OPL>. Standard følger Spilstart.
+  HINT_DMA_MODE: Overførselstilstand for den interne HDD til dette spil. Sænk den, hvis spillet hakker eller fryser.
+  HINT_DNAS_GAMEID: Disk-id til DNAS-onlinespil. Indlæs fra disk læser det fra den originale disk.
+  HINT_LOAD_FROM_DISC: Læser DNAS-id'et fra den originale disk i drevet.
+  HINT_ALTSTARTUP: Starter denne ELF fra diskbilledet i stedet for den, SYSTEM.CNF angiver.
+  HINT_VMC_DEFINE: Vælg, opret eller ændr størrelsen på dette stiks virtuelle memorykort.
+  HINT_VMC_ACTION: Brug generelt giver dette stik et delt kort; Nulstil rydder valget.
+  HINT_VMC_NAME: Navnet på kortfilen, der gemmes i VMC-mappen.
+  HINT_VMC_CREATE: Opretter kortet eller anvender en ny størrelse på det.
+  HINT_VMC_DELETE: Sletter denne kortfil.
+  HINT_SFX: Menuens lydeffekter.
+  HINT_BOOT_SND: Afspiller en lyd, når RiptOPL starter.
+  HINT_BGM: Afspiller temaets musik eller din fil med standardtemamusik.
+  HINT_SFX_VOLUME: Lydstyrke for menuens lydeffekter.
+  HINT_BOOT_SND_VOLUME: Lydstyrke for opstartslyden.
+  HINT_BGM_VOLUME: Lydstyrke for baggrundsmusikken.
+  HINT_SCROLL: Hvor hurtigt lister ruller, mens du holder en retning nede.
+  HINT_SELECTBUTTON: 'Hvilken knap der bekræfter: Kryds eller Cirkel.'
+  HINT_XSENSITIVITY: Hvor let venstre pind flytter markøren til venstre og højre. Fra ignorerer den.
+  HINT_YSENSITIVITY: Hvor let venstre pind flytter markøren op og ned. Fra ignorerer den.

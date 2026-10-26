@@ -470,3 +470,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Postavi lozinku roditeljske zaštite, inače ova igra neće biti zaključana.
   SAVE_ICONS: 3D ikone spremljenih igara
   HINT_SAVE_ICONS: Prikazuje ikonu spremljene igre odabrane igre, kako se vrti, gdje tema ima mjesto za nju. Najprije čita vlastiti VMC igre, zatim memorijske kartice.
+  HINT_NET_PROTOCOL: 'Koju mrežnu uslugu RiptOPL koristi: SMB dijeljenje, UDPFS, UDPBD ili HTTP. Ista postavka kao u Izvorima igara. Prelazak s usluge koja već radi zahtijeva ponovno pokretanje.'
+  HINT_UDPFS_ACCESS: Samo UDPFS. Datoteke čita pojedinačne ISO datoteke iz mape igara na poslužitelju; IMG čita sliku diska kao pogon. SMB i HTTP uvijek koriste Datoteke, UDPBD uvijek IMG.
+  HINT_SMB_VERSION: Kojom se inačicom SMB-a razgovara s dijeljenjem na računalu.
+  HINT_NET_ADVANCED: Otključava način Ethernet veze i SMB priključak za uređivanje.
+  HINT_ETH_LINK_MODE: Nameće brzinu i dupleks mrežne veze. Ostavi Auto osim ako veza stalno pada.
+  HINT_IP_ADDR_TYPE: Statička koristi adresu ispod; DHCP pita tvoj usmjerivač. UDPFS i UDPBD uvijek koriste statičku.
+  HINT_PS2_IP: Vlastita IP adresa konzole PS2. Odaberi onu koju ne koristi nijedan drugi uređaj, u istom rasponu kao tvoje računalo.
+  HINT_NETMASK: Maska podmreže, obično 255.255.255.0.
+  HINT_GATEWAY: Adresa tvog usmjerivača, obično ista prva tri broja s .1 na kraju.
+  HINT_DNS: Adresa DNS poslužitelja. Obično ista kao pristupnik.
+  HINT_SMB_ADDR_TYPE: Pristup računalu preko njegove IP adrese ili NetBIOS naziva (naziva računala).
+  HINT_SMB_ADDRESS: 'Računalo koje dijeli tvoje igre: njegova IP adresa ili naziv računala kad je Vrsta adrese NetBIOS.'
+  HINT_SMB_PORT: 'SMB priključak. Mora odgovarati računalu: PS2 Servers koristi 1111, Windows i Samba dijeljenja koriste 445.'
+  HINT_SMB_USER: SMB korisničko ime. guest radi za većinu dijeljenja.
+  HINT_HTTP_SERVER: IP adresa HTTP poslužitelja igara.
+  HINT_HTTP_PORT: Priključak na kojem HTTP poslužitelj igara sluša.
+  HINT_HTTP_BASE: Mapa na HTTP poslužitelju u kojoj je games.csv. / je korijen poslužitelja.
+  HINT_HTTP_TEST: Isprobava HTTP poslužitelj s vrijednostima iznad i javlja što je pronašao.
+  HINT_RA_TELEMETRY: Glavni prekidač za RetroAchievements. Isključeno pokreće igre bez mrežnog stoga i snimaka, isto kao obična izgradnja.
+  HINT_RA_BADGES: Označava igre s postignućima u popisu. Ostaje tamno dok je telemetrija isključena.
+  HINT_POPS_NET_BUTTON: Uređuje vlastite mrežne datoteke POPSTARTER-a (IPCONFIG.DAT, SMBCONFIG.DAT), koje trebaju PS1 igrama preko SMB-a.
+  HINT_POPS_IP_TYPE: 'Kako PS2 dobiva adresu dok PS1 igra radi preko SMB-a: statička ili DHCP.'
+  HINT_POPS_IP: IP adresa konzole PS2 dok PS1 igra radi preko SMB-a.
+  HINT_POPS_SMB_IP: IP adresa računala koje dijeli tvoje PS1 igre.
+  HINT_POPS_SMB_SHARE: Naziv dijeljenja na tom računalu u kojem je mapa POPS.
+  HINT_LASTPLAYED: Počinje na igri koju si zadnji put pokrenuo.
+  HINT_LANGUAGE: Jezik izbornika. Dodaj još stavljanjem datoteka lang_*.lng u mapu LNG.
+  HINT_DEFDEVICE: Stranica na kojoj se RiptOPL otvara pri pokretanju.
+  HINT_MMCE_MODE: Igre na SD2PSX ili MemCard PRO2. Auto pokreće pri pokretanju, Ručno kad otvoriš stranicu, Isključeno je skriva.
+  HINT_ENABLE_USB: Učitava USB upravljački program za pohranu.
+  HINT_ENABLE_MX4SIO: Učitava upravljački program za MX4SIO adapter SD kartica.
+  HINT_ENABLE_ILINK: Učitava iLink (FireWire) upravljački program za pohranu.
+  HINT_NETSTART: 'Pokreće mrežu: Auto pri pokretanju, Ručno kad otvoriš njezinu stranicu. Isključeno ne dira mrežni adapter.'
+  HINT_APPMODE: Stranica Aplikacije. Auto pokreće pri pokretanju, Ručno kad je otvoriš, Isključeno je skriva.
+  HINT_FAVMODE: Stranica Favoriti. Auto pokreće pri pokretanju, Ručno kad je otvoriš, Isključeno je skriva.
+  HINT_VCD_LIST_BUTTON: 'Kako se prikazuju PS1 igre: skrivanje ID-a igara, samo disk 1, HDD PP particije.'
+  HINT_MMCE_SLOT: U kojem je utoru za memorijsku karticu MMCE uređaj. Auto ga pronalazi.
+  HINT_MMCE_GAMEID: Javlja MMCE uređaju koja igra počinje, da prijeđe na memorijsku karticu te igre.
+  HINT_MMCE_PREFIX: Podmapa na MMCE kartici u kojoj su CD, DVD i ostale OPL mape. Prazno koristi korijen kartice.
+  HINT_GAME_TYPE_LABELS: Počinje svaki naziv igre s [PS1] ili [PS2]. Samo prikaz.
+  HINT_MENU_VMODE: Video izlaz za izbornik. Igre umjesto toga koriste GSM. Drži Potvrdi da zadržiš novi način.
+  HINT_THEME: Izgled izbornika. Teme se čitaju iz mape THM na svakom uređaju.
+  HINT_COVERFLOW_BUTTON: Broj omota, veličina, animacija i zatamnjenje za temu Coverflow.
+  HINT_ARTWORK_BUTTON: 'Koje se slike učitavaju: omoti, slike diskova, pozadine i ikone spremljenih igara.'
+  HINT_COLORS_BUTTON: Boje teksta, isticanja, dijaloga i pozadine.
+  HINT_NOTIFICATIONS: Kratke obavijesti kad se učita datoteka konfiguracije, teme ili jezika.
+  HINT_AUTOSORT: Razvrstava popise igara od A do Ž. Isključeno zadržava redoslijed kojim su pronađene.
+  HINT_AUTOREFRESH: Dodaje igre s novospojenih uređaja bez ručnog osvježavanja.
+  HINT_COVERART: Učitava omote iz mape ART.
+  HINT_DISCART: Prikazuje sliku diska (<ID>_ICO). Isključeno skriva disk, ali zadržava omote i pozadine.
+  HINT_BGART: Prikazuje pozadinu igre (<ID>_BG) kad je tema koristi.
+  HINT_ART_TAR: Čita i slike spakirane u ART/art.tar.
+  HINT_ART_DELAY: Koliko dugo pokazivač stoji na igri prije nego što se učitaju njezine slike. Veća vrijednost preskače slike dok brzo listaš.
+  HINT_TXTCOLOR: Boja običnog teksta izbornika.
+  HINT_SELCOLOR: Boja istaknute stavke.
+  HINT_UICOLOR: Nijansa pozadine okvira dijaloga.
+  HINT_TITLECOLOR: Boja naslova igara u popisu.
+  HINT_BGCOLOR: Boja pozadine izbornika.
+  HINT_PLASCOLOR: Boja umiješana u animiranu pozadinu.
+  HINT_RESETCOLOR: Vraća ugrađene boje RiptOPL-a, ne boje teme.
+  HINT_WIDESCREEN: Crta izbornik za TV 16:9.
+  HINT_XOFF: Pomiče izbornik lijevo ili desno na zaslonu.
+  HINT_YOFF: Pomiče izbornik gore ili dolje na zaslonu.
+  HINT_MENU_OVERSCAN: Sužava izbornik prema unutra ako TV odsijeca rubove.
+  HINT_APPLYGAMEID: Prikazuje crtični kod dok igra počinje, da Pixel FX, RetroGEM i PS2Digital uređaji promijene profil.
+  HINT_ENWRITEOP: Dopušta preimenovanje i brisanje igara te stvaranje VMC-ova. Nikad ne dira tablicu particija HDD-a.
+  HINT_DEBUG: 'Pomoć za razvojne programere: obojeni zasloni dok se igra pokreće i brojači učitavanja slika u izborniku.'
+  HINT_BDMPREFIX: Podmapa na USB, MX4SIO, iLink i exFAT pogonima u kojoj su mape igara. Prazno koristi korijen pogona.
+  HINT_ETHPREFIX: Podmapa na SMB dijeljenju u kojoj su mape igara. Prazno koristi korijen dijeljenja.
+  HINT_HDDGAMELISTCACHE: Pamti popis igara na APA HDD-u da kasnija skeniranja budu brža.
+  HINT_BDMCACHE: Predmemorija čitanja unaprijed za USB i druge BDM pogone u igri. Veća može ujednačiti strujanje, ali troši više memorije.
+  HINT_HDDCACHE: Predmemorija čitanja unaprijed za unutarnji HDD u igri.
+  HINT_SMBCACHE: Predmemorija čitanja unaprijed za SMB u igri.
+  HINT_CORE_LOADER: Jezgra za ovu igru gdje su podržane obje. UDPFS/UDPBD su samo za Neutrino; SMB/HTTP samo za <OPL>. Zadano prati Pokretanje igara.
+  HINT_DMA_MODE: Način prijenosa unutarnjeg HDD-a za ovu igru. Smanji ga ako igra zastajkuje ili se smrzava.
+  HINT_DNAS_GAMEID: ID diska za DNAS mrežne igre. Učitaj s diska čita ga s originalnog diska.
+  HINT_LOAD_FROM_DISC: Čita DNAS ID s originalnog diska u pogonu.
+  HINT_ALTSTARTUP: Pokreće ovaj ELF iz slike diska umjesto onoga koji navodi SYSTEM.CNF.
+  HINT_VMC_DEFINE: Odaberi, stvori ili promijeni veličinu virtualne memorijske kartice ovog utora.
+  HINT_VMC_ACTION: Koristi opću daje ovom utoru zajedničku karticu; Poništi briše izbor.
+  HINT_VMC_NAME: Naziv datoteke kartice, čuva se u mapi VMC.
+  HINT_VMC_CREATE: Stvara karticu ili joj primjenjuje novu veličinu.
+  HINT_VMC_DELETE: Briše ovu datoteku kartice.
+  HINT_SFX: Zvučni efekti izbornika.
+  HINT_BOOT_SND: Reproducira zvuk kad se RiptOPL pokrene.
+  HINT_BGM: Reproducira glazbu teme ili tvoju datoteku zadane glazbe teme.
+  HINT_SFX_VOLUME: Glasnoća zvučnih efekata izbornika.
+  HINT_BOOT_SND_VOLUME: Glasnoća zvuka pri pokretanju.
+  HINT_BGM_VOLUME: Glasnoća pozadinske glazbe.
+  HINT_SCROLL: Koliko se brzo popisi pomiču dok držiš smjer.
+  HINT_SELECTBUTTON: 'Koja tipka potvrđuje: Križić ili Krug.'
+  HINT_XSENSITIVITY: Koliko lako lijeva palica pomiče pokazivač lijevo i desno. Isključeno je zanemaruje.
+  HINT_YSENSITIVITY: Koliko lako lijeva palica pomiče pokazivač gore i dolje. Isključeno je zanemaruje.

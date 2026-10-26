@@ -513,3 +513,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Stel een wachtwoord voor het ouderlijk slot in, anders wordt deze game niet vergrendeld.
   SAVE_ICONS: 3D-savepictogrammen
   HINT_SAVE_ICONS: Toont het savepictogram van de gekozen game, draaiend, waar het thema er een plek voor heeft. Leest eerst de eigen VMC van de game, daarna de geheugenkaarten.
+  HINT_NET_PROTOCOL: 'Welke netwerkdienst RiptOPL gebruikt: een SMB-share, UDPFS, UDPBD of HTTP. Dezelfde instelling als bij Gamebronnen. Overstappen van een dienst die al draait, vraagt een herstart.'
+  HINT_UDPFS_ACCESS: Alleen UDPFS. Bestanden leest losse ISO's uit de gamemap van de server; IMG leest een schijfimage als schijf. SMB en HTTP gebruiken altijd Bestanden, UDPBD altijd IMG.
+  HINT_SMB_VERSION: Welke SMB-versie gebruikt wordt met de share op de pc.
+  HINT_NET_ADVANCED: Ontgrendelt Ethernet-verbindingsmodus en de SMB-poort voor bewerken.
+  HINT_ETH_LINK_MODE: Dwingt de snelheid en duplex van de netwerkverbinding af. Laat op Auto staan, tenzij de verbinding steeds wegvalt.
+  HINT_IP_ADDR_TYPE: Vast gebruikt het adres hieronder; DHCP vraagt het aan je router. UDPFS en UDPBD gebruiken altijd Vast.
+  HINT_PS2_IP: Het eigen IP-adres van de PS2. Kies er een dat geen ander apparaat gebruikt, in hetzelfde bereik als je pc.
+  HINT_NETMASK: Subnetmasker, meestal 255.255.255.0.
+  HINT_GATEWAY: Het adres van je router, meestal met dezelfde eerste drie getallen en eindigend op .1.
+  HINT_DNS: Adres van de DNS-server. Meestal hetzelfde als de gateway.
+  HINT_SMB_ADDR_TYPE: De pc bereiken via zijn IP-adres of via zijn NetBIOS-naam (computernaam).
+  HINT_SMB_ADDRESS: 'De pc die je games deelt: zijn IP-adres, of zijn computernaam als Adrestype NetBIOS is.'
+  HINT_SMB_PORT: 'SMB-poort. Moet overeenkomen met de pc: PS2 Servers gebruikt 1111, Windows- en Samba-shares gebruiken 445.'
+  HINT_SMB_USER: SMB-gebruikersnaam. guest werkt voor de meeste shares.
+  HINT_HTTP_SERVER: IP-adres van de HTTP-gameserver.
+  HINT_HTTP_PORT: Poort waarop de HTTP-gameserver luistert.
+  HINT_HTTP_BASE: Map op de HTTP-server waarin games.csv staat. / is de hoofdmap van de server.
+  HINT_HTTP_TEST: Probeert de HTTP-server met de waarden hierboven en meldt wat het vond.
+  HINT_RA_TELEMETRY: Hoofdschakelaar voor RetroAchievements. Uit start games zonder netwerkstack of snapshots, net als een normale build.
+  HINT_RA_BADGES: Markeert in de lijst games die prestaties hebben. Blijft donker zolang telemetrie uit staat.
+  HINT_POPS_NET_BUTTON: Bewerkt de eigen netwerkbestanden van POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), die PS1-games via SMB nodig hebben.
+  HINT_POPS_IP_TYPE: 'Hoe de PS2 zijn adres krijgt terwijl een PS1-game via SMB draait: Vast of DHCP.'
+  HINT_POPS_IP: Het IP-adres van de PS2 terwijl een PS1-game via SMB draait.
+  HINT_POPS_SMB_IP: IP-adres van de pc die je PS1-games deelt.
+  HINT_POPS_SMB_SHARE: Naam van de share op die pc waarin de POPS-map staat.
+  HINT_LASTPLAYED: Begint bij de game die je de vorige keer startte.
+  HINT_LANGUAGE: Menutaal. Voeg er meer toe door lang_*.lng-bestanden in een LNG-map te zetten.
+  HINT_DEFDEVICE: De pagina waarop RiptOPL bij opstarten opent.
+  HINT_MMCE_MODE: Games op een SD2PSX of MemCard PRO2. Automatisch start bij opstarten, Handmatig als je de pagina opent, Uit verbergt hem.
+  HINT_ENABLE_USB: Laadt de USB-opslagdriver.
+  HINT_ENABLE_MX4SIO: Laadt de driver voor de MX4SIO-SD-kaartadapter.
+  HINT_ENABLE_ILINK: Laadt de iLink-opslagdriver (FireWire).
+  HINT_NETSTART: 'Start het netwerk: Automatisch bij opstarten, Handmatig als je de pagina opent. Uit laat de netwerkadapter met rust.'
+  HINT_APPMODE: De pagina Apps. Automatisch start bij opstarten, Handmatig als je hem opent, Uit verbergt hem.
+  HINT_FAVMODE: De pagina Favoriete games. Automatisch start bij opstarten, Handmatig als je hem opent, Uit verbergt hem.
+  HINT_VCD_LIST_BUTTON: 'Hoe PS1-games worden getoond: game-ID''s verbergen, alleen schijf 1 tonen, PP-partities van de HDD tonen.'
+  HINT_MMCE_SLOT: In welke geheugenkaartsleuf het MMCE-apparaat zit. Automatisch vindt hem.
+  HINT_MMCE_GAMEID: Vertelt het MMCE-apparaat welke game start, zodat het kan overschakelen naar de geheugenkaart van die game.
+  HINT_MMCE_PREFIX: Submap op de MMCE-kaart met CD, DVD en de andere OPL-mappen. Leeg gebruikt de hoofdmap van de kaart.
+  HINT_GAME_TYPE_LABELS: Begint elke gamenaam met [PS1] of [PS2]. Alleen weergave.
+  HINT_MENU_VMODE: Video-uitvoer van het menu. Games gebruiken in plaats daarvan GSM. Houd Bevestigen ingedrukt om een nieuwe modus te behouden.
+  HINT_THEME: Het uiterlijk van het menu. Thema's worden gelezen uit de THM-map op elk apparaat.
+  HINT_COVERFLOW_BUTTON: Aantal hoezen, grootte, animatie en verduistering voor het Coverflow-thema.
+  HINT_ARTWORK_BUTTON: 'Welke afbeeldingen laden: hoezen, schijfafbeeldingen, achtergronden en savepictogrammen.'
+  HINT_COLORS_BUTTON: Kleuren van tekst, markering, dialoogvensters en achtergrond.
+  HINT_NOTIFICATIONS: Korte meldingen als een configuratie-, thema- of taalbestand laadt.
+  HINT_AUTOSORT: Sorteert gamelijsten van A tot Z. Uit houdt de volgorde aan waarin ze werden gevonden.
+  HINT_AUTOREFRESH: Voegt games van nieuw aangesloten apparaten toe zonder handmatig te vernieuwen.
+  HINT_COVERART: Laadt hoesafbeeldingen uit de ART-map.
+  HINT_DISCART: Toont schijfafbeeldingen (<ID>_ICO). Uit verbergt de schijf, maar houdt hoezen en achtergronden.
+  HINT_BGART: Toont de achtergrond van een game (<ID>_BG) als het thema er een gebruikt.
+  HINT_ART_TAR: Leest ook afbeeldingen die in ART/art.tar zijn ingepakt.
+  HINT_ART_DELAY: Hoe lang de cursor op een game rust voordat de afbeeldingen laden. Hoger slaat afbeeldingen over als je snel scrolt.
+  HINT_TXTCOLOR: Kleur van gewone menutekst.
+  HINT_SELCOLOR: Kleur van het gemarkeerde item.
+  HINT_UICOLOR: Achtergrondtint van dialoogvensters.
+  HINT_TITLECOLOR: Kleur van gametitels in de lijst.
+  HINT_BGCOLOR: Achtergrondkleur van het menu.
+  HINT_PLASCOLOR: Kleur die in de bewegende achtergrond wordt gemengd.
+  HINT_RESETCOLOR: Zet de ingebouwde kleuren van RiptOPL terug, niet die van het thema.
+  HINT_WIDESCREEN: Tekent het menu voor een 16:9-tv.
+  HINT_XOFF: Verschuift het menu naar links of rechts op het scherm.
+  HINT_YOFF: Verschuift het menu omhoog of omlaag op het scherm.
+  HINT_MENU_OVERSCAN: Krimpt het menu naar binnen als de tv de randen afsnijdt.
+  HINT_APPLYGAMEID: Toont een barcode als een game start, zodat Pixel FX-, RetroGEM- en PS2Digital-apparaten van profiel wisselen.
+  HINT_ENWRITEOP: Staat toe games te hernoemen en te verwijderen en VMC's te maken. Raakt de partitietabel van de HDD nooit aan.
+  HINT_DEBUG: 'Hulp voor ontwikkelaars: gekleurde schermen terwijl een game opstart, en tellers voor het laden van afbeeldingen in het menu.'
+  HINT_BDMPREFIX: Submap op USB-, MX4SIO-, iLink- en exFAT-schijven met de gamemappen. Leeg gebruikt de hoofdmap van de schijf.
+  HINT_ETHPREFIX: Submap op de SMB-share met de gamemappen. Leeg gebruikt de hoofdmap van de share.
+  HINT_HDDGAMELISTCACHE: Onthoudt de gamelijst van de APA-HDD om latere scans te versnellen.
+  HINT_BDMCACHE: Vooruitleescache voor USB en andere BDM-schijven in de game. Groter kan streaming soepeler maken, maar gebruikt meer geheugen.
+  HINT_HDDCACHE: Vooruitleescache voor de interne HDD in de game.
+  HINT_SMBCACHE: Vooruitleescache voor SMB in de game.
+  HINT_CORE_LOADER: Kern voor deze game waar beide worden ondersteund. UDPFS/UDPBD zijn alleen Neutrino; SMB/HTTP zijn alleen <OPL>. Standaard volgt Games starten.
+  HINT_DMA_MODE: Overdrachtsmodus van de interne HDD voor deze game. Verlaag hem als de game hapert of vastloopt.
+  HINT_DNAS_GAMEID: Schijf-ID voor DNAS-onlinegames. Laden van schijf leest het van de originele schijf.
+  HINT_LOAD_FROM_DISC: Leest het DNAS-ID van de originele schijf in de lade.
+  HINT_ALTSTARTUP: Start dit ELF vanaf de schijfimage in plaats van het ELF dat SYSTEM.CNF noemt.
+  HINT_VMC_DEFINE: Kies, maak of verander de grootte van de virtuele geheugenkaart van deze sleuf.
+  HINT_VMC_ACTION: Algemene gebruiken geeft deze sleuf een gedeelde kaart; Resetten wist de keuze.
+  HINT_VMC_NAME: Naam van het kaartbestand, bewaard in de map VMC.
+  HINT_VMC_CREATE: Maakt de kaart, of past een nieuwe grootte erop toe.
+  HINT_VMC_DELETE: Verwijdert dit kaartbestand.
+  HINT_SFX: Geluidseffecten van het menu.
+  HINT_BOOT_SND: Speelt een geluid af als RiptOPL start.
+  HINT_BGM: Speelt de muziek van het thema af, of je bestand Standaard themamuziek.
+  HINT_SFX_VOLUME: Volume van de geluidseffecten van het menu.
+  HINT_BOOT_SND_VOLUME: Volume van het opstartgeluid.
+  HINT_BGM_VOLUME: Volume van de achtergrondmuziek.
+  HINT_SCROLL: Hoe snel lijsten scrollen terwijl je een richting vasthoudt.
+  HINT_SELECTBUTTON: 'Welke knop bevestigt: Kruis of Cirkel.'
+  HINT_XSENSITIVITY: Hoe makkelijk de linkerstick de cursor naar links en rechts beweegt. Uit negeert hem.
+  HINT_YSENSITIVITY: Hoe makkelijk de linkerstick de cursor omhoog en omlaag beweegt. Uit negeert hem.

@@ -488,3 +488,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Magtakda ng parental lock password, kung hindi ay hindi mala-lock ang larong ito.
   SAVE_ICONS: Mga 3D save icon
   HINT_SAVE_ICONS: Ipinapakita ang umiikot na save icon ng napiling laro, kung saan may puwesto para dito ang theme. Binabasa muna ang sariling VMC ng laro, saka ang mga memory card.
+  HINT_NET_PROTOCOL: 'Aling network service ang ginagamit ng RiptOPL: SMB share, UDPFS, UDPBD o HTTP. Parehong setting gaya ng sa Game Sources. Kailangan ng restart para lumipat mula sa tumatakbo na.'
+  HINT_UDPFS_ACCESS: UDPFS lang. Binabasa ng Files ang mga hiwalay na ISO mula sa games folder ng server; binabasa ng IMG ang disk image bilang drive. Laging Files ang gamit ng SMB at HTTP, laging IMG ang UDPBD.
+  HINT_SMB_VERSION: Aling bersyon ng SMB ang gagamitin sa PC share.
+  HINT_NET_ADVANCED: Ina-unlock ang Ethernet Link Mode at ang SMB Port para ma-edit.
+  HINT_ETH_LINK_MODE: Pinipilit ang bilis at duplex ng network link. Iwan sa Auto maliban kung paulit-ulit na nawawala ang link.
+  HINT_IP_ADDR_TYPE: Ginagamit ng Static ang address sa ibaba; nagtatanong ang DHCP sa iyong router. Laging Static ang UDPFS at UDPBD.
+  HINT_PS2_IP: Ang sariling IP address ng PS2. Pumili ng hindi ginagamit ng ibang device, sa parehong range ng iyong PC.
+  HINT_NETMASK: Subnet mask, karaniwang 255.255.255.0.
+  HINT_GATEWAY: Address ng iyong router, karaniwang pareho ang unang tatlong numero at nagtatapos sa .1.
+  HINT_DNS: Address ng DNS server. Karaniwang pareho sa gateway.
+  HINT_SMB_ADDR_TYPE: Abutin ang PC gamit ang IP address nito o ang NetBIOS (computer) name nito.
+  HINT_SMB_ADDRESS: 'Ang PC na nagbabahagi ng iyong mga laro: ang IP address nito, o ang computer name nito kapag NetBIOS ang Address Type.'
+  HINT_SMB_PORT: 'SMB port. Dapat tugma sa PC: 1111 ang gamit ng PS2 Servers, 445 ang gamit ng Windows at Samba share.'
+  HINT_SMB_USER: SMB user name. Gumagana ang guest sa karamihan ng share.
+  HINT_HTTP_SERVER: IP address ng HTTP game server.
+  HINT_HTTP_PORT: Port na pinakikinggan ng HTTP game server.
+  HINT_HTTP_BASE: Folder sa HTTP server na may games.csv. Ang / ay ang root ng server.
+  HINT_HTTP_TEST: Sinusubukan ang HTTP server gamit ang mga value sa itaas at iniuulat ang nahanap nito.
+  HINT_RA_TELEMETRY: Pangunahing switch para sa RetroAchievements. Inilulunsad ng Off ang mga laro nang walang network stack o snapshot, gaya ng normal na build.
+  HINT_RA_BADGES: Minamarkahan sa listahan ang mga larong may achievement. Nananatiling madilim habang naka-off ang telemetry.
+  HINT_POPS_NET_BUTTON: Ine-edit ang sariling network file ng POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), na kailangan ng mga PS1 na laro sa SMB.
+  HINT_POPS_IP_TYPE: 'Paano nakakakuha ng address ang PS2 habang tumatakbo ang PS1 na laro sa SMB: Static o DHCP.'
+  HINT_POPS_IP: Ang IP address ng PS2 habang tumatakbo ang PS1 na laro sa SMB.
+  HINT_POPS_SMB_IP: IP address ng PC na nagbabahagi ng iyong mga PS1 na laro.
+  HINT_POPS_SMB_SHARE: Pangalan ng share sa PC na iyon na may POPS folder.
+  HINT_LASTPLAYED: Nagsisimula sa larong huli mong inilunsad.
+  HINT_LANGUAGE: Wika ng menu. Magdagdag pa sa pamamagitan ng paglalagay ng mga lang_*.lng file sa isang LNG folder.
+  HINT_DEFDEVICE: Ang page na binubuksan ng RiptOPL sa pag-boot.
+  HINT_MMCE_MODE: Mga laro sa SD2PSX o MemCard PRO2. Nagsisimula ang Auto sa pag-boot, ang Manwal kapag binuksan mo ang page, itinatago ito ng Off.
+  HINT_ENABLE_USB: Nilo-load ang USB storage driver.
+  HINT_ENABLE_MX4SIO: Nilo-load ang driver ng MX4SIO SD card adapter.
+  HINT_ENABLE_ILINK: Nilo-load ang iLink (FireWire) storage driver.
+  HINT_NETSTART: 'Sinisimulan ang network: Auto sa pag-boot, Manwal kapag binuksan mo ang page nito. Hindi ginagalaw ng Off ang network adapter.'
+  HINT_APPMODE: Ang Apps page. Nagsisimula ang Auto sa pag-boot, ang Manwal kapag binuksan mo ito, itinatago ito ng Off.
+  HINT_FAVMODE: Ang page ng Mga Paborito. Nagsisimula ang Auto sa pag-boot, ang Manwal kapag binuksan mo ito, itinatago ito ng Off.
+  HINT_VCD_LIST_BUTTON: 'Paano nakalista ang mga PS1 na laro: itago ang game ID, ipakita lang ang disc 1, ipakita ang HDD PP partition.'
+  HINT_MMCE_SLOT: Kung aling memory card slot ang kinalalagyan ng MMCE device. Hinahanap ito ng Auto.
+  HINT_MMCE_GAMEID: Sinasabi sa MMCE device kung aling laro ang nagsisimula, para makalipat ito sa memory card ng larong iyon.
+  HINT_MMCE_PREFIX: Subfolder sa MMCE card na may CD, DVD at ibang OPL folder. Ang root ng card ang gamit kapag blangko.
+  HINT_GAME_TYPE_LABELS: Sinisimulan ang bawat pangalan ng laro sa [PS1] o [PS2]. Pagpapakita lang.
+  HINT_MENU_VMODE: Video output para sa menu. GSM ang gamit ng mga laro. Pindutin nang matagal ang Confirm para panatilihin ang bagong mode.
+  HINT_THEME: Ang itsura ng menu. Binabasa ang mga theme mula sa THM folder sa bawat device.
+  HINT_COVERFLOW_BUTTON: Bilang ng cover, laki, animation at pagpapadilim para sa Coverflow theme.
+  HINT_ARTWORK_BUTTON: 'Aling art ang nilo-load: mga cover, disc art, background at save icon.'
+  HINT_COLORS_BUTTON: Mga kulay ng text, highlight, dialog at background.
+  HINT_NOTIFICATIONS: Maikling abiso kapag nag-load ang config, theme o language file.
+  HINT_AUTOSORT: Inaayos ang mga listahan ng laro mula A hanggang Z. Pinapanatili ng Off ang pagkakasunod kung paano sila nahanap.
+  HINT_AUTOREFRESH: Nagdadagdag ng mga laro mula sa bagong konektang device nang walang manu-manong refresh.
+  HINT_COVERART: Nilo-load ang cover art mula sa ART folder.
+  HINT_DISCART: Ipinapakita ang disc art (<ID>_ICO). Itinatago ng Off ang disc pero pinapanatili ang mga cover at background.
+  HINT_BGART: Ipinapakita ang background ng laro (<ID>_BG) kapag ginagamit ito ng theme.
+  HINT_ART_TAR: Binabasa rin ang art na naka-pack sa ART/art.tar.
+  HINT_ART_DELAY: Gaano katagal nakatigil ang cursor sa isang laro bago mag-load ang art nito. Nilalaktawan ng mas mataas na value ang art habang mabilis kang nag-i-scroll.
+  HINT_TXTCOLOR: Kulay ng normal na text ng menu.
+  HINT_SELCOLOR: Kulay ng naka-highlight na item.
+  HINT_UICOLOR: Kulay ng background ng mga dialog box.
+  HINT_TITLECOLOR: Kulay ng mga pamagat ng laro sa listahan.
+  HINT_BGCOLOR: Kulay ng background ng menu.
+  HINT_PLASCOLOR: Kulay na hinahalo sa animated na background.
+  HINT_RESETCOLOR: Ibinabalik ang built-in na kulay ng RiptOPL, hindi ang sa theme.
+  HINT_WIDESCREEN: Iginuguhit ang menu para sa 16:9 na TV.
+  HINT_XOFF: Inililipat ang menu pakaliwa o pakanan sa screen.
+  HINT_YOFF: Inililipat ang menu pataas o pababa sa screen.
+  HINT_MENU_OVERSCAN: Pinapaliit papasok ang menu kung pinuputol ng TV ang mga gilid nito.
+  HINT_APPLYGAMEID: Nagpapakita ng barcode habang nagsisimula ang laro, para lumipat ng profile ang mga Pixel FX, RetroGEM at PS2Digital device.
+  HINT_ENWRITEOP: Pinapayagan ang pagpapalit ng pangalan at pagbura ng mga laro at paggawa ng mga VMC. Hindi kailanman ginagalaw ang partition table ng HDD.
+  HINT_DEBUG: 'Tulong sa developer: makukulay na screen habang nagbu-boot ang laro, at mga counter ng pag-load ng art sa menu.'
+  HINT_BDMPREFIX: Subfolder sa USB, MX4SIO, iLink at exFAT drive na may mga game folder. Ang root ng drive ang gamit kapag blangko.
+  HINT_ETHPREFIX: Subfolder sa SMB share na may mga game folder. Ang root ng share ang gamit kapag blangko.
+  HINT_HDDGAMELISTCACHE: Tinatandaan ang listahan ng laro ng APA HDD para bumilis ang mga susunod na scan.
+  HINT_BDMCACHE: Read-ahead cache para sa USB at ibang BDM drive habang naglalaro. Maaaring pakinisin ng mas malaki ang streaming pero mas maraming memory ang ginagamit.
+  HINT_HDDCACHE: Read-ahead cache para sa internal HDD habang naglalaro.
+  HINT_SMBCACHE: Read-ahead cache para sa SMB habang naglalaro.
+  HINT_CORE_LOADER: Core para sa larong ito kung saan parehong suportado. Neutrino lang ang UDPFS/UDPBD; <OPL> lang ang SMB/HTTP. Sinusundan ng Default ang Game Launching.
+  HINT_DMA_MODE: Transfer mode ng internal HDD para sa larong ito. Ibaba ito kung nauutal o nagfi-freeze ang laro.
+  HINT_DNAS_GAMEID: Disc ID para sa mga DNAS online na laro. Binabasa ito ng Load From Disc mula sa orihinal na disc.
+  HINT_LOAD_FROM_DISC: Binabasa ang DNAS ID mula sa orihinal na disc sa drive.
+  HINT_ALTSTARTUP: Bina-boot ang ELF na ito mula sa disc image sa halip na ang pinangalanan ng SYSTEM.CNF.
+  HINT_VMC_DEFINE: Pumili, gumawa o baguhin ang laki ng virtual memory card ng slot na ito.
+  HINT_VMC_ACTION: Binibigyan ng Use Generic ang slot na ito ng pinagsasaluhang card; binubura ng Reset ang pagpili.
+  HINT_VMC_NAME: Pangalan ng card file, nakatago sa VMC folder.
+  HINT_VMC_CREATE: Ginagawa ang card, o inilalapat dito ang bagong laki.
+  HINT_VMC_DELETE: Binubura ang card file na ito.
+  HINT_SFX: Mga sound effect ng menu.
+  HINT_BOOT_SND: Nagpapatugtog ng tunog kapag nagsimula ang RiptOPL.
+  HINT_BGM: Pinapatugtog ang musika ng theme, o ang iyong Default Theme Music file.
+  HINT_SFX_VOLUME: Lakas ng mga sound effect ng menu.
+  HINT_BOOT_SND_VOLUME: Lakas ng tunog sa pagsisimula.
+  HINT_BGM_VOLUME: Lakas ng background music.
+  HINT_SCROLL: Gaano kabilis mag-scroll ang mga listahan habang hawak mo ang isang direksyon.
+  HINT_SELECTBUTTON: 'Aling button ang nagkukumpirma: Cross o Circle.'
+  HINT_XSENSITIVITY: Gaano kadaling ilipat ng kaliwang stick ang cursor pakaliwa at pakanan. Binabalewala ito ng Off.
+  HINT_YSENSITIVITY: Gaano kadaling ilipat ng kaliwang stick ang cursor pataas at pababa. Binabalewala ito ng Off.

@@ -448,3 +448,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Nastavte heslo rodičovského zámku, jinak tato hra nebude zamčená.
   SAVE_ICONS: 3D ikony uložených pozic
   HINT_SAVE_ICONS: Ukáže otáčející se ikonu uložené pozice vybrané hry tam, kde pro ni má motiv místo. Nejdřív čte vlastní VMC hry, pak paměťové karty.
+  HINT_NET_PROTOCOL: 'Kterou síťovou službu RiptOPL používá: sdílení SMB, UDPFS, UDPBD nebo HTTP. Stejné nastavení jako ve Zdrojích her. Přepnutí z již běžící vyžaduje restart.'
+  HINT_UDPFS_ACCESS: Jen UDPFS. Soubory čte jednotlivá ISO ze složky her na serveru; IMG čte obraz disku jako disk. SMB a HTTP vždy používají Soubory, UDPBD vždy IMG.
+  HINT_SMB_VERSION: Kterou verzí SMB mluvit se sdílenou složkou na PC.
+  HINT_NET_ADVANCED: Odemkne úpravy režimu spojení Ethernet a portu SMB.
+  HINT_ETH_LINK_MODE: Vynutí rychlost a duplex síťového spojení. Nechte na Auto, pokud spojení stále nepadá.
+  HINT_IP_ADDR_TYPE: Statická použije adresu níže; DHCP se zeptá routeru. UDPFS a UDPBD vždy používají Statickou.
+  HINT_PS2_IP: Vlastní IP adresa PS2. Vyberte takovou, kterou žádné jiné zařízení nepoužívá, ve stejném rozsahu jako vaše PC.
+  HINT_NETMASK: Maska podsítě, obvykle 255.255.255.0.
+  HINT_GATEWAY: Adresa vašeho routeru, obvykle se stejnými prvními třemi čísly a končící .1.
+  HINT_DNS: Adresa serveru DNS. Obvykle stejná jako brána.
+  HINT_SMB_ADDR_TYPE: Připojit se k PC přes jeho IP adresu, nebo přes jméno NetBIOS (název počítače).
+  HINT_SMB_ADDRESS: 'PC, které sdílí vaše hry: jeho IP adresa, nebo název počítače, když je Typ adresy NetBIOS.'
+  HINT_SMB_PORT: 'Port SMB. Musí odpovídat PC: PS2 Servers používá 1111, sdílení Windows a Samba používá 445.'
+  HINT_SMB_USER: Uživatelské jméno SMB. Pro většinu sdílení funguje guest.
+  HINT_HTTP_SERVER: IP adresa herního serveru HTTP.
+  HINT_HTTP_PORT: Port, na kterém herní server HTTP naslouchá.
+  HINT_HTTP_BASE: Složka na serveru HTTP, ve které je games.csv. / je kořen serveru.
+  HINT_HTTP_TEST: Vyzkouší server HTTP s hodnotami výše a ohlásí, co našel.
+  HINT_RA_TELEMETRY: Hlavní vypínač RetroAchievements. Vypnuto spouští hry bez síťového zásobníku i snímků, stejně jako běžné sestavení.
+  HINT_RA_BADGES: Označí v seznamu hry, které mají úspěchy. Zůstává tmavé, dokud je telemetrie vypnutá.
+  HINT_POPS_NET_BUTTON: Upraví vlastní síťové soubory POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), které hry PS1 přes SMB potřebují.
+  HINT_POPS_IP_TYPE: 'Jak PS2 získá adresu, zatímco hra PS1 běží přes SMB: Statická nebo DHCP.'
+  HINT_POPS_IP: IP adresa PS2, zatímco hra PS1 běží přes SMB.
+  HINT_POPS_SMB_IP: IP adresa PC, které sdílí vaše hry PS1.
+  HINT_POPS_SMB_SHARE: Název sdílení na tom PC, ve kterém je složka POPS.
+  HINT_LASTPLAYED: Začne na hře, kterou jste spustili naposledy.
+  HINT_LANGUAGE: Jazyk menu. Další přidáte vložením souborů lang_*.lng do složky LNG.
+  HINT_DEFDEVICE: Stránka, kterou RiptOPL otevře při startu.
+  HINT_MMCE_MODE: Hry na SD2PSX nebo MemCard PRO2. Auto se spustí při startu, Ručně při otevření stránky, Vypnuto ji skryje.
+  HINT_ENABLE_USB: Načte ovladač úložiště USB.
+  HINT_ENABLE_MX4SIO: Načte ovladač adaptéru SD karet MX4SIO.
+  HINT_ENABLE_ILINK: Načte ovladač úložiště iLink (FireWire).
+  HINT_NETSTART: 'Spustí síť: Auto při startu, Ručně při otevření její stránky. Vypnuto nechá síťový adaptér na pokoji.'
+  HINT_APPMODE: Stránka aplikací. Auto se spustí při startu, Ručně při otevření, Vypnuto ji skryje.
+  HINT_FAVMODE: Stránka oblíbených her. Auto se spustí při startu, Ručně při otevření, Vypnuto ji skryje.
+  HINT_VCD_LIST_BUTTON: 'Jak se vypisují hry PS1: skrýt ID her, ukázat jen disk 1, ukázat oddíly PP na HDD.'
+  HINT_MMCE_SLOT: Ve kterém slotu paměťové karty je zařízení MMCE. Auto ho najde.
+  HINT_MMCE_GAMEID: Řekne zařízení MMCE, která hra se spouští, aby mohlo přepnout na paměťovou kartu té hry.
+  HINT_MMCE_PREFIX: Podsložka na kartě MMCE, ve které jsou CD, DVD a další složky OPL. Prázdné použije kořen karty.
+  HINT_GAME_TYPE_LABELS: Začne název každé hry značkou [PS1] nebo [PS2]. Jen zobrazení.
+  HINT_MENU_VMODE: Video výstup menu. Hry místo toho používají GSM. Pro ponechání nového režimu podržte Potvrdit.
+  HINT_THEME: Vzhled menu. Motivy se čtou ze složky THM na každém zařízení.
+  HINT_COVERFLOW_BUTTON: Počet obalů, velikost, animace a ztmavení pro motiv Coverflow.
+  HINT_ARTWORK_BUTTON: 'Které obrázky se načítají: obaly, obrázky disků, pozadí a ikony uložených pozic.'
+  HINT_COLORS_BUTTON: Barvy textu, zvýraznění, dialogů a pozadí.
+  HINT_NOTIFICATIONS: Krátká upozornění, když se načte soubor nastavení, motivu nebo jazyka.
+  HINT_AUTOSORT: Seřadí seznamy her od A do Z. Vypnuto ponechá pořadí, v jakém byly nalezeny.
+  HINT_AUTOREFRESH: Přidá hry z nově připojených zařízení bez ručního obnovení.
+  HINT_COVERART: Načte obaly ze složky ART.
+  HINT_DISCART: Ukáže obrázek disku (<ID>_ICO). Vypnuto skryje disk, ale ponechá obaly a pozadí.
+  HINT_BGART: Ukáže pozadí hry (<ID>_BG), když ho motiv používá.
+  HINT_ART_TAR: Čte také obrázky zabalené v ART/art.tar.
+  HINT_ART_DELAY: Jak dlouho kurzor stojí na hře, než se načtou její obrázky. Vyšší hodnota přeskakuje obrázky při rychlém posouvání.
+  HINT_TXTCOLOR: Barva běžného textu menu.
+  HINT_SELCOLOR: Barva zvýrazněné položky.
+  HINT_UICOLOR: Odstín pozadí dialogových oken.
+  HINT_TITLECOLOR: Barva názvů her v seznamu.
+  HINT_BGCOLOR: Barva pozadí menu.
+  HINT_PLASCOLOR: Barva přimíchaná do animovaného pozadí.
+  HINT_RESETCOLOR: Obnoví vestavěné barvy RiptOPL, ne barvy motivu.
+  HINT_WIDESCREEN: Kreslí menu pro televizor 16:9.
+  HINT_XOFF: Posune menu na obrazovce doleva nebo doprava.
+  HINT_YOFF: Posune menu na obrazovce nahoru nebo dolů.
+  HINT_MENU_OVERSCAN: Zmenší menu dovnitř, pokud televizor ořezává okraje.
+  HINT_APPLYGAMEID: Při startu hry ukáže čárový kód, aby zařízení Pixel FX, RetroGEM a PS2Digital přepnula profily.
+  HINT_ENWRITEOP: Povolí přejmenování a mazání her a vytváření VMC. Nikdy nesahá na tabulku oddílů HDD.
+  HINT_DEBUG: 'Pomůcka pro vývojáře: barevné obrazovky při startu hry a počítadla načítání obrázků v menu.'
+  HINT_BDMPREFIX: Podsložka na discích USB, MX4SIO, iLink a exFAT, ve které jsou složky her. Prázdné použije kořen disku.
+  HINT_ETHPREFIX: Podsložka ve sdílení SMB, ve které jsou složky her. Prázdné použije kořen sdílení.
+  HINT_HDDGAMELISTCACHE: Zapamatuje si seznam her z HDD APA, aby byla další skenování rychlejší.
+  HINT_BDMCACHE: Mezipaměť čtení dopředu pro USB a další disky BDM ve hře. Větší může vyhladit streamování, ale bere víc paměti.
+  HINT_HDDCACHE: Mezipaměť čtení dopředu pro interní HDD ve hře.
+  HINT_SMBCACHE: Mezipaměť čtení dopředu pro SMB ve hře.
+  HINT_CORE_LOADER: Jádro pro tuto hru tam, kde jsou podporována obě. UDPFS/UDPBD jen Neutrino; SMB/HTTP jen <OPL>. Výchozí se řídí Spouštěním her.
+  HINT_DMA_MODE: Režim přenosu interního HDD pro tuto hru. Snižte ho, pokud se hra trhá nebo zamrzá.
+  HINT_DNAS_GAMEID: ID disku pro online hry DNAS. Načíst z disku ho přečte z originálního disku.
+  HINT_LOAD_FROM_DISC: Přečte ID DNAS z originálního disku v mechanice.
+  HINT_ALTSTARTUP: Spustí tento ELF z obrazu disku místo toho, který určuje SYSTEM.CNF.
+  HINT_VMC_DEFINE: Vyberte, vytvořte nebo změňte velikost virtuální paměťové karty tohoto slotu.
+  HINT_VMC_ACTION: Použít obecnou dá tomuto slotu sdílenou kartu; Resetovat zruší volbu.
+  HINT_VMC_NAME: Název souboru karty, uloženého ve složce VMC.
+  HINT_VMC_CREATE: Vytvoří kartu, nebo na ni použije novou velikost.
+  HINT_VMC_DELETE: Smaže tento soubor karty.
+  HINT_SFX: Zvukové efekty menu.
+  HINT_BOOT_SND: Při startu RiptOPL zahraje zvuk.
+  HINT_BGM: Přehrává hudbu motivu, nebo váš soubor Výchozí hudba motivu.
+  HINT_SFX_VOLUME: Hlasitost zvukových efektů menu.
+  HINT_BOOT_SND_VOLUME: Hlasitost úvodního zvuku.
+  HINT_BGM_VOLUME: Hlasitost hudby v pozadí.
+  HINT_SCROLL: Jak rychle se seznamy posouvají, když držíte směr.
+  HINT_SELECTBUTTON: 'Které tlačítko potvrzuje: Křížek, nebo Kroužek.'
+  HINT_XSENSITIVITY: Jak snadno levá páčka posouvá kurzor doleva a doprava. Vypnuto ji ignoruje.
+  HINT_YSENSITIVITY: Jak snadno levá páčka posouvá kurzor nahoru a dolů. Vypnuto ji ignoruje.

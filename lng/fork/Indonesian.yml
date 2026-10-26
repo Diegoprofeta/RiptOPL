@@ -474,3 +474,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Atur kata sandi kunci orang tua, kalau tidak game ini tidak akan terkunci.
   SAVE_ICONS: Ikon Simpanan 3D
   HINT_SAVE_ICONS: Menampilkan ikon simpanan game yang dipilih, berputar, di tempat yang disediakan tema. Membaca VMC milik game lebih dulu, lalu kartu memori.
+  HINT_NET_PROTOCOL: 'Layanan jaringan yang dipakai RiptOPL: share SMB, UDPFS, UDPBD, atau HTTP. Pengaturan yang sama dengan di Sumber Game. Beralih dari layanan yang sudah berjalan butuh mulai ulang.'
+  HINT_UDPFS_ACCESS: Hanya UDPFS. File membaca ISO lepas dari folder game di server; IMG membaca image disk sebagai drive. SMB dan HTTP selalu memakai File, UDPBD selalu IMG.
+  HINT_SMB_VERSION: Versi SMB yang dipakai untuk berbicara dengan share PC.
+  HINT_NET_ADVANCED: Membuka Mode Link Ethernet dan Port SMB untuk diedit.
+  HINT_ETH_LINK_MODE: Memaksa kecepatan link jaringan dan duplex. Biarkan Otomatis kecuali link terus putus.
+  HINT_IP_ADDR_TYPE: Statis memakai alamat di bawah; DHCP meminta ke router-mu. UDPFS dan UDPBD selalu memakai Statis.
+  HINT_PS2_IP: Alamat IP milik PS2 sendiri. Pilih yang tidak dipakai perangkat lain, dalam rentang yang sama dengan PC-mu.
+  HINT_NETMASK: Subnet mask, biasanya 255.255.255.0.
+  HINT_GATEWAY: Alamat router-mu, biasanya tiga angka pertamanya sama dan berakhir .1.
+  HINT_DNS: Alamat server DNS. Biasanya sama dengan gateway.
+  HINT_SMB_ADDR_TYPE: Menjangkau PC lewat alamat IP-nya atau nama NetBIOS (komputer)-nya.
+  HINT_SMB_ADDRESS: 'PC yang membagikan game-gamemu: alamat IP-nya, atau nama komputernya saat Tipe Alamat adalah NetBIOS.'
+  HINT_SMB_PORT: 'Port SMB. Harus sama dengan PC: PS2 Servers memakai 1111, share Windows dan Samba memakai 445.'
+  HINT_SMB_USER: Nama pengguna SMB. guest bisa dipakai untuk kebanyakan share.
+  HINT_HTTP_SERVER: Alamat IP server game HTTP.
+  HINT_HTTP_PORT: Port yang didengarkan server game HTTP.
+  HINT_HTTP_BASE: Folder di server HTTP yang berisi games.csv. / adalah root server.
+  HINT_HTTP_TEST: Mencoba server HTTP dengan nilai di atas dan melaporkan hasilnya.
+  HINT_RA_TELEMETRY: Sakelar utama RetroAchievements. Mati meluncurkan game tanpa stack jaringan atau snapshot, sama seperti build biasa.
+  HINT_RA_BADGES: Menandai game yang punya pencapaian di daftar. Tetap gelap selama telemetri mati.
+  HINT_POPS_NET_BUTTON: Mengedit file jaringan milik POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), yang dibutuhkan game PS1 lewat SMB.
+  HINT_POPS_IP_TYPE: 'Cara PS2 mendapat alamat saat game PS1 berjalan lewat SMB: Statis atau DHCP.'
+  HINT_POPS_IP: Alamat IP PS2 saat game PS1 berjalan lewat SMB.
+  HINT_POPS_SMB_IP: Alamat IP PC yang membagikan game PS1-mu.
+  HINT_POPS_SMB_SHARE: Nama share di PC itu yang berisi folder POPS.
+  HINT_LASTPLAYED: Mulai dari game yang terakhir kamu luncurkan.
+  HINT_LANGUAGE: Bahasa menu. Tambah lagi dengan menaruh file lang_*.lng di folder LNG.
+  HINT_DEFDEVICE: Halaman yang dibuka RiptOPL saat boot.
+  HINT_MMCE_MODE: Game di SD2PSX atau MemCard PRO2. Otomatis mulai saat boot, Manual saat kamu membuka halamannya, Mati menyembunyikannya.
+  HINT_ENABLE_USB: Memuat driver penyimpanan USB.
+  HINT_ENABLE_MX4SIO: Memuat driver adaptor kartu SD MX4SIO.
+  HINT_ENABLE_ILINK: Memuat driver penyimpanan iLink (FireWire).
+  HINT_NETSTART: 'Memulai jaringan: Otomatis saat boot, Manual saat kamu membuka halamannya. Mati tidak menyentuh adaptor jaringan.'
+  HINT_APPMODE: Halaman Aplikasi. Otomatis mulai saat boot, Manual saat kamu membukanya, Mati menyembunyikannya.
+  HINT_FAVMODE: Halaman Game Berbintang. Otomatis mulai saat boot, Manual saat kamu membukanya, Mati menyembunyikannya.
+  HINT_VCD_LIST_BUTTON: 'Cara game PS1 ditampilkan: sembunyikan ID game, hanya tampilkan disk 1, tampilkan partisi PP di HDD.'
+  HINT_MMCE_SLOT: Slot kartu memori tempat perangkat MMCE berada. Otomatis menemukannya.
+  HINT_MMCE_GAMEID: Memberi tahu perangkat MMCE game mana yang dimulai, supaya bisa berganti ke kartu memori game itu.
+  HINT_MMCE_PREFIX: Subfolder di kartu MMCE yang berisi CD, DVD, dan folder OPL lainnya. Kosong memakai root kartu.
+  HINT_GAME_TYPE_LABELS: Mengawali setiap nama game dengan [PS1] atau [PS2]. Hanya tampilan.
+  HINT_MENU_VMODE: Keluaran video untuk menu. Game memakai GSM sebagai gantinya. Tahan Terima untuk mempertahankan mode baru.
+  HINT_THEME: Tampilan menu. Tema dibaca dari folder THM di setiap perangkat.
+  HINT_COVERFLOW_BUTTON: Jumlah sampul, ukuran, animasi, dan peredupan untuk tema Coverflow.
+  HINT_ARTWORK_BUTTON: 'Gambar yang dimuat: sampul, gambar disk, latar, dan ikon simpanan.'
+  HINT_COLORS_BUTTON: Warna teks, sorotan, dialog, dan latar.
+  HINT_NOTIFICATIONS: Pemberitahuan singkat saat file konfigurasi, tema, atau bahasa dimuat.
+  HINT_AUTOSORT: Mengurutkan daftar game dari A ke Z. Mati mempertahankan urutan saat ditemukan.
+  HINT_AUTOREFRESH: Menambahkan game dari perangkat yang baru dihubungkan tanpa penyegaran manual.
+  HINT_COVERART: Memuat sampul dari folder ART.
+  HINT_DISCART: Menampilkan gambar disk (<ID>_ICO). Mati menyembunyikan disk tetapi mempertahankan sampul dan latar.
+  HINT_BGART: Menampilkan latar game (<ID>_BG) saat tema memakainya.
+  HINT_ART_TAR: Juga membaca gambar yang dikemas dalam ART/art.tar.
+  HINT_ART_DELAY: Berapa lama kursor diam di sebuah game sebelum gambarnya dimuat. Makin tinggi, makin banyak gambar dilewati saat kamu menggulir cepat.
+  HINT_TXTCOLOR: Warna teks menu biasa.
+  HINT_SELCOLOR: Warna item yang disorot.
+  HINT_UICOLOR: Rona latar kotak dialog.
+  HINT_TITLECOLOR: Warna judul game di daftar.
+  HINT_BGCOLOR: Warna latar menu.
+  HINT_PLASCOLOR: Warna yang dicampur ke latar animasi.
+  HINT_RESETCOLOR: Mengembalikan warna bawaan RiptOPL, bukan warna tema.
+  HINT_WIDESCREEN: Menggambar menu untuk TV 16:9.
+  HINT_XOFF: Menggeser menu ke kiri atau kanan di layar.
+  HINT_YOFF: Menggeser menu ke atas atau bawah di layar.
+  HINT_MENU_OVERSCAN: Mengecilkan menu ke dalam jika TV memotong tepinya.
+  HINT_APPLYGAMEID: Menampilkan barcode saat game dimulai, supaya perangkat Pixel FX, RetroGEM, dan PS2Digital berganti profil.
+  HINT_ENWRITEOP: Mengizinkan mengganti nama dan menghapus game serta membuat VMC. Tidak pernah menyentuh tabel partisi HDD.
+  HINT_DEBUG: 'Bantuan pengembang: layar berwarna saat game boot, dan penghitung pemuatan gambar di menu.'
+  HINT_BDMPREFIX: Subfolder di drive USB, MX4SIO, iLink, dan exFAT yang berisi folder game. Kosong memakai root drive.
+  HINT_ETHPREFIX: Subfolder di share SMB yang berisi folder game. Kosong memakai root share.
+  HINT_HDDGAMELISTCACHE: Mengingat daftar game HDD APA untuk mempercepat pemindaian berikutnya.
+  HINT_BDMCACHE: Cache baca-dulu untuk USB dan drive BDM lain saat bermain. Makin besar bisa memperhalus streaming tetapi memakai lebih banyak memori.
+  HINT_HDDCACHE: Cache baca-dulu untuk HDD internal saat bermain.
+  HINT_SMBCACHE: Cache baca-dulu untuk SMB saat bermain.
+  HINT_CORE_LOADER: Inti untuk game ini jika keduanya didukung. UDPFS/UDPBD hanya Neutrino; SMB/HTTP hanya <OPL>. Bawaan mengikuti Peluncuran Game.
+  HINT_DMA_MODE: Mode transfer HDD internal untuk game ini. Turunkan jika game tersendat atau macet.
+  HINT_DNAS_GAMEID: ID disk untuk game online DNAS. Muat dari Disk membacanya dari disk asli.
+  HINT_LOAD_FROM_DISC: Membaca ID DNAS dari disk asli di drive.
+  HINT_ALTSTARTUP: Mem-boot ELF ini dari image disk alih-alih yang ditunjuk SYSTEM.CNF.
+  HINT_VMC_DEFINE: Pilih, buat, atau ubah ukuran kartu memori virtual slot ini.
+  HINT_VMC_ACTION: Pakai Umum memberi slot ini kartu bersama; Setel Ulang menghapus pilihan.
+  HINT_VMC_NAME: Nama file kartu, disimpan di folder VMC.
+  HINT_VMC_CREATE: Membuat kartu, atau menerapkan ukuran baru padanya.
+  HINT_VMC_DELETE: Menghapus file kartu ini.
+  HINT_SFX: Efek suara menu.
+  HINT_BOOT_SND: Memutar suara saat RiptOPL mulai.
+  HINT_BGM: Memutar musik tema, atau file Musik Tema Bawaan milikmu.
+  HINT_SFX_VOLUME: Volume efek suara menu.
+  HINT_BOOT_SND_VOLUME: Volume suara awal.
+  HINT_BGM_VOLUME: Volume musik latar.
+  HINT_SCROLL: Seberapa cepat daftar menggulir saat kamu menahan arah.
+  HINT_SELECTBUTTON: 'Tombol yang menerima: Silang atau Lingkaran.'
+  HINT_XSENSITIVITY: Seberapa mudah stik kiri menggerakkan kursor ke kiri dan kanan. Mati mengabaikannya.
+  HINT_YSENSITIVITY: Seberapa mudah stik kiri menggerakkan kursor ke atas dan bawah. Mati mengabaikannya.

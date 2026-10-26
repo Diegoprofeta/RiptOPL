@@ -454,3 +454,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Bir ebeveyn kilidi parolası ayarlayın, yoksa bu oyun kilitlenmez.
   SAVE_ICONS: 3D Kayıt Simgeleri
   HINT_SAVE_ICONS: Temada yeri varsa seçili oyunun kayıt simgesini dönerek gösterir. Önce oyunun kendi VMC'sini, sonra hafıza kartlarını okur.
+  HINT_NET_PROTOCOL: 'RiptOPL''nin kullandığı ağ hizmeti: bir SMB paylaşımı, UDPFS, UDPBD veya HTTP. Oyun Kaynakları''ndakiyle aynı ayar. Zaten çalışan birinden geçmek yeniden başlatma gerektirir.'
+  HINT_UDPFS_ACCESS: Yalnızca UDPFS. Dosyalar, sunucunun oyun klasöründen tek tek ISO'ları okur; IMG bir disk görüntüsünü sürücü olarak okur. SMB ve HTTP her zaman Dosyalar'ı, UDPBD her zaman IMG'yi kullanır.
+  HINT_SMB_VERSION: PC paylaşımıyla konuşurken kullanılacak SMB sürümü.
+  HINT_NET_ADVANCED: Ethernet Bağlantı Modu ve SMB Bağlantı Noktası düzenlemesinin kilidini açar.
+  HINT_ETH_LINK_MODE: Ağ bağlantısının hızını ve çift yönlülüğünü zorlar. Bağlantı sürekli kopmuyorsa Otomatik'te bırakın.
+  HINT_IP_ADDR_TYPE: Statik aşağıdaki adresi kullanır; DHCP yönlendiricinize sorar. UDPFS ve UDPBD her zaman Statik kullanır.
+  HINT_PS2_IP: PS2'nin kendi IP adresi. PC'nizle aynı aralıkta, başka hiçbir cihazın kullanmadığı birini seçin.
+  HINT_NETMASK: Alt ağ maskesi, genellikle 255.255.255.0.
+  HINT_GATEWAY: Yönlendiricinizin adresi, genellikle ilk üç sayısı aynı ve .1 ile biter.
+  HINT_DNS: DNS sunucusu adresi. Genellikle ağ geçidiyle aynıdır.
+  HINT_SMB_ADDR_TYPE: PC'ye IP adresiyle mi yoksa NetBIOS (bilgisayar) adıyla mı ulaşılacağı.
+  HINT_SMB_ADDRESS: 'Oyunlarınızı paylaşan PC: IP adresi, ya da Adres Türü NetBIOS iken bilgisayar adı.'
+  HINT_SMB_PORT: 'SMB bağlantı noktası. PC ile eşleşmelidir: PS2 Servers 1111, Windows ve Samba paylaşımları 445 kullanır.'
+  HINT_SMB_USER: SMB kullanıcı adı. Çoğu paylaşımda guest çalışır.
+  HINT_HTTP_SERVER: HTTP oyun sunucusunun IP adresi.
+  HINT_HTTP_PORT: HTTP oyun sunucusunun dinlediği bağlantı noktası.
+  HINT_HTTP_BASE: HTTP sunucusunda games.csv dosyasını tutan klasör. / sunucunun köküdür.
+  HINT_HTTP_TEST: HTTP sunucusunu yukarıdaki değerlerle dener ve bulduğunu bildirir.
+  HINT_RA_TELEMETRY: RetroAchievements ana anahtarı. Kapalıyken oyunlar ağ yığını veya anlık görüntü olmadan, normal bir derlemeyle aynı şekilde başlar.
+  HINT_RA_BADGES: Listede başarımları olan oyunları işaretler. Telemetri kapalıyken sönük kalır.
+  HINT_POPS_NET_BUTTON: SMB üzerinden PS1 oyunlarının ihtiyaç duyduğu POPSTARTER'ın kendi ağ dosyalarını (IPCONFIG.DAT, SMBCONFIG.DAT) düzenler.
+  HINT_POPS_IP_TYPE: 'Bir PS1 oyunu SMB üzerinden çalışırken PS2''nin adresini nasıl aldığı: Statik veya DHCP.'
+  HINT_POPS_IP: Bir PS1 oyunu SMB üzerinden çalışırken PS2'nin IP adresi.
+  HINT_POPS_SMB_IP: PS1 oyunlarınızı paylaşan PC'nin IP adresi.
+  HINT_POPS_SMB_SHARE: O PC'de POPS klasörünü tutan paylaşımın adı.
+  HINT_LASTPLAYED: Geçen sefer başlattığınız oyundan başlar.
+  HINT_LANGUAGE: Menü dili. Bir LNG klasörüne lang_*.lng dosyaları koyarak daha fazlasını ekleyin.
+  HINT_DEFDEVICE: RiptOPL'nin açılışta açtığı sayfa.
+  HINT_MMCE_MODE: Bir SD2PSX veya MemCard PRO2 üzerindeki oyunlar. Otomatik açılışta, El ile sayfayı açtığınızda başlar, Kapalı onu gizler.
+  HINT_ENABLE_USB: USB depolama sürücüsünü yükler.
+  HINT_ENABLE_MX4SIO: MX4SIO SD kart adaptörü sürücüsünü yükler.
+  HINT_ENABLE_ILINK: iLink (FireWire) depolama sürücüsünü yükler.
+  HINT_NETSTART: 'Ağı başlatır: Otomatik açılışta, El ile sayfasını açtığınızda. Kapalı ağ adaptörüne dokunmaz.'
+  HINT_APPMODE: Uygulamalar sayfası. Otomatik açılışta, El ile açtığınızda başlar, Kapalı onu gizler.
+  HINT_FAVMODE: Yıldızlı Oyunlar sayfası. Otomatik açılışta, El ile açtığınızda başlar, Kapalı onu gizler.
+  HINT_VCD_LIST_BUTTON: 'PS1 oyunlarının nasıl listelendiği: oyun kimliklerini gizle, yalnızca disk 1''i göster, HDD PP bölümlerini göster.'
+  HINT_MMCE_SLOT: MMCE cihazının hangi hafıza kartı yuvasında olduğu. Otomatik onu bulur.
+  HINT_MMCE_GAMEID: MMCE cihazına hangi oyunun başladığını söyler, böylece o oyunun hafıza kartına geçebilir.
+  HINT_MMCE_PREFIX: MMCE kartında CD, DVD ve diğer OPL klasörlerini tutan alt klasör. Boş, kartın kökünü kullanır.
+  HINT_GAME_TYPE_LABELS: Her oyun adının başına [PS1] veya [PS2] ekler. Yalnızca görünüm.
+  HINT_MENU_VMODE: Menünün video çıkışı. Oyunlar bunun yerine GSM kullanır. Yeni bir modu korumak için Onayla'yı basılı tutun.
+  HINT_THEME: Menünün görünümü. Temalar her cihazdaki THM klasöründen okunur.
+  HINT_COVERFLOW_BUTTON: Coverflow teması için kapak sayısı, boyut, animasyon ve karartma.
+  HINT_ARTWORK_BUTTON: 'Hangi resimlerin yüklendiği: kapaklar, disk resmi, arka planlar ve kayıt simgeleri.'
+  HINT_COLORS_BUTTON: Metin, vurgu, iletişim kutusu ve arka plan renkleri.
+  HINT_NOTIFICATIONS: Bir yapılandırma, tema veya dil dosyası yüklendiğinde kısa bildirimler.
+  HINT_AUTOSORT: Oyun listelerini A'dan Z'ye sıralar. Kapalı, bulundukları sırayı korur.
+  HINT_AUTOREFRESH: Elle yenilemeden yeni bağlanan cihazlardaki oyunları ekler.
+  HINT_COVERART: ART klasöründen kapak resmi yükler.
+  HINT_DISCART: Disk resmini (<ID>_ICO) gösterir. Kapalı diski gizler ama kapakları ve arka planları korur.
+  HINT_BGART: Tema arka plan kullanıyorsa bir oyunun arka planını (<ID>_BG) gösterir.
+  HINT_ART_TAR: ART/art.tar içinde paketlenmiş resimleri de okur.
+  HINT_ART_DELAY: Resmi yüklenmeden önce imlecin bir oyun üzerinde ne kadar beklediği. Daha yüksek değer hızlı kaydırırken resimleri atlar.
+  HINT_TXTCOLOR: Normal menü metninin rengi.
+  HINT_SELCOLOR: Vurgulanan öğenin rengi.
+  HINT_UICOLOR: İletişim kutularının arka plan tonu.
+  HINT_TITLECOLOR: Listedeki oyun başlıklarının rengi.
+  HINT_BGCOLOR: Menü arka plan rengi.
+  HINT_PLASCOLOR: Hareketli arka plana karışan renk.
+  HINT_RESETCOLOR: Temanınkileri değil, RiptOPL'nin yerleşik renklerini geri getirir.
+  HINT_WIDESCREEN: Menüyü 16:9 bir TV için çizer.
+  HINT_XOFF: Menüyü ekranda sola veya sağa kaydırır.
+  HINT_YOFF: Menüyü ekranda yukarı veya aşağı kaydırır.
+  HINT_MENU_OVERSCAN: TV kenarları kesiyorsa menüyü içe doğru küçültür.
+  HINT_APPLYGAMEID: Bir oyun başlarken bir barkod gösterir, böylece Pixel FX, RetroGEM ve PS2Digital cihazları profil değiştirir.
+  HINT_ENWRITEOP: Oyunları yeniden adlandırmaya, silmeye ve VMC oluşturmaya izin verir. HDD bölüm tablosuna asla dokunmaz.
+  HINT_DEBUG: 'Geliştirici yardımı: bir oyun açılırken renkli ekranlar ve menüde resim yükleme sayaçları.'
+  HINT_BDMPREFIX: USB, MX4SIO, iLink ve exFAT sürücülerinde oyun klasörlerini tutan alt klasör. Boş, sürücünün kökünü kullanır.
+  HINT_ETHPREFIX: SMB paylaşımında oyun klasörlerini tutan alt klasör. Boş, paylaşımın kökünü kullanır.
+  HINT_HDDGAMELISTCACHE: Sonraki taramaları hızlandırmak için APA HDD oyun listesini hatırlar.
+  HINT_BDMCACHE: Oyun içinde USB ve diğer BDM sürücüleri için önden okuma önbelleği. Daha büyüğü akışı düzgünleştirebilir ama daha fazla bellek kullanır.
+  HINT_HDDCACHE: Oyun içinde dahili HDD için önden okuma önbelleği.
+  HINT_SMBCACHE: Oyun içinde SMB için önden okuma önbelleği.
+  HINT_CORE_LOADER: İkisinin de desteklendiği yerde bu oyunun çekirdeği. UDPFS/UDPBD yalnızca Neutrino; SMB/HTTP yalnızca <OPL>. Varsayılan, Oyun Başlatma'yı izler.
+  HINT_DMA_MODE: Bu oyun için dahili HDD aktarım modu. Oyun takılır veya donarsa düşürün.
+  HINT_DNAS_GAMEID: DNAS çevrimiçi oyunları için disk kimliği. Diskten Yükle onu orijinal diskten okur.
+  HINT_LOAD_FROM_DISC: DNAS kimliğini sürücüdeki orijinal diskten okur.
+  HINT_ALTSTARTUP: SYSTEM.CNF'nin adlandırdığı yerine bu ELF'i disk görüntüsünden önyükler.
+  HINT_VMC_DEFINE: Bu yuvanın sanal hafıza kartını seçin, oluşturun veya yeniden boyutlandırın.
+  HINT_VMC_ACTION: Genel Kullan bu yuvaya ortak bir kart verir; Sıfırla seçimi temizler.
+  HINT_VMC_NAME: VMC klasöründe tutulan kart dosyasının adı.
+  HINT_VMC_CREATE: Kartı oluşturur ya da ona yeni bir boyut uygular.
+  HINT_VMC_DELETE: Bu kart dosyasını siler.
+  HINT_SFX: Menü ses efektleri.
+  HINT_BOOT_SND: RiptOPL başlarken bir ses çalar.
+  HINT_BGM: Temanın müziğini veya Varsayılan Tema Müziği dosyanızı çalar.
+  HINT_SFX_VOLUME: Menü ses efektlerinin ses düzeyi.
+  HINT_BOOT_SND_VOLUME: Açılış sesinin ses düzeyi.
+  HINT_BGM_VOLUME: Arka plan müziğinin ses düzeyi.
+  HINT_SCROLL: Bir yönü basılı tuttuğunuzda listelerin ne kadar hızlı kaydığı.
+  HINT_SELECTBUTTON: 'Hangi tuşun onayladığı: Çarpı veya Daire.'
+  HINT_XSENSITIVITY: Sol çubuğun imleci sola ve sağa ne kadar kolay taşıdığı. Kapalı onu yok sayar.
+  HINT_YSENSITIVITY: Sol çubuğun imleci yukarı ve aşağı ne kadar kolay taşıdığı. Kapalı onu yok sayar.

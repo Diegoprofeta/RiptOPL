@@ -470,3 +470,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Ange ett lösenord för föräldralåset, annars låses inte det här spelet.
   SAVE_ICONS: 3D-sparikoner
   HINT_SAVE_ICONS: Visar det valda spelets sparikon, snurrande, där temat har plats för den. Läser spelets egen VMC först, sedan minneskorten.
+  HINT_NET_PROTOCOL: 'Vilken nätverkstjänst RiptOPL använder: en SMB-resurs, UDPFS, UDPBD eller HTTP. Samma inställning som i Spelkällor. Att byta från en som redan körs kräver en omstart.'
+  HINT_UDPFS_ACCESS: Bara UDPFS. Filer läser lösa ISO:er från serverns spelmapp; IMG läser en diskavbild som en enhet. SMB och HTTP använder alltid Filer, UDPBD alltid IMG.
+  HINT_SMB_VERSION: Vilken SMB-version som används mot PC-resursen.
+  HINT_NET_ADVANCED: Låser upp Ethernet-länkläge och SMB-port för redigering.
+  HINT_ETH_LINK_MODE: Tvingar nätverkslänkens hastighet och duplex. Låt den stå på Auto om inte länken hela tiden bryts.
+  HINT_IP_ADDR_TYPE: Statisk använder adressen nedan; DHCP frågar din router. UDPFS och UDPBD använder alltid Statisk.
+  HINT_PS2_IP: PS2:ns egen IP-adress. Välj en som ingen annan enhet använder, i samma intervall som din PC.
+  HINT_NETMASK: Nätmask, oftast 255.255.255.0.
+  HINT_GATEWAY: Din routers adress, oftast samma tre första tal och slutar på .1.
+  HINT_DNS: DNS-serverns adress. Oftast samma som gatewayen.
+  HINT_SMB_ADDR_TYPE: Nå PC:n via dess IP-adress eller dess NetBIOS-namn (datornamn).
+  HINT_SMB_ADDRESS: 'PC:n som delar dina spel: dess IP-adress, eller dess datornamn när Adresstyp är NetBIOS.'
+  HINT_SMB_PORT: 'SMB-port. Den måste matcha PC:n: PS2 Servers använder 1111, Windows- och Samba-resurser använder 445.'
+  HINT_SMB_USER: SMB-användarnamn. guest fungerar för de flesta resurser.
+  HINT_HTTP_SERVER: HTTP-spelserverns IP-adress.
+  HINT_HTTP_PORT: Porten som HTTP-spelservern lyssnar på.
+  HINT_HTTP_BASE: Mappen på HTTP-servern som innehåller games.csv. / är serverns rot.
+  HINT_HTTP_TEST: Provar HTTP-servern med värdena ovan och rapporterar vad den hittade.
+  HINT_RA_TELEMETRY: Huvudbrytare för RetroAchievements. Av startar spel utan nätverksstack eller ögonblicksbilder, precis som ett vanligt bygge.
+  HINT_RA_BADGES: Markerar spel som har prestationer i listan. Förblir mörkt medan telemetrin är av.
+  HINT_POPS_NET_BUTTON: Redigerar POPSTARTER:s egna nätverksfiler (IPCONFIG.DAT, SMBCONFIG.DAT), som PS1-spel via SMB behöver.
+  HINT_POPS_IP_TYPE: 'Hur PS2:n får sin adress medan ett PS1-spel körs via SMB: Statisk eller DHCP.'
+  HINT_POPS_IP: PS2:ns IP-adress medan ett PS1-spel körs via SMB.
+  HINT_POPS_SMB_IP: IP-adressen till PC:n som delar dina PS1-spel.
+  HINT_POPS_SMB_SHARE: Namnet på resursen på den PC:n som innehåller POPS-mappen.
+  HINT_LASTPLAYED: Börjar på spelet du startade senast.
+  HINT_LANGUAGE: Menyspråk. Lägg till fler genom att lägga lang_*.lng-filer i en LNG-mapp.
+  HINT_DEFDEVICE: Sidan som RiptOPL öppnar vid start.
+  HINT_MMCE_MODE: Spel på en SD2PSX eller MemCard PRO2. Auto startar vid start, Manuell när du öppnar sidan, Av döljer den.
+  HINT_ENABLE_USB: Laddar drivrutinen för USB-lagring.
+  HINT_ENABLE_MX4SIO: Laddar drivrutinen för SD-kortadaptern MX4SIO.
+  HINT_ENABLE_ILINK: Laddar drivrutinen för iLink-lagring (FireWire).
+  HINT_NETSTART: 'Startar nätverket: Auto vid start, Manuell när du öppnar dess sida. Av lämnar nätverksadaptern ifred.'
+  HINT_APPMODE: Appsidan. Auto startar vid start, Manuell när du öppnar den, Av döljer den.
+  HINT_FAVMODE: Sidan Stjärnmärkta spel. Auto startar vid start, Manuell när du öppnar den, Av döljer den.
+  HINT_VCD_LIST_BUTTON: 'Hur PS1-spel listas: dölj spel-ID:n, visa bara skiva 1, visa HDD:ns PP-partitioner.'
+  HINT_MMCE_SLOT: Vilken minneskortsplats MMCE-enheten sitter i. Auto hittar den.
+  HINT_MMCE_GAMEID: Berättar för MMCE-enheten vilket spel som startar, så att den kan byta till det spelets minneskort.
+  HINT_MMCE_PREFIX: Undermapp på MMCE-kortet som innehåller CD, DVD och de andra OPL-mapparna. Tom använder kortets rot.
+  HINT_GAME_TYPE_LABELS: Inleder varje spelnamn med [PS1] eller [PS2]. Bara visning.
+  HINT_MENU_VMODE: Menyns videoutgång. Spel använder GSM i stället. Håll in Bekräfta för att behålla ett nytt läge.
+  HINT_THEME: Menyns utseende. Teman läses från THM-mappen på varje enhet.
+  HINT_COVERFLOW_BUTTON: Antal omslag, storlek, animering och dämpning för Coverflow-temat.
+  HINT_ARTWORK_BUTTON: 'Vilka bilder som laddas: omslag, skivbilder, bakgrunder och sparikoner.'
+  HINT_COLORS_BUTTON: Färger för text, markering, dialoger och bakgrund.
+  HINT_NOTIFICATIONS: Korta meddelanden när en konfigurations-, tema- eller språkfil laddas.
+  HINT_AUTOSORT: Sorterar spellistor från A till Ö. Av behåller ordningen de hittades i.
+  HINT_AUTOREFRESH: Lägger till spel från nyanslutna enheter utan manuell uppdatering.
+  HINT_COVERART: Laddar omslag från ART-mappen.
+  HINT_DISCART: Visar skivbilder (<ID>_ICO). Av döljer skivan men behåller omslag och bakgrunder.
+  HINT_BGART: Visar ett spels bakgrund (<ID>_BG) när temat använder en.
+  HINT_ART_TAR: Läser även bilder packade i ART/art.tar.
+  HINT_ART_DELAY: Hur länge markören vilar på ett spel innan dess bilder laddas. Högre hoppar över bilder när du rullar snabbt.
+  HINT_TXTCOLOR: Färg på vanlig menytext.
+  HINT_SELCOLOR: Färg på det markerade objektet.
+  HINT_UICOLOR: Bakgrundston för dialogrutor.
+  HINT_TITLECOLOR: Färg på speltitlar i listan.
+  HINT_BGCOLOR: Menyns bakgrundsfärg.
+  HINT_PLASCOLOR: Färg som blandas in i den animerade bakgrunden.
+  HINT_RESETCOLOR: Återställer RiptOPL:s inbyggda färger, inte temats.
+  HINT_WIDESCREEN: Ritar menyn för en 16:9-TV.
+  HINT_XOFF: Flyttar menyn åt vänster eller höger på skärmen.
+  HINT_YOFF: Flyttar menyn uppåt eller nedåt på skärmen.
+  HINT_MENU_OVERSCAN: Krymper menyn inåt om TV:n klipper av dess kanter.
+  HINT_APPLYGAMEID: Visar en streckkod när ett spel startar, så att Pixel FX-, RetroGEM- och PS2Digital-enheter byter profil.
+  HINT_ENWRITEOP: Tillåter att byta namn på och ta bort spel och att skapa VMC:er. Rör aldrig HDD:ns partitionstabell.
+  HINT_DEBUG: 'Hjälp för utvecklare: färgade skärmar medan ett spel startar och räknare för bildladdning i menyn.'
+  HINT_BDMPREFIX: Undermapp på USB-, MX4SIO-, iLink- och exFAT-enheter som innehåller spelmapparna. Tom använder enhetens rot.
+  HINT_ETHPREFIX: Undermapp på SMB-resursen som innehåller spelmapparna. Tom använder resursens rot.
+  HINT_HDDGAMELISTCACHE: Kommer ihåg spellistan från APA-HDD:n för att snabba upp senare skanningar.
+  HINT_BDMCACHE: Förläsningscache för USB och andra BDM-enheter i spelet. Större kan jämna ut strömningen men använder mer minne.
+  HINT_HDDCACHE: Förläsningscache för den interna HDD:n i spelet.
+  HINT_SMBCACHE: Förläsningscache för SMB i spelet.
+  HINT_CORE_LOADER: Kärna för det här spelet där båda stöds. UDPFS/UDPBD är bara Neutrino; SMB/HTTP är bara <OPL>. Standard följer Spelstart.
+  HINT_DMA_MODE: Överföringsläge för den interna HDD:n för det här spelet. Sänk det om spelet hackar eller fryser.
+  HINT_DNAS_GAMEID: Skiv-ID för DNAS-onlinespel. Läs från skiva läser det från originalskivan.
+  HINT_LOAD_FROM_DISC: Läser DNAS-ID:t från originalskivan i enheten.
+  HINT_ALTSTARTUP: Startar den här ELF:en från skivavbilden i stället för den som SYSTEM.CNF anger.
+  HINT_VMC_DEFINE: Välj, skapa eller ändra storlek på den här platsens virtuella minneskort.
+  HINT_VMC_ACTION: Använd allmänt ger den här platsen ett delat kort; Återställ rensar valet.
+  HINT_VMC_NAME: Namnet på kortfilen, som sparas i VMC-mappen.
+  HINT_VMC_CREATE: Skapar kortet, eller tillämpar en ny storlek på det.
+  HINT_VMC_DELETE: Tar bort den här kortfilen.
+  HINT_SFX: Menyns ljudeffekter.
+  HINT_BOOT_SND: Spelar ett ljud när RiptOPL startar.
+  HINT_BGM: Spelar temats musik, eller din fil för standardtemamusik.
+  HINT_SFX_VOLUME: Volym för menyns ljudeffekter.
+  HINT_BOOT_SND_VOLUME: Volym för startljudet.
+  HINT_BGM_VOLUME: Volym för bakgrundsmusiken.
+  HINT_SCROLL: Hur snabbt listor rullar medan du håller en riktning.
+  HINT_SELECTBUTTON: 'Vilken knapp som bekräftar: Kryss eller Cirkel.'
+  HINT_XSENSITIVITY: Hur lätt vänster spak flyttar markören åt vänster och höger. Av ignorerar den.
+  HINT_YSENSITIVITY: Hur lätt vänster spak flyttar markören uppåt och nedåt. Av ignorerar den.

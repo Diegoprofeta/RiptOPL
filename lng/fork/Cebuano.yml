@@ -478,3 +478,96 @@ translations:
   PARENLOCK_GAME_NO_PASSWORD: Pag-set og parental lock password, kay kung dili, dili ma-lock kining dula.
   SAVE_ICONS: Mga 3D save icon
   HINT_SAVE_ICONS: Ipakita ang nagtuyok nga save icon sa gipiling dula, kung asa adunay lugar ang tema alang niini. Basahon una ang kaugalingong VMC sa dula, unya ang mga memory card.
+  HINT_NET_PROTOCOL: 'Unsang network service ang gigamit sa RiptOPL: SMB share, UDPFS, UDPBD o HTTP. Pareho nga setting sa Game Sources. Kinahanglan og restart aron mobalhin gikan sa nagdagan na.'
+  HINT_UDPFS_ACCESS: UDPFS ra. Gibasa sa Files ang bulag nga mga ISO gikan sa games folder sa server; gibasa sa IMG ang disk image isip drive. Kanunay Files ang SMB ug HTTP, kanunay IMG ang UDPBD.
+  HINT_SMB_VERSION: Unsang bersyon sa SMB ang gamiton sa PC share.
+  HINT_NET_ADVANCED: I-unlock ang Ethernet Link Mode ug ang SMB Port aron ma-edit.
+  HINT_ETH_LINK_MODE: Pugson ang katulin ug duplex sa network link. Biyai sa Auto gawas kung kanunay maputol ang link.
+  HINT_IP_ADDR_TYPE: Gigamit sa Static ang address sa ubos; mangutana ang DHCP sa imong router. Kanunay Static ang UDPFS ug UDPBD.
+  HINT_PS2_IP: Ang kaugalingong IP address sa PS2. Pagpili og wala gigamit sa ubang device, sa samang range sa imong PC.
+  HINT_NETMASK: Subnet mask, kasagaran 255.255.255.0.
+  HINT_GATEWAY: Address sa imong router, kasagaran pareho ang unang tulo ka numero ug matapos sa .1.
+  HINT_DNS: Address sa DNS server. Kasagaran pareho sa gateway.
+  HINT_SMB_ADDR_TYPE: Abton ang PC pinaagi sa IP address niini o sa NetBIOS (computer) name niini.
+  HINT_SMB_ADDRESS: 'Ang PC nga nagpaambit sa imong mga dula: ang IP address niini, o ang computer name niini kung NetBIOS ang Address Type.'
+  HINT_SMB_PORT: 'SMB port. Kinahanglan motugma sa PC: 1111 ang gamit sa PS2 Servers, 445 ang gamit sa Windows ug Samba share.'
+  HINT_SMB_USER: SMB user name. Molihok ang guest sa kadaghanan sa share.
+  HINT_HTTP_SERVER: IP address sa HTTP game server.
+  HINT_HTTP_PORT: Port nga gipaminawan sa HTTP game server.
+  HINT_HTTP_BASE: Folder sa HTTP server nga adunay games.csv. Ang / mao ang root sa server.
+  HINT_HTTP_TEST: Sulayan ang HTTP server gamit ang mga value sa ibabaw ug ireport ang nakit-an niini.
+  HINT_RA_TELEMETRY: Main switch alang sa RetroAchievements. Ilansad sa Off ang mga dula nga walay network stack o snapshot, sama sa normal nga build.
+  HINT_RA_BADGES: Markahan sa lista ang mga dula nga adunay achievement. Magpabiling ngitngit samtang gipalong ang telemetry.
+  HINT_POPS_NET_BUTTON: I-edit ang kaugalingong network file sa POPSTARTER (IPCONFIG.DAT, SMBCONFIG.DAT), nga kinahanglan sa mga PS1 nga dula sa SMB.
+  HINT_POPS_IP_TYPE: 'Giunsa pagkuha sa PS2 ang address niini samtang nagdagan ang PS1 nga dula sa SMB: Static o DHCP.'
+  HINT_POPS_IP: Ang IP address sa PS2 samtang nagdagan ang PS1 nga dula sa SMB.
+  HINT_POPS_SMB_IP: IP address sa PC nga nagpaambit sa imong mga PS1 nga dula.
+  HINT_POPS_SMB_SHARE: Ngalan sa share niadtong PC nga adunay POPS folder.
+  HINT_LASTPLAYED: Magsugod sa dula nga imong gilansad sa katapusang higayon.
+  HINT_LANGUAGE: Pinulongan sa menu. Pagdugang pa pinaagi sa pagbutang og mga lang_*.lng file sa LNG folder.
+  HINT_DEFDEVICE: Ang page nga ablihan sa RiptOPL sa pag-boot.
+  HINT_MMCE_MODE: Mga dula sa SD2PSX o MemCard PRO2. Mosugod ang Auto sa pag-boot, ang Manwal kung ablihan nimo ang page, itago kini sa Off.
+  HINT_ENABLE_USB: I-load ang USB storage driver.
+  HINT_ENABLE_MX4SIO: I-load ang driver sa MX4SIO SD card adapter.
+  HINT_ENABLE_ILINK: I-load ang iLink (FireWire) storage driver.
+  HINT_NETSTART: 'Sugdan ang network: Auto sa pag-boot, Manwal kung ablihan nimo ang page niini. Dili hilabtan sa Off ang network adapter.'
+  HINT_APPMODE: Ang Apps page. Mosugod ang Auto sa pag-boot, ang Manwal kung ablihan nimo kini, itago kini sa Off.
+  HINT_FAVMODE: Ang page sa Mga Paborito. Mosugod ang Auto sa pag-boot, ang Manwal kung ablihan nimo kini, itago kini sa Off.
+  HINT_VCD_LIST_BUTTON: 'Giunsa paglista ang PS1 nga dula: itago ang game ID, ipakita ra ang disc 1, ipakita ang HDD PP partition.'
+  HINT_MMCE_SLOT: Asang memory card slot ang kabutangan sa MMCE device. Pangitaon kini sa Auto.
+  HINT_MMCE_GAMEID: Sultihan ang MMCE device kung unsang dula ang nagsugod, aron makabalhin kini sa memory card sa maong dula.
+  HINT_MMCE_PREFIX: Subfolder sa MMCE card nga adunay CD, DVD ug ubang OPL folder. Ang root sa card ang gamiton kung blangko.
+  HINT_GAME_TYPE_LABELS: Sugdan ang matag ngalan sa dula sa [PS1] o [PS2]. Pagpakita ra.
+  HINT_MENU_VMODE: Video output alang sa menu. GSM ang gamit sa mga dula. Pindota og dugay ang Confirm aron tipigan ang bag-ong mode.
+  HINT_THEME: Ang dagway sa menu. Basahon ang mga tema gikan sa THM folder sa matag device.
+  HINT_COVERFLOW_BUTTON: Gidaghanon sa cover, gidak-on, animation ug pagngitngit alang sa Coverflow nga tema.
+  HINT_ARTWORK_BUTTON: 'Unsang art ang i-load: mga cover, disc art, background ug save icon.'
+  HINT_COLORS_BUTTON: Mga kolor sa text, highlight, dialog ug background.
+  HINT_NOTIFICATIONS: Mubo nga pahibalo kung mag-load ang config, tema o language file.
+  HINT_AUTOSORT: Han-ayon ang mga lista sa dula gikan A ngadto Z. Tipigan sa Off ang han-ay kung giunsa sila pagkakita.
+  HINT_AUTOREFRESH: Idugang ang mga dula gikan sa bag-ong nakonektang device nga walay mano-manong refresh.
+  HINT_COVERART: I-load ang cover art gikan sa ART folder.
+  HINT_DISCART: Ipakita ang disc art (<ID>_ICO). Itago sa Off ang disc apan tipigan ang mga cover ug background.
+  HINT_BGART: Ipakita ang background sa dula (<ID>_BG) kung gigamit kini sa tema.
+  HINT_ART_TAR: Basahon usab ang art nga naka-pack sa ART/art.tar.
+  HINT_ART_DELAY: Unsa kadugay mohunong ang cursor sa dula sa dili pa mo-load ang art niini. Laktawan sa mas taas ang art samtang paspas ka nga nag-scroll.
+  HINT_TXTCOLOR: Kolor sa normal nga text sa menu.
+  HINT_SELCOLOR: Kolor sa naka-highlight nga item.
+  HINT_UICOLOR: Kolor sa background sa mga dialog box.
+  HINT_TITLECOLOR: Kolor sa mga titulo sa dula sa lista.
+  HINT_BGCOLOR: Kolor sa background sa menu.
+  HINT_PLASCOLOR: Kolor nga gisagol sa animated nga background.
+  HINT_RESETCOLOR: Ibalik ang built-in nga kolor sa RiptOPL, dili ang sa tema.
+  HINT_WIDESCREEN: Drowingon ang menu alang sa 16:9 nga TV.
+  HINT_XOFF: Ibalhin ang menu sa wala o tuo sa screen.
+  HINT_YOFF: Ibalhin ang menu pataas o paubos sa screen.
+  HINT_MENU_OVERSCAN: Pagamyon ang menu pasulod kung putlon sa TV ang mga ngilit niini.
+  HINT_APPLYGAMEID: Magpakita og barcode samtang nagsugod ang dula, aron mobalhin og profile ang mga Pixel FX, RetroGEM ug PS2Digital device.
+  HINT_ENWRITEOP: Tugotan ang pag-ilis sa ngalan ug pagpapas sa mga dula ug paghimo og mga VMC. Dili gyud hilabtan ang partition table sa HDD.
+  HINT_DEBUG: 'Tabang alang sa developer: kolor nga screen samtang nag-boot ang dula, ug mga counter sa pag-load sa art sa menu.'
+  HINT_BDMPREFIX: Subfolder sa USB, MX4SIO, iLink ug exFAT drive nga adunay mga game folder. Ang root sa drive ang gamiton kung blangko.
+  HINT_ETHPREFIX: Subfolder sa SMB share nga adunay mga game folder. Ang root sa share ang gamiton kung blangko.
+  HINT_HDDGAMELISTCACHE: Hinumdoman ang lista sa dula sa APA HDD aron mopaspas ang sunod nga mga scan.
+  HINT_BDMCACHE: Read-ahead cache alang sa USB ug ubang BDM drive samtang nagdula. Ang mas dako makapahapsay sa streaming apan mogamit og mas daghang memory.
+  HINT_HDDCACHE: Read-ahead cache alang sa internal HDD samtang nagdula.
+  HINT_SMBCACHE: Read-ahead cache alang sa SMB samtang nagdula.
+  HINT_CORE_LOADER: Core alang niining dula kung asa suportado ang duha. Neutrino ra ang UDPFS/UDPBD; <OPL> ra ang SMB/HTTP. Gisundan sa Default ang Game Launching.
+  HINT_DMA_MODE: Transfer mode sa internal HDD alang niining dula. Paubsa kini kung mag-utal o mo-freeze ang dula.
+  HINT_DNAS_GAMEID: Disc ID alang sa DNAS online nga dula. Basahon kini sa Load From Disc gikan sa orihinal nga disc.
+  HINT_LOAD_FROM_DISC: Basahon ang DNAS ID gikan sa orihinal nga disc sa drive.
+  HINT_ALTSTARTUP: I-boot kining ELF gikan sa disc image puli sa ginganlan sa SYSTEM.CNF.
+  HINT_VMC_DEFINE: Pagpili, paghimo o usba ang gidak-on sa virtual memory card niining slot.
+  HINT_VMC_ACTION: Hatagan sa Use Generic kining slot og gipaambit nga card; papason sa Reset ang pagpili.
+  HINT_VMC_NAME: Ngalan sa card file, gitipigan sa VMC folder.
+  HINT_VMC_CREATE: Himoon ang card, o ipadapat niini ang bag-ong gidak-on.
+  HINT_VMC_DELETE: Papason kining card file.
+  HINT_SFX: Mga sound effect sa menu.
+  HINT_BOOT_SND: Magpatugtog og tunog kung magsugod ang RiptOPL.
+  HINT_BGM: Gitugtog ang musika sa tema, o ang imong Default Theme Music file.
+  HINT_SFX_VOLUME: Kakusog sa mga sound effect sa menu.
+  HINT_BOOT_SND_VOLUME: Kakusog sa tunog sa pagsugod.
+  HINT_BGM_VOLUME: Kakusog sa background music.
+  HINT_SCROLL: Unsa kapaspas mag-scroll ang mga lista samtang gikuptan nimo ang usa ka direksyon.
+  HINT_SELECTBUTTON: 'Unsang button ang mokumpirma: Cross o Circle.'
+  HINT_XSENSITIVITY: Unsa kadali ibalhin sa wala nga stick ang cursor sa wala ug tuo. Ibaliwala kini sa Off.
+  HINT_YSENSITIVITY: Unsa kadali ibalhin sa wala nga stick ang cursor pataas ug paubos. Ibaliwala kini sa Off.
