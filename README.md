@@ -376,10 +376,10 @@ This build layers several features on top of upstream OPL:
   target a complete `neutrino/` folder on iLink explicitly. iLink is a FAT-model Neutrino backend;
   post-2692 builds automatically pair `-bsd=ilink` with `-qb` so Neutrino keeps the mounted iLink
   environment RiptOPL hands it. See **[docs/NEUTRINO.md](docs/NEUTRINO.md)**.
-- **Category settings layout:** the start menu's settings are organised into eight category pages
+- **Category settings layout:** the start menu's settings are organised into nine category pages
   instead of one flat list — **Game Sources** (device selection + start modes), **General & System**,
-  **Network**, **Interface** (theme, artwork, Coverflow, PS2/PS1 Game Display), **Game Launching**
-  (incl. the global Neutrino/OSD defaults), **PS Emulation Settings** (both PS1 cores: POPSTARTER
+  **Language** (the menu language and the game-facing OSD defaults), **Network**, **Interface** (theme,
+  artwork, Coverflow, PS2/PS1 Game Display), **Game Launching** (incl. the global Neutrino defaults), **PS Emulation Settings** (both PS1 cores: POPSTARTER
   and Ember, plus the same PS2/PS1 Game Display picker shown on Interface), **Controller Settings** and
   **Audio Settings** — each with chained sub-pages, plus a **Save Changes** entry at the foot of the
   index. Leaving the start/settings menu returns to the page you paused on when it is still visible;

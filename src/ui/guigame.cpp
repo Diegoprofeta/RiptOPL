@@ -2083,6 +2083,12 @@ void guiGameShowOSDLanguageConfig(int forceGlobal)
         if (result == UIID_BTN_OK)
             break;
     }
+
+    // Keep global edits in memory for reopening and launching; Save Changes owns the disk write.
+    if (forceGlobalOSDLanguage)
+        guiGameSaveOSDLanguageGlobalConfig(configGetByType(CONFIG_GAME));
+    // This editor's scope must not suppress the next game's per-game overrides (original #1043).
+    forceGlobalOSDLanguage = 0;
 }
 static int guiGameSaveOSDLanguageGameConfig(config_set_t *configSet, int result)
 {

@@ -1,9 +1,20 @@
 # Interface behaviours
 
 Menu behaviours that are configured from *Settings* but need more than a one-line description:
-folder browsing, the parental lock, and the audio system.
+the language page, folder browsing, the parental lock, and the audio system.
 
 For the button map, see [CONTROLS.md](CONTROLS.md).
+
+---
+
+## Language
+
+**Settings → Language** holds the one menu-language picker and the **OSD Defaults** action. The picker
+changes RiptOPL's interface. OSD Defaults opens the editor for the console language, screen size and
+video mode the OPL core passes to games; it changes neither the menu language nor the console's own
+OSDSYS settings. Per-game overrides stay in each game's settings, and leaving the global editor no longer
+hides them. Back and L1/R1 keep edits for the session; **Save Changes** keeps them after a restart. See
+[Languages](LANGUAGES.md) for installing translation files and fonts.
 
 ---
 
