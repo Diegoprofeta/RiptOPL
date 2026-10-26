@@ -18,6 +18,7 @@
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/cheatman.h"
 #include "include/system.h"
+#include "include/hddsupport.h" // hddVMCMapFits
 #include "include/guigame.h"
 #include "include/ds34common.h"
 #include "include/vmc_groups.h"
@@ -193,6 +194,17 @@ static int guiGameRefreshVMCConfig(item_list_t *support, char *name)
     return size;
 }
 
+// What to tell the user about the VMC whose creation just finished for the native core: a language
+// string id, or -1 for nothing (usable, or the store cannot tell). BDM needs one unbroken file
+// (sysVMCContiguity); a card on the HDD needs a PFS block map native mcemu can hold (hddVMCMapFits).
+static int guiGameVMCLayoutWarning(void)
+{
+    const char *path = sysVMCCreatePath();
+    if (!strncmp(path, "pfs", 3))
+        return hddVMCMapFits(path) == 0 ? _STR_VMC_PFS_LIMIT_ON_CREATE : -1;
+    return sysVMCContiguity() == 0 ? _STR_VMC_FRAGMENTED_ON_CREATE : -1;
+}
+
 static int guiGameVMCUpdater(int modified)
 {
     if (vmc_refresh) {
@@ -300,19 +312,20 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
                 } else
                     break;
             } else if (vmc_operation == OPERATION_ENDING) {
-                // Creation finished: a fragmented VMC is silently dropped at launch, so say so now,
-                // in the dialog that made it. Raised from the loop, not guiGameVMCUpdater, which
+                // Creation finished: a fragmented VMC (on the HDD, one with too long a PFS map) is
+                // dropped at launch, so say so now, in the dialog that made it. Raised from the loop, not guiGameVMCUpdater, which
                 // runs inside diaExecuteDialog and cannot open a message box.
                 //
-                // Only a definite 0 speaks: -1 means the backing store cannot answer. VMC_error
+                // Only a definite verdict speaks: -1 means the backing store cannot answer. VMC_error
                 // must be clear too -- the updater lands here on a FAILED creation as well, and
                 // blaming "fragmented" for an out-of-space would point at the wrong fix.
                 if (vmc_check_layout) {
+                    int warning;
                     vmc_check_layout = 0;
                     coreLoader = guiGameResolveEffectiveCore(configSet, support, id);
                     if ((coreLoader == 2 ? gDefaultCoreLoader : coreLoader) != 1 &&
-                        vmc_status.VMC_error == 0 && sysVMCContiguity() == 0)
-                        guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, diaVMC);
+                        vmc_status.VMC_error == 0 && (warning = guiGameVMCLayoutWarning()) >= 0)
+                        guiMsgBox(_l(warning), 0, diaVMC);
                 }
 
                 if (validate)
@@ -459,8 +472,9 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
         guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
         return 1;
     }
-    if (formatted && loader != 1 && sysVMCContiguity() == 0)
-        guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, NULL);
+    int warning = formatted && loader != 1 ? guiGameVMCLayoutWarning() : -1;
+    if (warning >= 0)
+        guiMsgBox(_l(warning), 0, NULL);
     configSetVMC(configSet, vmc, 0);
     configGetVMC(configSet, assigned, sizeof(assigned), 0);
     if (strcmp(assigned, vmc) != 0) {

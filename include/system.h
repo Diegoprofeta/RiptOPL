@@ -91,9 +91,13 @@ int sysCheckMC(void);
  * requires the creation path's directory proof of absence before any job. */
 #define SYS_VMC_PROBE_FORMAT            (-4)
 int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock);
+// sysCheckVMC with genvmc creation flags (VMC_CREATE_*).
+int sysCheckVMCEx(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock, int createFlags);
 // Layout of the VMC whose creation was last STARTED: 1 contiguous, 0 fragmented, -1 unknown.
 // Only meaningful once genvmc reports the job finished. -1 means "this backing store cannot say"
 // (mmce, APA/pfs, SMB, udpfs) and must be treated as silence -- never as a pass or a failure.
 int sysVMCContiguity(void);
+// Path of the VMC whose creation was last started, or "" when none.
+const char *sysVMCCreatePath(void);
 
 #endif

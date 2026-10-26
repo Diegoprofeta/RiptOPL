@@ -1493,3 +1493,5 @@ gui_strings:
   string: "The disk layout of VMC %s in slot %d could not be verified. Continue without this card?"
 - label: ERR_VMC_PFS_LIMIT_CONTINUE
   string: "VMC %s in slot %d exceeds the native core's PFS block-map limit. Continue without this card?"
+- label: VMC_PFS_LIMIT_ON_CREATE
+  string: VMC created, but the HDD stored it in more pieces than the native core can map, so it will be skipped at launch and the real card used instead. Free up space on the OPL partition and make it again.

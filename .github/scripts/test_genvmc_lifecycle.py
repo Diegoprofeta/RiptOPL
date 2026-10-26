@@ -45,7 +45,7 @@ static int remove(const char *name) {
 }
 @FUNCTIONS@
 int main(void) {
-    createVMCparam_t request={"mass0:/VMC/save_0.bin",8,16,15,-1};
+    createVMCparam_t request={"mass0:/VMC/save_0.bin",8,16,15,-1,0};
     assert(vmc_create(&request)==0);
     assert(genvmc_stats.VMC_status==GENVMC_STAT_BUSY);
     assert(scheduled != &request);

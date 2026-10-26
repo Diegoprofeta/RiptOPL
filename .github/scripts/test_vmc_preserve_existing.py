@@ -6,17 +6,19 @@ import sys
 
 root = Path(__file__).resolve().parents[2]
 source = Path(sys.argv[1]).read_text(encoding="utf-8") if len(sys.argv)>1 else (root / "src/platform/sysvmc.cpp").read_text(encoding="utf-8")
-start = source.index("int sysCheckVMC(")
-brace = source.index("{", start)
-depth = 0
-end = brace
-while end < len(source):
-    depth += (source[end] == "{") - (source[end] == "}")
-    end += 1
-    if depth == 0:
-        break
-assert depth == 0
+start = source.index("int sysCheckVMCEx(")
+end = start
+for _ in range(2):  # sysCheckVMCEx, then the sysCheckVMC wrapper after it
+    end = source.index("{", end)
+    depth = 0
+    while end < len(source):
+        depth += (source[end] == "{") - (source[end] == "}")
+        end += 1
+        if depth == 0:
+            break
+    assert depth == 0
 function = source[start:end]
+assert "int sysCheckVMC(" in function
 ui = (root / "src/ui/guigame.cpp").read_text(encoding="utf-8")
 assert "createResult == SYS_VMC_REPLACE_REQUIRES_DELETE" in ui
 assert "_STR_VMC_REPLACE_REQUIRES_DELETE" in ui
@@ -54,7 +56,7 @@ static vmc_superblock_t header;
 static int readPosition, readLimit, readErrorAt=-1, readEOFAt=-1, closeError, seekError;
 typedef struct {
     char VMC_filename[1024];
-    int VMC_size_mb, VMC_blocksize, VMC_thread_priority, VMC_card_slot;
+    int VMC_size_mb, VMC_blocksize, VMC_thread_priority, VMC_card_slot, VMC_flags;
 } createVMCparam_t;
 static char gVMCCreatePath[256] = {0};
 static int exists, length, opened, erased, jobs, returnsError;

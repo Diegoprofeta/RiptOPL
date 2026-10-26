@@ -101,9 +101,9 @@ start = gui.index('if ((coreLoader == 2 ? gDefaultCoreLoader : coreLoader)')
 condition = gui[start:gui.index('guiMsgBox(', start)]
 run('vmc_warning', r'''
 #include <cassert>
-static int coreLoader, gDefaultCoreLoader, probes, result;
+static int coreLoader, gDefaultCoreLoader, probes, result, warning;
 static struct { int VMC_error; } vmc_status;
-static int sysVMCContiguity() { ++probes; return result; }
+static int guiGameVMCLayoutWarning() { ++probes; return result == 0 ? 7 : -1; }
 static bool warns() {
 ''' + condition + r'''
         return true;

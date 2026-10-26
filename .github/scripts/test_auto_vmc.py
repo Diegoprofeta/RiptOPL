@@ -35,7 +35,7 @@ run('auto_vmc', r'''
 enum {FAV_MODE=12, APP_MODE=10, HTTP_MODE=14, HDD_MODE=9, ETH_MODE=8, UDPFS_MODE=15, LIB_VIEW_PS1=1,FAV_KIND_ISO=0};
 enum {CONFIG_ITEM_CORE_LOADER, _STR_AUTO_VMC_FAILED, _STR_AUTO_VMC_TIMEOUT,
       _STR_AUTO_VMC_CREATING,_STR_VMC_FRAGMENTED_ON_CREATE,_STR_ERROR_SAVING_SETTINGS,
-      _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING};
+      _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING,_STR_VMC_PFS_LIMIT_ON_CREATE};
 @STARTUP_LIMIT@
 static int gAutoCreateVmc=1,gDefaultCoreLoader=0;
 #define SYS_VMC_PROBE_FORMAT (-4)
@@ -79,6 +79,8 @@ static const char *getGroupIdForTitleId(const char*) {return "GROUP";}
 static const char *_l(int) {return "message";}
 static int guiMsgBox(const char*,int,void*) {dialogs++;return 0;}
 static int sysVMCContiguity() {contiguity++;return chain;}
+static const char *sysVMCCreatePath() {return "mass0:/VMC/GROUP_0.bin";}
+static int hddVMCMapFits(const char*) {assert(0);return 1;}
 static void readPads() {}
 static int guiCancelKey() {return 1;}
 static int getKeyOn(int) {return polls==cancelAt;}
@@ -102,7 +104,7 @@ static int fileXioDevctl(const char*,unsigned command,void*,int,void *out,int) {
     return 0;
 }
 constexpr int AUTO_VMC_SIZE_MB=8, AUTO_VMC_MAX_FRAMES=5, AUTO_VMC_CANCEL_FRAMES=5;
-''' + function(policy_source,'int guiGameAutoCreateVmc(') + r'''
+''' + function(policy_source,'static int guiGameVMCLayoutWarning(') + '\n' + function(policy_source,'int guiGameAutoCreateVmc(') + r'''
 static void reset() {
     gAutoCreateVmc=1;gDefaultCoreLoader=0;rowView=kind=0;probe=submitted=-1;
     probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;

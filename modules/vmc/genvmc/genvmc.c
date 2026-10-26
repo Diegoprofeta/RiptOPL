@@ -17,6 +17,7 @@
 #include <sysmem.h>
 #include <thbase.h>
 #include <errno.h>
+#include <hdd-ioctl.h> // PIOCALLOC
 
 #include "genvmc.h"
 
@@ -298,6 +299,16 @@ static int vmc_mcformat(char *filename, int size_kb, int blocksize, int *progres
     int genvmc_fh = open(filename, O_RDWR | O_CREAT | O_TRUNC);
     if (genvmc_fh < 0)
         return -101;
+
+    // PFS grows a file a write at a time from free runs of about 32 zones, so on a used partition a
+    // card can land in more segments than native mcemu's PFS map holds. One request for every zone
+    // takes the largest free runs first (original #1014). Best effort: if PFS refuses, the writes
+    // allocate as they always did and the EE's completion check reports a map that will not fit.
+    if (genvmc_request.VMC_flags & VMC_CREATE_PFS_RESERVE) {
+        int bytes = size_kb * 1024;
+        if ((r = ioctl2(genvmc_fh, PIOCALLOC, &bytes, sizeof(bytes), NULL, 0)) < 0)
+            DPRINTF("%s: PFS reservation of %d bytes failed: %d\n", MODNAME, bytes, r);
+    }
 
     // set superblock magic & version
     memset((void *)&mcdi->magic, 0, sizeof(mcdi->magic) + sizeof(mcdi->version));

@@ -15,6 +15,8 @@ start = bdm.index('    char vmc_name[32], vmc_path[256];', bdm.index('void bdmLa
 bdm_slots = bdm[start:bdm.index('    void *irx = NULL;', start)]
 start = hdd.index('    if (part_valid) {', hdd.index('void HddSource::launch('))
 hdd_slots = hdd[start:hdd.index('    if (gRememberLastPlayed)', start)]
+start = hdd.index('static int hddClassifyVMCMap(')
+classify = hdd[start:hdd.index('\n}\n', start) + 3]
 
 program = r'''
 #include <assert.h>
@@ -32,6 +34,7 @@ typedef struct { u64 sector; u32 count; } bd_fragment_t;
 #define USBMASS_IOCTL_GET_LBA 1
 #define USBMASS_IOCTL_GET_FRAGLIST 2
 #define LOG(...) ((void)0)
+#define HDD_VMC_MAP_ENTRIES 11
 enum { _STR_ERR_VMC_CONTINUE, _STR_ERR_VMC_FRAGMENTED_CONTINUE,
        _STR_ERR_VMC_LBA_RANGE_CONTINUE, _STR_ERR_VMC_LAYOUT_CONTINUE, _STR_ERR_VMC_PFS_LIMIT_CONTINUE };
 typedef struct { int page_size, block_size, card_size; } specs_t;
@@ -52,7 +55,7 @@ static char names[2][32], messages[4][256];
 static int sizes[2], opens[2], closes[2], open_result[2], lba_result[2], write_lba[2], frags[2], maps[2];
 static u64 lbas[2];
 static int write_extent[2], short_extent[2], wrong_extent[2];
-static int finished, prompts, accept;
+static int finished, prompts, accept, synced_ok, syncs;
 static int slot(const char *name) { return strstr(name, "card1") != NULL; }
 static int open(const char *name, int flags) { (void)flags; int i=slot(name); opens[i]++; return open_result[i]; }
 static int close(int fd) { assert(fd>=10 && fd<=11); closes[fd-10]++; return 0; }
@@ -94,6 +97,8 @@ static int guiMsgBox(const char *message, int type, void *dialog) {
 static int hddGetFileBlockInfo(const char *path, void *parts, pfs_blockinfo_t *blocks, int max) {
     (void)parts; assert(max==11); memset(blocks,0,max*sizeof(*blocks)); return maps[slot(path)];
 }
+static int hddSyncForVMCMap(void) { syncs++; return synced_ok; }
+@CLASSIFY@
 @HELPER@
 static void run_bdm(void) {
     int fd, iop_fd;
@@ -117,7 +122,7 @@ static void reset(void) {
     for(int i=0;i<2;i++) { bdmMcemuSlots[i]=hddMcemuSlots[i]=-2; bdm_mcemu_irx[i*64]=hdd_mcemu_irx[i*64]=0xC0DEFAC0u+i; }
     memset(opens,0,sizeof(opens)); memset(closes,0,sizeof(closes)); memset(messages,0,sizeof(messages));
     for(int i=0;i<2;i++) { sizes[i]=8; open_result[i]=10+i; lba_result[i]=0; write_lba[i]=write_extent[i]=1; short_extent[i]=wrong_extent[i]=0; frags[i]=1; lbas[i]=100; maps[i]=2; }
-    finished=prompts=0; accept=1; gAutoLaunchGame=gAutoLaunchBDMGame=NULL;
+    finished=prompts=syncs=0; accept=synced_ok=1; gAutoLaunchGame=gAutoLaunchBDMGame=NULL;
 }
 int main(void) {
     reset(); run_bdm(); assert(finished && prompts==0 && bdm_slot(0).active && !bdm_slot(1).active);
@@ -144,6 +149,8 @@ int main(void) {
     reset(); maps[0]=-ENOMEM; run_hdd(); assert(!hdd_slot(0).active && strstr(messages[0],"maplimit"));
     reset(); maps[0]=-EIO; run_hdd(); assert(!hdd_slot(0).active && strstr(messages[0],"unknown"));
     reset(); maps[0]=0; run_hdd(); assert(!hdd_slot(0).active && strstr(messages[0],"unknown"));
+    reset(); maps[0]=1; run_hdd(); assert(!hdd_slot(0).active && strstr(messages[0],"unknown")); // inode only
+    reset(); synced_ok=0; run_hdd(); assert(syncs==1 && !hdd_slot(0).active && strstr(messages[0],"unknown"));
     reset(); maps[0]=-ENOENT; accept=0; run_hdd(); assert(!finished && prompts==1);
     reset(); maps[0]=-EIO; strcpy(names[1],"card1"); run_hdd(); assert(prompts==1 && !hdd_slot(0).active && hdd_slot(1).active);
     reset(); maps[0]=-EIO; gAutoLaunchGame=&config; run_hdd(); assert(finished && prompts==0 && !hdd_slot(0).active);
@@ -160,11 +167,11 @@ int main(void) {
     puts("native VMC: verified layouts, precise refusals, both slots, cancel and autolaunch pass");
     return 0;
 }
-'''.replace('@HELPER@', helper).replace('@BDM_SLOTS@', bdm_slots).replace('@HDD_SLOTS@', hdd_slots)
+'''.replace('@CLASSIFY@', classify).replace('@HELPER@', helper).replace('@BDM_SLOTS@', bdm_slots).replace('@HDD_SLOTS@', hdd_slots)
 
 labels = re.findall(r"^- label: (\w+)", (root / 'lng/tmpl/_base.yml').read_text(encoding='utf-8'), re.M)
-assert labels[-3:] == ['ERR_VMC_LBA_RANGE_CONTINUE', 'ERR_VMC_LAYOUT_CONTINUE', 'ERR_VMC_PFS_LIMIT_CONTINUE']
-assert labels.index('NEUTRINO_DVR_FILE_MISSING') < len(labels) - 3
+assert labels[-4:] == ['ERR_VMC_LBA_RANGE_CONTINUE', 'ERR_VMC_LAYOUT_CONTINUE', 'ERR_VMC_PFS_LIMIT_CONTINUE', 'VMC_PFS_LIMIT_ON_CREATE']
+assert labels.index('NEUTRINO_DVR_FILE_MISSING') < len(labels) - 4
 
 with tempfile.TemporaryDirectory() as temp:
     path = Path(temp)
