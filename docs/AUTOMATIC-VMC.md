@@ -52,6 +52,18 @@ different row. These safeguards and formatter scheduling/failure behavior have
 host regression coverage. Physical-console creation, cancellation, device
 removal and filesystem behavior still require acceptance testing.
 
+## Native BDM cards: one reserved extent
+
+When the effective core is native OPL, a new card on BDM storage (USB, i.LINK, MX4SIO, ATA, from
+the VMC dialog, automatic creation or Favorites) is created only if the bundled FAT driver reserves
+the whole card in one extent first. genvmc asks the driver for its versioned capability before
+opening anything, creates the file exclusively (a file that appears meanwhile is kept), reserves,
+formats, then verifies one synced extent inside the native 32-bit sector range. An old driver, a
+card with no free run large enough, or a failed verify or close is reported as a failure, and only
+this job's new file is removed. Neutrino cards and other sources allocate as before. Existing cards
+are never relocated. Any failure after the formatter opened a card it owns removes the partial file.
+Host image tests cover FAT32 and exFAT; console acceptance is still required.
+
 ## Failed-format retry protection
 
 Size alone is not proof of a formatted card. A formatter failure after erasing

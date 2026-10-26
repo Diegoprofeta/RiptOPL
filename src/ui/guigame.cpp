@@ -297,7 +297,8 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
                     sizeUI = 8;
 
                 if (sizeUI != size) {
-                    int createResult = gsOf(support)->checkVmc(support, vmc, sizeUI);
+                    int effectiveCore = guiGameResolveEffectiveCore(configSet, support, id);
+                    int createResult = gsOf(support)->createVmc(support, vmc, sizeUI, effectiveCore != 1);
                     if (createResult == SYS_VMC_REPLACE_REQUIRES_DELETE) {
                         guiMsgBox(_l(_STR_VMC_REPLACE_REQUIRES_DELETE), 0, diaVMC);
                     } else if (createResult == SYS_VMC_CREATE_FAILED) {
@@ -415,7 +416,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
     int size = gsOf(backing)->checkVmc(backing, vmc, SYS_VMC_PROBE_FORMAT);
     bool formatted = false;
     if (size == -1) {
-        int submitted = gsOf(backing)->checkVmc(backing, vmc, AUTO_VMC_SIZE_MB);
+        int submitted = gsOf(backing)->createVmc(backing, vmc, AUTO_VMC_SIZE_MB, loader != 1);
         if (submitted != -1 && submitted != AUTO_VMC_SIZE_MB) {
             guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
             return 1;

@@ -22,6 +22,7 @@ char *GameSource::prefix(item_list_t *) { return NULL; }
 void GameSource::deleteGame(item_list_t *, int) {}
 void *GameSource::game(item_list_t *, int) { return NULL; }
 int GameSource::checkVmc(item_list_t *, char *, int) { return -1; }
+int GameSource::createVmc(item_list_t *itemList, char *name, int createSize, int) { return checkVmc(itemList, name, createSize); }
 void GameSource::launchVcd(item_list_t *, const char *, config_set_t *) {}
 int GameSource::artArchivePath(item_list_t *, char *, int) { return 0; }
 void GameSource::launchCue(item_list_t *, const char *, config_set_t *) {}

@@ -1073,6 +1073,7 @@ public:
     void cleanUp(item_list_t *itemList, int exception) override;
     void shutdown(item_list_t *itemList) override;
     int checkVmc(item_list_t *itemList, char *name, int createSize) override;
+    int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous) override;
 };
 
 static FavSource *favInstance()
@@ -1325,7 +1326,7 @@ unsigned char favGetFlags(item_list_t *itemList)
 
 // VMC check proxy: itemCheckVMC is device-context (no id), so forward to the current FAV
 // item's SOURCE device. Without this, the game-Options VMC menu would call a NULL callback.
-int FavSource::checkVmc(item_list_t *itemList, char *name, int createSize)
+static int favVmcForward(char *name, int createSize, int requireContiguous)
 {
     opl_io_module_t *mod = oplGetModule(FAV_MODE);
     if (mod == NULL || mod->menuItem.current == NULL)
@@ -1338,7 +1339,17 @@ int FavSource::checkVmc(item_list_t *itemList, char *name, int createSize)
     item_list_t *o = gFavSupport.ownerView(id, &ownerView);
     if (o == NULL || !gsOf(o)->hasCheckVmc())
         return -1;
-    return gsOf(o)->checkVmc(o, name, createSize);
+    return requireContiguous < 0 ? gsOf(o)->checkVmc(o, name, createSize) : gsOf(o)->createVmc(o, name, createSize, requireContiguous);
+}
+
+int FavSource::checkVmc(item_list_t *itemList, char *name, int createSize)
+{
+    return favVmcForward(name, createSize, -1);
+}
+
+int FavSource::createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous)
+{
+    return favVmcForward(name, createSize, requireContiguous);
 }
 
 // ---- public toggle / refresh API (forwarders to the store) --------------------

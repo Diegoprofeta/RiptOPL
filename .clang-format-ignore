@@ -9,3 +9,4 @@
 ./modules/usb/usbd-ra
 ./modules/bdmassault
 ./tests/host
+./modules/bdm/bdmfs_fatfs

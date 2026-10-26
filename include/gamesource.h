@@ -50,6 +50,8 @@ public:
     virtual void shutdown(item_list_t *itemList) = 0;
     // createSize also accepts SYS_VMC_PROBE_FORMAT for read-only auto-assignment validation.
     virtual int checkVmc(item_list_t *itemList, char *name, int createSize);
+    // Creation that knows the launch core: native BDM cards need one reserved extent (original #994).
+    virtual int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous);
     virtual int iconId(item_list_t *itemList) = 0;
 
     // Optional capabilities (declared through Caps).

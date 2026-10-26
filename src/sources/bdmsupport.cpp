@@ -19,6 +19,7 @@
 #include "include/ioman.h"
 #include "include/launchdiag.h" // UDPBD hang-triage stage markers (inert unless a udp launch arms them)
 #include "include/system.h"
+#include "modules/vmc/genvmc/genvmc.h" // VMC_CREATE_CONTIGUOUS
 #include "include/ethsupport.h"   // ethGetModulesLoaded() for the UDPBD<->SMB NIC interlock
 #include "include/udpfssupport.h" // udpfsGetModulesLoaded() -- symmetric backstop vs the udpfs_ioman filesystem stack
 #include "include/mmcesupport.h"  // mmceSendGameID() cross-device game-id (#261)
@@ -229,10 +230,10 @@ void bdmBuildPs1Prefix(char *target, int targetLength, int massSlot)
    fs_driver_resolve_volume() returns `unit` for "mass" WITHOUT checking that anything is mounted
    there, so Dopen can succeed on a slot whose backing device has gone away.
 
-   We embed the SDK's PREBUILT bdmfs_fatfs.irx (Makefile), so this cannot be fixed on our side --
-   only avoided. The no-buffer form returns -ENXIO safely (it carries the name's first four bytes in
-   its return value instead). That is precisely what Grimdoomer's fork does, and why it reads mass
-   devices where we fault. Gate on it, then ask for the full name.
+   The embedded driver is now our fork (modules/bdm/bdmfs_fatfs), which guards the copy; the gate
+   stays so a stock driver cannot fault either. The no-buffer form returns -ENXIO safely (it carries
+   the name's first four bytes in its return value instead). That is precisely what Grimdoomer's fork
+   does. Gate on it, then ask for the full name.
 
    Returns >= 0 on success; driverName is always left NUL-terminated. */
 int bdmReadDriverName(int dir, char *driverName, int driverNameLength)
@@ -1393,6 +1394,7 @@ public:
     void cleanUp(item_list_t *itemList, int exception) override;
     void shutdown(item_list_t *itemList) override;
     int checkVmc(item_list_t *itemList, char *name, int createSize) override;
+    int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous) override;
     char *prefix(item_list_t *itemList) override;
     void launch(item_list_t *itemList, int id, config_set_t *configSet) override;
     void launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet) override;
@@ -1939,6 +1941,16 @@ int BdmSource::checkVmc(item_list_t *itemList, char *name, int createSize)
 {
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
     return pDeviceData != NULL ? sysCheckVMC(pDeviceData->bdmPrefix, "/", name, createSize, NULL) : -1;
+}
+
+// Native mcemu needs a card in one extent: the bundled driver reserves it before genvmc formats,
+// or the creation fails. Neutrino maps fragments, so its cards keep plain creation.
+int BdmSource::createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous)
+{
+    bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
+    if (pDeviceData == NULL)
+        return SYS_VMC_CREATE_FAILED;
+    return sysCheckVMCEx(pDeviceData->bdmPrefix, "/", name, createSize, NULL, requireContiguous ? VMC_CREATE_CONTIGUOUS : 0);
 }
 
 char *BdmSource::prefix(item_list_t *itemList)

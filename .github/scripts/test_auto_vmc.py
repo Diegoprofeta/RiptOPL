@@ -42,7 +42,7 @@ static int gAutoCreateVmc=1,gDefaultCoreLoader=0;
 struct config_set_t {int loader=2,disabled=0;char assigned[32]={};};
 struct item_list_t {int mode=0,enabled=1;void *source=nullptr;void *priv=nullptr;};
 static int rowView,kind,probe= -1,submitted= -1,probes,creates,polls,aborts,writes,dialogs,contiguity;
-static int completionError,cancelAt= -1,completeAt=2,chain=1;
+static int completionError,cancelAt= -1,completeAt=2,chain=1,contiguous= -1;
 static int completedSize=8,rowCount=3,mutation;
 static bool active=true,ownerPresent=true,cap=true,saveOk=true,statusFails,assignOk=true;
 static bool jobStarted,initialBusy,initialFailure,udpbd;
@@ -53,9 +53,11 @@ public:
     bool hasCheckVmc() {return cap;}
     const char *startup(item_list_t*,int) {return title;}
     int count(item_list_t*) {return rowCount;}
+    int createVmc(item_list_t*,char *name,int size,int requireContiguous) {
+        assert(!strcmp(name,"GROUP_0") && size==8);creates++;jobStarted=true;contiguous=requireContiguous;return submitted;
+    }
     int checkVmc(item_list_t*,char *name,int size) {
-        assert(!strcmp(name,"GROUP_0")); if(size>0) {assert(size==8);creates++;jobStarted=true;return submitted;}
-        assert(size==SYS_VMC_PROBE_FORMAT);
+        assert(!strcmp(name,"GROUP_0") && size==SYS_VMC_PROBE_FORMAT); // creation goes through createVmc
         probes++;return creates ? completedSize : probe;
     }
 };
@@ -107,7 +109,7 @@ constexpr int AUTO_VMC_SIZE_MB=8, AUTO_VMC_MAX_FRAMES=5, AUTO_VMC_CANCEL_FRAMES=
 ''' + function(policy_source,'static int guiGameVMCLayoutWarning(') + '\n' + function(policy_source,'int guiGameAutoCreateVmc(') + r'''
 static void reset() {
     gAutoCreateVmc=1;gDefaultCoreLoader=0;rowView=kind=0;probe=submitted=-1;
-    probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;
+    probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;contiguous= -1;
     completeAt=2;cancelAt=-1;chain=1;active=ownerPresent=cap=saveOk=assignOk=true;
     statusFails=jobStarted=initialBusy=initialFailure=udpbd=false;title="SLUS_123.45";owner={};
     completedSize=8;rowCount=3;mutation=0;
@@ -117,6 +119,7 @@ int main() {
     item_list_t list;config_set_t cfg;
     reset(); assert(guiGameAutoCreateVmc(&list,1,&cfg)==1);
     assert(creates==1 && polls==2 && probes==2 && writes==1 && !strcmp(cfg.assigned,"GROUP_0") && contiguity==1);
+    assert(contiguous==1); // a native card needs one reserved extent (original #994)
     for(int size : {8,16,32,64}) {reset();cfg={};probe=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!creates && writes==1);}
     for(int size : {0,-2,-3,4}) {reset();cfg={};probe=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);assert(dialogs==1);}
     for(int result : {0,-2,-3}) {reset();cfg={};submitted=result;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(creates==1 && !polls && !writes && !cfg.assigned[0]);}
@@ -132,7 +135,8 @@ int main() {
     for(int change : {1,2}) {reset();cfg={};mutation=change;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);}
     reset();cfg={};saveOk=false;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(writes==1 && dialogs==1);
     reset();cfg={};assignOk=false;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);
-    reset();cfg={};cfg.loader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && !contiguity);
+    reset();cfg={};cfg.loader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && !contiguity && contiguous==0);
+    reset();cfg={};cfg.loader=2;gDefaultCoreLoader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && contiguous==0);
     for(int scenario=0;scenario<10;scenario++) {
         reset();cfg={};list={};
         if(scenario==0)gAutoCreateVmc=0;
@@ -154,7 +158,7 @@ int main() {
     reset();cfg={};list.mode=FAV_MODE;ownerPresent=false;
     assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
     reset();cfg={};list.mode=FAV_MODE;
-    assert(guiGameAutoCreateVmc(&list,1,&cfg) && writes==1);
+    assert(guiGameAutoCreateVmc(&list,1,&cfg) && writes==1 && contiguous==1);
     for(int change : {3,4,5,6}) {
         reset();cfg={};list.mode=FAV_MODE;mutation=change;
         assert(!guiGameAutoCreateVmc(&list,1,&cfg) && !writes && probes==1);
