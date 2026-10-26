@@ -13,7 +13,7 @@ HOST_TO_OLD = {
     'host::ui().msgBox': 'guiMsgBox', 'host::ui().warning': 'guiWarning', 'host::ui().raNotice': 'guiShowRANotice',
     'host::ui().bootStatusStickyCopy': 'guiSetBootStatusStickyCopy', 'host::ui().bootStatusSticky': 'guiSetBootStatusSticky',
     'host::ui().renderTextScreen': 'guiRenderTextScreen', 'host::ui().manageCheats': 'guiManageCheats',
-    'host::ui().showVcdUsbMode': 'guiShowVcdUsbMode', 'host::ui().promptRebootIop': 'guiPromptRebootIop',
+    'host::ui().showVcdUsbMode': 'guiShowVcdUsbMode', 'host::ui().pickEmberDisc': 'guiShowEmberDiscList', 'host::ui().promptRebootIop': 'guiPromptRebootIop',
     'host::ui().drawBackgroundPlasma': 'guiDrawBGPlasma', 'host::ui().lock': 'guiLock', 'host::ui().unlock': 'guiUnlock',
     'host::app().deinitEx': 'deinitEx', 'host::app().deinit': 'deinit', 'host::app().miniDeinit': 'miniDeinit',
     'host::app().saveConfig': 'saveConfig', 'host::app().applyConfig': 'applyConfig', 'host::app().initSupport': 'initSupport',

@@ -23,6 +23,8 @@
 #include "include/textures.h"   // texDiscoverLoad + ERR_BAD_FILE (folder cover fallback)
 #include "include/vcdsupport.h" // vcdFillGameList + vcdSortKey -- the POPSTARTER half of the union
 #include "include/cuesupport.h"
+#include "include/host.h"
+#include "include/lang.h"
 
 // The one CUE support instance (declared in include/cuesupport.h). Constant-initialized: it owns
 // only the extension table the launch-path image probe matches against.
@@ -109,6 +111,206 @@ int cueNameLaunchable(const char *name)
     if ((int)strlen(name) > CUE_NAME_LAUNCH_MAX)
         return 0;
 
+    return 1;
+}
+
+int cueBuildDiscArgument(const char *folder, const char *disc, char *out, int outSize)
+{
+    int length;
+
+    if (out == NULL || outSize <= 0)
+        return 0;
+    out[0] = '\0';
+    if (!cueNameLaunchable(folder) || !cueNameLaunchable(disc))
+        return 0;
+    length = (int)strlen(disc);
+    if (length <= 4 || strcasecmp(disc + length - 4, ".cue") != 0)
+        return 0;
+    length = snprintf(out, outSize, "%s/%s", folder, disc);
+    if (length < 0 || length >= outSize || length > CUE_NAME_LAUNCH_MAX) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
+}
+
+int cueBuildDiscPath(const char *devPrefix, const char *folder, const char *disc, char *out, int outSize)
+{
+    char games[288], argument[CUE_NAME_MAX];
+    int length;
+
+    if (out == NULL || outSize <= 0)
+        return 0;
+    out[0] = '\0';
+    if (devPrefix == NULL || !cueBuildDiscArgument(folder, disc, argument, sizeof(argument)))
+        return 0;
+    cueBuildGamesDir(devPrefix, games, sizeof(games));
+    length = snprintf(out, outSize, "%s%c%s%c%s", games, cueSep(devPrefix), folder, cueSep(devPrefix), disc);
+    if (length < 0 || length >= outSize) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
+}
+
+// One discs.txt line: a UTF-8 BOM on the first, CRLF and blank lines are accepted; anything that
+// is not a plain CUE filename refuses the whole list.
+static int cueAppendDiscLine(cue_disc_list_t *list, char *line, int first, const char *folder)
+{
+    char argument[CUE_NAME_MAX];
+    int length = (int)strlen(line);
+    unsigned char *bytes = (unsigned char *)line;
+
+    if (first && length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf) {
+        line += 3;
+        length -= 3;
+    }
+    if (length > 0 && line[length - 1] == '\r')
+        line[--length] = '\0';
+    if (length == 0)
+        return 1;
+    for (int i = 0; i < length; i++) {
+        if ((unsigned char)line[i] < 32 || (unsigned char)line[i] == 127)
+            return 0;
+    }
+    if (list->count >= CUE_MAX_DISCS || !cueBuildDiscArgument(folder, line, argument, sizeof(argument)))
+        return 0;
+    memcpy(list->names[list->count++], line, length + 1);
+    return 1;
+}
+
+// mmceman answers a bare -1 for a missing file too. A complete listing of the folder proves the
+// manifest absent; an unreadable one is never mistaken for "not present".
+static int cueConfirmDiscListAbsent(const char *manifest)
+{
+    char parent[640];
+    DIR *dir;
+    struct dirent *entry;
+    int length = (int)strlen(manifest) - 9; // strip the known "discs.txt" suffix
+    int error;
+
+    if (length <= 0 || length >= (int)sizeof(parent))
+        return -1;
+    memcpy(parent, manifest, length);
+    parent[length] = '\0';
+    dir = opendir(parent);
+    if (dir == NULL)
+        return -1;
+    for (;;) {
+        errno = 0;
+        entry = readdir(dir);
+        if (entry == NULL) {
+            error = errno;
+            closedir(dir);
+            return error == 0 ? 0 : -1;
+        }
+        if (strcasecmp(entry->d_name, "discs.txt") == 0) {
+            closedir(dir);
+            return -1;
+        }
+    }
+}
+
+int cueReadDiscList(const char *devPrefix, const char *folder, cue_disc_list_t **outList)
+{
+    char games[288], path[640], line[CUE_NAME_MAX + 3];
+    cue_disc_list_t *list;
+    FILE *file;
+    int c, length = 0, first = 1, bytes = 0, result;
+
+    if (outList == NULL)
+        return -1;
+    *outList = NULL;
+    if (devPrefix == NULL || !cueNameLaunchable(folder))
+        return -1;
+    cueBuildGamesDir(devPrefix, games, sizeof(games));
+    result = snprintf(path, sizeof(path), "%s%c%s%cdiscs.txt", games, cueSep(devPrefix), folder, cueSep(devPrefix));
+    if (result < 0 || result >= (int)sizeof(path))
+        return -1;
+    file = fopen(path, "rb");
+    if (file == NULL) {
+        if (errno == ENOENT || errno == ENOTDIR)
+            return 0;
+        return cueConfirmDiscListAbsent(path);
+    }
+    list = (cue_disc_list_t *)calloc(1, sizeof(*list));
+    if (list == NULL) {
+        fclose(file);
+        return -1;
+    }
+    // Bound both entries and total input, including blank lines. Never publish a partial list.
+    while ((c = fgetc(file)) != EOF) {
+        if (++bytes > 8192 || c == '\0')
+            goto invalid;
+        if (c == '\n') {
+            line[length] = '\0';
+            if (!cueAppendDiscLine(list, line, first, folder))
+                goto invalid;
+            length = 0;
+            first = 0;
+        } else {
+            if (length >= (int)sizeof(line) - 1)
+                goto invalid;
+            line[length++] = c;
+        }
+    }
+    line[length] = '\0';
+    if (ferror(file) || !cueAppendDiscLine(list, line, first, folder) || list->count == 0)
+        goto invalid;
+    fclose(file);
+    *outList = list;
+    return list->count;
+
+invalid:
+    LOG("[CUE] invalid or unreadable disc list: %s\n", path);
+    fclose(file);
+    free(list);
+    return -1;
+}
+
+int cuePrepareLaunch(const char *devPrefix, const char *folder, const char *emberElf, char *argument, int argumentSize)
+{
+    cue_disc_list_t *list = NULL;
+    char path[640];
+    int count, selected = 0, fd, length;
+
+    if (argument == NULL || argumentSize <= 0 || folder == NULL || emberElf == NULL)
+        return 0;
+    length = snprintf(argument, argumentSize, "%s", folder);
+    if (length < 0 || length >= argumentSize)
+        return 0;
+    count = cueReadDiscList(devPrefix, folder, &list);
+    if (count == 0)
+        return 1; // no manifest: the folder launch, unchanged
+    if (count < 0) {
+        host::ui().missingFile(_l(_STR_EMBER_DISCS_INVALID), folder);
+        return 0;
+    }
+    if (count > 1)
+        selected = host::ui().pickEmberDisc(folder, list);
+    if (selected < 0) {
+        free(list);
+        return 0;
+    }
+    if (!cueBuildDiscArgument(folder, list->names[selected], argument, argumentSize) ||
+        !cueBuildDiscPath(devPrefix, folder, list->names[selected], path, sizeof(path))) {
+        free(list);
+        host::ui().msgBox(_l(_STR_EMBER_DISC_ARGS_TOO_LONG), 0, NULL);
+        return 0;
+    }
+    free(list);
+    // The keep-IOP child also receives the ELF path as its own argv[0]: check the whole 256-byte
+    // string pool while the GUI and the device mounts are still live.
+    if (2 * strlen(emberElf) + strlen(argument) + 3 > 256) {
+        host::ui().msgBox(_l(_STR_EMBER_DISC_ARGS_TOO_LONG), 0, NULL);
+        return 0;
+    }
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        host::ui().missingFile(_l(_STR_ERR_FILE_INVALID), path);
+        return 0;
+    }
+    close(fd);
     return 1;
 }
 

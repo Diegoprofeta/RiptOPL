@@ -83,6 +83,9 @@ void BdmLauncher::launchCue(item_list_t *itemList, const char *cueName, config_s
         host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
+    // Copies the argument (folder, or the disc picked from discs.txt): cleanup frees the PS1 array.
+    if (!cuePrepareLaunch(ps1Prefix, cueName, emberElf, launchName, sizeof(launchName)))
+        return;
     // The scan lists folders without reading inside them -- that would be a directory read per row
     // on every refresh. Pay for it once, HERE, while a dialog can still be drawn: an empty or
     // mis-filled folder otherwise drops the user into the PS1 BIOS shell with no explanation.
@@ -102,10 +105,6 @@ void BdmLauncher::launchCue(item_list_t *itemList, const char *cueName, config_s
             return;
         }
     }
-
-    // itemCleanUp frees the active BDM PS1 array during deinit, so preserve the folder-name argv
-    // before teardown. This is especially load-bearing for the newly reachable UDPBD Ember path.
-    snprintf(launchName, sizeof(launchName), "%s", cueName);
 
     // UNMOUNT_EXCEPTION is load-bearing here, not defensive: Ember never resets the IOP, so the
     // device it reads its game from must still be mounted when it starts.

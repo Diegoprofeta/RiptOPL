@@ -818,6 +818,7 @@ void EthSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
 void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set_t *configSet)
 {
     char emberElf[256], biosPath[288];
+    char launchName[CUE_NAME_MAX];
 
     if (!gPCShareName[0] || cueName == NULL || cueName[0] == '\0')
         return;
@@ -835,6 +836,8 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
         host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
+    if (!cuePrepareLaunch(gEthSupport.prefix(), cueName, emberElf, launchName, sizeof(launchName)))
+        return;
     cueApplySettings(gEthSupport.prefix(), cueName, configSet); // best-effort marker, never a launch gate
     if (!cueGameHasImage(gEthSupport.prefix(), cueName)) {
         host::ui().msgBox(_l(_STR_EMBER_NO_DISC), 0, NULL);
@@ -850,7 +853,7 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
     // UNMOUNT_EXCEPTION is load-bearing: Ember reads its game through the SMB mount that is live
     // right now, so that mount must survive the teardown.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);
-    sysLaunchEmber(emberElf, cueName);
+    sysLaunchEmber(emberElf, launchName);
 }
 
 void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)

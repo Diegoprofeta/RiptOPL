@@ -20,6 +20,7 @@
 
 typedef struct _item_list_t item_list_t;
 struct UIItem;
+struct cue_disc_list;
 struct EECoreConfig_t;
 
 // Dialogs, notices and boot status on the user-facing side.
@@ -39,6 +40,8 @@ public:
     virtual void renderTextScreen(const char *message) = 0;
     virtual void manageCheats() = 0;
     virtual int showVcdUsbMode() = 0;
+    // Ember starting disc from a discs.txt list: its index, or -1 for Back.
+    virtual int pickEmberDisc(const char *folder, const struct cue_disc_list *list) = 0;
     virtual int promptRebootIop() = 0;
     // The GUI-wide lock (no-op before the GUI exists).
     // The animated plasma behind the menu (a theme can ask for it as its background).

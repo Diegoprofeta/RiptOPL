@@ -10,6 +10,7 @@
 #include "include/cfgtitle.h"
 #include "include/plasma.h"
 #include "include/gui.h"
+#include "include/cuesupport.h"
 #include "include/guiint.h"
 #include "include/settingshell.h"
 #include "include/diag.h" // gLastDeferredTimedOut -- a bounded wait that expired means the handler never ran
@@ -1122,6 +1123,44 @@ static int guiBdmaUpdater(int modified)
 int guiShowVcdUsbMode(void)
 {
     return diaExecuteDialog(diaVcdUsbMode, -1, 1, NULL);
+}
+
+static void guiDiscListItem(struct UIItem *item, UIItemType type, int id, const char *text, int stringId)
+{
+    memset(item, 0, sizeof(*item));
+    item->type = type;
+    item->id = id;
+    item->enabled = item->visible = 1;
+    item->hintId = -1;
+    item->label.text = text;
+    item->label.stringId = stringId;
+}
+
+int guiShowEmberDiscList(const char *folder, const cue_disc_list_t *list)
+{
+    struct UIItem *dialog = (struct UIItem *)calloc(list->count * 2 + 5, sizeof(*dialog));
+    char(*labels)[CUE_NAME_MAX + 32] = (char(*)[CUE_NAME_MAX + 32]) calloc(list->count, sizeof(*labels));
+    int index = 0, result;
+
+    if (dialog == NULL || labels == NULL) {
+        free(dialog);
+        free(labels);
+        return -1;
+    }
+    guiDiscListItem(&dialog[index++], UI_HEADER, 0, NULL, _STR_EMBER_SELECT_DISC);
+    guiDiscListItem(&dialog[index++], UI_SPLITTER, 0, NULL, -1);
+    guiDiscListItem(&dialog[index++], UI_LABEL, 0, folder, -1);
+    guiDiscListItem(&dialog[index++], UI_BREAK, 0, NULL, -1);
+    for (int i = 0; i < list->count; i++) {
+        snprintf(labels[i], sizeof(*labels), _l(_STR_EMBER_DISC_ENTRY), i + 1, list->names[i]);
+        guiDiscListItem(&dialog[index++], UI_BUTTON, i + 1, labels[i], -1);
+        guiDiscListItem(&dialog[index++], UI_BREAK, 0, NULL, -1);
+    }
+    guiDiscListItem(&dialog[index], UI_TERMINATOR, 0, NULL, -1);
+    result = diaExecuteDialog(dialog, 1, 1, NULL);
+    free(labels);
+    free(dialog);
+    return (result >= 1 && result <= list->count) ? result - 1 : -1;
 }
 
 static void guiSetBdmaSettings(struct UIItem *ui)

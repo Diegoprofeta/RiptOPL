@@ -162,6 +162,9 @@ int guiNetProtocolNeedsRestart(void);
 // One-shot POPSTARTER USB driver pick (FAT32 vs exFAT), shown on EVERY USB VCD launch
 // (maintainer directive 2026-08-01: the user picks per launch, never a sticky default).
 int guiShowVcdUsbMode(void);
+struct cue_disc_list;
+// The discs.txt starting-disc picker: the chosen index, or -1 for Back.
+int guiShowEmberDiscList(const char *folder, const struct cue_disc_list *list);
 void guiShowPopsNetConfig(void); // POPSTARTER's OWN IPCONFIG.DAT/SMBCONFIG.DAT editor
 
 void guiCheckNotifications(int checkTheme, int checkLang);

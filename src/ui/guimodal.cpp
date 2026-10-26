@@ -149,13 +149,10 @@ void MessageBoxScreen::draw()
 {
     if (ui_)
         diaRenderUI(ui_, guiScreenInMenu(), NULL, 0);
-    else
-        guiShow();
 
     // With a `ui` the CALLER chose what sits behind this box, so keep that context visible.
-    // With ui == NULL the backdrop is just whichever menu happened to be on screen -- it carries
-    // no information and, at gColDarker's ~75%, left the menu legible straight through the
-    // message. Errors get their own background in that case.
+    // A context-free error paints its own opaque background. Do not render the active menu behind
+    // it: that can queue cover IO while a launch preflight has pfs0: remounted (original #1034).
     rmDrawRect(0, 0, gGuiScreenWidth, gGuiScreenHeight, ui_ ? gColDarker : gColBlack);
 
     rmDrawLine(50, 75, gGuiScreenWidth - 50, 75, gColWhite);

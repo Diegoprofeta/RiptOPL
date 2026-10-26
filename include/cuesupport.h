@@ -86,6 +86,26 @@
 #define CUE_NAME_MAX        192
 #define CUE_NAME_LAUNCH_MAX 180 // 192 less "games/" and the NUL, with headroom
 #define CUE_MAX_ITEMS       2048
+#define CUE_MAX_DISCS       16
+
+// A game folder's discs.txt (original #1034): its CUE files in disc order. Ember Beta 2 accepts
+// <folder>/<disc file> as its game argument; the folder stays the identity for settings, artwork,
+// saves and Favorites.
+typedef struct cue_disc_list
+{
+    int count;
+    char names[CUE_MAX_DISCS][CUE_NAME_MAX];
+} cue_disc_list_t;
+
+// Launch-time only: 0 = no discs.txt (folder launch), >0 = ordered CUE entries, -1 = unreadable or
+// malformed. Only a successful result allocates *outList; the caller frees it.
+int cueReadDiscList(const char *devPrefix, const char *folder, cue_disc_list_t **outList);
+// "<folder>/<disc>" for Ember, and the disc's device path, without changing the folder identity.
+int cueBuildDiscArgument(const char *folder, const char *disc, char *out, int outSize);
+int cueBuildDiscPath(const char *devPrefix, const char *folder, const char *disc, char *out, int outSize);
+// Before teardown: copy Ember's game argument into `argument` -- the folder, or the disc picked from
+// discs.txt. 0 when the user backed out or a message was shown; the caller then returns.
+int cuePrepareLaunch(const char *devPrefix, const char *folder, const char *emberElf, char *argument, int argumentSize);
 
 // Per-device folder holding ember.elf + bios.bin + games/, the peer of POPS_FOLDER. The NAME is the
 // only knob Ember's argument contract leaves us (the library must be the ember.elf's own
@@ -117,9 +137,9 @@ int cueResolveEmber(const char *devPrefix, char *out, int outSize);
 int cueResolveEmberBios(const char *devPrefix, char *out, int outSize);
 
 
-// 1 when `name` is legal as Ember's game argument. Mirrors Ember's own checks exactly rather than a
-// tidied version of them: any '/', ':' or '\\' refuses (its char scan at main+0x3d48), and so does
-// a name STARTING with ".." (main+0x4210 -- not only the exact string ".."). Pure string work.
+// 1 when `name` is a legal bare game-folder identity: any '/', ':' or '\\' refuses, and so does a
+// name STARTING with "..". A selected disc's <folder>/<disc> argument is composed separately
+// (cueBuildDiscArgument); library names, settings keys, renames and Favorites stay bare.
 int cueNameLaunchable(const char *name);
 
 // Scan "<devPrefix><EmberFolder>/games/" for game SUBDIRECTORIES. Returns the count; *outList is a
