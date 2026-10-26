@@ -118,8 +118,9 @@ enum INTERNAL_TEXTURE {
     CASE_OVERLAY2,
     // UDPFS network-boot device icon (theme override "udp_fs", embedded udp_fs_png); UDPBD uses UDP_ICON
     UDPFS_ICON,
-    L1_ICON, // Settings peer-page navigation hint
-    R1_ICON, // Settings peer-page navigation hint
+    L1_ICON,          // Settings peer-page navigation hint
+    R1_ICON,          // Settings peer-page navigation hint
+    PSBBN_BACKGROUND, // <PSBBN Flow> nebula stage (theme override "psbbn_bg")
 #ifdef BUILTIN_KORIUM
     CASE_PS1,
     DISC_PS1,

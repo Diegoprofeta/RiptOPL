@@ -1,7 +1,7 @@
 #ifndef __THEMEINT_H
 #define __THEMEINT_H
 
-// Internals shared between themes.cpp (loader, catalog, element drawing) and coverflow.cpp. Not public API.
+// Internals shared between themes.cpp (loader, catalog, element drawing), coverflow.cpp and psbbnflow.cpp. Not public API.
 
 #include "themes.h"
 
@@ -55,6 +55,7 @@ enum ELEM_ATTRIBUTE_TYPE {
     ELEM_TYPE_BDM_INDEX,
     ELEM_TYPE_GAME_COUNT_TEXT,
     ELEM_TYPE_COVERFLOW,
+    ELEM_TYPE_PSBBN_FLOW,
     ELEM_TYPE_COUNT
 };
 
@@ -67,7 +68,6 @@ constexpr int SIZING_CLIP = 0;
 constexpr int SIZING_WRAP = 1;
 
 extern const char *const elementsType[ELEM_TYPE_COUNT];
-int thmDiskThemeCount(void);
 
 // Cover cache size for COV elements. Sized so the visible set and its warmed neighbours fit together; a decoded
 // cover is well under 100 KB at shipped theme sizes, so this trades ~1 MB of EE RAM for not re-reading USB.
@@ -114,5 +114,12 @@ void drawInfoHintText(struct menu_list *menu, struct submenu_list *item, config_
 
 // coverflow.cpp
 void initCoverflow(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name);
+
+// psbbnflow.cpp
+void initPsbbnFlow(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name);
+void psbbnFlowTrigger(int dir);
+void psbbnFlowReset(void);
+// True on a frame where PSBBN Flow drew covers in motion: its title row stays hidden until they settle.
+int psbbnFlowIsMoving(void);
 
 #endif

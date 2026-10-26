@@ -2,6 +2,7 @@
 #include "include/opl.h"
 #include "include/themes.h"
 #include "include/themecatalog.h"
+#include "include/psbbnflow.h"
 #include "include/themeint.h"
 #include "include/util.h"
 #include "include/gui.h"
@@ -27,15 +28,12 @@ extern const char conf_theme_OPL_cfg;
 extern u16 size_conf_theme_OPL_cfg;
 extern const char theme_coverflow_cfg;
 extern u16 size_theme_coverflow_cfg;
+extern const char theme_psbbn_flow_cfg;
+extern u16 size_theme_psbbn_flow_cfg;
 
 theme_t *gTheme;
 
 static ThemeCatalog gCatalog;
-
-int thmDiskThemeCount(void)
-{
-    return gCatalog.count();
-}
 
 int gThmScreenWidth;
 int gThmScreenHeight;
@@ -58,7 +56,8 @@ const char *const elementsType[ELEM_TYPE_COUNT] = {
     "LoadingIcon",
     "BdmIndex",
     "GameCountText",
-    "Coverflow"};
+    "Coverflow",
+    "PSBBNFlow"};
 
 static void validateBackgroundElems(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_elems_t *mainElems, theme_elems_t *infoElems)
 {
@@ -714,6 +713,11 @@ static int addGUIElem(const char *themePath, config_set_t *themeConfig, theme_t 
                 // like wOPL); initCoverflow points gTheme->coverflow at the FIRST as the active flag.
                 elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_GAME_IMAGE, gThmScreenWidth >> 1, gThmScreenHeight >> 1, ALIGN_CENTER, 150, 210, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
                 initCoverflow(themePath, themeConfig, theme, elem, name);
+            } else if (!strcmp(elementsType[ELEM_TYPE_PSBBN_FLOW], type)) {
+                // x/y place the focal cover's centre: right of centre, mid-height, as in PSBBN.
+                int size = psbbnFlowSize(gThmScreenWidth, gThmScreenHeight);
+                elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_GAME_IMAGE, gThmScreenWidth - 186, gThmScreenHeight >> 1, ALIGN_CENTER, size, size, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
+                initPsbbnFlow(themePath, themeConfig, theme, elem, name);
             }
 
             if (elem) {
@@ -1077,6 +1081,7 @@ static int thmLoad(const char *themePath)
     newT->favsItemsList = NULL;
     newT->vcdItemsList = NULL;
     newT->coverflow = NULL;
+    newT->psbbnFlow = NULL;
     newT->coverflowCoverOffset = 0;
     newT->loadingIcon = NULL;
     newT->loadingIconCount = LOAD7_ICON - LOAD0_ICON + 1;
@@ -1093,8 +1098,10 @@ static int thmLoad(const char *themePath)
     if (!themePath) {
         // No theme specified. Prepare and load the default theme.
         themeConfig = configAlloc(0, NULL, NULL);
-        if (gCatalog.loadingBuiltinCoverflow())
+        if (gCatalog.loadingBuiltin() == ThemeCatalog::BUILTIN_COVERFLOW)
             configReadBuffer(themeConfig, &theme_coverflow_cfg, size_theme_coverflow_cfg);
+        else if (gCatalog.loadingBuiltin() == ThemeCatalog::BUILTIN_PSBBN_FLOW)
+            configReadBuffer(themeConfig, &theme_psbbn_flow_cfg, size_theme_psbbn_flow_cfg);
         else
             configReadBuffer(themeConfig, &conf_theme_OPL_cfg, size_conf_theme_OPL_cfg);
     } else {
@@ -1383,6 +1390,7 @@ static int thmLoad(const char *themePath)
         cacheCancelPendingImageLoads(); // first load: pre-cacheInit, nothing queued -- plain no-op drain
     gTheme = newT;
     loadedFontSize = gFontSize;
+    psbbnFlowReset();
     thmFree(curT);
     return 0;
 }
@@ -1419,13 +1427,16 @@ int ThemeCatalog::readEntryCallback(int index, const char *path, const char *sep
 // the same lock. NOT self-locking: thmReinit must hold the lock across its name-string frees AND
 // this rebuild as ONE critical section (between the two, the published list points at freed
 // strings), and the sema is not recursive.
+// Names of the built-in flow themes, indexed by ThemeCatalog::Builtin.
+static const char *const builtinNames[ThemeCatalog::BUILTIN_COUNT + 1] = {NULL, "<Coverflow>", "<PSBBN Flow>"};
+
 void ThemeCatalog::rebuildNames()
 {
     if (names_)
         free(names_);
 
-    // build the themes name list (+1 default internal, +1 built-in coverflow, +1 NULL)
-    names_ = (const char **)malloc((count_ + 3) * sizeof(char **));
+    // Default internal, disk themes, the built-in flows, then the NULL terminator.
+    names_ = (const char **)malloc((count_ + BUILTIN_COUNT + 2) * sizeof(char **));
 
     // add default internal
     names_[0] = "<OPL>";
@@ -1435,20 +1446,26 @@ void ThemeCatalog::rebuildNames()
         names_[i + 1] = themes_[i].name;
     }
 
-    // built-in coverflow theme occupies the slot right after the disk themes
-    names_[count_ + 1] = "<Coverflow>";
-    names_[count_ + 2] = NULL;
+    // the built-in flow themes occupy the slots right after the disk themes
+    for (i = 1; i <= BUILTIN_COUNT; i++)
+        names_[count_ + i] = builtinNames[i];
+    names_[count_ + BUILTIN_COUNT + 1] = NULL;
 }
 
 int ThemeCatalog::addElements(char *path, const char *separator, int forceRefresh)
 {
     int result, i;
 
+    // Built-in ids follow the disk entries: keep a live built-in selection as discovery appends,
+    // or the id would now name a disk theme while the built-in is still displayed.
+    Builtin builtin = builtinOf(themeId_);
     result = listDir(path, separator, THM_MAX_FILES - count_, &readEntryCallback);
     count_ += result;
     // Appends above only fill NEW themes_[] slots (the published name list references old slots
     // untouched); the rebuild's free+swap is what must be serialized against the GUI's readers.
     host::ui().lock();
+    if (builtin != BUILTIN_NONE)
+        themeId_ = count_ + builtin;
     rebuildNames();
     host::ui().unlock();
 
@@ -1492,8 +1509,8 @@ void ThemeCatalog::reinit(const char *path)
     if (themeId_ >= 1 && themeId_ <= count_) {
         snprintf(activeName, sizeof(activeName), "%s", themes_[themeId_ - 1].name);
         activeOnDevice = strncmp(themes_[themeId_ - 1].filePath, path, strlen(path)) == 0;
-    } else if (themeId_ == count_ + 1) {
-        snprintf(activeName, sizeof(activeName), "<Coverflow>"); // built-in; its id (count_+1) shifts as themes are removed
+    } else if (builtinOf(themeId_) != BUILTIN_NONE) {
+        snprintf(activeName, sizeof(activeName), "%s", builtinNames[builtinOf(themeId_)]); // its id shifts as themes are removed
     }
 
     // One guiLock section across the removal loop AND the rebuild: the frees below invalidate
@@ -1543,15 +1560,15 @@ const char *ThemeCatalog::currentName() const
 
 int ThemeCatalog::setGuiValue(int themeID, int reload)
 {
-    if (themeID != -1) {
+    if (themeID >= 0 && themeID <= count_ + BUILTIN_COUNT) {
         if (themeId_ != themeID || reload) {
             int loadResult;
-            if (themeID == count_ + 1) {
-                // built-in coverflow theme: load the embedded buffer via thmLoad(NULL).
+            if (builtinOf(themeID) != BUILTIN_NONE) {
+                // built-in flow theme: load the embedded buffer via thmLoad(NULL).
                 // Checked BEFORE the themes_[themeID - 1] access below (which would be OOB).
-                loadBuiltin_ = 1;
+                loadBuiltin_ = builtinOf(themeID);
                 loadResult = thmLoad(NULL);
-                loadBuiltin_ = 0;
+                loadBuiltin_ = BUILTIN_NONE;
             } else
                 loadResult = thmLoad(themeID != 0 ? themes_[themeID - 1].filePath : NULL);
 
@@ -1562,7 +1579,7 @@ int ThemeCatalog::setGuiValue(int themeID, int reload)
 
             themeId_ = themeID;
             return 1;
-        } else if (themeId_ == 0 || themeId_ == count_ + 1) {
+        } else if (themeId_ == 0 || builtinOf(themeId_) != BUILTIN_NONE) {
             /* Re-apply the edited gDefault*Color values to the LIVE theme when the theme itself is
                not being reloaded -- which is the whole of what a colour edit does.
 
@@ -1589,9 +1606,12 @@ int ThemeCatalog::guiValue() const
 int ThemeCatalog::findGuiID(const char *theme) const
 {
     if (theme) {
-        if (strcasecmp(theme, "<Coverflow>") == 0)
-            return count_ + 1; // built-in coverflow theme
-        int i = 0;
+        int i;
+        for (i = 1; i <= BUILTIN_COUNT; i++) {
+            if (strcasecmp(theme, builtinNames[i]) == 0)
+                return count_ + i;
+        }
+        i = 0;
         for (; i < count_; i++) {
             if (strcasecmp(themes_[i].name, theme) == 0)
                 return i + 1;
@@ -1607,7 +1627,7 @@ const char **ThemeCatalog::guiList() const
 
 char *ThemeCatalog::filePath(int themeID)
 {
-    // Disk themes occupy IDs 1..count_. The built-ins (<OPL> = 0, <Coverflow> = count_+1)
+    // Disk themes occupy IDs 1..count_. The built-ins (<OPL> = 0, the flows above count_)
     // and any out-of-range ID have no on-disk path -> return NULL so callers fall back to
     // the default/internal assets instead of indexing themes_[] out of bounds.
     if (themeID <= 0 || themeID > count_)

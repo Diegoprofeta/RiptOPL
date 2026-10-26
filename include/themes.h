@@ -202,6 +202,7 @@ typedef struct theme
     int parsingFavKindFamily; // parse-time only: addGUIElem must not claim an ItemsList slot
 
     theme_element_t *coverflow;
+    theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
     int coverflowCoverOffset;
 
     int gameCacheCount;

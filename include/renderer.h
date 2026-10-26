@@ -29,6 +29,7 @@ public:
     void drawRect(int x, int y, int w, int h, u64 color);
     void drawFramedRect(int x, int y, int w, int h, int border, u64 frameColor, u64 fillColor);
     void drawLine(int x1, int y1, int x2, int y2, u64 color);
+    void drawBlendedTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors);
     void setDisplayOffset(int x, int y);
     void setAspectRatio(enum rm_aratio dar);
     int wideScale(int x);

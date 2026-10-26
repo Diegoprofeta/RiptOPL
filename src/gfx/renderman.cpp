@@ -565,6 +565,33 @@ void Renderer::drawLine(int x1, int y1, int x2, int y2, u64 color)
     order_++;
 }
 
+void Renderer::drawBlendedTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors)
+{
+    // A texture without its own alpha channel (CT24) has none to blend with, so a fade uses the first
+    // vertex's alpha as the GS's fixed blend factor instead; the default blend comes back afterwards.
+    int fixed = txt != NULL && count > 0 && txt->PSM != GS_PSM_CT32 && !(txt->Clut && txt->ClutPSM == GS_PSM_CT32);
+    if (fixed)
+        gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 2, 1, (colors[0] >> 24) & 0xff), 0);
+    gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
+    gsKit_set_test(gsGlobal, GS_ATEST_OFF);
+    // One bind for the batch: nothing else binds between these triangles, so it stays resident.
+    if (txt != NULL)
+        gsKit_TexManager_bind(gsGlobal, txt);
+    for (int i = 0; i < count; i++, xy += 6, uv += (txt != NULL) ? 6 : 0, colors += 3) {
+        float x0 = scaleX(xy[0]) + renderXOff_, y0 = scaleY(xy[1]) + renderYOff_;
+        float x1 = scaleX(xy[2]) + renderXOff_, y1 = scaleY(xy[3]) + renderYOff_;
+        float x2 = scaleX(xy[4]) + renderXOff_, y2 = scaleY(xy[5]) + renderYOff_;
+        if (txt != NULL)
+            gsKit_prim_triangle_goraud_texture_3d(gsGlobal, txt, x0, y0, order_, uv[0], uv[1], x1, y1, order_, uv[2], uv[3],
+                                                  x2, y2, order_, uv[4], uv[5], colors[0], colors[1], colors[2]);
+        else
+            gsKit_prim_triangle_gouraud_3d(gsGlobal, x0, y0, order_, x1, y1, order_, x2, y2, order_, colors[0], colors[1], colors[2]);
+    }
+    order_++;
+    if (fixed)
+        gsKit_set_primalpha(gsGlobal, gDefaultAlpha, 0);
+}
+
 void Renderer::setDisplayOffset(int x, int y)
 {
     gsKit_set_display_offset(gsGlobal, x * rm_mode_table[vmode_].VCK, y);
@@ -728,6 +755,11 @@ void rmDrawFramedRect(int x, int y, int w, int h, int border, u64 frameColor, u6
 void rmDrawLine(int x1, int y1, int x2, int y2, u64 color)
 {
     gRenderer.drawLine(x1, y1, x2, y2, color);
+}
+
+void rmDrawBlendedTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors)
+{
+    gRenderer.drawBlendedTriangles(txt, count, xy, uv, colors);
 }
 
 void rmSetDisplayOffset(int x, int y)

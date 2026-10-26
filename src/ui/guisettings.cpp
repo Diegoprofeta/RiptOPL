@@ -1863,7 +1863,7 @@ static void guiShowArtworkConfig(void)
 void guiShowColorsConfig(void)
 {
     int themeID = thmGetGuiValue();
-    int editable = (themeID == 0 || themeID == thmFindGuiID("<Coverflow>"));
+    int editable = thmGetFilePath(themeID) == NULL; // <OPL> and the built-in flows take the picker's palette
 
     if (editable) {
         // Display the default theme's colours.

@@ -10,6 +10,7 @@ installation folder can still discover settings on another device.
 | Menu video mode | Auto | Settings → Interface |
 | Theme | Built-in `<OPL>` | Settings → Interface → Theme |
 | Coverflow | Optional built-in `<Coverflow>` theme | Settings → Interface → Theme |
+| PSBBN Flow | Optional built-in `<PSBBN Flow>` theme | Settings → Interface → Theme |
 | Cover and disc artwork | On | Settings → Interface → Artwork Settings |
 | Notifications | On | Settings → Interface |
 | PS2 logo | On | Settings → Game Launching |
@@ -28,6 +29,11 @@ selecting it does not toggle widescreen. Use **Widescreen: Off** for a 4:3 menu.
 The carousel starts with three covers, center scale 30, 200 ms animation and
 side-cover dimming off. L1/R1 page moves animate only when selection changes,
 including wraps; flat list themes keep their existing page behavior.
+
+For the PSBBN Definitive Project Game Collection look, choose **Theme: `<PSBBN Flow>`** in the same
+picker, apply and save. It uses the colour picker's palette and its own fixed perspective layout and
+25-frame glide; the Coverflow count, scale, animation and dimming settings do not apply to it. See
+[PSBBN Flow](THEME_ENGINE.md#psbbn-flow) for artwork and authoring details.
 
 Existing `settings_riptopl.cfg` values override fresh defaults. The legacy
 `conf_riptopl.cfg` can also be migrated. Inspect the active configuration location

@@ -1414,7 +1414,7 @@ void drawAttributeImage(struct menu_list *menu, struct submenu_list *item, confi
             configGetStr(config, attributeImage->cache->suffix(), (const char **)&attributeImage->currentValue);
         }
         if (attributeImage->currentValue) {
-            if (thmGetGuiValue() == 0 || thmGetGuiValue() == thmDiskThemeCount() + 1) {
+            if (thmGetFilePath(thmGetGuiValue()) == NULL) { // a built-in theme: embedded glyphs
                 GSTEXTURE *texture = thmGetTexture(thmAttributeTexId(attributeImage));
                 if (texture && texture->Mem)
                     rmDrawPixmap(texture, elem->posX, elem->posY, elem->aligned, elem->width, elem->height, elem->scaled, gDefaultCol, 0);
@@ -1768,7 +1768,8 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
             }
         }
 
-        submenu_list_t *ps = menu->item->pagestart;
+        // PSBBN shows the title only once the covers come to rest.
+        submenu_list_t *ps = psbbnFlowIsMoving() ? NULL : menu->item->pagestart;
         int others = 0;
         u64 color;
         // A fixed leading column keeps stars and titles aligned on ordinary lists. Centered
