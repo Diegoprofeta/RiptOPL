@@ -170,8 +170,10 @@ int main(void) {
 '''.replace('@CLASSIFY@', classify).replace('@HELPER@', helper).replace('@BDM_SLOTS@', bdm_slots).replace('@HDD_SLOTS@', hdd_slots)
 
 labels = re.findall(r"^- label: (\w+)", (root / 'lng/tmpl/_base.yml').read_text(encoding='utf-8'), re.M)
-assert labels[-4:] == ['ERR_VMC_LBA_RANGE_CONTINUE', 'ERR_VMC_LAYOUT_CONTINUE', 'ERR_VMC_PFS_LIMIT_CONTINUE', 'VMC_PFS_LIMIT_ON_CREATE']
-assert labels.index('NEUTRINO_DVR_FILE_MISSING') < len(labels) - 4
+# External .lng files are positional: these shipped as one appended run; later labels go after them.
+at = labels.index('ERR_VMC_LBA_RANGE_CONTINUE')
+assert labels[at:at + 4] == ['ERR_VMC_LBA_RANGE_CONTINUE', 'ERR_VMC_LAYOUT_CONTINUE', 'ERR_VMC_PFS_LIMIT_CONTINUE', 'VMC_PFS_LIMIT_ON_CREATE']
+assert labels.index('NEUTRINO_DVR_FILE_MISSING') < at
 
 with tempfile.TemporaryDirectory() as temp:
     path = Path(temp)
