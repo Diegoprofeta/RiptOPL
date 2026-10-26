@@ -122,7 +122,9 @@ GAPS (must be vendored or built in-repo):
 - `-lfile`, `-lint-action`, `-level`, `-list`, `-liopreboot`: grep noise from comments, not libs.
   Verify `iopreboot` really is an in-repo source.
 - Fork-vendored IRXs stay in-repo as `iop` targets and shadow the packages: `usbd_mini` (pinned
-  pre-2024-09-04), `bdm`, `ps2ips`, `smbman`. Do not use the package versions of these.
+  pre-2024-09-04), `bdm`, `ps2ips`, `smbman`, `iLinkman`, `IEEE1394_bd`, `mmceman`. Do not use
+  the package versions of these. `mmceman` is ps2-mmce's db3e93f0 plus four fixes the package
+  lacks (modules/mmce/mmceman/ORIGIN.txt); `mmcedrv`/`mmceigr` still come from the package.
 
 ## Layout
 Use a `ps2workspace.yaml` (members: `modules/*`, `ee_core`, `elfldr`, top-level) so `embed_irx`

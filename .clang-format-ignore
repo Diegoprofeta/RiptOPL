@@ -12,3 +12,4 @@
 ./tests/host
 ./modules/bdm/bdmfs_fatfs
 ./modules/ilink/IEEE1394_bd
+./modules/mmce/mmceman

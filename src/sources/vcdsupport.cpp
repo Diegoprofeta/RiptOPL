@@ -661,12 +661,10 @@ static int vcdScanOpenDir(const char *dirPath, vcd_entry_t **outList)
         // PRESERVES its last-good list instead of blanking it on a transient wedge. Mirrors
         // scanForISO (the ISO path) -- the #120 fix: the VCD & ISO views share one backing store,
         // and returning 0 here zeroed BOTH on a contended bus.
-        // MMCE caveat: mmceman's dopen collapses EVERY failure -- including the card's explicit
-        // not-found reply -- into a bare -1 (EE sees EPERM, not ENOENT), so on mmceN: an absent
-        // POPS still lands on this -1 path unless the paired mmceman-fs-dopen-enoent.patch is in
-        // the build (install_coherent_mmce.sh applies it, same doctrine as the fs-open ENOENT
-        // patch behind textures.c's classifier). Without it, MMCE behavior is exactly the old one:
-        // bounded retries, then quiesce -- never worse.
+        // MMCE: stock mmceman's dopen collapses EVERY failure -- including the card's explicit
+        // not-found reply -- into a bare -1 (EE sees EPERM, not ENOENT). The embedded fork carries
+        // mmceman-fs-dopen-enoent.patch (modules/mmce/mmceman/ORIGIN.txt), so an absent POPS on
+        // mmceN: reaches the ENOENT branch above like every other device.
         return -1;
     }
 

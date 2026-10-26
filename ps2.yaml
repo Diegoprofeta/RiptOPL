@@ -279,6 +279,16 @@ targets:
     libs: [gcc]
     imports_lst: modules/ilink/IEEE1394_bd/src/imports.lst
 
+  # ps2-mmce's menu driver with RiptOPL's end-of-directory, handle-release and ENOENT fixes
+  # (modules/mmce/mmceman/ORIGIN.txt). Loaded instead of the ps2build mmceman package.
+  - name: mmceman_fork
+    type: iop
+    sources: [modules/mmce/mmceman/src/ioplib.c, modules/mmce/mmceman/src/sio2man_hook.c, modules/mmce/mmceman/src/mmce_sio2.c, modules/mmce/mmceman/src/mmce_cmds.c, modules/mmce/mmceman/src/mmce_fs.c, modules/mmce/mmceman/src/mmceman.c]
+    include_dirs: [modules/mmce/mmceman/include]
+    headers: *iop_headers
+    defines: [IOMANX_OLD_NAME_COMPATIBILITY=0, IOMANX_OLD_NAME_ADDDELDRV=0]
+    imports_lst: modules/mmce/mmceman/src/imports.lst
+
   - name: bdm_fork
     type: iop_lib
     sources: [modules/bdm/libbdm/src/bd_defrag.c, modules/bdm/libbdm/src/bd_cache.c]
@@ -472,5 +482,5 @@ targets:
     ldflags: [-fdata-sections, -ffunction-sections, "-Wl,--gc-sections", "-Wl,-Map,opl.map", -lpadx]
     libs: [gskit, dmakit, poweroff, filexio, patches, png, z, mc, freetype, vux, cdvd, netman, ps2ips, audsrv-compat, vorbisfile, vorbis, ogg, pad, elf-loader-nocolour, ds34usb_ee, ds34bt_ee]
     pack: true
-    embed_irx: [isofs, bdmevent, genvmc, nbns, httpclient, imgdrv, resetspu, apemodpatch, cleareffects, f2techioppatch, iremsndpatch, cdvdfsv, smbinit, SMSUTILS:smsutils, SMSTCPIP:ingame_smstcpip, smap_ingame, xhdd, smap_udpbd, udpfs_smap, udpfs_ministack, udpfs_bd, udpfs_ioman, lwnbdsvr, ps2ips_fork:ps2ips, bdm_drv:bdm, usbd_mini_fork:usbd, ata_bd:ps2atad, ps2hdd_osd:ps2hdd, hdd_cdvdman, hdd_hdpro_cdvdman, smb_cdvdman, http_cdvdman, bdm_cdvdman, bdm_ata_cdvdman, mmce_cdvdman, hdd_mcemu, smb_mcemu, bdm_mcemu, mmce_mcemu, usb_pademu, bt_pademu, ds34usb, ds34bt, eecore, elfldr, smbman, usbhdfsd, libsd, audio:audsrv, bdmfs_fatfs_fork:bdmfs_fatfs, iLinkman_fork:iLinkman, IEEE1394_bd_mini_fork:IEEE1394_bd, usbmass_bd_mini:usbmass_bd, mx4sio_bd_mini:mx4sio_bd, hdpro_atad, poweroff, dev9:ps2dev9, ps2ip-nm:ps2ip, smap, netman, iomanx, filexio, sio2man, padman, mcman, mcserv, mmceman, mmcedrv, mmceigr, fs-osd:ps2fs, eesync-nano:eesync, udnl]
+    embed_irx: [isofs, bdmevent, genvmc, nbns, httpclient, imgdrv, resetspu, apemodpatch, cleareffects, f2techioppatch, iremsndpatch, cdvdfsv, smbinit, SMSUTILS:smsutils, SMSTCPIP:ingame_smstcpip, smap_ingame, xhdd, smap_udpbd, udpfs_smap, udpfs_ministack, udpfs_bd, udpfs_ioman, lwnbdsvr, ps2ips_fork:ps2ips, bdm_drv:bdm, usbd_mini_fork:usbd, ata_bd:ps2atad, ps2hdd_osd:ps2hdd, hdd_cdvdman, hdd_hdpro_cdvdman, smb_cdvdman, http_cdvdman, bdm_cdvdman, bdm_ata_cdvdman, mmce_cdvdman, hdd_mcemu, smb_mcemu, bdm_mcemu, mmce_mcemu, usb_pademu, bt_pademu, ds34usb, ds34bt, eecore, elfldr, smbman, usbhdfsd, libsd, audio:audsrv, bdmfs_fatfs_fork:bdmfs_fatfs, iLinkman_fork:iLinkman, IEEE1394_bd_mini_fork:IEEE1394_bd, usbmass_bd_mini:usbmass_bd, mx4sio_bd_mini:mx4sio_bd, hdpro_atad, poweroff, dev9:ps2dev9, ps2ip-nm:ps2ip, smap, netman, iomanx, filexio, sio2man, padman, mcman, mcserv, mmceman_fork:mmceman, mmcedrv, mmceigr, fs-osd:ps2fs, eesync-nano:eesync, udnl]
 

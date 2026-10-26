@@ -7,15 +7,15 @@
     tools/warning_gate.py build.log --update      rewrite tools/warnings_baseline.json
 
 Only warnings in this repository's own code are counted (src/, ee_core/, elfldr/, modules/, include/);
-SDK headers and the downloaded lwNBD tree are ignored. Counts are per (file, flag), so refactors that
-move code between files show up, but unrelated edits do not.
+SDK headers, the downloaded lwNBD tree and the pinned mmceman tree are ignored. Counts are per
+(file, flag), so refactors that move code between files show up, but unrelated edits do not.
 """
 import collections, json, ntpath, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASELINE = os.path.join(ROOT, "tools", "warnings_baseline.json")
 OWN = ("src/", "ee_core/", "elfldr/", "modules/", "include/")
-SKIP = ("modules/network/lwNBD/",)
+SKIP = ("modules/network/lwNBD/", "modules/mmce/mmceman/")
 
 rx = re.compile(r"^(.+?):\d+:\d+: warning: .*\[(-W[\w+-]+)\]\s*$")
 rx_plain = re.compile(r"^(.+?):\d+:\d+: warning: (.*)$")

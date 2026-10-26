@@ -180,7 +180,7 @@ static int cueAppendDiscLine(cue_disc_list_t *list, char *line, int first, const
     return 1;
 }
 
-// mmceman answers a bare -1 for a missing file too. A complete listing of the folder proves the
+// Stock mmceman answers a bare -1 for a missing file too. A complete listing of the folder proves the
 // manifest absent; an unreadable one is never mistaken for "not present".
 static int cueConfirmDiscListAbsent(const char *manifest)
 {
@@ -390,7 +390,8 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
     // The absent-vs-contended split below reads errno to tell "this folder isn't here" (fine, 0 rows)
     // from "this device wouldn't answer" (a failure the caller must not mistake for emptiness). That
     // works only on drivers that actually report ENOENT, and this very file documents one that does
-    // not: mmceman collapses every failure, including the card's own not-found reply, into a bare -1.
+    // not: stock mmceman collapses every failure, including the card's own not-found reply, into a
+    // bare -1 (the embedded fork reports ENOENT, see modules/mmce/mmceman/ORIGIN.txt).
     // There was never any reason to assume other block drivers are better behaved.
     //
     // The cost of getting it wrong is severe and was reported from hardware (FifthFox, iLink): a
