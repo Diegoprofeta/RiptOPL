@@ -504,7 +504,7 @@ void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
 
 static int bdmMcemuSlots[2] = {-2, -2};
 
-static int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragments)
+int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragments)
 {
     *start_lba = (u64)-1;
     *fragments = -1;

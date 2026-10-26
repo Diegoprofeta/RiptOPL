@@ -64,6 +64,22 @@ this job's new file is removed. Neutrino cards and other sources allocate as bef
 are never relocated. Any failure after the formatter opened a card it owns removes the partial file.
 Host image tests cover FAT32 and exFAT; console acceptance is still required.
 
+## Rebuilding a card the native core cannot map
+
+A card that already holds saves but is too fragmented for the native core (on BDM: more than one extent; on the HDD: a PFS map longer than native mcemu holds) is skipped at launch. The per-game VMC dialog shows such a card as **Too fragmented for the native core** and offers a **Rebuild** button. It appears only for a valid 8/16/32/64 MB card on a BDM (FAT32/exFAT) or HDD source whose game uses the native core, and only when the layout check gives a definite answer; Neutrino maps cards its own way, and other stores cannot say how a card lies.
+
+Rebuild asks for confirmation, then:
+
+1. Refuses to start if `VMC/<name>.bak` or `VMC/<name>.new` already exists (absence is proven by reading the folder). Either may hold saves, so neither is ever overwritten; move it away on a PC and try again.
+2. genvmc creates `VMC/<name>.new` exclusively, with the same reservation a new card gets: on BDM the whole card as one extent through the versioned driver API (no room means the job stops at once); on the HDD every zone in one PIOCALLOC request, and here a refusal also stops the job.
+3. genvmc copies every byte of the card into the copy, then reads both back and compares them byte for byte. On BDM the driver then confirms one extent within the 32-bit sector range.
+4. The loader runs the launch's own layout check on the copy (BDM: one extent covering the card; HDD: the PFS map fits).
+5. Only then two renames swap them: the card becomes `VMC/<name>.bak`, the copy becomes `VMC/<name>.bin`. On the HDD the PFS cache is committed after the renames.
+
+The card itself is only ever opened read-only. On any failure or cancellation before the swap, only the `.new` file this rebuild created is removed, and the card is left as it was. Not enough unbroken free space is reported as such, with nothing changed. If the second rename fails, the first is undone. If a rename cannot be undone, both `.bak` (the old card) and `.new` (the verified copy) are kept and the dialog says so; rename one of them back to `.bin` on a PC. On the HDD, if PFS cannot commit the swap, the dialog says the change was not confirmed instead of reporting success. A copy is removed only while the card is confirmed under its own name. The loader never deletes the card or the backup: delete `VMC/<name>.bak` on a PC once the rebuilt card's saves check out. If power is lost between the two renames, `VMC/<name>.bak` holds the card.
+
+Host tests run genvmc's real request, worker, copy and verify code and the loader's real start, layout check and swap over an in-memory filesystem with a fault at every step: reservation refusal, card read error, short copy write, copy reading back different, failed close, driver layout failure, a copy whose layout fails or cannot be checked, each rename failing or reporting failure after it happened, a `.bak` or `.new` already present or appearing during the job, an unreadable folder, and an abort during the copy and during the verify, on both BDM and PFS. A second test writes a card interleaved with other files on disposable FAT32 and exFAT images (the vendored FatFs, fragment walker and allocation guard from modules/bdm/bdmfs_fatfs), confirms the launch check calls it fragmented, gets "not enough unbroken free space" with nothing changed while no 8 MiB run is free, then rebuilds it to one extent with identical bytes and the old card kept as `.bak` across a remount. None of this establishes real-console behaviour; the rebuild has not been run on hardware.
+
 ## Failed-format retry protection
 
 Size alone is not proof of a formatted card. A formatter failure after erasing
