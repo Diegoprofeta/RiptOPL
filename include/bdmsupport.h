@@ -73,6 +73,7 @@ void bdmLoadModules(void);
 void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet);
 
 void bdmInitSemaphore();
+void bdmSetAutoLaunch(int enabled);
 void bdmEnumerateDevices();
 
 void bdmResolveLBA_UDMA(bdm_device_data_t *pDeviceData);

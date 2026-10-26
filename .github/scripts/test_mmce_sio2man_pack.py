@@ -25,6 +25,12 @@ if match is None:
     print('src/platform/system.cpp: unexpected SIO2MAN packing condition: %s' % line)
     sys.exit(1)
 condition = match.group(1)
+# Original #1021: the launch must not select MCEMU (and with it SIO2MAN) for a zero-size VMC image.
+launch_at = system.index('void sysLaunchLoaderElf(')
+launch_flag = re.search(r'    if \(([^\n]+)\)\n        modules \|= CORE_IRX_VMC;', system[launch_at:])
+if launch_flag is None:
+    print('src/platform/system.cpp: launch VMC selection not found')
+    sys.exit(1)
 
 defines = ''.join('#define %s %s\n' % m for m in re.findall(r'(?:#define\s+|constexpr int\s+)(CORE_IRX_\w+)\s*(?:=\s*)?(0x[0-9A-Fa-f]+)', system))
 for name in ('CORE_IRX_MMCE', 'CORE_IRX_VMC', 'CORE_IRX_MX4SIO', 'CORE_IRX_USB', 'CORE_IRX_HDD'):
@@ -45,6 +51,13 @@ static int packs(unsigned int modules, int padEmu)
     gEnablePadEmu = padEmu;
     return (@COND@) ? 1 : 0;
 }
+static unsigned int launch_modules(int discMode, int size_mcemu_irx)
+{
+    unsigned int modules = CORE_IRX_HDD;
+    if (@LAUNCH@)
+        modules |= CORE_IRX_VMC;
+    return modules;
+}
 static int fails;
 #define CHECK(c, m) do { if (!(c)) { printf("FAIL %s\n", m); fails++; } } while (0)
 int main(void)
@@ -63,13 +76,17 @@ int main(void)
     CHECK(!packs(CORE_IRX_MMCE, 1), "MMCE with only PADEMU gets none");
     CHECK(packs(CORE_IRX_ILINK | CORE_IRX_VMC, 0), "iLink VMC keeps SIO2MAN");
     CHECK(packs(CORE_IRX_ETH | CORE_IRX_VMC, 0), "network VMC keeps SIO2MAN");
+    CHECK(!(launch_modules(0, 0) & CORE_IRX_VMC), "both VMC slots off select no MCEMU");
+    CHECK(!packs(launch_modules(0, 0), 0), "an idle HDD launch leaves SIO2MAN to the game (#1021)");
+    CHECK(launch_modules(0, 4096) & CORE_IRX_VMC, "an active VMC selects MCEMU");
+    CHECK(!(launch_modules(1, 4096) & CORE_IRX_VMC), "disc mode never selects MCEMU");
     return fails ? 1 : 0;
 }
 '''
 
 if not failures:
     for flavour, extra in (('standard', ''), ('pademu', '#define PADEMU\n')):
-        program = extra + PROGRAM.replace('@DEFINES@', defines).replace('@COND@', condition)
+        program = extra + PROGRAM.replace('@DEFINES@', defines).replace('@COND@', condition).replace('@LAUNCH@', launch_flag.group(1))
         with tempfile.TemporaryDirectory() as tmp:
             src = Path(tmp) / 'pack.c'
             exe = Path(tmp) / ('pack.exe' if sys.platform == 'win32' else 'pack')
@@ -100,4 +117,4 @@ if 'OPL_MODULE_ID_SIO2MAN' in mmce_case:
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
-print('MMCE launches get no SDK SIO2MAN; USB, HDD and MX4SIO keep it')
+print('MMCE launches get no SDK SIO2MAN; USB, HDD and MX4SIO keep it; idle VMC selects none')

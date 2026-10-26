@@ -1475,6 +1475,7 @@ static void init(void)
     thmInit();
     guiInit();
     ioInit();
+    bdmSetAutoLaunch(0);
     menuInit();
 
     startPads();
@@ -1614,6 +1615,7 @@ void miniInit(int mode)
     configInit(gBootDir[0] ? gBootDir : NULL); // settings live in the boot dir (cwd)
 
     ioInit();
+    bdmSetAutoLaunch(1);
     LOG_ENABLE();
 
     // Settings discovery can need a BDM transport even when the game itself is on APA HDD.

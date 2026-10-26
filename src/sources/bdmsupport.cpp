@@ -42,6 +42,7 @@ int iLinkModLoaded = 0;
 int iLinkManModLoaded = 0;
 int ieee1394ModLoaded = 0;
 int mx4sioModLoaded = 0;
+static int bdmAutoLaunch; // Auto Loading waits for its own mass device; skip menu discovery settles
 int hddModLoaded = 0;
 static int udpbdModLoaded = 0;
 /*
@@ -1221,7 +1222,7 @@ void bdmLoadBlockDeviceModules(void)
     static int mx4sioSecondProbeDone = 0;
     if (!gEnableMX4SIO)
         mx4sioSecondProbeDone = 0;
-    else if (mx4sioModLoaded && !mx4sioSecondProbeDone) {
+    else if (mx4sioModLoaded && !mx4sioSecondProbeDone && !bdmAutoLaunch) {
         char sdcRoot[16];
         if (!bdmGetDeviceRootByType(BDM_TYPE_SDC, sdcRoot, sizeof(sdcRoot))) {
             mx4sioSecondProbeDone = 1;
@@ -1266,7 +1267,7 @@ void bdmLoadBlockDeviceModules(void)
      * remaining fault is something other than "not enough time", and adding delay only hides how
      * little is understood about it. */
     static int usbSecondProbeDone = 0;
-    if (iUSBModLoaded && !usbSecondProbeDone) {
+    if (iUSBModLoaded && !usbSecondProbeDone && !bdmAutoLaunch) {
         usbSecondProbeDone = 1;
         DelayThread(600 * 1000);               // bounded settle for USB enumeration + FAT mount
         bdmProbeMassSlots("after-usb-settle"); // forces FatFs's lazy mount on every slot
@@ -1278,7 +1279,7 @@ void bdmLoadBlockDeviceModules(void)
     static int ilinkProbeDone = 0;
     if (!gEnableILK)
         ilinkProbeDone = 0;
-    else if (iLinkModLoaded && !ilinkProbeDone) {
+    else if (iLinkModLoaded && !ilinkProbeDone && !bdmAutoLaunch) {
         char ilkRoot[16];
         int waitedMs;
 
@@ -1289,6 +1290,13 @@ void bdmLoadBlockDeviceModules(void)
             LOG("[BDM] iLink root %s after ~%d ms\n", waitedMs < 3000 ? "appeared" : "not found", waitedMs);
         bdmForceDeviceRefresh(); // publish either a newly ready root or the final absent result
     }
+}
+
+// Auto Loading retries its own mass device. The menu discovery settles above must not delay its IO
+// drain, nor be consumed if it falls back to the menu, which clears this again.
+void bdmSetAutoLaunch(int enabled)
+{
+    bdmAutoLaunch = enabled;
 }
 
 // Bring up only the common BDM infrastructure. Literal massN: boot resolution uses this path so an

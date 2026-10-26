@@ -1066,7 +1066,8 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
 #else
     const int discMode = 0;
 #endif
-    if (!discMode)
+    // CORE_IRX_VMC also selects our SIO2MAN. Without a VMC image keep the game's own stack.
+    if (!discMode && size_mcemu_irx > 0)
         modules |= CORE_IRX_VMC;
 
     LOG("SYSTEM LaunchLoaderElf loading modules\n");
@@ -1137,8 +1138,8 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
     config->magic[0] = EE_CORE_MAGIC_0;
     config->magic[1] = EE_CORE_MAGIC_1;
 
-    strncpy(config->ExitPath, gExitPath, CORE_EXIT_PATH_MAX_LEN);
-    strncpy(config->GameModeDesc, mode_str, CORE_GAME_MODE_DESC_MAX_LEN);
+    snprintf(config->ExitPath, sizeof(config->ExitPath), "%s", gExitPath);
+    snprintf(config->GameModeDesc, sizeof(config->GameModeDesc), "%s", mode_str);
 
     config->EnableDebug = gEnableDebug;
     config->HDDSpindown = gHDDSpindown;
@@ -1178,7 +1179,7 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
     config->ModStorageStart = ModuleStorage;
     config->ModStorageEnd = ModuleStorageEnd;
 
-    strncpy(config->GameID, filename, CORE_GAME_ID_MAX_LEN);
+    snprintf(config->GameID, sizeof(config->GameID), "%s", filename);
 
     config->_CompatMask = compatflags;
 
