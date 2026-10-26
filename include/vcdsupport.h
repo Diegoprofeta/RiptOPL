@@ -146,6 +146,9 @@ enum {
 //   device's POPS/ folder. BDMA pairs are loose release/device files and are never embedded in the ELF.
 // On -4, if diag != NULL it is filled with a human-readable summary (needed files + which source
 // devices were actually mounted) so the failure can be shown on screen / screenshotted to diagnose.
+// This is the Settings page's manual equip: it installs the first pair it finds, whatever its size.
+// A launch equip installs only the pair this release ships, and returns -5 (copying nothing) when
+// the seek path holds only another release's pair.
 int vcdEquipBdma(int source, int mode, char *diag, int diagSize);
 // Read the equipped variant from mc?:/POPSTARTER/bdma_config.txt (VCD_BDMA_FAT32 if absent).
 int vcdReadBdmaMode(void);
@@ -232,6 +235,8 @@ int vcdPopsNetValuesValid(const vcd_popsnet_t *cfg, int validateSmb, int validat
 int vcdWritePopstarterNetFiles(const vcd_popsnet_t *cfg, int writeSmb, int writeIp);
 
 // Explicit readable POPS folder (including a temporarily mounted APA __common).
+// A launch equip: only the pair this release ships is installed (-5 when that folder holds another
+// release's).
 int vcdEquipBdmaFromPops(const char *popsDir, int mode, char *diag, int diagSize);
 
 // Interim BDM-UDPFS Assault configuration: the IRXs may come from any POPS source,
@@ -300,7 +305,7 @@ public:
 
     // Equip the chosen BDMA variant (copy from SOURCE's POPS/, or remove for FAT32) + write the
     // marker. Reads the custom cache above for the adaptive seek-order pre-probe.
-    int equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir = NULL);
+    int equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir = NULL, int shippedOnly = 0);
 
 private:
     // The io-worker body behind requestDisplayId; ioPutRequest(IO_CUSTOM_SIMPLEACTION, ...) takes
