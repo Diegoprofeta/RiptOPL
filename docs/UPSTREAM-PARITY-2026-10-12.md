@@ -12,6 +12,34 @@ alignment and passes with the aligned bounce buffer, including short reads,
 destination guards and semaphore checks. Aligned reads keep their fast path.
 This does not establish iLink hardware acceptance or a causal link to #63.
 Compiler/package validation and the existing PR queue remain separate gates.
+## Refresh at original `823411d` (2026-10-26)
+
+First-parent merges in `b35ff38c..823411d`, audited against this branch. Every
+row is source/host-tested only; none is hardware-tested.
+
+| Original work | Migration status |
+| --- | --- |
+| #1016 Slow Reads, #1026 BDMA equip pair, #995 ZSO fd 0, #1009 Beat Down defaults | Ported in `16ddf04`, `958c4f1`, `f78e425`, `c8b04e2`. |
+| #991/#983 fragment budget, #980 tab sound, #994/#1015/#986 native VMC extent and Rebuild | Ported in `40a877c`, `81d7eee`, `3c7efe5`, `bab7ceb`. |
+| #1037/#1035/#1017/#1043 UDPFS art and languages, language page | Ported in `4e19fa1`, `8d7d437`, `b03feae`, `38a9f6a`. |
+| #1034 Ember discs.txt, #1038 CRT font size, #1049 RetroGEM keys | Ported in `1f3f743`, `601e497`, `8da926a` + `c72582f`. |
+| #1039 RA mark placement | Ported in `07b4a38`. |
+| #973/#990/#999/#1004 power-off, IGR wakeups, Fatal Fury BA2 | Ported in `bfc9c1c`. |
+| #1022/#1024/#1031/#1042 i.LINK drivers | Ported in `240b84b`. Legacy 23,452-byte driver acceptance removed; 27,145 bytes is current. |
+| #977/#1023 PSBBN Flow | Ported in `08f6eb0`, plus a fix: disk-theme discovery no longer drops a live built-in selection. |
+| #1005 MMCE end of directory | Ported in `f5fa0b2` as an embedded `mmceman_fork`. The ps2build package also lacked the close-slot and ENOENT fixes, so all four ship. |
+| #1044 release build versions | Already covered: every RiptOPL build job checks out with `fetch-depth: 0`. |
+| #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
+| #1047, #998, #1025 | Original-only documentation; nothing to port. |
+
+Remaining gaps found by this audit:
+- The original's 3D `SaveIcon` theme element (needs a triangle draw path).
+- The original's PS1 scan hardening: `cueScanDir` here ignores a mid-listing
+  readdir failure, so a contended scan can publish a partial Ember list instead
+  of keeping the last good one.
+- RA mode/host IP/experimental cards and PS1 watch keys in the RA badge, the
+  INGAMEDIAG freeze report, `-1` dialog hints and `audit_translations.py`.
+
 ## Refresh at original `b35ff38c` (2026-10-18)
 
 New original work after `eab6c37c`:
