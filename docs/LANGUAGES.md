@@ -118,6 +118,11 @@ translation that would read different arguments (upstream French "Auto start" ha
 English has `%i`, which crashed the countdown) is replaced by the English string. The same
 conversions, or fewer of them in the same order, are kept.
 
+`python3 tools/audit_translations.py` reports, per language, how many strings are translated and how
+many fall back to English. With `--strict` (run by the host tests) it fails on an overlay label the
+base does not have, or an overlay string whose conversions differ from English. Community strings
+that differ are listed as warnings, since the loader already shows English for them.
+
 The fork overlays were backfilled from the original project's `lng_fork/` translations, only for
 labels whose English text is identical here and only where an overlay lacked the label. Galician
 and Serbian now have overlays too. These are machine-assisted and still need speaker review.
