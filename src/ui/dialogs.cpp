@@ -1083,6 +1083,11 @@ struct UIItem diaNeutrinoDefaults[] = {
     {UI_BOOL, CFG_NEUTRINO_ELF_ARG, 1, 1, _STR_HINT_NEUTRINO_AUTO_ELF, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
+    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NEUTRINO_SHOW_ARGS}}},
+    {UI_SPACER},
+    {UI_BOOL, CFG_NEUTRINO_SHOW_ARGS, 1, 1, _STR_HINT_NEUTRINO_SHOW_ARGS, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
+
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {"Neutrino Advanced Arguments", -1}}},
     {UI_SPACER},
     {UI_BUTTON, CFG_NEUTRINO_ARGS, 1, 1, _STR_HINT_NEUTRINO_ARGS, 0, 0, {.label = {NULL, _STR_MODIFY}}},

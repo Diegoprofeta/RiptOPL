@@ -453,3 +453,6 @@ translations:
   HINT_SELECTBUTTON: 'Koje dugme potvrđuje: Krstić ili Krug.'
   HINT_XSENSITIVITY: Koliko lako leva palica pomera kursor levo i desno. Isključeno je zanemaruje.
   HINT_YSENSITIVITY: Koliko lako leva palica pomera kursor gore i dole. Isključeno je zanemaruje.
+  NEUTRINO_SHOW_ARGS: Prikaži argumente pokretanja
+  HINT_NEUTRINO_SHOW_ARGS: Pre svakog Neutrino pokretanja prikazuje svaki argument koji će Neutrino dobiti i pita da li da nastavi. Nazad vraća u meni bez pokretanja.
+  NEUTRINO_ARGS_CONFIRM: Neutrino će se pokrenuti sa ovim argumentima. Pokrenuti?

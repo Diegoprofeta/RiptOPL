@@ -543,3 +543,6 @@ translations:
   HINT_SELECTBUTTON: 'Quale tasto conferma: Croce o Cerchio.'
   HINT_XSENSITIVITY: Quanto facilmente la levetta sinistra sposta il cursore a sinistra e a destra. Disattivo la ignora.
   HINT_YSENSITIVITY: Quanto facilmente la levetta sinistra sposta il cursore su e giù. Disattivo la ignora.
+  NEUTRINO_SHOW_ARGS: Mostra gli argomenti di avvio
+  HINT_NEUTRINO_SHOW_ARGS: Prima di ogni avvio con Neutrino, mostra tutti gli argomenti che Neutrino riceverà e chiede se continuare. Indietro torna al menu senza avviare.
+  NEUTRINO_ARGS_CONFIRM: Neutrino partirà con questi argomenti. Avviare?

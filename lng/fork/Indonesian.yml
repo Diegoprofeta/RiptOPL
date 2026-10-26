@@ -567,3 +567,6 @@ translations:
   HINT_SELECTBUTTON: 'Tombol yang menerima: Silang atau Lingkaran.'
   HINT_XSENSITIVITY: Seberapa mudah stik kiri menggerakkan kursor ke kiri dan kanan. Mati mengabaikannya.
   HINT_YSENSITIVITY: Seberapa mudah stik kiri menggerakkan kursor ke atas dan bawah. Mati mengabaikannya.
+  NEUTRINO_SHOW_ARGS: Tampilkan Argumen Peluncuran
+  HINT_NEUTRINO_SHOW_ARGS: Sebelum setiap peluncuran Neutrino, tampilkan semua argumen yang akan diterima Neutrino dan tanyakan apakah lanjut. Kembali kembali ke menu tanpa meluncurkan.
+  NEUTRINO_ARGS_CONFIRM: Neutrino akan mulai dengan argumen ini. Luncurkan?

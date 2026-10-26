@@ -587,3 +587,6 @@ translations:
   HINT_SELECTBUTTON: 'Nút nào để xác nhận: Chéo hay Tròn.'
   HINT_XSENSITIVITY: Cần trái di con trỏ sang trái phải dễ cỡ nào. Tắt thì bỏ qua nó.
   HINT_YSENSITIVITY: Cần trái di con trỏ lên xuống dễ cỡ nào. Tắt thì bỏ qua nó.
+  NEUTRINO_SHOW_ARGS: Hiện tham số chạy
+  HINT_NEUTRINO_SHOW_ARGS: Trước mỗi lần chạy qua Neutrino, hiện mọi tham số Neutrino sẽ nhận và hỏi có tiếp tục không. Quay lại sẽ về menu mà không chạy.
+  NEUTRINO_ARGS_CONFIRM: Neutrino sẽ chạy với các tham số này. Chạy?

@@ -543,3 +543,6 @@ translations:
   HINT_SELECTBUTTON: 'Le bouton qui valide : Croix ou Rond.'
   HINT_XSENSITIVITY: La facilité avec laquelle le stick gauche déplace le curseur à gauche et à droite. Désactivé l'ignore.
   HINT_YSENSITIVITY: La facilité avec laquelle le stick gauche déplace le curseur en haut et en bas. Désactivé l'ignore.
+  NEUTRINO_SHOW_ARGS: Afficher les arguments de lancement
+  HINT_NEUTRINO_SHOW_ARGS: Avant chaque lancement Neutrino, affiche tous les arguments que Neutrino recevra et demande de continuer. Retour revient au menu sans lancer.
+  NEUTRINO_ARGS_CONFIRM: Neutrino va démarrer avec ces arguments. Lancer ?

@@ -1719,6 +1719,7 @@ void guiShowNeutrinoDefaults(void)
     diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
     diaSetEnabled(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, gNeutrinoVideoDefault != 0);
     diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
+    diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_SHOW_ARGS, gNeutrinoShowArgs);
 
     int ret;
 reshow_neutrino:
@@ -1737,6 +1738,7 @@ reshow_neutrino:
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_VIDEO, &gNeutrinoVideoDefault);
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, &gNeutrinoGsmCompDefault);
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
+        diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_SHOW_ARGS, &gNeutrinoShowArgs);
 
         applyConfig(-1, -1, 0);
     }
@@ -2662,6 +2664,7 @@ static int guiSettingsShowLaunch(void)
     diaSetInt(ui, CFG_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
     diaSetEnabled(ui, CFG_NEUTRINO_GSMCOMP, gNeutrinoVideoDefault != 0);
     diaSetInt(ui, CFG_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
+    diaSetInt(ui, CFG_NEUTRINO_SHOW_ARGS, gNeutrinoShowArgs);
     gSettingsShell.beginDialog(ui);
 
 reshow_launch:
@@ -2687,6 +2690,7 @@ reshow_launch:
         diaGetInt(ui, CFG_NEUTRINO_VIDEO, &gNeutrinoVideoDefault);
         diaGetInt(ui, CFG_NEUTRINO_GSMCOMP, &gNeutrinoGsmCompDefault);
         diaGetInt(ui, CFG_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
+        diaGetInt(ui, CFG_NEUTRINO_SHOW_ARGS, &gNeutrinoShowArgs);
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
     }

@@ -565,3 +565,6 @@ translations:
   HINT_SELECTBUTTON: 'Cili buton konfirmon: Kryqi ose Rrethi.'
   HINT_XSENSITIVITY: Sa lehtë e lëviz leva e majtë kursorin majtas dhe djathtas. Fikur e shpërfill.
   HINT_YSENSITIVITY: Sa lehtë e lëviz leva e majtë kursorin lart dhe poshtë. Fikur e shpërfill.
+  NEUTRINO_SHOW_ARGS: Shfaq argumentet e nisjes
+  HINT_NEUTRINO_SHOW_ARGS: Para çdo nisjeje me Neutrino, shfaq çdo argument që do të marrë Neutrino dhe pyet nëse të vazhdojë. Prapa kthehet te menyja pa nisur.
+  NEUTRINO_ARGS_CONFIRM: Neutrino do të niset me këto argumente. Ta nis?

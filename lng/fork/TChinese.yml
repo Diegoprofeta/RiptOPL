@@ -552,3 +552,6 @@ translations:
   HINT_SELECTBUTTON: 哪個按鍵確認：叉或圓圈。
   HINT_XSENSITIVITY: 左搖桿左右移動游標的靈敏度。關閉則忽略它。
   HINT_YSENSITIVITY: 左搖桿上下移動游標的靈敏度。關閉則忽略它。
+  NEUTRINO_SHOW_ARGS: 顯示啟動參數
+  HINT_NEUTRINO_SHOW_ARGS: 每次透過 Neutrino 啟動前，顯示 Neutrino 將收到的全部參數並詢問是否繼續。返回會回到選單而不啟動。
+  NEUTRINO_ARGS_CONFIRM: Neutrino 將以這些參數啟動。要啟動嗎？

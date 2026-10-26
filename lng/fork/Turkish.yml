@@ -547,3 +547,6 @@ translations:
   HINT_SELECTBUTTON: 'Hangi tuşun onayladığı: Çarpı veya Daire.'
   HINT_XSENSITIVITY: Sol çubuğun imleci sola ve sağa ne kadar kolay taşıdığı. Kapalı onu yok sayar.
   HINT_YSENSITIVITY: Sol çubuğun imleci yukarı ve aşağı ne kadar kolay taşıdığı. Kapalı onu yok sayar.
+  NEUTRINO_SHOW_ARGS: Başlatma Argümanlarını Göster
+  HINT_NEUTRINO_SHOW_ARGS: Her Neutrino başlatmasından önce Neutrino'nun alacağı her argümanı gösterir ve devam edilsin mi diye sorar. Geri, başlatmadan menüye döner.
+  NEUTRINO_ARGS_CONFIRM: Neutrino bu argümanlarla başlayacak. Başlatılsın mı?

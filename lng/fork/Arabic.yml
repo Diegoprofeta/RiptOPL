@@ -596,3 +596,6 @@ translations:
   HINT_SELECTBUTTON: 'أي زر يؤكد: العلامة X أو الدائرة.'
   HINT_XSENSITIVITY: مدى سهولة تحريك العصا اليسرى للمؤشر يساراً ويميناً. الإيقاف يتجاهلها.
   HINT_YSENSITIVITY: مدى سهولة تحريك العصا اليسرى للمؤشر أعلى وأسفل. الإيقاف يتجاهلها.
+  NEUTRINO_SHOW_ARGS: عرض وسائط التشغيل
+  HINT_NEUTRINO_SHOW_ARGS: قبل كل تشغيل عبر Neutrino، يعرض كل وسيط سيتلقاه Neutrino ويسأل هل تتابع. الرجوع يعيدك إلى القائمة دون تشغيل.
+  NEUTRINO_ARGS_CONFIRM: سيبدأ Neutrino بهذه الوسائط. تشغيل؟

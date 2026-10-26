@@ -542,3 +542,6 @@ translations:
   HINT_SELECTBUTTON: 決定ボタン：バツか丸か。
   HINT_XSENSITIVITY: 左スティックでカーソルが左右に動く感度。オフでは無視します。
   HINT_YSENSITIVITY: 左スティックでカーソルが上下に動く感度。オフでは無視します。
+  NEUTRINO_SHOW_ARGS: 起動引数を表示
+  HINT_NEUTRINO_SHOW_ARGS: Neutrino で起動するたびに、Neutrino が受け取る引数をすべて表示して続けるか確認します。戻るで起動せずにメニューに戻ります。
+  NEUTRINO_ARGS_CONFIRM: Neutrino はこの引数で起動します。起動しますか？

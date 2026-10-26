@@ -1062,6 +1062,7 @@ void configReadNeutrinoGlobals(config_set_t *configOPL)
     configGetStrCopy(configOPL, CONFIG_OPL_NEUTRINO_ARGS, gNeutrinoArgs, sizeof(gNeutrinoArgs));
     configGetStrCopy(configOPL, CONFIG_OPL_NEUTRINO_PATH, gNeutrinoPath, sizeof(gNeutrinoPath));
     configGetInt(configOPL, CONFIG_OPL_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
+    configGetInt(configOPL, CONFIG_OPL_NEUTRINO_SHOW_ARGS, &gNeutrinoShowArgs);
     // Global default Loader Core (0=<OPL>, 1=Neutrino). Absent in legacy configs -> keep the reset
     // default (0/<OPL>), so existing installs behave exactly as before this key existed.
     configGetInt(configOPL, CONFIG_OPL_DEFAULT_CORE, &gDefaultCoreLoader);
@@ -2072,6 +2073,7 @@ static void _saveConfig()
         configSetInt(configOPL, CONFIG_OPL_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
         configSetInt(configOPL, CONFIG_OPL_NEUTRINO_DEVTYPE, gNeutrinoDevice);
         configSetInt(configOPL, CONFIG_OPL_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
+        configSetInt(configOPL, CONFIG_OPL_NEUTRINO_SHOW_ARGS, gNeutrinoShowArgs);
         configSetInt(configOPL, CONFIG_OPL_ENABLE_UDPBD, gEnableUDPBD);
         // Dual-write: the authoritative unified selector PLUS the three legacy keys (derived shadows),
         // so a config saved by this build still boots correctly on an older OPL that only reads the legacy keys.

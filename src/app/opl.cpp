@@ -189,6 +189,7 @@ int gDefaultCoreLoader;      // global default Loader Core (0=<OPL>, 1=Neutrino)
 int gAutoCreateVmc;          // opt in: create and assign a first-launch PS2 card in slot 1
 int gNeutrinoVideoDefault;   // global default Neutrino -gsm video mode (0=Off..5=1080i x3); per-game $NeutrinoVideo overrides
 int gNeutrinoGsmCompDefault; // global default -gsm ":c" field-flip half (0=off, 1-3=type)
+int gNeutrinoShowArgs;       // default-off: show the composed Neutrino argv and ask before each launch
 int gNeutrinoElfArg;         // default-on (settings key only, no UI): auto-emit -elf=cdrom0: on Neutrino launches
 int gDefaultGameView;
 int gAppsDisplay;
@@ -1426,6 +1427,7 @@ static void setDefaults(void)
     gNeutrinoVideoDefault = 0; // no global -gsm until the user opts in
     gNeutrinoGsmCompDefault = 0;
     gNeutrinoElfArg = 1; // auto-emit the game ELF for Neutrino compatibility lookup by default
+    gNeutrinoShowArgs = 0;
     gPopstarterDevice = POPS_DEV_DEFAULT;
     gPopstarterRetroGemGameID = 1;
     gGameTypeLabels = 0;

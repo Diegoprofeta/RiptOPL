@@ -1,4 +1,9 @@
-"""Compile the real Neutrino argv builder and verify pre-teardown budget refusal."""
+"""Compile the real Neutrino argv builder and verify pre-teardown budget refusal.
+
+Also covers Show Launch Arguments (original): with the toggle on, the preflight shows the exact argv
+the launch will pass -- including a per-game -logo -- and Back stays in the menu without the overflow
+warning. Autolaunch (no GUI) and the real handoff never ask.
+"""
 from pathlib import Path
 import re
 import subprocess
@@ -24,9 +29,14 @@ functions = "\n\n".join(function(sig) for sig in (
     "static int neutrinoArgHasActiveFlag(",
     "static int neutrinoEffectiveBsdfs(",
     "static const char *sysLastPathSeparator(",
+    "static void sysFormatNeutrinoArgv(",
+    "static int sysNeutrinoConfirmArgv(",
     "static int sysRunNeutrinoLaunch(",
     "int sysNeutrinoArgsPreflight(",
 ))
+declined = re.search(r"^#define NEUTRINO_LAUNCH_DECLINED .*$", source, re.M)
+assert declined is not None, "missing NEUTRINO_LAUNCH_DECLINED"
+functions = declined.group(0) + "\n\n" + functions
 
 for filename in ("bdmlaunch.cpp", "hddsupport.cpp", "mmcesupport.cpp", "udpfssupport.cpp"):
     leg = (root / "src/sources" / filename).read_text(encoding="utf-8")
@@ -47,6 +57,7 @@ harness = r'''
 #define LAUNCHDIAG_REFUSE_ARGS 1
 #define LAUNCHDIAG_REFUSE_CORE_ARGV 2
 #define _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW 7
+#define _STR_NEUTRINO_ARGS_CONFIRM 8
 #define NEUTRINO_VMC_SLOTS 2
 typedef struct { char arg[NEUTRINO_VMC_SLOTS][160]; } neutrino_vmc_args_t;
 
@@ -60,6 +71,15 @@ static const char *_l(int id) { lastWarning = id; return ""; }
 static void guiWarning(const char *msg, int secs) { (void)msg; (void)secs; }
 static void launchDiagRefuse(int reason) { (void)reason; refuses++; }
 static void launchDiagMark(int stage) { (void)stage; }
+static int gNeutrinoShowArgs, guiActive = 1, msgAnswer = 1, msgCalls;
+static char msgText[512];
+static int guiIsActive(void) { return guiActive; }
+static int guiConfirmId(int strId, const char *detail) /* host.cpp: "<string>\n\n<detail>", 1 = Accept */
+{
+    msgCalls++;
+    snprintf(msgText, sizeof(msgText), "%s\n\n%s", _l(strId), detail);
+    return msgAnswer;
+}
 static int sysLoadELFKeepIOP(const char *path, const char *args, int argc, char **argv)
 {
     (void)path; (void)args;
@@ -124,6 +144,74 @@ int main(void)
         puts("FAIL actual launch must refuse an overfull argv even if preflight was bypassed");
         failures++;
     }
+    /* Show Launch Arguments: the preview is the composed argv joined by spaces, a spaced entry
+       quoted, and a per-game -logo forwarded at the tail even with the global PS2 Logo off. */
+    const char *expected = "mass0:/NEUTRINO/neutrino.elf -bsd=usb \"-dvd=mass0:/DVD/My Game.iso\" -qb "
+                           "-elf=cdrom0:\\SLUS_123.45;1 -cwd=mass0:/NEUTRINO/ -logo";
+    char want[512];
+    snprintf(want, sizeof(want), "\n\n%s", expected); /* the stub _l() returns "" for the heading */
+    gNeutrinoArgs[0] = '\0';
+    gNeutrinoShowArgs = 1;
+    msgAnswer = 1;
+    int beforeMsgs = msgCalls;
+    beforeLoads = loads;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != 0 ||
+        msgCalls != beforeMsgs + 1 || strcmp(msgText, want) || loads != beforeLoads) {
+        printf("FAIL preview must show the exact argv and let Accept launch\n  got:  [%s]\n  want: [%s]\n", msgText, want);
+        failures++;
+    }
+
+    msgAnswer = 0;
+    beforeMsgs = msgCalls;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != -1 ||
+        msgCalls != beforeMsgs + 1 || lastWarning == _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW || loads != beforeLoads) {
+        puts("FAIL Back on the preview must refuse the launch without the overflow warning");
+        failures++;
+    }
+
+    guiActive = 0; /* autolaunch: nobody can answer, so it launches as configured */
+    beforeMsgs = msgCalls;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != 0 ||
+        msgCalls != beforeMsgs) {
+        puts("FAIL autolaunch must not ask and must not be refused by the preview");
+        failures++;
+    }
+    guiActive = 1;
+
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", many); /* an over-budget argv is refused first */
+    beforeMsgs = msgCalls;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "", 0, 0, 0, 0, NULL) != -1 ||
+        msgCalls != beforeMsgs || lastWarning != _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW) {
+        puts("FAIL an over-budget argv must be refused before any preview");
+        failures++;
+    }
+
+    gNeutrinoArgs[0] = '\0';
+    beforeMsgs = msgCalls;
+    beforeLoads = loads;
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                             "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL, 0) != 0 ||
+        msgCalls != beforeMsgs || loads != beforeLoads + 1 || strcmp(lastArgs[lastArgc - 1], "-logo")) {
+        puts("FAIL the real handoff must not ask again and must carry the per-game -logo");
+        failures++;
+    }
+
+    gNeutrinoShowArgs = 0;
+    beforeMsgs = msgCalls;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != 0 ||
+        msgCalls != beforeMsgs) {
+        puts("FAIL with Show Launch Arguments off the preflight must not ask");
+        failures++;
+    }
+
     /* DVR is a filesystem path, never a bdfs tuple or an automatic quickboot/logo pass. */
     gNeutrinoArgs[0] = '\0';
     beforeLoads = loads;

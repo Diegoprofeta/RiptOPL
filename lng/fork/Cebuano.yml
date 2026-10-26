@@ -571,3 +571,6 @@ translations:
   HINT_SELECTBUTTON: 'Unsang button ang mokumpirma: Cross o Circle.'
   HINT_XSENSITIVITY: Unsa kadali ibalhin sa wala nga stick ang cursor sa wala ug tuo. Ibaliwala kini sa Off.
   HINT_YSENSITIVITY: Unsa kadali ibalhin sa wala nga stick ang cursor pataas ug paubos. Ibaliwala kini sa Off.
+  NEUTRINO_SHOW_ARGS: Ipakita ang mga launch argument
+  HINT_NEUTRINO_SHOW_ARGS: Sa dili pa ang matag paglansad sa Neutrino, ipakita ang matag argument nga madawat sa Neutrino ug mangutana kung magpadayon. Mobalik sa menu ang Back nga walay paglansad.
+  NEUTRINO_ARGS_CONFIRM: Magsugod ang Neutrino gamit kini nga mga argument. Ilansad?

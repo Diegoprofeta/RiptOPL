@@ -43,6 +43,10 @@ public:
     // Ember starting disc from a discs.txt list: its index, or -1 for Back.
     virtual int pickEmberDisc(const char *folder, const struct cue_disc_list *list) = 0;
     virtual int promptRebootIop() = 0;
+    // 1 while the menu can answer a question (0 during autolaunch, before the GUI exists).
+    virtual int active() = 0;
+    // Ask a yes/no question: the string, a blank line, then detail. 1 = Accept.
+    virtual int confirmId(int strId, const char *detail) = 0;
     // The GUI-wide lock (no-op before the GUI exists).
     // The animated plasma behind the menu (a theme can ask for it as its background).
     virtual void drawBackgroundPlasma() = 0;

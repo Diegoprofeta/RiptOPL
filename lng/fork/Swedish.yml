@@ -563,3 +563,6 @@ translations:
   HINT_SELECTBUTTON: 'Vilken knapp som bekräftar: Kryss eller Cirkel.'
   HINT_XSENSITIVITY: Hur lätt vänster spak flyttar markören åt vänster och höger. Av ignorerar den.
   HINT_YSENSITIVITY: Hur lätt vänster spak flyttar markören uppåt och nedåt. Av ignorerar den.
+  NEUTRINO_SHOW_ARGS: Visa startargument
+  HINT_NEUTRINO_SHOW_ARGS: Före varje start via Neutrino visas varje argument som Neutrino får och du tillfrågas om du vill fortsätta. Tillbaka återgår till menyn utan att starta.
+  NEUTRINO_ARGS_CONFIRM: Neutrino startar med de här argumenten. Starta?

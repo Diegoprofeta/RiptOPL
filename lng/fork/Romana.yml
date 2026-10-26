@@ -597,3 +597,6 @@ translations:
   HINT_SELECTBUTTON: 'Ce buton confirmă: X sau Cerc.'
   HINT_XSENSITIVITY: Cât de ușor mută stickul stâng cursorul la stânga și la dreapta. Oprit îl ignoră.
   HINT_YSENSITIVITY: Cât de ușor mută stickul stâng cursorul în sus și în jos. Oprit îl ignoră.
+  NEUTRINO_SHOW_ARGS: Arată argumentele de lansare
+  HINT_NEUTRINO_SHOW_ARGS: Înainte de fiecare lansare prin Neutrino, arată fiecare argument pe care îl va primi Neutrino și întreabă dacă continui. Înapoi revine la meniu fără lansare.
+  NEUTRINO_ARGS_CONFIRM: Neutrino va porni cu aceste argumente. Lansezi?

@@ -549,3 +549,6 @@ translations:
   HINT_SELECTBUTTON: 'Który przycisk zatwierdza: Krzyżyk czy Kółko.'
   HINT_XSENSITIVITY: Jak łatwo lewy drążek przesuwa kursor w lewo i w prawo. Wył. go ignoruje.
   HINT_YSENSITIVITY: Jak łatwo lewy drążek przesuwa kursor w górę i w dół. Wył. go ignoruje.
+  NEUTRINO_SHOW_ARGS: Pokaż argumenty uruchomienia
+  HINT_NEUTRINO_SHOW_ARGS: Przed każdym uruchomieniem przez Neutrino pokazuje każdy argument, który Neutrino otrzyma, i pyta, czy kontynuować. Wstecz wraca do menu bez uruchamiania.
+  NEUTRINO_ARGS_CONFIRM: Neutrino uruchomi się z tymi argumentami. Uruchomić?

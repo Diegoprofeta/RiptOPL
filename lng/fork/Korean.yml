@@ -542,3 +542,6 @@ translations:
   HINT_SELECTBUTTON: '확인 버튼: 가위표 또는 동그라미.'
   HINT_XSENSITIVITY: 왼쪽 스틱으로 커서가 좌우로 움직이는 감도. 끄면 무시합니다.
   HINT_YSENSITIVITY: 왼쪽 스틱으로 커서가 위아래로 움직이는 감도. 끄면 무시합니다.
+  NEUTRINO_SHOW_ARGS: 실행 인수 표시
+  HINT_NEUTRINO_SHOW_ARGS: Neutrino로 실행할 때마다 Neutrino가 받을 모든 인수를 보여 주고 계속할지 묻습니다. 뒤로를 누르면 실행하지 않고 메뉴로 돌아갑니다.
+  NEUTRINO_ARGS_CONFIRM: Neutrino가 이 인수로 시작합니다. 실행할까요?

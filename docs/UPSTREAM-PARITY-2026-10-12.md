@@ -32,6 +32,7 @@ row is source/host-tested only; none is hardware-tested.
 | Original 3D `SaveIcon` element (fork-gaps OR1) | Ported with this refresh. Each source names a PS1 row's VMC folder through `GameSource::ps1SaveDir`, and favourites resolve VMC paths through `rowPrefix`, so the element adds no upward dependency. Ethernet and HDD rows, Ember and POPSTARTER, are covered as in the original. Default off. NOT TESTED on hardware. |
 | Original settings hint sweep (`-1` hints) | Ported with this refresh: 138 dialog rows now carry the original's hint (93 strings, translations carried over). Rows for features RiptOPL does not have yet (DVR, PC CARD CF, RA mode/host IP/experimental cards, Neutrino argument preview) get theirs with those features. |
 | Original `tools/audit_translations.py` | Ported with this refresh and run by the host tests. Fixed on the way: after a build has merged the overlays into `lng_src/`, the original reports a bad overlay string as a community warning, so `--strict` passes it (original issue #1055). |
+| Original Show Launch Arguments (`neutrino_show_args`) | Ported with this refresh. The preflight shows the exact composed argv and Back stays in the menu with no overflow warning; autolaunch and the real handoff never ask. The question goes through `host::ui().confirmId`, so the platform layer gains no UI dependency. Default off. NOT TESTED on hardware. |
 | #1044 release build versions | Already covered: every RiptOPL build job checks out with `fetch-depth: 0`. |
 | #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
 | #1047, #998, #1025 | Original-only documentation; nothing to port. |
@@ -39,8 +40,6 @@ row is source/host-tested only; none is hardware-tested.
 Remaining gaps found by this audit:
 - RA mode/host IP/experimental cards and PS1 watch keys in the RA badge, the
   INGAMEDIAG freeze report.
-- The Neutrino argument preview (`neutrino_show_args`: show the composed argv and ask
-  before each Neutrino launch), from the original's #966 era.
 
 ## Refresh at original `b35ff38c` (2026-10-18)
 

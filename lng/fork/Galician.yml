@@ -464,3 +464,6 @@ translations:
   HINT_SELECTBUTTON: 'Que botón confirma: Cruz ou Círculo.'
   HINT_XSENSITIVITY: Con que facilidade move a panca esquerda o cursor á esquerda e á dereita. Desactivado ignóraa.
   HINT_YSENSITIVITY: Con que facilidade move a panca esquerda o cursor arriba e abaixo. Desactivado ignóraa.
+  NEUTRINO_SHOW_ARGS: Mostrar os argumentos de inicio
+  HINT_NEUTRINO_SHOW_ARGS: Antes de cada inicio con Neutrino, mostra cada argumento que recibirá Neutrino e pregunta se continuar. Volver regresa ao menú sen iniciar.
+  NEUTRINO_ARGS_CONFIRM: Neutrino iniciarase con estes argumentos. Iniciar?

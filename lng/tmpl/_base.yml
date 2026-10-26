@@ -1736,3 +1736,9 @@ gui_strings:
   string: "How easily the left stick moves the cursor left and right. Off ignores it."
 - label: HINT_YSENSITIVITY
   string: "How easily the left stick moves the cursor up and down. Off ignores it."
+- label: NEUTRINO_SHOW_ARGS
+  string: Show Launch Arguments
+- label: HINT_NEUTRINO_SHOW_ARGS
+  string: "Before each Neutrino launch, show every argument Neutrino will receive and ask to continue. Back returns to the menu without launching."
+- label: NEUTRINO_ARGS_CONFIRM
+  string: "Neutrino will start with these arguments. Launch?"

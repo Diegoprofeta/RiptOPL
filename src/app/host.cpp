@@ -52,6 +52,13 @@ public:
     int showVcdUsbMode() override { return guiShowVcdUsbMode(); }
     int pickEmberDisc(const char *folder, const struct cue_disc_list *list) override { return guiShowEmberDiscList(folder, list); }
     int promptRebootIop() override { return guiPromptRebootIop(); }
+    int active() override { return guiIsActive(); }
+    int confirmId(int strId, const char *detail) override
+    {
+        char text[480];
+        snprintf(text, sizeof(text), "%s\n\n%s", _l(strId), detail);
+        return guiMsgBox(text, 1, NULL);
+    }
     void drawBackgroundPlasma() override { guiDrawBGPlasma(); }
     void lock() override { guiLock(); }
     void unlock() override { guiUnlock(); }

@@ -547,3 +547,6 @@ translations:
   HINT_SELECTBUTTON: 'Welche Taste bestätigt: Kreuz oder Kreis.'
   HINT_XSENSITIVITY: Wie leicht der linke Stick den Cursor nach links und rechts bewegt. Aus ignoriert ihn.
   HINT_YSENSITIVITY: Wie leicht der linke Stick den Cursor nach oben und unten bewegt. Aus ignoriert ihn.
+  NEUTRINO_SHOW_ARGS: Startargumente zeigen
+  HINT_NEUTRINO_SHOW_ARGS: Zeigt vor jedem Neutrino-Start alle Argumente, die Neutrino bekommt, und fragt, ob es weitergehen soll. Zurück kehrt ohne Start ins Menü zurück.
+  NEUTRINO_ARGS_CONFIRM: Neutrino startet mit diesen Argumenten. Starten?

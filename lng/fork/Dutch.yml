@@ -606,3 +606,6 @@ translations:
   HINT_SELECTBUTTON: 'Welke knop bevestigt: Kruis of Cirkel.'
   HINT_XSENSITIVITY: Hoe makkelijk de linkerstick de cursor naar links en rechts beweegt. Uit negeert hem.
   HINT_YSENSITIVITY: Hoe makkelijk de linkerstick de cursor omhoog en omlaag beweegt. Uit negeert hem.
+  NEUTRINO_SHOW_ARGS: Startargumenten tonen
+  HINT_NEUTRINO_SHOW_ARGS: Toont vóór elke start via Neutrino elk argument dat Neutrino krijgt en vraagt of je wilt doorgaan. Terug keert terug naar het menu zonder te starten.
+  NEUTRINO_ARGS_CONFIRM: Neutrino start met deze argumenten. Starten?

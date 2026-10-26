@@ -49,6 +49,8 @@ struct NullUi final: UiServices
     int showVcdUsbMode() override { return 0; }
     int pickEmberDisc(const char *, const struct cue_disc_list *) override { return -1; }
     int promptRebootIop() override { return 0; }
+    int active() override { return 0; }
+    int confirmId(int, const char *) override { return 0; }
     void drawBackgroundPlasma() override {}
     void lock() override {}
     void unlock() override {}

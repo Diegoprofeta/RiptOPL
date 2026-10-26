@@ -185,6 +185,7 @@ extern int gAutoCreateVmc;
 extern int gNeutrinoVideoDefault;
 extern int gNeutrinoGsmCompDefault;
 extern int gNeutrinoElfArg;
+extern int gNeutrinoShowArgs; // show the composed Neutrino argv and ask before each launch
 extern char gNeutrinoArgs[256];
 extern char gNeutrinoPath[256];
 // Default game-list view for VCD-capable device pages.

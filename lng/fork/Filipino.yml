@@ -581,3 +581,6 @@ translations:
   HINT_SELECTBUTTON: 'Aling button ang nagkukumpirma: Cross o Circle.'
   HINT_XSENSITIVITY: Gaano kadaling ilipat ng kaliwang stick ang cursor pakaliwa at pakanan. Binabalewala ito ng Off.
   HINT_YSENSITIVITY: Gaano kadaling ilipat ng kaliwang stick ang cursor pataas at pababa. Binabalewala ito ng Off.
+  NEUTRINO_SHOW_ARGS: Ipakita ang mga launch argument
+  HINT_NEUTRINO_SHOW_ARGS: Bago ang bawat paglulunsad sa Neutrino, ipinapakita ang bawat argument na matatanggap ng Neutrino at nagtatanong kung magpapatuloy. Ibinabalik ka ng Back sa menu nang hindi naglulunsad.
+  NEUTRINO_ARGS_CONFIRM: Magsisimula ang Neutrino gamit ang mga argument na ito. Ilunsad?

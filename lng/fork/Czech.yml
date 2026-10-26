@@ -541,3 +541,6 @@ translations:
   HINT_SELECTBUTTON: 'Které tlačítko potvrzuje: Křížek, nebo Kroužek.'
   HINT_XSENSITIVITY: Jak snadno levá páčka posouvá kurzor doleva a doprava. Vypnuto ji ignoruje.
   HINT_YSENSITIVITY: Jak snadno levá páčka posouvá kurzor nahoru a dolů. Vypnuto ji ignoruje.
+  NEUTRINO_SHOW_ARGS: Zobrazit spouštěcí argumenty
+  HINT_NEUTRINO_SHOW_ARGS: Před každým spuštěním přes Neutrino ukáže všechny argumenty, které Neutrino dostane, a zeptá se, zda pokračovat. Zpět se vrátí do menu bez spuštění.
+  NEUTRINO_ARGS_CONFIRM: Neutrino se spustí s těmito argumenty. Spustit?
