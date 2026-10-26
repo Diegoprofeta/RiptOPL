@@ -902,6 +902,30 @@ int isHiddenArtworkCache(const image_cache_t *cache)
            (!gEnableLogoArt && strcmp(cache->suffix(), "LGO") == 0);
 }
 
+// The id-keyed probe with the name-keyed fallback. The row has one cache slot for both values.
+static GSTEXTURE *ps1IdArt(image_cache_t *cache, item_list_t *list, int *cacheId, int *cacheUid, char *id, char *name, int isPriority)
+{
+    // UID alone cannot tell which value owns the slot: when another value does (or an absence is
+    // parked with no value attached), let reunion-by-value find the id's own slot.
+    if (*cacheId == -2 || cache->slotKeyedOther(*cacheId, id))
+        *cacheId = -1;
+    GSTEXTURE *idTex = cacheGetTextureEx(cache, list, cacheId, cacheUid, id, isPriority);
+    if (idTex != NULL || *cacheId != -2)
+        return idTex; // resident, or still loading: adopted on a later frame
+
+    // The id art is parked absent for this fail generation. That memo belongs to the id value: set
+    // it aside so it cannot shadow the name fallback, and restore it only when the name probe left
+    // the slot untouched (a loading or resident name entry owns the slot).
+    int parkId = *cacheId, parkUid = *cacheUid;
+    *cacheId = -1;
+    GSTEXTURE *nameTex = cacheGetTextureEx(cache, list, cacheId, cacheUid, name, isPriority);
+    if (*cacheId == -1) {
+        *cacheId = parkId;
+        *cacheUid = parkUid;
+    }
+    return nameTex;
+}
+
 GSTEXTURE *getGameImageTextureEx(image_cache_t *cache, void *support, struct submenu_item *item, int isPriority)
 {
     // Folder browsing: a folder row has no cover art (and no startup key). Never route it through the
@@ -931,7 +955,19 @@ GSTEXTURE *getGameImageTextureEx(image_cache_t *cache, void *support, struct sub
         if (startup == NULL || startup[0] == '\0')
             return NULL;
 
-        return cacheGetTextureEx(cache, list, &item->cache_id[cache->userId()], &item->cache_uid[cache->userId()], startup, isPriority);
+        int *cacheId = &item->cache_id[cache->userId()];
+        int *cacheUid = &item->cache_uid[cache->userId()];
+        char id[VCD_ID_MAX];
+
+        // PS1 rows on device pages (original #1049): the RetroGEM disc id is the PRIMARY art key --
+        // ART/<id>_COV.png, the rule a PS2 title gets from its disc id -- so PSBBN/RetroGEM packs
+        // work without renaming a library. The row name stays the fallback, so existing name art
+        // keeps showing. Favourites/Apps are excluded: favGetArtMode matches this value against fav
+        // identities. The id resolves off-thread into the memo; the request makes that happen even
+        // without an ItemText element. This only changes which file a cover is READ from.
+        if (gsOf(list)->ps1ArtId(list, item->id, startup, id, sizeof(id)))
+            return ps1IdArt(cache, list, cacheId, cacheUid, id, startup, isPriority);
+        return cacheGetTextureEx(cache, list, cacheId, cacheUid, startup, isPriority);
     }
 
     return NULL;

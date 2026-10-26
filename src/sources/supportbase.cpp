@@ -1209,6 +1209,44 @@ config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const
         }
     }
 
+    // PS1 metadata fallback (both cores), TITLE ONLY (original #1049): an installer-written
+    // CFG/<RetroGEM id>.cfg may carry Title (the CFG Titles list override) for every row of the same
+    // game, whatever the row is called. Title only -- a settings key never crosses from an id-keyed
+    // file; read-only -- CFG/<name>.cfg stays the save target; zero disc IO -- the memo answers from
+    // the free filename parse or an id the art path already verified in the background, which
+    // keeps the CFG Titles all-rows pass from opening disc images. It runs even when the name cfg
+    // exists without a Title: a settings file must not silence display metadata.
+    if (isPs1) {
+        const char *title = NULL;
+        char metaKey[VCD_ID_MAX];
+        int haveMetaKey = 0;
+
+        if (!configGetStr(config, "Title", &title) || title == NULL || title[0] == '\0') {
+            haveMetaKey = ps1RowIdCached(game->name, isVcd ? PS1_ROW_VCD : PS1_ROW_CUE, metaKey, sizeof(metaKey));
+            if (haveMetaKey && isVcd && !configLoaded) {
+                // The compatibility fallback above already read this parsed-id CFG. A different
+                // verified id can still supply Title when that fallback had none.
+                char fallbackKey[VCD_ID_MAX];
+                if (vcdExtractGameId(game->name, fallbackKey, sizeof(fallbackKey)) && !strcmp(metaKey, fallbackKey))
+                    haveMetaKey = 0;
+            }
+        }
+        if (haveMetaKey) {
+            snprintf(path, sizeof(path), "%sCFG%s%s.cfg", prefix, sep, metaKey);
+            config_set_t *meta = configAlloc(0, NULL, path);
+            if (meta != NULL) {
+                const char *metaTitle = NULL;
+                if (configRead(meta) && configGetStr(meta, "Title", &metaTitle) && metaTitle != NULL && metaTitle[0] != '\0') {
+                    bool wasModified = config->modified();
+                    configSetStr(config, "Title", metaTitle);
+                    if (!wasModified)
+                        config->clearModified(); // metadata only: never dirties the name cfg
+                }
+                configFree(meta);
+            }
+        }
+    }
+
     // Get game size if not already set (deferred off the scroll path; see sbConfigStatSizeEnabled). A .VCD (PS1) has
     // no meaningful ISO size and its file lives in POPS/, not CD/DVD/, so statting the CD/DVD path always
     // misses, leaves sizeMB at 0, never caches, and re-probes the shared MMCE bus on every info entry (#120).

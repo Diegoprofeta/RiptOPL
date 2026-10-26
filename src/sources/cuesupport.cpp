@@ -855,26 +855,33 @@ int CueSupport::gameHasImage(const char *devPrefix, const char *name)
     return result;
 }
 
-void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name)
+int cueResolveFirstDiscImage(const char *devPrefix, const char *name, char *out, int outSize)
 {
     cue_disc_list_t *list = NULL;
+    int count, resolved;
+
+    // A multi-disc folder is identified by disc 1 -- the first discs.txt entry -- whichever disc
+    // starts, matching the RetroGEM convention instead of whichever CUE readdir lists first.
+    count = cueReadDiscList(devPrefix, name, &list);
+    if (count > 0)
+        resolved = cueBuildDiscPath(devPrefix, name, list->names[0], out, outSize);
+    else
+        resolved = count == 0 && cueResolveGameImage(devPrefix, name, out, outSize) == 1;
+    free(list);
+    return resolved;
+}
+
+void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name)
+{
     char imagePath[640];
     char gameID[RETROGEM_GAMEID_MAX];
-    int count, resolved;
 
     if (!gPopstarterRetroGemGameID || devPrefix == NULL || name == NULL || name[0] == '\0')
         return;
 
-    // Best-effort launch metadata, never a gate. A multi-disc folder reports disc 1 -- the first
-    // discs.txt entry -- whichever disc starts, so the ID matches the RetroGEM convention instead of
-    // whichever CUE readdir happens to list first.
-    count = cueReadDiscList(devPrefix, name, &list);
-    if (count > 0)
-        resolved = cueBuildDiscPath(devPrefix, name, list->names[0], imagePath, sizeof(imagePath));
-    else
-        resolved = count == 0 && cueResolveGameImage(devPrefix, name, imagePath, sizeof(imagePath)) == 1;
-    free(list);
-    if (resolved && retrogemGetPs1ImageGameID(imagePath, gameID, sizeof(gameID)) && gameID[0] != '\0')
+    // Best-effort launch metadata, never a gate. The art/CFG memo resolves the same image.
+    if (cueResolveFirstDiscImage(devPrefix, name, imagePath, sizeof(imagePath)) &&
+        retrogemGetPs1ImageGameID(imagePath, gameID, sizeof(gameID)) && gameID[0] != '\0')
         displayRetroGemGameID(gameID, 2);
 }
 
@@ -981,6 +988,9 @@ static int cueFillGameListUnsorted(const char *devPrefix, base_game_info_t **out
         snprintf(games[i].extension, sizeof(games[i].extension), "%s", CUE_ROW_EXTENSION);
         games[i].parts = 1;
         games[i].format = GAME_FORMAT_ISO; // harmless; the row's extension gates the launch path
+        // Share the PS1-row id memo the VCD rows use: name + device root, string work only -- the
+        // RetroGEM art/CFG id for this row resolves lazily from here, never on the scan path.
+        gVcdSupport.noteScanDir(entries[i].name, devPrefix, PS1_ROW_CUE);
     }
 
     free(entries);

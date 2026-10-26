@@ -62,6 +62,11 @@ public:
     virtual int sourceId(item_list_t *itemList, int id);
     virtual int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet);
 
+    // RetroGEM art key for a PS1 row on a device page (original #1049): 1 and the row's disc id --
+    // disc-verified, or the free filename parse until the queued background verify lands. 0 for
+    // PS2 rows, Favourites and Apps. Never device IO on the calling (render) thread.
+    int ps1ArtId(item_list_t *itemList, int id, const char *startup, char *out, int outSize);
+
     bool hasPrefix() const { return !(caps_ & OMIT_PREFIX); }
     bool hasGame() const { return !(caps_ & OMIT_GAME); }
     bool hasDelete() const { return !(caps_ & OMIT_DELETE); }

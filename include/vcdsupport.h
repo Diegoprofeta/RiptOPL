@@ -45,6 +45,23 @@ int vcdPopsPartitionTitleOffset(const char *label);
 
 
 
+// Which PS1 core a memo row belongs to (original #1049). The two libraries can hold the same display
+// name (one game kept for both cores is the expected case), so the memo keys on name AND kind.
+enum {
+    PS1_ROW_VCD = 0, // POPSTARTER disc image, scanned from its POPS directory
+    PS1_ROW_CUE      // Ember game folder, scanned from a device root (dir = devPrefix)
+};
+
+// METADATA key for art and CFG Title, for BOTH cores. Row identity does NOT change: launch, rename,
+// Favourites and settings keys stay the row name.
+//   ps1RowIdCached -- best id WITHOUT device IO: the disc-verified id when resolved, else the strict
+//     filename parse (a PSBBN/BatchKit-style name supplies the id for free). 0 = unknown.
+//   ps1RowIdRequest -- queue a background disc verify (the caption's one-slot worker). Call on the
+//     render path; the answer lands in the memo and the next lookup upgrades. Never opens the image
+//     synchronously, and verifies a parsed name too, so art matches the id the barcode reports.
+int ps1RowIdCached(const char *name, int kind, char *idOut, int idSize);
+void ps1RowIdRequest(const char *name, int kind);
+
 // Render-thread half of the caption id (#380): returns the ALREADY-resolved id from the session
 // memo, 0 if not yet resolved. Never touches the device, never queues -- safe to call every frame.
 int vcdDisplayIdCached(const char *name, char *idOut, int idSize);
@@ -285,18 +302,22 @@ class VcdSupport
 {
 public:
     // ---- disc-id memo + async resolve slot (#380) ----
-    // Scan-side hook: remember which directory a scanned VCD lives in (STRING WORK ONLY -- the scan
-    // path must never touch the device).
-    void noteScanDir(const char *name, const char *dirPath);
+    // Scan-side hook: remember which directory a scanned PS1 row lives in (STRING WORK ONLY -- the
+    // scan path must never touch the device). A .VCD row passes its directory, a .CUE row the device
+    // root (PS1_ROW_CUE).
+    void noteScanDir(const char *name, const char *dirPath, int kind = PS1_ROW_VCD);
     // Forget every remembered id and scan directory, so swapped media is not described by the
     // previous disc. Cheap: ids re-resolve lazily as rows are settled on.
     void invalidateGameIds();
     // Render-thread half: returns the ALREADY-resolved id from the memo, 0 if not yet resolved.
     // Never touches the device, never queues -- safe to call every frame.
     int displayIdCached(const char *name, char *idOut, int idSize);
-    // Ask for a settled VCD row's id to be resolved off-thread (one queued resolve per row per
-    // session, memo-deduped). A cold memo with a request already in flight is a no-op.
-    void requestDisplayId(const char *name);
+    // Ask for a row's id to be resolved off-thread (one queued resolve per row per session,
+    // memo-deduped). A cold memo with a request already in flight is a no-op. verifyParsedName=0
+    // keeps the caption's zero-IO contract for well-named rows; the metadata path passes 1.
+    void requestRowId(const char *name, int kind, int verifyParsedName);
+    // ps1RowIdCached's body: memo hit or free filename parse, never device IO.
+    int rowIdCached(const char *name, int kind, char *idOut, int idSize);
 
     // ---- tier-1 custom POPSTARTER.ELF cache ----
     // Resolve gPopstarterPath to a file, remembering the value last resolved and the file it
@@ -312,14 +333,15 @@ private:
     // a plain function pointer, so the request is handed in through this static thunk.
     static void resolveQueuedDisplayIdThunk();
     void resolveQueuedDisplayId();
-    struct vcd_id_memo *idMemoFind(const char *name);
-    // The device IO behind the memo: resolves one VCD's disc id, memoizing hit AND miss.
-    int resolveDisplayId(const char *name, char *idOut, int idSize);
+    struct vcd_id_memo *idMemoFind(const char *name, int kind);
+    // The device IO behind the memo: resolves one row's disc id, memoizing hit AND miss.
+    int resolveRowId(const char *name, int kind, char *idOut, int idSize);
 
     struct vcd_id_memo *memoHead_ = NULL;
     int memoCount_ = 0;
     char idReqName_[256] = {};                         // one-slot request: the GUI writes it, the io worker reads + clears
     volatile int idReqPending_ = 0;                    // DIntr/EIntr-guarded, like the SFX dispatch ring
+    volatile unsigned char idReqKind_ = PS1_ROW_VCD;   // the queued row's core: same-named rows never cross
     char customPopsFor_[sizeof(gPopstarterPath)] = {}; // gPopstarterPath value the cache resolved for
     char customPopsElf_[256] = {};                     // the file it resolved to ("" on a miss)
 };

@@ -27,7 +27,7 @@ cue_functions = '\n\n'.join(function(cue, signature) for signature in (
     'static char cueSep(', 'static const char *cueEmberFolder(', 'static void cueBuildGamesDir(',
     'int cueNameLaunchable(', 'int cueBuildDiscArgument(', 'int cueBuildDiscPath(',
     'static int cueAppendDiscLine(', 'static int cueConfirmDiscListAbsent(', 'int cueReadDiscList(',
-    'int cueResolveGameImage(', 'void cuePrepareRetroGemBarcode(',
+    'int cueResolveGameImage(', 'int cueResolveFirstDiscImage(', 'void cuePrepareRetroGemBarcode(',
 ))
 exts = re.search(r'static const char \*const cueDiscExts\[\] = \{[^}]*\};', cue).group()
 constants = '\n'.join(re.findall(r'^#define (?:CUE_(?:NAME_MAX|NAME_LAUNCH_MAX|MAX_DISCS)|EMBER_(?:FOLDER_DEFAULT|GAMES_FOLDER))\s+\S+', header, re.M))
@@ -182,6 +182,6 @@ for path, signature, prefix in (
     at = body.index('cuePrepareRetroGemBarcode(%s);' % prefix)
     assert body.index('cuePrepareLaunch(') < at and body.index('cueGameHasImage(') < at, path
     assert at < body.index('host::app().deinit('), path
-barcode = function(cue, 'void cuePrepareRetroGemBarcode(')
+barcode = function(cue, 'int cueResolveFirstDiscImage(')
 assert barcode.index('cueReadDiscList(') < barcode.index('cueResolveGameImage('), 'discs.txt decides disc 1'
 print('PASS: five Ember legs emit the RetroGEM barcode before teardown')

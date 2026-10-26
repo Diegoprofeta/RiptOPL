@@ -35,6 +35,24 @@ continue to use the original game folder.
 This uses Ember Beta 2's documented `folder/disc-file` argument. RiptOPL only selects
 the starting file; Ember's build determines its in-game swapping behavior. The public
 README documents explicit file selection but does not currently specify `discs.txt`'s
+in-game mapping. Use the matching Ember build when testing that behavior.
+
+## RetroGEM / PSBBN disc IDs for artwork and titles
+
+Each PS1 row also has a disc ID: the serial in the image's `SYSTEM.CNF` (for Ember, disc 1:
+the first `discs.txt` entry, else the CUE Ember would pick). It is the same ID the RetroGEM
+barcode reports at launch. A well-named row (`SLUS_012.34.Crash.VCD`) gives a provisional ID
+for free, and the image is read once per session in the background to confirm it.
+
+- **Artwork** looks for `ART/<ID>_COV.png` (and the other art suffixes) first, then falls
+  back to the row name, so PSBBN/RetroGEM art packs work without renaming a library and
+  existing name-keyed art keeps working. Favourites and Apps keep name-keyed art.
+- **Titles**: when a row's own `CFG/<name>.cfg` has no `Title`, a `Title` in `CFG/<ID>.cfg`
+  is shown instead. Only `Title` is taken from that file; settings are still read from and
+  saved to `CFG/<name>.cfg`, and the ID file is never written.
+
+The title lookup does no disc IO: it uses the filename ID or an ID the artwork path has
+already confirmed, so an ID-only title may appear after the row's cover has been looked up.
 
 ## 1. PS2 and PS1 libraries on each device
 

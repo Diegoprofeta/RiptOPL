@@ -171,6 +171,11 @@ int cueGameHasImage(const char *devPrefix, const char *name);
 // path, 0 if readable but empty, -1 if the folder could not be probed. Identity stays the folder.
 int cueResolveGameImage(const char *devPrefix, const char *name, char *out, int outSize);
 
+// The image that identifies a game folder: disc 1 (the first discs.txt entry), else the image Ember
+// itself picks. 1 and the full path; 0 when unresolved or discs.txt is malformed. The barcode and the
+// RetroGEM art/CFG memo both use it, so metadata always matches the ID reported at launch.
+int cueResolveFirstDiscImage(const char *devPrefix, const char *name, char *out, int outSize);
+
 // Resolve the launched game's PS1 serial (disc 1: the first discs.txt entry, else Ember's image)
 // and emit the RetroGEM optical barcode. Best-effort: no GameID or read failure blocks Ember.
 void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name);
