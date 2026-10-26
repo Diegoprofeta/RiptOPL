@@ -1878,6 +1878,10 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     }
     cueApplySettings("pfs0:/", name, configSet); // best-effort marker, never a launch gate -- needs the RDWR mount
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode("pfs0:/", name);
+
     // Past this point pfs0: stays where it is and IO stays blocked; deinit re-blocks anyway.
     host::app().deinit(UNMOUNT_EXCEPTION | KEEPIOP_EXCEPTION, itemList->mode);
     sysLaunchEmber(emberElf, launchName);

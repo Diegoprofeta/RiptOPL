@@ -902,6 +902,10 @@ void MmceSource::launchCue(item_list_t *itemList, const char *cueName, config_se
         return;
     }
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(ps1Root, cueName);
+
     // UNMOUNT_EXCEPTION is load-bearing: Ember cannot remount the card it reads the game from.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);
     sysLaunchEmber(emberElf, launchName);

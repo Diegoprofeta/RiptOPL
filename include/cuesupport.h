@@ -167,6 +167,14 @@ void cueApplySettings(const char *devPrefix, const char *name, config_set_t *con
 // folder cannot be read at all (never block a launch on a probe that itself failed).
 int cueGameHasImage(const char *devPrefix, const char *name);
 
+// The exact image Ember would select for this folder (.cue, then .exe, then .bin). 1 and the full
+// path, 0 if readable but empty, -1 if the folder could not be probed. Identity stays the folder.
+int cueResolveGameImage(const char *devPrefix, const char *name, char *out, int outSize);
+
+// Resolve the launched game's PS1 serial (disc 1: the first discs.txt entry, else Ember's image)
+// and emit the RetroGEM optical barcode. Best-effort: no GameID or read failure blocks Ember.
+void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name);
+
 // 1 when a published row is an Ember title rather than a POPSTARTER one. THE row-kind test; use it
 // for launch dispatch and art fallback instead of asking which view the page is on.
 int cueIsCueEntry(const base_game_info_t *game);
@@ -198,9 +206,8 @@ int ps1GameListNeedsRetry(void);
 int ps1FillGameList(const char *devPrefix, base_game_info_t **outGames);
 
 // The CUE support instance (defined in src/sources/cuesupport.cpp). The module is deliberately
-// stateless -- every helper works on its parameters and the published lists live in the callers --
-// except the table of extensions Ember's io_find_disc accepts, which the launch-path image probe
-// matches against. That table and the probe are members of this one instance. The settings.txt
+// stateless -- every helper works on its parameters and the published lists live in the callers.
+// The launch-path image probe is its one member; it shares cueResolveGameImage with the barcode. The settings.txt
 // rewrite family and the scan/list builders stay free functions: cueApplySettings, cueNameLaunchable
 // and the cueRewriteSettings/cueLineSetsKey/cueWantSetting helpers are extracted into C test
 // harnesses by exact signature (.github/scripts/test_ember_settings.py) and must keep compiling
@@ -211,12 +218,6 @@ public:
     // Does this game folder actually hold something Ember can mount? Same contract as the
     // cueGameHasImage forwarder above; defined in src/sources/cuesupport.cpp.
     int gameHasImage(const char *devPrefix, const char *name);
-
-private:
-    // The extensions Ember's io_find_disc accepts, in ITS priority order (.cue beats .exe beats
-    // .bin). We only test presence, so the order is documentation rather than logic -- but it is
-    // the reason a folder holding just a .bin is still a valid game.
-    static constexpr const char *discExts_[] = {".cue", ".exe", ".bin"};
 };
 
 extern CueSupport gCueSupport;

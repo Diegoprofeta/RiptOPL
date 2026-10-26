@@ -17,272 +17,593 @@
 #include "include/vcdsupport.h"
 #include "include/retrogem.h"
 
-RetroGEM gRetroGEM;
+// PS1 GameID resolver used by both POPSTARTER VCD and Ember image launches.
+//
+// CosmicScale supplied his PSBBN Definitive Project title-ID extractor directly for this work and
+// granted permission to use/adapt its GameID extraction logic. Keep the console implementation on
+// that standard path: read ISO9660, find SYSTEM.CNF, parse BOOT/BOOT2, and normalize the executable
+// serial. CUE sheets are followed to their data-track image first.
+//
+// POPStarter VCD needs one format-specific adjustment before applying the same extraction: the disc
+// image begins after its 1 MiB VCD header. Ember BIN images begin at sector 0.
+#define PS1_SECTOR_DATA_SIZE     2048
+#define PS1_RAW_SECTOR_SIZE      2352
+#define PS1_VCD_IMAGE_OFFSET     0x100000L
+#define PS1_PVD_LBA              16
+#define PS1_PVD_SEARCH_SECTORS   16
+#define PS1_ROOT_RECORD_OFFSET   156
+#define PS1_MAX_ROOT_DIR_SECTORS 64
+#define PS1_SYSTEM_CNF_MAX       4096
 
-const RetroGEM::genericGameId RetroGEM::genericIds_[] = {
-    // Known PS1 generic volume creation timestamps
-    {"1995121500000000", "SLUS_000.01"}, // Example entry template
-    {"", ""}                             // Sentinel
-};
+typedef enum {
+    PS1_IMAGE_COOKED_2048 = 0,
+    PS1_IMAGE_RAW_2352
+} ps1_image_layout_t;
 
-int retrogemGetVcdGameID(const char *vcdPath, char *gameID, size_t maxLen)
+typedef struct
 {
-    return gRetroGEM.getVcdGameId(vcdPath, gameID, maxLen);
+    FILE *file;
+    long baseOffset;
+    ps1_image_layout_t layout;
+} ps1_image_reader_t;
+
+static unsigned int retrogemReadLe32(const unsigned char *p)
+{
+    return (unsigned int)p[0] |
+           ((unsigned int)p[1] << 8) |
+           ((unsigned int)p[2] << 16) |
+           ((unsigned int)p[3] << 24);
 }
 
-void displayRetroGemGameID(const char *gameID, int frames)
+static int retrogemTitlePrefixChar(char c)
 {
-    gRetroGEM.displayGameId(gameID, frames);
+    return isalnum((unsigned char)c);
 }
 
-// Check if a character is valid in a title ID (alpha, digit, '_', '.', '-')
-int RetroGEM::isValidIdChar(char c)
+int retrogemNormalizeGameID(const char *raw, char *out, size_t maxLen)
 {
-    return (isalnum((unsigned char)c) || c == '_' || c == '.' || c == '-');
-}
-
-// Clean and normalize a string into an 11-char PS1 Game ID (e.g., SLUS_000.01 or SLUS-00001)
-int RetroGEM::cleanTitleId(const char *raw, char *out, size_t maxLen)
-{
-    size_t i, len;
-    char tmp[32];
-    const char *p = raw;
-
-    if (raw == NULL || out == NULL || maxLen < 12)
+    char cleaned[12];
+    size_t n = 0, i;
+    if (out == NULL || maxLen == 0)
         return 0;
     out[0] = '\0';
-
-    // Skip leading prefix (e.g. cdrom0:\ or cdrom:\ or XX. or SB.)
-    if (!strncmp(p, "cdrom0:\\", 8))
-        p += 8;
-    else if (!strncmp(p, "cdrom:\\", 7))
-        p += 7;
-    else if (!strncmp(p, "XX.", 3) || !strncmp(p, "SB.", 3))
-        p += 3;
-
-    // Skip leading slashes or spaces
-    while (*p == '\\' || *p == '/' || *p == ' ')
-        p++;
-
-    len = 0;
-    while (p[len] != '\0' && p[len] != ';' && p[len] != ' ' && p[len] != '\r' && p[len] != '\n' && len < sizeof(tmp) - 1) {
-        tmp[len] = p[len];
-        len++;
-    }
-    tmp[len] = '\0';
-
-    // Strip trailing .ELF or .VCD extension if present
-    if (len >= 4 && (!strcasecmp(&tmp[len - 4], ".elf") || !strcasecmp(&tmp[len - 4], ".vcd"))) {
-        tmp[len - 4] = '\0';
-        len -= 4;
-    }
-
-    if (len < 8)
+    if (raw == NULL)
         return 0;
-
-    // Standard PS1 ID shapes: AAAA_NNN.NN (11 chars) or AAAA-NNNNN (10 chars -> format to AAAA_NNN.NN or keep 11)
-    if (len >= 11 && isValidIdChar(tmp[0]) && isValidIdChar(tmp[1]) && isValidIdChar(tmp[2]) && isValidIdChar(tmp[3])) {
-        for (i = 0; i < 11 && tmp[i] != '\0'; i++)
-            out[i] = tmp[i];
-        out[i] = '\0';
-    } else if (len == 10 && tmp[4] == '-') { // e.g. SLUS-00001 -> SLUS_000.01
-        snprintf(out, maxLen, "%.4s_%c%c%c.%c%c", tmp, tmp[5], tmp[6], tmp[7], tmp[8], tmp[9]);
-    } else {
-        // Copy up to 11 valid characters
-        for (i = 0; i < 11 && tmp[i] != '\0'; i++) {
-            if (!isValidIdChar(tmp[i]))
-                break;
-            out[i] = tmp[i];
-        }
-        out[i] = '\0';
+    // CosmicScale's PSBBN convention drops the extra P in the SLUSP prefix.
+    int slusp = !strncasecmp(raw, "SLUSP", 5);
+    for (i = 0; raw[i] != '\0'; i++) {
+        unsigned char c = (unsigned char)raw[i];
+        if ((slusp && i == 4) || c == '_' || c == '.' || c == '-')
+            continue;
+        if (!isalnum(c) || n >= sizeof(cleaned) - 1)
+            return 0;
+        cleaned[n++] = (char)toupper(c);
     }
-
-    // Reject generic targets
-    if (strlen(out) < 8 || !strcasecmp(out, "PSX.EXE") || !strcasecmp(out, "BOOT.EXE") || !strncmp(out, "???", 3))
+    cleaned[n] = '\0';
+    if (n >= 9 && n <= 10 && !strncmp(cleaned, "LSP", 3)) {
+        for (i = 3; i < n; i++)
+            if (!isdigit((unsigned char)cleaned[i]))
+                return 0;
+        if (maxLen < n + 2)
+            return 0;
+        // LSP keeps its first eight characters together, then inserts a dot.
+        memcpy(out, cleaned, 8);
+        out[8] = '.';
+        memcpy(out + 9, cleaned + 8, n - 8 + 1);
+        return 1;
+    }
+    if (n != 9 || maxLen < RETROGEM_GAMEID_MAX)
         return 0;
-
+    for (i = 0; i < 4; i++)
+        if (!retrogemTitlePrefixChar(cleaned[i]))
+            return 0;
+    for (i = 4; i < n; i++)
+        if (!isdigit((unsigned char)cleaned[i]))
+            return 0;
+    snprintf(out, maxLen, "%.4s_%.3s.%.2s", cleaned, cleaned + 4, cleaned + 7);
     return 1;
 }
 
-// Tier 1 & 2 helper: ISO 9660 SYSTEM.CNF parsing and PVD Timestamp lookup
-int RetroGEM::parseIsoSector16(FILE *f, char *gameID, size_t maxLen)
+// Accept only real PS1 serial shapes. A human game/folder name is NOT a GameID fallback.
+static int retrogemCleanTitleID(const char *raw, char *out, size_t maxLen)
 {
-    unsigned char pvd[2048];
-    long pvdOffset = -1;
-    int sectorSize = 2048;
-    int modeOffset = 0;
+    const char *p = raw;
+    size_t len;
+    int i;
 
-    // Check Sector 16 for 2048-byte user data (offset 16 * 2048 = 32768)
-    if (fseek(f, 32768, SEEK_SET) == 0 && fread(pvd, 1, 2048, f) == 2048) {
-        if (pvd[0] == 0x01 && !memcmp(&pvd[1], "CD001", 5)) {
-            pvdOffset = 32768;
-            sectorSize = 2048;
-            modeOffset = 0;
-        }
-    }
-
-    // Check Sector 16 for 2352-byte RAW sectors (offset 16 * 2352 = 37632 + 16 header = 37648)
-    if (pvdOffset < 0) {
-        if (fseek(f, 37648, SEEK_SET) == 0 && fread(pvd, 1, 2048, f) == 2048) {
-            if (pvd[0] == 0x01 && !memcmp(&pvd[1], "CD001", 5)) {
-                pvdOffset = 37648;
-                sectorSize = 2352;
-                modeOffset = 16;
-            }
-        }
-    }
-
-    if (pvdOffset < 0)
-        return 0; // Not a valid ISO 9660 PVD
-
-    // --- Tier 1: Traverse Root Directory for SYSTEM.CNF ---
-    // Root Directory Record at PVD offset + 156 (0x9C)
-    unsigned int rootLba = (unsigned int)pvd[156 + 2] | ((unsigned int)pvd[156 + 3] << 8) |
-                           ((unsigned int)pvd[156 + 4] << 16) | ((unsigned int)pvd[156 + 5] << 24);
-    unsigned int rootLen = (unsigned int)pvd[156 + 10] | ((unsigned int)pvd[156 + 11] << 8) |
-                           ((unsigned int)pvd[156 + 12] << 16) | ((unsigned int)pvd[156 + 13] << 24);
-
-    long rootSectorOffset = (long)rootLba * sectorSize + modeOffset;
-    if (rootLen > 0 && rootLen <= 32768 && fseek(f, rootSectorOffset, SEEK_SET) == 0) {
-        unsigned char *dirBuf = (unsigned char *)malloc(rootLen);
-        if (dirBuf) {
-            if (fread(dirBuf, 1, rootLen, f) == rootLen) {
-                size_t off = 0;
-                while (off < rootLen) {
-                    unsigned char recLen = dirBuf[off];
-                    if (recLen == 0) {
-                        // Advance to next sector boundary
-                        off = ((off / sectorSize) + 1) * sectorSize;
-                        continue;
-                    }
-                    if (off + recLen > rootLen)
-                        break;
-
-                    unsigned char nameLen = dirBuf[off + 32];
-                    if (nameLen >= 10 && off + 33 + nameLen <= rootLen) {
-                        char nameBuf[32];
-                        size_t n = (nameLen < sizeof(nameBuf) - 1) ? nameLen : sizeof(nameBuf) - 1;
-                        memcpy(nameBuf, &dirBuf[off + 33], n);
-                        nameBuf[n] = '\0';
-
-                        if (!strncasecmp(nameBuf, "SYSTEM.CNF", 10)) {
-                            // Located SYSTEM.CNF! Get its LBA & size
-                            unsigned int sysLba = (unsigned int)dirBuf[off + 2] | ((unsigned int)dirBuf[off + 3] << 8) |
-                                                  ((unsigned int)dirBuf[off + 4] << 16) | ((unsigned int)dirBuf[off + 5] << 24);
-                            unsigned int sysSize = (unsigned int)dirBuf[off + 10] | ((unsigned int)dirBuf[off + 11] << 8) |
-                                                   ((unsigned int)dirBuf[off + 12] << 16) | ((unsigned int)dirBuf[off + 13] << 24);
-
-                            long sysOffset = (long)sysLba * sectorSize + modeOffset;
-                            if (sysSize > 0 && sysSize < 4096 && fseek(f, sysOffset, SEEK_SET) == 0) {
-                                char *sysBuf = (char *)malloc(sysSize + 1);
-                                if (sysBuf) {
-                                    if (fread(sysBuf, 1, sysSize, f) == sysSize) {
-                                        sysBuf[sysSize] = '\0';
-                                        // Parse BOOT line in SYSTEM.CNF
-                                        char *bootPtr = strstr(sysBuf, "BOOT");
-                                        if (!bootPtr)
-                                            bootPtr = strstr(sysBuf, "boot");
-                                        if (bootPtr) {
-                                            char *eq = strchr(bootPtr, '=');
-                                            if (eq && cleanTitleId(eq + 1, gameID, maxLen)) {
-                                                free(sysBuf);
-                                                free(dirBuf);
-                                                return 1; // Tier 1 Success!
-                                            }
-                                        }
-                                    }
-                                    free(sysBuf);
-                                }
-                            }
-                        }
-                    }
-                    off += recLen;
-                }
-            }
-            free(dirBuf);
-        }
-    }
-
-    // --- Tier 2: PVD Volume Creation Timestamp Lookup ---
-    // 16-byte ASCII creation timestamp at PVD offset 0x32D (813)
-    char timestamp[17];
-    memcpy(timestamp, &pvd[813], 16);
-    timestamp[16] = '\0';
-
-    int idx = 0;
-    while (genericIds_[idx].timestamp[0] != '\0') {
-        if (!strncmp(timestamp, genericIds_[idx].timestamp, 16)) {
-            snprintf(gameID, maxLen, "%s", genericIds_[idx].gameId);
-            return 1; // Tier 2 Success!
-        }
-        idx++;
-    }
-
-    return 0;
-}
-
-int RetroGEM::getVcdGameId(const char *vcdPath, char *gameID, size_t maxLen)
-{
-    if (vcdPath == NULL || gameID == NULL || maxLen < 12)
+    if (raw == NULL || out == NULL || maxLen < RETROGEM_GAMEID_MAX)
         return 0;
-    gameID[0] = '\0';
+    out[0] = '\0';
 
-    // --- Tier 1 & Tier 2: ISO 9660 SYSTEM.CNF Parsing / PVD Timestamp ---
-    FILE *f = fopen(vcdPath, "rb");
-    if (f != NULL) {
-        int res = parseIsoSector16(f, gameID, maxLen);
-        fclose(f);
-        if (res && gameID[0] != '\0')
+    if (!strncasecmp(p, "cdrom0:", 7))
+        p += 7;
+    else if (!strncasecmp(p, "cdrom:", 6))
+        p += 6;
+
+    while (*p == '/' || *p == '\\' || *p == ' ' || *p == '\t')
+        p++;
+
+    if (!strncasecmp(p, "XX.", 3) || !strncasecmp(p, "SB.", 3) ||
+        !strncasecmp(p, "EL.", 3) || !strncasecmp(p, "SM.", 3) ||
+        !strncasecmp(p, "PP.", 3) || !strncmp(p, "__.", 3))
+        p += 3;
+
+    // SYSTEM.CNF tokens may end in an ISO9660 version suffix. Normalize the
+    // serial itself before the legacy prefix parser (which also accepts names).
+    char token[32];
+    size_t tokenLen = strcspn(p, "; \t\r\n\"");
+    if (tokenLen < sizeof(token)) {
+        memcpy(token, p, tokenLen);
+        token[tokenLen] = '\0';
+        if (retrogemNormalizeGameID(token, out, maxLen))
             return 1;
     }
 
-    // --- Tier 3: Partition / Subpath Parsing ---
-    // e.g. PP.SLUS-12345/IMAGE0.VCD or __.POPS/SLUS_123.45.VCD
-    const char *p1 = strstr(vcdPath, "PP.");
-    if (p1 != NULL && cleanTitleId(p1 + 3, gameID, maxLen))
-        return 1;
+    // All accepted serial spellings need at least ten characters. Guard before indexed reads so
+    // a malformed short BOOT token or path component cannot make this metadata parser read beyond
+    // its terminating NUL.
+    len = strlen(p);
+    if (len < 10)
+        return 0;
 
-    const char *p2 = strrchr(vcdPath, '/');
-    if (p2 == NULL)
-        p2 = strrchr(vcdPath, '\\');
-    if (p2 != NULL) {
-        // Try parent directory name
-        const char *p3 = p2 - 1;
-        while (p3 > vcdPath && *p3 != '/' && *p3 != '\\')
-            p3--;
-        if (p3 >= vcdPath) {
-            char dirName[64];
-            size_t dlen = p2 - p3 - 1;
-            if (dlen > 0 && dlen < sizeof(dirName)) {
-                memcpy(dirName, p3 + 1, dlen);
-                dirName[dlen] = '\0';
-                if (cleanTitleId(dirName, gameID, maxLen))
-                    return 1;
+    for (i = 0; i < 4; i++) {
+        if (!retrogemTitlePrefixChar(p[i]))
+            return 0;
+    }
+
+    if (len >= 11 && p[4] == '_' &&
+        isdigit((unsigned char)p[5]) && isdigit((unsigned char)p[6]) && isdigit((unsigned char)p[7]) &&
+        p[8] == '.' && isdigit((unsigned char)p[9]) && isdigit((unsigned char)p[10])) {
+        for (i = 0; i < 11; i++)
+            out[i] = (char)toupper((unsigned char)p[i]);
+        out[11] = '\0';
+        return 1;
+    }
+
+    // Alternate archive/partition spelling: SLUS-12345 -> canonical SLUS_123.45.
+    if (p[4] == '-' &&
+        isdigit((unsigned char)p[5]) && isdigit((unsigned char)p[6]) && isdigit((unsigned char)p[7]) &&
+        isdigit((unsigned char)p[8]) && isdigit((unsigned char)p[9])) {
+        snprintf(out, maxLen, "%c%c%c%c_%c%c%c.%c%c",
+                 toupper((unsigned char)p[0]), toupper((unsigned char)p[1]),
+                 toupper((unsigned char)p[2]), toupper((unsigned char)p[3]),
+                 p[5], p[6], p[7], p[8], p[9]);
+        return 1;
+    }
+
+    return 0;
+}
+
+static int retrogemReadSector(ps1_image_reader_t *reader, unsigned int lba, unsigned char *data)
+{
+    unsigned char raw[PS1_RAW_SECTOR_SIZE];
+    long sectorSize;
+    long offset;
+    int dataOffset;
+
+    if (reader == NULL || reader->file == NULL || data == NULL)
+        return 0;
+
+    sectorSize = (reader->layout == PS1_IMAGE_RAW_2352) ? PS1_RAW_SECTOR_SIZE : PS1_SECTOR_DATA_SIZE;
+    offset = reader->baseOffset + (long)lba * sectorSize;
+    if (fseek(reader->file, offset, SEEK_SET) != 0)
+        return 0;
+
+    if (reader->layout == PS1_IMAGE_COOKED_2048)
+        return fread(data, 1, PS1_SECTOR_DATA_SIZE, reader->file) == PS1_SECTOR_DATA_SIZE;
+
+    if (fread(raw, 1, sizeof(raw), reader->file) != sizeof(raw))
+        return 0;
+
+    if (raw[15] == 1) {
+        dataOffset = 16;
+    } else if (raw[15] == 2) {
+        // Mode 2 Form 2 carries 2324 bytes and cannot contain ISO9660 metadata sectors.
+        if (raw[18] & 0x20)
+            return 0;
+        dataOffset = 24;
+    } else {
+        return 0;
+    }
+
+    memcpy(data, raw + dataOffset, PS1_SECTOR_DATA_SIZE);
+    return 1;
+}
+
+static int retrogemFindPvd(ps1_image_reader_t *reader, unsigned char *pvd)
+{
+    unsigned char sector[PS1_SECTOR_DATA_SIZE];
+    int i;
+
+    for (i = 0; i < PS1_PVD_SEARCH_SECTORS; i++) {
+        if (!retrogemReadSector(reader, PS1_PVD_LBA + i, sector))
+            return 0;
+        if (memcmp(sector + 1, "CD001", 5) != 0)
+            continue;
+        if (sector[0] == 1) {
+            memcpy(pvd, sector, sizeof(sector));
+            return 1;
+        }
+        if (sector[0] == 255)
+            return 0;
+    }
+
+    return 0;
+}
+
+static int retrogemIsoNameMatches(const unsigned char *name, int nameLen, const char *target)
+{
+    int targetLen;
+    int i;
+
+    if (name == NULL || target == NULL || nameLen <= 0)
+        return 0;
+    targetLen = (int)strlen(target);
+    if (nameLen < targetLen)
+        return 0;
+
+    for (i = 0; i < targetLen; i++) {
+        if (tolower((unsigned char)name[i]) != tolower((unsigned char)target[i]))
+            return 0;
+    }
+
+    return nameLen == targetLen || name[targetLen] == ';';
+}
+
+static int retrogemReadIsoFile(ps1_image_reader_t *reader, unsigned int lba, unsigned int fileSize,
+                               char *buffer, size_t bufferSize)
+{
+    unsigned char sector[PS1_SECTOR_DATA_SIZE];
+    size_t copied = 0;
+    unsigned int sectorIndex = 0;
+
+    if (buffer == NULL || bufferSize < 2 || fileSize == 0)
+        return 0;
+
+    while (copied < fileSize && copied < bufferSize - 1) {
+        size_t remainingFile;
+        size_t remainingBuffer;
+        size_t copyLen;
+
+        if (!retrogemReadSector(reader, lba + sectorIndex, sector))
+            break;
+
+        remainingFile = fileSize - copied;
+        remainingBuffer = bufferSize - 1 - copied;
+        copyLen = remainingFile < PS1_SECTOR_DATA_SIZE ? remainingFile : PS1_SECTOR_DATA_SIZE;
+        if (copyLen > remainingBuffer)
+            copyLen = remainingBuffer;
+
+        memcpy(buffer + copied, sector, copyLen);
+        copied += copyLen;
+        sectorIndex++;
+    }
+
+    buffer[copied] = '\0';
+    return copied > 0;
+}
+
+static int retrogemParseSystemCnf(const char *cnf, char *gameID, size_t maxLen)
+{
+    const char *line = cnf;
+
+    while (line != NULL && *line != '\0') {
+        const char *lineEnd = line;
+        const char *p;
+        const char *eq;
+        char bootPath[128];
+        size_t n;
+
+        while (*lineEnd != '\0' && *lineEnd != '\r' && *lineEnd != '\n')
+            lineEnd++;
+
+        p = line;
+        while (p < lineEnd && (*p == ' ' || *p == '\t'))
+            p++;
+
+        if ((lineEnd - p >= 4 && !strncasecmp(p, "BOOT", 4))) {
+            eq = p;
+            while (eq < lineEnd && *eq != '=')
+                eq++;
+            if (eq < lineEnd) {
+                eq++;
+                while (eq < lineEnd && (*eq == ' ' || *eq == '\t'))
+                    eq++;
+                n = 0;
+                while (eq + n < lineEnd && eq[n] != ' ' && eq[n] != '\t' && n < sizeof(bootPath) - 1)
+                    n++;
+                if (n > 0) {
+                    memcpy(bootPath, eq, n);
+                    bootPath[n] = '\0';
+                    if (retrogemCleanTitleID(bootPath, gameID, maxLen))
+                        return 1;
+                }
+            }
+        }
+
+        line = lineEnd;
+        while (*line == '\r' || *line == '\n')
+            line++;
+    }
+
+    return 0;
+}
+
+static int retrogemParseReader(ps1_image_reader_t *reader, char *gameID, size_t maxLen)
+{
+    unsigned char pvd[PS1_SECTOR_DATA_SIZE];
+    const unsigned char *rootRecord;
+    unsigned int rootLba;
+    unsigned int rootSize;
+    unsigned int rootSectors;
+    unsigned int sectorIndex;
+
+    if (!retrogemFindPvd(reader, pvd))
+        return 0;
+
+    rootRecord = pvd + PS1_ROOT_RECORD_OFFSET;
+    if (rootRecord[0] >= 34) {
+        rootLba = retrogemReadLe32(rootRecord + 2);
+        rootSize = retrogemReadLe32(rootRecord + 10);
+        rootSectors = (rootSize + PS1_SECTOR_DATA_SIZE - 1) / PS1_SECTOR_DATA_SIZE;
+        if (rootSectors > PS1_MAX_ROOT_DIR_SECTORS)
+            rootSectors = PS1_MAX_ROOT_DIR_SECTORS;
+
+        for (sectorIndex = 0; sectorIndex < rootSectors; sectorIndex++) {
+            unsigned char sector[PS1_SECTOR_DATA_SIZE];
+            int pos = 0;
+
+            if (!retrogemReadSector(reader, rootLba + sectorIndex, sector))
+                break;
+
+            while (pos < PS1_SECTOR_DATA_SIZE) {
+                int recordLen = sector[pos];
+                int nameLen;
+                int flags;
+
+                if (recordLen == 0)
+                    break;
+                if (recordLen < 34 || pos + recordLen > PS1_SECTOR_DATA_SIZE)
+                    break;
+
+                flags = sector[pos + 25];
+                nameLen = sector[pos + 32];
+                if (!(flags & 0x02) && recordLen >= 33 + nameLen &&
+                    retrogemIsoNameMatches(sector + pos + 33, nameLen, "SYSTEM.CNF")) {
+                    unsigned int fileLba = retrogemReadLe32(sector + pos + 2);
+                    unsigned int fileSize = retrogemReadLe32(sector + pos + 10);
+                    char cnf[PS1_SYSTEM_CNF_MAX + 1];
+
+                    if (fileSize > 0 && retrogemReadIsoFile(reader, fileLba, fileSize, cnf, sizeof(cnf)) &&
+                        retrogemParseSystemCnf(cnf, gameID, maxLen))
+                        return 1;
+                }
+
+                pos += recordLen;
             }
         }
     }
 
-    // --- Tier 4: Filename Fallback ---
-    const char *fname = strrchr(vcdPath, '/');
-    if (fname == NULL)
-        fname = strrchr(vcdPath, '\\');
-    if (fname == NULL)
-        fname = strrchr(vcdPath, ':');
-    if (fname != NULL)
-        fname++;
-    else
-        fname = vcdPath;
+    return 0;
+}
 
-    if (vcdExtractGameId(fname, gameID, (int)maxLen))
+static int retrogemTryImageLayout(const char *path, long baseOffset, ps1_image_layout_t layout,
+                                  char *gameID, size_t maxLen)
+{
+    ps1_image_reader_t reader;
+    FILE *file;
+    int result;
+
+    file = fopen(path, "rb");
+    if (file == NULL)
+        return 0;
+
+    reader.file = file;
+    reader.baseOffset = baseOffset;
+    reader.layout = layout;
+    result = retrogemParseReader(&reader, gameID, maxLen);
+    fclose(file);
+    return result;
+}
+
+static int retrogemHasExt(const char *path, const char *ext)
+{
+    size_t pathLen;
+    size_t extLen;
+
+    if (path == NULL || ext == NULL)
+        return 0;
+    pathLen = strlen(path);
+    extLen = strlen(ext);
+    return pathLen >= extLen && !strcasecmp(path + pathLen - extLen, ext);
+}
+
+static int retrogemContainsNoCase(const char *haystack, const char *needle)
+{
+    size_t nlen;
+
+    if (haystack == NULL || needle == NULL)
+        return 0;
+    nlen = strlen(needle);
+    if (nlen == 0)
         return 1;
 
-    if (cleanTitleId(fname, gameID, maxLen))
+    while (*haystack != '\0') {
+        if (!strncasecmp(haystack, needle, nlen))
+            return 1;
+        haystack++;
+    }
+    return 0;
+}
+
+static int retrogemCueFileToken(const char *line, char *out, size_t outSize)
+{
+    const char *p = line;
+    const char *end;
+    size_t len;
+
+    if (line == NULL || out == NULL || outSize == 0)
+        return 0;
+    out[0] = '\0';
+
+    while (*p == ' ' || *p == '\t')
+        p++;
+    if (strncasecmp(p, "FILE", 4) || (p[4] != ' ' && p[4] != '\t'))
+        return 0;
+    p += 4;
+    while (*p == ' ' || *p == '\t')
+        p++;
+
+    if (*p == '"') {
+        p++;
+        end = strchr(p, '"');
+        if (end == NULL)
+            return 0;
+    } else {
+        end = p;
+        while (*end != '\0' && *end != '\r' && *end != '\n' && *end != ' ' && *end != '\t')
+            end++;
+    }
+
+    len = (size_t)(end - p);
+    if (len == 0 || len >= outSize)
+        return 0;
+    memcpy(out, p, len);
+    out[len] = '\0';
+    return 1;
+}
+
+static int retrogemCueResolveDataFile(const char *cuePath, char *out, size_t outSize)
+{
+    FILE *cue;
+    char line[512];
+    char current[256] = "";
+    char first[256] = "";
+    char selected[256] = "";
+    const char *lastSep;
+    size_t dirLen;
+    char sep = '/';
+    size_t i;
+
+    if (cuePath == NULL || out == NULL || outSize == 0)
+        return 0;
+    out[0] = '\0';
+
+    cue = fopen(cuePath, "rb");
+    if (cue == NULL)
+        return 0;
+
+    while (fgets(line, sizeof(line), cue) != NULL) {
+        char token[256];
+        const char *p = line;
+
+        if (retrogemCueFileToken(line, token, sizeof(token))) {
+            snprintf(current, sizeof(current), "%s", token);
+            if (first[0] == '\0')
+                snprintf(first, sizeof(first), "%s", token);
+            continue;
+        }
+
+        while (*p == ' ' || *p == '\t')
+            p++;
+        if (!strncasecmp(p, "TRACK", 5) &&
+            (retrogemContainsNoCase(p, "MODE1/") || retrogemContainsNoCase(p, "MODE2/")) &&
+            current[0] != '\0') {
+            snprintf(selected, sizeof(selected), "%s", current);
+            break;
+        }
+    }
+    fclose(cue);
+
+    if (selected[0] == '\0')
+        snprintf(selected, sizeof(selected), "%s", first);
+    if (selected[0] == '\0')
+        return 0;
+
+    // Absolute/device-qualified FILE tokens are already complete.
+    if (strchr(selected, ':') != NULL) {
+        snprintf(out, outSize, "%s", selected);
+        return out[0] != '\0';
+    }
+
+    lastSep = strrchr(cuePath, '/');
+    {
+        const char *back = strrchr(cuePath, '\\');
+        if (back != NULL && (lastSep == NULL || back > lastSep))
+            lastSep = back;
+    }
+    if (lastSep == NULL)
+        return snprintf(out, outSize, "%s", selected) > 0;
+
+    dirLen = (size_t)(lastSep - cuePath + 1);
+    if (dirLen >= outSize)
+        return 0;
+    memcpy(out, cuePath, dirLen);
+    out[dirLen] = '\0';
+    sep = *lastSep;
+
+    // CUE sheets commonly contain Windows separators even when the PS2 filesystem uses '/'.
+    for (i = 0; selected[i] != '\0' && dirLen + i + 1 < outSize; i++) {
+        char c = selected[i];
+        if (c == '/' || c == '\\')
+            c = sep;
+        out[dirLen + i] = c;
+    }
+    if (selected[i] != '\0')
+        return 0;
+    out[dirLen + i] = '\0';
+    return 1;
+}
+
+static int retrogemGetDiscImageGameID(const char *path, int isVcd, char *gameID, size_t maxLen)
+{
+    if (isVcd && retrogemTryImageLayout(path, PS1_VCD_IMAGE_OFFSET, PS1_IMAGE_RAW_2352, gameID, maxLen))
+        return 1;
+
+    // Raw BIN is the normal PS1 image layout. Cooked 2048-byte images are accepted as a useful
+    // compatibility fallback for converted/homebrew images.
+    if (retrogemTryImageLayout(path, 0, PS1_IMAGE_RAW_2352, gameID, maxLen))
+        return 1;
+    if (retrogemTryImageLayout(path, 0, PS1_IMAGE_COOKED_2048, gameID, maxLen))
         return 1;
 
     return 0;
 }
 
-u8 RetroGEM::calculateCrc(const u8 *data, int len)
+int retrogemGetVcdGameID(const char *vcdPath, char *gameID, size_t maxLen)
+{
+    if (vcdPath == NULL || gameID == NULL || maxLen < RETROGEM_GAMEID_MAX)
+        return 0;
+    gameID[0] = '\0';
+    return retrogemGetDiscImageGameID(vcdPath, 1, gameID, maxLen);
+}
+
+int retrogemGetPs1ImageGameID(const char *imagePath, char *gameID, size_t maxLen)
+{
+    char dataPath[512];
+
+    if (imagePath == NULL || gameID == NULL || maxLen < RETROGEM_GAMEID_MAX)
+        return 0;
+    gameID[0] = '\0';
+
+    if (retrogemHasExt(imagePath, ".VCD"))
+        return retrogemGetVcdGameID(imagePath, gameID, maxLen);
+
+    if (retrogemHasExt(imagePath, ".CUE")) {
+        if (retrogemCueResolveDataFile(imagePath, dataPath, sizeof(dataPath)))
+            return retrogemGetDiscImageGameID(dataPath, 0, gameID, maxLen);
+        return 0;
+    }
+
+    if (retrogemHasExt(imagePath, ".BIN") || retrogemHasExt(imagePath, ".ISO"))
+        return retrogemGetDiscImageGameID(imagePath, 0, gameID, maxLen);
+
+    // A bare PS-X EXE has no disc filesystem to extract a serial from. Do not invent a GameID from
+    // its filename or Ember folder name.
+    return 0;
+}
+
+static u8 retrogemCalculateCRC(const u8 *data, int len)
 {
     int i;
     u8 sum = 0;
@@ -291,7 +612,7 @@ u8 RetroGEM::calculateCrc(const u8 *data, int len)
     return (u8)(0x100 - sum);
 }
 
-void RetroGEM::displayGameId(const char *gameID, int frames)
+void displayRetroGemGameID(const char *gameID, int frames)
 {
     u8 data[64];
     int gidlen, dpos, data_len, xstart, ystart, height;
@@ -323,7 +644,7 @@ void RetroGEM::displayGameId(const char *gameID, int frames)
     data[dpos++] = 0x00; // Padding
 
     data_len = dpos;
-    data[2] = calculateCrc(&data[3], data_len - 3);
+    data[2] = retrogemCalculateCRC(&data[3], data_len - 3);
 
     rmGetScreenExtents(&screenWidth, &screenHeight);
     xstart = (screenWidth / 2) - (data_len * 8);

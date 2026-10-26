@@ -850,6 +850,10 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
     // network configuration of its own, and writing POPSTARTER's files for an Ember launch would
     // be a side effect with no purpose.
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(gEthSupport.prefix(), cueName);
+
     // UNMOUNT_EXCEPTION is load-bearing: Ember reads its game through the SMB mount that is live
     // right now, so that mount must survive the teardown.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);

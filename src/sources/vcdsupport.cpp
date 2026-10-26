@@ -356,7 +356,7 @@ void vcdInvalidateGameIds(void)
 //
 // The caption renders ONE id shape: AAAA_NNN.NN -- the PS2 page's form (g->startup) and the
 // filename parser's strict output. The disc resolver can legitimately hand back the SAME id as
-// "AAAA-NNNNN" (dash naming from partitions / some SYSTEM.CNF files survives RetroGEM::cleanTitleId
+// "AAAA-NNNNN" (dash naming from partitions / some SYSTEM.CNF files survives retrogemCleanTitleID
 // verbatim for several input shapes); without this step the caption would visibly change shape when
 // the disc read landed (step-171). Display-layer only: the memo stores the canonical form, and the
 // RetroGEM launch/barcode path keeps its own resolver output -- it never reads the memo.

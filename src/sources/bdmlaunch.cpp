@@ -106,6 +106,10 @@ void BdmLauncher::launchCue(item_list_t *itemList, const char *cueName, config_s
         }
     }
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(ps1Prefix, cueName);
+
     // UNMOUNT_EXCEPTION is load-bearing here, not defensive: Ember never resets the IOP, so the
     // device it reads its game from must still be mounted when it starts.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);

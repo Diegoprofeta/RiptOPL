@@ -25,6 +25,7 @@
 #include "include/cuesupport.h"
 #include "include/host.h"
 #include "include/lang.h"
+#include "include/retrogem.h"
 
 // The one CUE support instance (declared in include/cuesupport.h). Constant-initialized: it owns
 // only the extension table the launch-path image probe matches against.
@@ -315,8 +316,8 @@ int cuePrepareLaunch(const char *devPrefix, const char *folder, const char *embe
 }
 
 // The extensions Ember's io_find_disc accepts, in ITS priority order (.cue beats .exe beats .bin).
-// We only test presence, so the order is documentation rather than logic -- but it is the reason a
-// folder holding just a .bin is still a valid game. Case-insensitive, as io_find_disc's own
+// The scan tests presence; cueResolveGameImage follows the order to pick the image Ember will use.
+// A folder holding just a .bin is still a valid game. Case-insensitive, as io_find_disc's own
 // strcasecmp is.
 static const char *const cueDiscExts[] = {".cue", ".exe", ".bin"};
 
@@ -793,15 +794,19 @@ void cueApplySettings(const char *devPrefix, const char *name, config_set_t *con
         cueSaveGameSettings(devPrefix, name, configSet);
 }
 
-int CueSupport::gameHasImage(const char *devPrefix, const char *name)
+// Ember's own choice of image for a folder, in io_find_disc's priority (.cue, then .exe, then .bin).
+int cueResolveGameImage(const char *devPrefix, const char *name, char *out, int outSize)
 {
     char gamesDir[288];
     char gameDir[320];
     struct dirent *de;
     DIR *dir;
+    int best = (int)(sizeof(cueDiscExts) / sizeof(cueDiscExts[0]));
     int found = 0;
-    unsigned int i;
 
+    if (out == NULL || outSize <= 0)
+        return 0;
+    out[0] = '\0';
     if (devPrefix == NULL || name == NULL || name[0] == '\0')
         return 0;
 
@@ -812,28 +817,65 @@ int CueSupport::gameHasImage(const char *devPrefix, const char *name)
 
     dir = opendir(gameDir);
     if (dir == NULL) {
-        // The probe itself failed -- the folder may be there and merely unreadable this instant.
-        // Never let a failed PROBE block a launch: report "has an image" and let Ember be the judge.
-        LOG("[CUE] cannot probe '%s' -- launching anyway\n", gameDir);
-        return 1;
+        LOG("[CUE] cannot probe '%s' while resolving Ember disc image\n", gameDir);
+        return -1;
     }
 
-    while (!found && (de = readdir(dir)) != NULL) {
+    while ((de = readdir(dir)) != NULL) {
         int len = (int)strlen(de->d_name);
+
         if (len < 5)
             continue; // shortest possible match is "x.cue"
-        for (i = 0; i < sizeof(discExts_) / sizeof(discExts_[0]); i++) {
-            if (strcasecmp(de->d_name + len - 4, discExts_[i]) == 0) {
-                found = 1;
+        for (int i = 0; i < best; i++) {
+            if (strcasecmp(de->d_name + len - 4, cueDiscExts[i]) == 0) {
+                int n = snprintf(out, outSize, "%s%c%s", gameDir, cueSep(devPrefix), de->d_name);
+                if (n > 0 && n < outSize) {
+                    best = i;
+                    found = 1;
+                }
                 break;
             }
         }
     }
     closedir(dir);
-
-    if (!found)
-        LOG("[CUE] '%s' holds no .cue/.bin/.exe\n", gameDir);
     return found;
+}
+
+int CueSupport::gameHasImage(const char *devPrefix, const char *name)
+{
+    char imagePath[640];
+    int result = cueResolveGameImage(devPrefix, name, imagePath, sizeof(imagePath));
+
+    // Never let a failed PROBE block a launch: the folder may be there and merely unreadable this
+    // instant, so report "has an image" and let Ember be the judge.
+    if (result < 0)
+        return 1;
+    if (!result)
+        LOG("[CUE] game folder '%s' holds no .cue/.bin/.exe\n", name);
+    return result;
+}
+
+void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name)
+{
+    cue_disc_list_t *list = NULL;
+    char imagePath[640];
+    char gameID[RETROGEM_GAMEID_MAX];
+    int count, resolved;
+
+    if (!gPopstarterRetroGemGameID || devPrefix == NULL || name == NULL || name[0] == '\0')
+        return;
+
+    // Best-effort launch metadata, never a gate. A multi-disc folder reports disc 1 -- the first
+    // discs.txt entry -- whichever disc starts, so the ID matches the RetroGEM convention instead of
+    // whichever CUE readdir happens to list first.
+    count = cueReadDiscList(devPrefix, name, &list);
+    if (count > 0)
+        resolved = cueBuildDiscPath(devPrefix, name, list->names[0], imagePath, sizeof(imagePath));
+    else
+        resolved = count == 0 && cueResolveGameImage(devPrefix, name, imagePath, sizeof(imagePath)) == 1;
+    free(list);
+    if (resolved && retrogemGetPs1ImageGameID(imagePath, gameID, sizeof(gameID)) && gameID[0] != '\0')
+        displayRetroGemGameID(gameID, 2);
 }
 
 int cueGameHasImage(const char *devPrefix, const char *name)

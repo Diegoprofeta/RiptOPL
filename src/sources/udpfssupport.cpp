@@ -793,6 +793,10 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
         return;
     }
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(udpfsPrefix, cueName);
+
     // UNMOUNT_EXCEPTION is load-bearing: Ember inherits this live mount. udpfsCleanUp keeps the
     // socket/module chain resident for the whole boot, so no network reinitialization is attempted.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);
