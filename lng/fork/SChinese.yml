@@ -317,3 +317,134 @@ translations:
   HINT_EMBER_DISPLAY: Ember 用于 PS1 游戏的输出模式。选择 240p 或 480p 会写入所启动设备 EMBER 目录下的 settings.txt。默认会再次移除该设置；若文件中没有其他内容，文件也会一并删除。
   LOGOART: "游戏徽标"
   HINT_LOGOART: "显示主题使用的游戏徽标 (<ID>_LGO)。关闭后也会隐藏默认图片，不影响封面、光盘图或背景。"
+  MTAP_ENABLE: 多分插模拟
+  HINT_PADEMU_WORKAROUND: 部分仿制 DS3 需要变通处理，此选项会启用它。
+  HINT_NEUTRINO_AUTO_ELF: 把游戏的启动 ELF 传给 Neutrino，用于查找该游戏的配置。默认开启；手动设置的 Boot ELF 选项优先。
+  HINT_POPSTARTER_PATH: POPSTARTER.ELF 的位置。留空时，RIPPS2 会填入在驱动器上找到的那个；改写可使用别的，例如 usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Neutrino 参数超过可保存的长度。请先缩短某个字段再保存。
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Neutrino 启动参数超过安全上限。请缩短全局参数或游戏参数。
+  NEUTRINO_AUTO_ELF: 自动 Boot ELF（-elf）
+  HINT_NEUTRINO_PATH: neutrino.elf 在哪里？<未设置> = 游戏所在设备 -> mc0/mc1。会优先尝试自定义完整路径。示例：mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf
+  GAME_VIEW_MODE: PS2/PS1 游戏显示
+  HINT_GAME_VIEW_MODE: “全部”把 PS2 和 PS1 游戏列在一起，L3 在全部、PS1、PS2 之间切换。PS2 或 PS1 只显示该类型并禁用 L3。APPS 和收藏游戏有各自的规则。
+  VIEW_MIXED: 显示 PS2 + PS1 游戏
+  VIEW_PS1_ELF: 显示 PS1 ELF 应用
+  APPS_DISPLAY: 应用程序显示
+  HINT_APPS_DISPLAY: “全部”把每个 ELF 放在同一个 APPS 列表中并禁用 L3。“应用 / PS1ELF”把带 [PS1] 的标题分到 L3 的第二页；启动方式不变。
+  VIEW: 视图
+  VIEW_PS2: 显示收藏的 PS2 游戏
+  VIEW_PS1: 显示收藏的 PS1 游戏
+  VIEW_ELF: 显示收藏的 ELF
+  VIEW_ALL: 显示全部收藏游戏
+  VMC_FRAGMENTED_ON_CREATE: VMC 已创建，但存在碎片。记忆卡模拟需要一个连续的文件，所以启动时会跳过这个 VMC，改用实体记忆卡。请腾出空间后重新创建，或从其他设备复制一个。
+  KEYB_MOVE_CURSOR: 移动光标
+  TITLECOLOR: 游戏标题颜色
+  RA_CHECK_GAME: 检查 RetroAchievements 支持
+  RA_TEST_LINK: 测试 RetroAchievements 电脑连接
+  RA_CHECKING_IMAGE: 正在检查镜像，需要几秒钟...
+  RA_CHECK_RUNNING: 已有一个镜像检查正在进行
+  RA_LOOKING_FOR_PC: 正在查找电脑客户端...
+  RA_UL_UNSUPPORTED: 暂时无法检查 UL/USBExtreme 游戏
+  RA_UL_UNSUPPORTED2: 只支持 DVD/ 或 CD/ 中的普通 .iso 镜像
+  RA_UNKNOWN_IMAGE: RetroAchievements 不认识这个镜像
+  RA_STILL_IDENTIFYING: 电脑仍在识别镜像
+  RA_TRY_AGAIN: 请几秒后重试
+  RA_NO_SOCKET: 主机无法打开网络套接字
+  RA_NO_SOCKET2: 请重启主机，或在设置中检查 ETH 设备
+  RA_TEST_NO_SOCKET2: 请检查网线和设置中的 ETH；若网络正常，请重启主机
+  RA_PC_NO_ANSWER: 电脑客户端没有应答
+  RA_PC_NO_ANSWER2: 请检查 xeRAbora 是否在运行，或尝试电脑连接测试
+  RA_SUPPORTED: RetroAchievements 支持
+  RA_START_TO_TRACK: 启动游戏以追踪成就
+  RA_ACHIEVEMENTS: '%d 个成就'
+  RA_ACHIEVEMENTS_FULL: '%d 个成就 -- %d 个已解锁，%d 个不支持'
+  RA_HASH_FAILED: 无法计算镜像的哈希
+  RA_HASH_FAILED2: 原因见游戏旁的 RA/hashes.txt
+  RA_NET_BUSY: 网络正被 UDP 传输使用
+  RA_NET_BUSY2: RA 需要 SMB 协议栈 -- 请切换协议，或在电脑上生成 .wl
+  RA_NET_BUSY_HASH: 哈希已写入 RA/hashes.txt -- xeRAbora 可以据此生成 .wl
+  RA_NO_IP: 主机没有 IP 地址
+  RA_NO_IP2: 请检查网络设置中的 DHCP 或静态地址
+  RA_TEST_NO_ANSWER: 3 秒内没有电脑客户端应答
+  RA_TEST_NO_ANSWER2: 主机%s。请检查 xeRAbora 是否在运行以及 UDP 18194 是否开放
+  RA_TEST_FOUND: 已找到电脑客户端%s%s %s
+  RA_TEST_FOUND2: '%u 毫秒内应答，主机%s'
+  RA_NA_NEUTRINO: RA 追踪需要 <OPL> 核心 -- 通过 Neutrino 启动从不加载 ee_core
+  RA_NA_UDPFS: UDPFS 上不支持 RA 追踪 -- 游戏通过 Neutrino 启动
+  RA_NA_PS1: PS1 游戏不支持 RA 追踪
+  RA_TELEMETRY: RetroAchievements 遥测
+  RA_BADGES: RetroAchievements 徽章
+  HTTP_GAMES: HTTP 游戏
+  HTTP_SERVER: HTTP 服务器
+  HTTP_PORT: HTTP 端口
+  HTTP_BASE_PATH: HTTP 基础路径
+  HTTP_TEST: 测试 HTTP 服务器
+  HTTP_TEST_OK: 服务器正常 -- 已列出游戏
+  HTTP_TEST_EMPTY: 目录为空 -- 有效，但无法证明字节范围是否正常
+  HTTP_TEST_NO_ISO: 目录中没有可用于测试字节范围的受支持镜像
+  HTTP_ERR_CONNECT: 无法连接 HTTP 服务器
+  HTTP_ERR_CATALOG: games.csv 缺失、无法读取或太大
+  HTTP_ERR_RANGE: 服务器返回的不是所请求的那些字节
+  HTTP_LAUNCH_UNAVAILABLE: HTTP 启动尚未实现 -- 目录只能浏览
+  HTTP_ERR_COMPRESSED: HTTP 暂不支持压缩镜像（.zso）
+  HTTP_NO_VMC: HTTP 下不支持虚拟记忆卡 -- 请使用实体记忆卡
+  HTTP_TAB_HINT: HTTP 从你的服务器读取 games.csv。请在网络设置中设置地址、端口和基础路径，然后使用“测试”。
+  RA_DISC_CHECK: RA：检查光盘支持
+  RA_DISC_LAUNCH: RA：启动光盘
+  RA_DISC_CHECKING: 正在为 RetroAchievements 检查光盘
+  RA_DISC_HASH_FAILED: 无法计算光盘的哈希 -- 请查看设置目录中的 RA/hashes.txt
+  RA_DISC_HOME_ERROR: 设置目录不能用于光盘的追踪列表
+  RA_DISC_ENABLE: 请先在网络设置中开启 RetroAchievements 遥测
+  RA_DISC_CHECK_FIRST: 这张光盘没有追踪列表 -- 请先使用“RA：检查光盘支持”
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d：找到硬盘，但无法读取其 APA 分区表。请不要格式化 -- 你的游戏也许还能恢复。'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d：有一个驱动器未挂载，因为它的扇区不是 512 字节（例如 4K 扇区的硬盘）。OPL 只能读取 512 字节的扇区。'
+  HDD_PARTITION_RENAME_UNSUPPORTED: 这个游戏自成一个 APA 分区，而 OPL 从不修改分区表。请在电脑上重命名。
+  POPS_SETTINGS_UNREADABLE: 无法读取 POPSTARTER 的设置 -- 记忆卡正忙或无法读取。请在加载完成后重试。
+  GLOBAL_PS_EMULATION_SETTINGS: 全局 PS 模拟设置
+  RA_NO_LINK_UNTRACKED: 网络不可用 -- 这次不带 RetroAchievements 启动。
+  IGR_USB_DRIVERS_PROMPT: IGR 路径在 USB 上，但 %s 中缺少 USBD.IRX 和 USBHDFSD.IRX，主机在游戏内重置后需要它们来访问 USB。没有它们，IGR 会回到 PS2 浏览器。现在复制 RiptOPL 的驱动过去吗？FMCB、OpenTuna 等漏洞程序也会加载这些文件，表现可能有所不同。已有文件不会被替换。仅限 FAT32 的 USB。
+  IGR_USB_DRIVERS_FAILED: 无法把 USB 驱动复制到 %s（记忆卡已满或不可写）。IGR 将回到 PS2 浏览器。
+  OFFICIAL_CFG_NOTIFICATION: 已从 %s 加载 OPL 官方设置
+  CFM_VMODE_HOLD_KEEP: 按住以保留
+  BDM_PS2_FOLDERS_UNREADABLE: 无法打开 %s 中的 CD 或 DVD 文件夹（错误 %d），所以该设备不列出 PS2 游戏。在其页面按 SELECT 重试。
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Neutrino 文件系统设为 bd，但这个驱动器从未报告设备编号，所以 Neutrino 无法指向它。请把此游戏的 Neutrino 文件系统设为 Auto 或 exfat。
+  CFM_VMODE_REVERT_IN: '%d 秒后恢复'
+  EMBER_DITHER: Ember 抖动
+  HINT_EMBER_DITHER: Ember 的抖动（开或关），写入启动设备上的 EMBER/settings.txt。单个游戏的设置优先。
+  EMBER_SHADING: Ember 着色
+  HINT_EMBER_SHADING: Ember 的色深：15 位或 24 位（实验性）。写入启动设备上的 EMBER/settings.txt。单个游戏的设置优先。
+  EMBER_CONTROLLER: Ember 手柄
+  HINT_EMBER_CONTROLLER: Ember 的手柄模式：自动、模拟或 D2A。通常最好按游戏设置（三角 > Ember 游戏设置），它会优先。
+  EMBER_480P_CONFIRM: Ember 在 480p 下通过复合视频没有画面。要使用 480p 吗？
+  EMBER_SHADING_24: 24 位（实验性）
+  EMBER_GAME_SETTINGS: Ember 游戏设置
+  HINT_EMBER_GAME_SETTING: 仅此游戏。按 OK 在启动前写入 EMBER/games/<名称>/settings.txt。未改动的“默认”保留文件中已有的值；把某个值改回“默认”会移除其覆盖。
+  EMBER_TIMING: Ember 时序
+  HINT_EMBER_TIMING: Ember 的视频时序：自动跟随光盘区域，NTSC 强制 60 Hz，PAL 强制 50 Hz。写入启动设备上的 EMBER/settings.txt。
+  EMBER_GLOBAL_WARNING: 这些 Ember 设置对每个 PS1 游戏生效，有些游戏会因此崩溃。若只想改一个游戏，请在该游戏上使用 三角 > Ember 游戏设置。
+  PS1_SAVE_GUIDANCE: PS1 存档取决于 Ember 或 POPSTARTER；PS2 的 VMC 设置不适用。
+  GAME_TYPE_LABELS: 显示 [PS1]/[PS2] 标签
+  AUTO_CREATE_VMC: 首次启动时创建 VMC
+  AUTO_VMC_CREATING: 正在创建这个游戏的 VMC...
+  AUTO_VMC_FAILED: 无法创建这个游戏的 VMC。游戏将在没有 VMC 的情况下启动。
+  FAV_SAVING: 正在保存到收藏游戏...
+  FAV_SAVED: 已保存到收藏游戏
+  FAV_SAVE_FAILED: 无法保存到收藏游戏
+  FAV_REMOVED: 已从收藏游戏中移除
+  FAV_REMOVE_FAILED: 无法从收藏游戏中移除
+  POPS_UDPFS_SETTINGS: POPS UDPFS 网络设置
+  POPS_UDPFS_DISCOVERY: 保存到每个 USB 上的 POPS 文件夹。服务器 0.0.0.0 表示自动发现。
+  POPS_UDPFS_NOT_READY: POPS UDPFS 需要每个 USB 上的 POPS 文件夹中都有有效且匹配的 IPCONFIG.DAT 和 UDPFSCONFIG.DAT。请在 POPS 网络设置中配置。
+  HINT_POPS_UDPFS_IP: POPS 的 UDPFS 驱动在 IOP 重启后使用的 PS2 静态 IP。
+  POPS_UDPFS_ALL_USB_FOLDERS: 所有 USB 上的 POPS 文件夹
+  POPS_UDPFS_INVALID_SUFFIX: ' （无效）'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' （不完整）'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS 需要在记忆卡上安装 .udpfs 驱动组。请手动安装，或开启 BDMA“启动时应用”。
+  VMC_REPLACE_REQUIRES_DELETE: 更改 VMC 大小会清除其中的存档。请先备份现有 VMC 并使用“删除”，再创建新大小。
+  VMC_CREATE_FAILED: 无法创建 VMC。请检查设备、连接和写入权限。已有存档未被替换。
+  UDPFS_IP_CONFLICT: 你网络中的另一台设备正在使用这台 PS2 的 IP 地址，所以 UDPFS 服务器的应答发给了它。请在网络设置中给 PS2 设置其他 IP。
+  CFG_TITLES: 在游戏列表中显示 CFG 标题
+  HINT_CFG_TITLES: 显示每个游戏 CFG 中的标题而不是文件名，并按它排序。刷新列表时会读取每个 CFG，所以列表加载更慢。仅影响显示。
+  PARENLOCK_GAME: 家长锁
+  PARENLOCK_GAME_HINT: 启动这个游戏时需要家长锁密码。
+  PARENLOCK_GAME_NO_PASSWORD: 请设置家长锁密码，否则这个游戏不会被锁定。

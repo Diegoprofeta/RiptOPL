@@ -317,3 +317,172 @@ translations:
   HINT_EMBER_DISPLAY: Ang output mode na ginagamit ng Ember para sa mga larong PS1. Isinusulat ang 240p o 480p sa settings.txt sa loob ng EMBER folder ng device na inilunsad. Ang Default ay inaalis muli ang setting na iyon, pati na ang file kung wala nang ibang laman.
   LOGOART: "Mga logo ng laro"
   HINT_LOGOART: "Ipinapakita ang logo ng laro (<ID>_LGO) kung ginagamit ito ng tema. Kapag naka-off, nakatago rin ang default na larawan; hindi apektado ang cover, disc art, o background."
+  SETTINGS_SAVED: Na-save ang settings sa %s
+  SETTINGS: Settings
+  CIRCLE: Circle
+  CROSS: Cross
+  MEDIUM: Katamtaman
+  REFRESH: I-refresh
+  CAT_SMB_SERVER: '- SMB Server -'
+  IP_ADDRESS_TYPE_STATIC: Static
+  MASK: Mask
+  GATEWAY: Gateway
+  DNS_SERVER: DNS Server
+  PASSWORD: Password
+  RENAME: Palitan ang pangalan
+  HINT_MODE1: Tumpak na pagbasa
+  QANDA: Quality Assurance
+  RESETCOLOR: I-reset ang mga kulay
+  ALTSTARTUP: Custom na ELF
+  BACKSPACE: Backspace
+  VMC_SLOT1: VMC Slot 1
+  VMC_SLOT2: VMC Slot 2
+  DMA_MODE: DMA Mode
+  VSYNC: V-Sync
+  XOFFSET: H-POS
+  YOFFSET: V-POS
+  GSMSKIPVIDEOS: Laktawan ang FMV
+  CHEATMODE: Mode ng PS2RD Cheat Engine
+  NET_UPDATE_ALL: Palitan ang mga umiiral na record
+  CUSTOMIZED_SETTINGS: Mga customized na setting
+  DOWNLOADED_DEFAULTS: Mga na-download na default
+  PS2LOGO: PS2 Logo
+  PADEMU_SETTINGS: Mga setting ng Pad Emulator
+  DS34BT_MODE: DualShock3/4 BT
+  MANUFACTURER: 'Manufacturer ID:'
+  MTAP_ENABLE: Multitap emulation
+  PARENLOCK_PASSWORD: Password ng Parental Lock
+  PARENLOCK_DISABLE_WARNING: Naka-disable ang parental lock.
+  CACHE_HDD_GAME_LIST: I-cache ang listahan ng laro (HDD APA)
+  SETTINGS_SOURCE: Mode ng settings
+  PERGAME_SETTINGS: Bawat laro
+  FORUM_DETAILS: 'Mga forum ng suporta:'
+  HINT_NEUTRINO_AUTO_ELF: Ipinapasa sa Neutrino ang boot ELF ng laro para hanapin ang config ng bawat title. Naka-on bilang default; mas nangingibabaw ang Boot ELF option na manu-manong itinakda.
+  HINT_POPSTARTER_PATH: Kung nasaan ang POPSTARTER.ELF. Kapag iniwang blangko, pupunan ito ng RIPPS2 ng isang mahahanap nito sa drive; i-type ang iba para gamitin iyon, gaya ng usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Lampas ang mga Neutrino argument sa habang kayang i-save. Paikliin ang isang field bago mag-save.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Lampas sa ligtas na limitasyon ang mga Neutrino launch argument. Paikliin ang global o game argument.
+  NEUTRINO_AUTO_ELF: Awtomatikong Boot ELF (-elf)
+  HINT_NEUTRINO_PATH: 'Nasaan ang neutrino.elf? <not set> = Device ng laro -> mc0/mc1. Unang sinusubukan ang custom na buong path. Mga halimbawa: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Pagpapakita ng PS2/PS1 na laro
+  HINT_GAME_VIEW_MODE: Ipinapakita ng Lahat ang PS2 at PS1 na laro nang magkasama at iniikot ng L3 ang Lahat, PS1, PS2. Ipinapakita lang ng PS2 o PS1 ang uring iyon at dini-disable ang L3. May sariling patakaran sa pagpapakita ang APPS at Mga Paborito.
+  VIEW_MIXED: Ipinapakita ang PS2 + PS1 na laro
+  VIEW_PS1_ELF: Ipinapakita ang mga PS1 ELF app
+  APPS_DISPLAY: Pagpapakita ng mga application
+  HINT_APPS_DISPLAY: Ipinapakita ng Lahat ang bawat ELF sa isang APPS list na naka-disable ang L3. Inihihiwalay ng Apps / PS1ELF ang mga title na may [PS1] sa ikalawang L3 page; hindi nagbabago ang paglulunsad.
+  VIEW: View
+  VIEW_PS2: Ipinapakita ang mga paboritong PS2 na laro
+  VIEW_PS1: Ipinapakita ang mga paboritong PS1 na laro
+  VIEW_ELF: Ipinapakita ang mga paboritong ELF
+  VIEW_ALL: Ipinapakita ang lahat ng paborito
+  VMC_FRAGMENTED_ON_CREATE: Nagawa ang VMC, pero fragmented ito. Kailangan ng memory card emulation ng isang tuloy-tuloy na file, kaya lalaktawan ang VMC na ito sa paglulunsad at ang tunay na card ang gagamitin. Magbakante ng espasyo at gawin itong muli, o kopyahin mula sa ibang device.
+  KEYB_MOVE_CURSOR: Ilipat ang cursor
+  TITLECOLOR: Kulay ng pamagat ng laro
+  RA_CHECK_GAME: Tingnan ang suporta sa RetroAchievements
+  RA_TEST_LINK: I-test ang RetroAchievements PC link
+  RA_CHECKING_IMAGE: Sinusuri ang image, ilang segundo ito...
+  RA_CHECK_RUNNING: May tumatakbo nang pagsuri ng image
+  RA_LOOKING_FOR_PC: Hinahanap ang PC client...
+  RA_UL_UNSUPPORTED: Hindi pa masusuri ang mga UL/USBExtreme na laro
+  RA_UL_UNSUPPORTED2: Ang mga simpleng .iso image lang sa DVD/ o CD/ ang suportado
+  RA_UNKNOWN_IMAGE: Hindi kilala ng RetroAchievements ang image na ito
+  RA_STILL_IDENTIFYING: Kinikilala pa ng PC ang image
+  RA_TRY_AGAIN: Subukan ulit pagkalipas ng ilang segundo
+  RA_NO_SOCKET: Hindi makapagbukas ang console ng network socket
+  RA_NO_SOCKET2: I-restart ang console, o tingnan ang ETH device sa settings
+  RA_TEST_NO_SOCKET2: Tingnan ang cable at ETH sa settings; kung gumagana ang network, i-reboot ang console
+  RA_PC_NO_ANSWER: Hindi sumagot ang PC client
+  RA_PC_NO_ANSWER2: Tingnan kung tumatakbo ang xeRAbora, o subukan ang PC link test
+  RA_SUPPORTED: Suportado ng RetroAchievements
+  RA_START_TO_TRACK: Simulan ang laro para masubaybayan ang mga achievement
+  RA_ACHIEVEMENTS: '%d achievement'
+  RA_ACHIEVEMENTS_FULL: '%d achievement: %d na-unlock, %d hindi suportado'
+  RA_HASH_FAILED: Hindi ma-hash ang image
+  RA_HASH_FAILED2: Tingnan ang RA/hashes.txt katabi ng mga laro para sa dahilan
+  RA_NET_BUSY: Ginagamit ng isang UDP transport ang network
+  RA_NET_BUSY2: 'Kailangan ng RA ang SMB stack: palitan ang protocol, o buuin ang .wl sa PC'
+  RA_NET_BUSY_HASH: 'Nasa RA/hashes.txt ang hash: kayang buuin ng xeRAbora ang .wl mula dito'
+  RA_NO_IP: Walang IP address ang console
+  RA_NO_IP2: Tingnan ang DHCP o ang static address sa Network settings
+  RA_TEST_NO_ANSWER: Walang PC client na sumagot sa loob ng 3 segundo
+  RA_TEST_NO_ANSWER2: Console%s. Tingnan kung tumatakbo ang xeRAbora at bukas ang UDP 18194
+  RA_TEST_FOUND: Nahanap ang PC client%s%s %s
+  RA_TEST_FOUND2: Sumagot sa loob ng %u ms, console%s
+  RA_NA_NEUTRINO: 'Kailangan ng RA tracking ang <OPL> core: hindi kailanman naglo-load ng ee_core ang paglulunsad sa Neutrino'
+  RA_NA_UDPFS: 'Hindi available ang RA tracking sa UDPFS: sa Neutrino nilulunsad ang mga laro'
+  RA_NA_PS1: Hindi available ang RA tracking para sa mga PS1 na laro
+  RA_TELEMETRY: RetroAchievements telemetry
+  RA_BADGES: Mga RetroAchievements badge
+  HTTP_GAMES: Mga laro sa HTTP
+  HTTP_SERVER: HTTP server
+  HTTP_PORT: HTTP port
+  HTTP_BASE_PATH: HTTP base path
+  HTTP_TEST: I-test ang HTTP server
+  HTTP_TEST_OK: 'OK ang server: nakalista ang mga laro'
+  HTTP_TEST_EMPTY: 'Walang laman ang catalog: tama ito, pero wala itong napapatunayan tungkol sa byte range'
+  HTTP_TEST_NO_ISO: Walang suportadong image sa catalog na mapag-te-test-an ng byte range
+  HTTP_ERR_CONNECT: Hindi maabot ang HTTP server
+  HTTP_ERR_CATALOG: Nawawala, hindi mabasa, o masyadong malaki ang games.csv
+  HTTP_ERR_RANGE: Hindi ibinalik ng server ang eksaktong mga byte na hiningi
+  HTTP_LAUNCH_UNAVAILABLE: 'Hindi pa ginagawa ang paglulunsad sa HTTP: mabu-browse lang ang catalog'
+  HTTP_ERR_COMPRESSED: Hindi pa suportado sa HTTP ang mga compressed image (.zso)
+  HTTP_NO_VMC: 'Hindi available sa HTTP ang mga virtual memory card: gumamit ng tunay na card'
+  HTTP_TAB_HINT: Binabasa ng HTTP ang games.csv mula sa iyong server. Itakda ang address, port at base path sa Network settings, saka gamitin ang Test.
+  RA_DISC_CHECK: 'RA: tingnan ang suporta sa disc'
+  RA_DISC_LAUNCH: 'RA: ilunsad ang disc'
+  RA_DISC_CHECKING: Sinusuri ang disc para sa RetroAchievements
+  RA_DISC_HASH_FAILED: 'Hindi ma-hash ang disc: tingnan ang RA/hashes.txt sa settings folder'
+  RA_DISC_HOME_ERROR: Hindi magagamit ang settings path para sa mga watch list ng disc
+  RA_DISC_ENABLE: I-enable muna ang RetroAchievements telemetry sa Network settings
+  RA_DISC_CHECK_FIRST: 'Walang watch list para sa disc na ito: gamitin muna ang RA check disc support'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: May nahanap na HDD, pero hindi mabasa ang APA partition table nito. Huwag itong i-format: baka maibabalik pa ang iyong mga laro.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: Hindi na-mount ang isang drive dahil hindi 512 byte ang mga sector nito (hal. drive na 4K ang sector). Mga 512-byte na sector lang ang nababasa ng OPL.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Sariling APA partition ang title na ito, at hindi kailanman binabago ng OPL ang partition table. Palitan ang pangalan nito sa PC.
+  POPS_SETTINGS_UNREADABLE: 'Hindi mabasa ang settings ng POPSTARTER: abala o hindi mabasa ang memory card. Subukan ulit kapag tapos na ang pag-load.'
+  GLOBAL_PS_EMULATION_SETTINGS: Global na setting ng PS emulation
+  RA_NO_LINK_UNTRACKED: 'Hindi available ang network: ilulunsad nang walang RetroAchievements ngayon.'
+  IGR_USB_DRIVERS_PROMPT: Nasa USB ang IGR Path, pero walang USBD.IRX at USBHDFSD.IRX ang %s, na kailangan ng console para maabot ang USB pagkatapos ng In-Game Reset. Kung wala ang mga ito, babagsak ang IGR sa PS2 browser. Kopyahin ang mga driver ng RiptOPL doon ngayon? Nilo-load din ng FMCB, OpenTuna at ibang exploit ang mga file na ito at maaaring iba ang kilos nila. Hindi kailanman pinapalitan ang mga umiiral na file. FAT32 USB lang.
+  IGR_USB_DRIVERS_FAILED: Hindi makopya ang mga USB driver sa %s (puno o hindi masulatan ang card). Babagsak ang IGR sa PS2 browser.
+  OFFICIAL_CFG_NOTIFICATION: Na-load ang opisyal na settings ng OPL mula sa %s
+  CFM_VMODE_HOLD_KEEP: Pindutin nang matagal para panatilihin
+  BDM_PS2_FOLDERS_UNREADABLE: Hindi mabuksan ang CD o DVD folder sa %s (error %d), kaya walang PS2 na larong nakalista sa device na iyon. Pindutin ang SELECT sa page nito para subukan ulit.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Naka-set sa bd ang Neutrino Filesystem, pero hindi kailanman iniulat ng device na ito ang device number nito, kaya hindi maituturo ang Neutrino dito. Itakda ang Neutrino Filesystem ng larong ito sa Auto o exfat.
+  CFM_VMODE_REVERT_IN: Babalik sa loob ng %d s
+  EMBER_DITHER: Ember dithering
+  HINT_EMBER_DITHER: Ember dithering (On o Off), isinusulat sa EMBER/settings.txt ng inilunsad na device. Mas nangingibabaw ang value ng bawat laro.
+  EMBER_SHADING: Ember shading
+  HINT_EMBER_SHADING: 'Lalim ng kulay ng Ember: 15-bit, o 24-bit (eksperimental). Isinusulat sa EMBER/settings.txt ng inilunsad na device. Mas nangingibabaw ang value ng bawat laro.'
+  EMBER_CONTROLLER: Ember controller
+  HINT_EMBER_CONTROLLER: 'Controller mode ng Ember: Auto, Analog o D2A. Karaniwang pinakamainam na itakda sa bawat laro (Triangle > Ember Game Settings), na nangingibabaw dito.'
+  EMBER_480P_CONFIRM: Walang larawan ang Ember 480p sa composite. Gamitin ang 480p?
+  EMBER_SHADING_24: 24-bit (eksperimental)
+  EMBER_GAME_SETTINGS: Ember game settings
+  HINT_EMBER_GAME_SETTING: Para sa larong ito lang. Pindutin ang OK para isulat ang EMBER/games/<name>/settings.txt bago ilunsad. Pinapanatili ng hindi ginalaw na Default ang umiiral na value sa file; inaalis ng pagbabalik sa Default ang override nito.
+  EMBER_TIMING: Ember timing
+  HINT_EMBER_TIMING: 'Video timing ng Ember: sinusundan ng Auto ang region ng disc, pinipilit ng NTSC ang 60 Hz, pinipilit ng PAL ang 50 Hz. Isinusulat sa EMBER/settings.txt ng inilunsad na device.'
+  EMBER_GLOBAL_WARNING: Para sa bawat PS1 na laro ang mga Ember setting na ito, at may mga larong nagka-crash dahil dito. Para baguhin ang isang laro lang, gamitin ang Triangle > Ember Game Settings sa larong iyon.
+  PS1_SAVE_GUIDANCE: Nakadepende sa Ember o POPSTARTER ang mga PS1 save; hindi naaangkop ang mga PS2 VMC setting.
+  GAME_TYPE_LABELS: Ipakita ang mga label na [PS1]/[PS2]
+  AUTO_CREATE_VMC: Gumawa ng VMC sa unang paglulunsad
+  AUTO_VMC_CREATING: Ginagawa ang VMC ng larong ito...
+  AUTO_VMC_FAILED: Hindi magawa ang VMC ng larong ito. Magsisimula ang laro nang wala nito.
+  FAV_SAVING: Sine-save sa Mga Paborito...
+  FAV_SAVED: Na-save sa Mga Paborito
+  FAV_SAVE_FAILED: Hindi ma-save sa Mga Paborito
+  FAV_REMOVED: Inalis sa Mga Paborito
+  FAV_REMOVE_FAILED: Hindi maalis sa Mga Paborito
+  POPS_UDPFS_SETTINGS: Network settings ng POPS UDPFS
+  POPS_UDPFS_DISCOVERY: Sine-save sa bawat USB POPS folder. Discovery ang gamit ng server 0.0.0.0.
+  POPS_UDPFS_NOT_READY: Kailangan ng POPS UDPFS ang magkatugma at tamang IPCONFIG.DAT at UDPFSCONFIG.DAT sa bawat USB POPS folder. I-configure ang mga ito sa POPS Network Settings.
+  HINT_POPS_UDPFS_IP: Static na PS2 IP na ginagamit ng POPS UDPFS driver pagkatapos ng IOP reset nito.
+  POPS_UDPFS_ALL_USB_FOLDERS: Lahat ng USB POPS folder
+  POPS_UDPFS_INVALID_SUFFIX: ' (hindi tama)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (kulang)'
+  POPS_UDPFS_DRIVER_NOT_READY: Kailangan ng POPS UDPFS na naka-install sa memory card ang .udpfs driver pair. Ihanda ito nang manu-mano o i-enable ang BDMA Apply on Launch.
+  VMC_REPLACE_REQUIRES_DELETE: Mabubura ang mga save nito kapag binago ang laki ng VMC. I-backup ang umiiral na VMC at gamitin ang Delete bago gumawa ng bagong laki.
+  VMC_CREATE_FAILED: Hindi magawa ang VMC. Tingnan ang device, koneksyon at write access. Hindi napalitan ang mga umiiral na save.
+  UDPFS_IP_CONFLICT: May ibang device sa iyong network na gumagamit ng IP address ng PS2 na ito, kaya doon napupunta ang mga sagot ng UDPFS server. Magtakda ng ibang PS2 IP sa Network Settings.
+  CFG_TITLES: Ipakita ang mga CFG title sa listahan ng laro
+  HINT_CFG_TITLES: Ipinapakita ang Title mula sa CFG ng bawat laro sa halip na ang pangalan ng file nito, at doon nag-aayos. Binabasa ang bawat CFG kapag nagre-refresh ang listahan, kaya mas mabagal mag-load. Pagpapakita lang.
+  PARENLOCK_GAME: Parental Lock
+  PARENLOCK_GAME_HINT: Kailangan ang parental lock password para simulan ang larong ito.
+  PARENLOCK_GAME_NO_PASSWORD: Magtakda ng parental lock password, kung hindi ay hindi mala-lock ang larong ito.

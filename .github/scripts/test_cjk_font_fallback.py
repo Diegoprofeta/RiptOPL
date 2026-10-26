@@ -24,7 +24,12 @@ assert "FT_Get_Char_Index(fonts_[fallbackFontId_].face, gid) != 0" in selection
 assert "int fntLoadFallback(char *path)" in font
 assert "int fntLoadFallback(char *path);" in header
 assert "int loadFallback(char *path);" in fontsystem
-assert "lngInitFallbackFont();" in language
+lang_header = (root / "include/lang.h").read_text(encoding="utf-8")
+opl = (root / "src/app/opl.cpp").read_text(encoding="utf-8")
+# The fallback belongs to the FINAL settings home: loaded after _loadConfig, never from lngInit.
+assert "void lngInitFallbackFont(void);" in lang_header
+assert "    lngInitFallbackFont();" not in language
+assert opl.index("lngInitFallbackFont();") > opl.index("_loadConfig();")
 assert "configGetHomePath()" in language
 assert "fntLoadDefault(NULL);" in language  # Existing UI-language reset retained.
 assert '"font_CJK.ttf"' in language and '"font_Japanese.ttf"' in language

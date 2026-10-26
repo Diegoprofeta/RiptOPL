@@ -315,3 +315,156 @@ translations:
   VIEW_APPS: Prikazane aplikacije
   EMBER_DISPLAY: Ember način prikaza
   HINT_EMBER_DISPLAY: Izlazni način koji Ember koristi za PS1 igre. 240p ili 480p zapisuje se u settings.txt u mapi EMBER pokrenutog uređaja. Zadano ponovno uklanja tu postavku, kao i datoteku ako u njoj nije bilo ničega drugog.
+  NETCONFIG: Mrežne postavke
+  BDMMODE: Način pokretanja BDM-a
+  CAT_SMB_SERVER: '- SMB poslužitelj -'
+  DNS_SERVER: DNS poslužitelj
+  VMC_STATUS: Status
+  RESETCOLOR: Vrati boje
+  INFO: Informacije
+  VMC_SLOT1: VMC utor 1
+  VMC_SLOT2: VMC utor 2
+  VSYNC: V-Sync
+  PS2LOGO: PS2 logo
+  HINT_PS2LOGO: Prikazuje se za valjan logo diska koji odgovara regiji konzole.
+  DS34BT_MODE: DualShock3/4 BT
+  MTAP_ENABLE: Emulacija multitapa
+  HINT_PADEMU_WORKAROUND: Neki lažni DS3 kontroleri trebaju zaobilazno rješenje; ova ga opcija uključuje.
+  CFG_NOTIFICATION: Konfiguracija učitana s %s
+  THM_NOTIFICATION: Tema učitana s %s
+  LNG_NOTIFICATION: Jezik učitan s %s
+  PARTITION_NOTIFICATION: Particija %s je montirana.
+  FORUM_DETAILS: 'Forumi za podršku:'
+  INFO_TITLE: Naslov
+  INFO_DEVELOPER: Razvojni tim
+  HINT_NEUTRINO_AUTO_ELF: Prosljeđuje Neutrinu ELF za pokretanje igre radi traženja postavki po naslovu. Zadano uključeno; ručno postavljena opcija ELF za pokretanje ima prednost.
+  HINT_POPSTARTER_PATH: Gdje je POPSTARTER.ELF. Ako ostane prazno, RIPPS2 upisuje onaj koji pronađe na pogonu; prepiši ga da koristiš drugi, npr. usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Neutrino argumenti dulji su od duljine koja se može spremiti. Skrati neko polje prije spremanja.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Neutrino argumenti pokretanja prelaze sigurnu granicu. Skrati globalne argumente ili argumente igre.
+  NEUTRINO_AUTO_ELF: Automatski ELF za pokretanje (-elf)
+  HINT_NEUTRINO_PATH: 'Gdje se nalazi neutrino.elf? <not set> = uređaj igre -> mc0/mc1. Prilagođena puna putanja pokušava se prva. Primjeri: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Prikaz PS2/PS1 igara
+  HINT_GAME_VIEW_MODE: Sve prikazuje PS2 i PS1 igre zajedno, a L3 izmjenjuje Sve, PS1, PS2. PS2 ili PS1 prikazuje samo tu vrstu i isključuje L3. APLIKACIJE i Favoriti koriste vlastita pravila prikaza.
+  VIEW_MIXED: Prikazane su PS2 + PS1 igre
+  VIEW_PS1_ELF: Prikazane su PS1 ELF aplikacije
+  APPS_DISPLAY: Prikaz aplikacija
+  HINT_APPS_DISPLAY: Sve prikazuje svaki ELF u jednom popisu APLIKACIJE i isključuje L3. Aplikacije / PS1ELF odvaja naslove s [PS1] na drugu L3 stranicu; pokretanje se ne mijenja.
+  VIEW: Prikaz
+  VIEW_PS2: Prikazane su PS2 igre iz favorita
+  VIEW_PS1: Prikazane su PS1 igre iz favorita
+  VIEW_ELF: Prikazani su ELF-ovi iz favorita
+  VIEW_ALL: Prikazani su svi favoriti
+  VMC_FRAGMENTED_ON_CREATE: VMC je stvoren, ali je fragmentiran. Emulaciji memorijske kartice treba jedna neprekinuta datoteka, pa će ovaj VMC biti preskočen pri pokretanju i koristit će se stvarna kartica. Oslobodi prostor i stvori ga ponovno ili ga kopiraj s drugog uređaja.
+  KEYB_MOVE_CURSOR: Pomakni pokazivač
+  TITLECOLOR: Boja naslova igre
+  RA_CHECK_GAME: Provjeri podršku za RetroAchievements
+  RA_TEST_LINK: Testiraj RetroAchievements vezu s računalom
+  RA_CHECKING_IMAGE: Provjera slike, ovo traje nekoliko sekundi...
+  RA_CHECK_RUNNING: Provjera slike već je u tijeku
+  RA_LOOKING_FOR_PC: Traženje klijenta na računalu...
+  RA_UL_UNSUPPORTED: UL/USBExtreme igre još se ne mogu provjeriti
+  RA_UL_UNSUPPORTED2: Podržane su samo obične .iso slike u DVD/ ili CD/
+  RA_UNKNOWN_IMAGE: RetroAchievements ne poznaje ovu sliku
+  RA_STILL_IDENTIFYING: Računalo još prepoznaje sliku
+  RA_TRY_AGAIN: Pokušaj ponovno za nekoliko sekundi
+  RA_NO_SOCKET: Konzola nije mogla otvoriti mrežnu utičnicu
+  RA_NO_SOCKET2: Ponovno pokreni konzolu ili provjeri ETH uređaj u postavkama
+  RA_TEST_NO_SOCKET2: Provjeri kabel i ETH u postavkama; ako mreža radi, ponovno pokreni konzolu
+  RA_PC_NO_ANSWER: Klijent na računalu nije odgovorio
+  RA_PC_NO_ANSWER2: Provjeri radi li xeRAbora ili pokušaj test veze s računalom
+  RA_SUPPORTED: Podržano na RetroAchievements
+  RA_START_TO_TRACK: Pokreni igru da bi se postignuća pratila
+  RA_ACHIEVEMENTS: '%d postignuća'
+  RA_ACHIEVEMENTS_FULL: '%d postignuća: %d otključano, %d nepodržano'
+  RA_HASH_FAILED: Hash slike nije se mogao izračunati
+  RA_HASH_FAILED2: Razlog je u RA/hashes.txt uz igre
+  RA_NET_BUSY: Mrežu koristi UDP prijenos
+  RA_NET_BUSY2: 'RA zahtijeva SMB stog: promijeni protokol ili izradi .wl na računalu'
+  RA_NET_BUSY_HASH: 'Hash je u RA/hashes.txt: xeRAbora iz njega može izraditi .wl'
+  RA_NO_IP: Konzola nema IP adresu
+  RA_NO_IP2: Provjeri DHCP ili statičku adresu u mrežnim postavkama
+  RA_TEST_NO_ANSWER: Nijedan klijent na računalu nije odgovorio unutar 3 sekunde
+  RA_TEST_NO_ANSWER2: Konzola%s. Provjeri radi li xeRAbora i je li UDP 18194 otvoren
+  RA_TEST_FOUND: Klijent na računalu pronađen%s%s %s
+  RA_TEST_FOUND2: Odgovor za %u ms, konzola%s
+  RA_NA_NEUTRINO: 'RA praćenje zahtijeva jezgru <OPL>: Neutrino pokretanja nikad ne učitavaju ee_core'
+  RA_NA_UDPFS: 'RA praćenje nije dostupno na UDPFS-u: igre se pokreću preko Neutrina'
+  RA_NA_PS1: RA praćenje nije dostupno za PS1 igre
+  RA_TELEMETRY: RetroAchievements telemetrija
+  RA_BADGES: RetroAchievements značke
+  HTTP_GAMES: HTTP igre
+  HTTP_SERVER: HTTP poslužitelj
+  HTTP_PORT: HTTP priključak
+  HTTP_BASE_PATH: HTTP osnovna putanja
+  HTTP_TEST: Testiraj HTTP poslužitelj
+  HTTP_TEST_OK: 'Poslužitelj je u redu: igre su navedene'
+  HTTP_TEST_EMPTY: 'Katalog je prazan: valjan, ali ne dokazuje ništa o rasponima bajtova'
+  HTTP_TEST_NO_ISO: U katalogu nema podržane slike na kojoj bi se testirao raspon bajtova
+  HTTP_ERR_CONNECT: HTTP poslužitelj nije dostupan
+  HTTP_ERR_CATALOG: games.csv nedostaje, ne može se pročitati ili je prevelik
+  HTTP_ERR_RANGE: Poslužitelj nije vratio točno one bajtove koji su traženi
+  HTTP_LAUNCH_UNAVAILABLE: 'HTTP pokretanje još nije izrađeno: katalog se može samo pregledavati'
+  HTTP_ERR_COMPRESSED: Komprimirane slike (.zso) još nisu podržane preko HTTP-a
+  HTTP_NO_VMC: 'Virtualne memorijske kartice nisu dostupne preko HTTP-a: koristi stvarnu karticu'
+  HTTP_TAB_HINT: HTTP čita games.csv s tvog poslužitelja. Postavi adresu, priključak i osnovnu putanju u mrežnim postavkama, pa koristi Test.
+  RA_DISC_CHECK: 'RA: provjeri podršku za disk'
+  RA_DISC_LAUNCH: 'RA: pokreni disk'
+  RA_DISC_CHECKING: Provjera diska za RetroAchievements
+  RA_DISC_HASH_FAILED: 'Hash diska nije se mogao izračunati: provjeri RA/hashes.txt u mapi postavki'
+  RA_DISC_HOME_ERROR: Putanja postavki ne može se koristiti za popise praćenja diskova
+  RA_DISC_ENABLE: Najprije uključi RetroAchievements telemetriju u mrežnim postavkama
+  RA_DISC_CHECK_FIRST: 'Za ovaj disk nema popisa praćenja: najprije koristi RA provjeru podrške za disk'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: HDD je pronađen, ali njegova APA tablica particija ne može se pročitati. Nemoj ga formatirati: tvoje se igre možda mogu spasiti.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: Pogon nije montiran jer njegovi sektori nisu od 512 bajtova (npr. pogon sa sektorima od 4K). OPL može čitati samo sektore od 512 bajtova.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Ovaj naslov je vlastita APA particija, a OPL nikad ne mijenja tablicu particija. Preimenuj ga na računalu.
+  POPS_SETTINGS_UNREADABLE: 'POPSTARTER postavke nisu se mogle pročitati: memorijska kartica je zauzeta ili nečitljiva. Pokušaj ponovno kad učitavanje završi.'
+  GLOBAL_PS_EMULATION_SETTINGS: Globalne postavke PS emulacije
+  RA_NO_LINK_UNTRACKED: 'Mreža nije dostupna: ovaj put pokretanje bez RetroAchievements.'
+  IGR_USB_DRIVERS_PROMPT: IGR putanja je na USB-u, ali na %s nedostaju USBD.IRX i USBHDFSD.IRX, koje konzoli trebaju da bi nakon In-Game Reseta došla do USB-a. Bez njih IGR pada u PS2 preglednik. Kopirati RiptOPL-ove upravljačke programe ondje sada? FMCB, OpenTuna i drugi exploiti također učitavaju te datoteke i s njima se mogu ponašati drugačije. Postojeće datoteke nikad se ne zamjenjuju. Samo FAT32 USB.
+  IGR_USB_DRIVERS_FAILED: USB upravljački programi nisu se mogli kopirati na %s (kartica je puna ili zaštićena od pisanja). IGR će pasti u PS2 preglednik.
+  OFFICIAL_CFG_NOTIFICATION: Službene OPL postavke učitane s %s
+  CFM_VMODE_HOLD_KEEP: Drži za zadržavanje
+  BDM_PS2_FOLDERS_UNREADABLE: Mapa CD ili DVD na %s nije se mogla otvoriti (pogreška %d), pa taj uređaj ne prikazuje PS2 igre. Pritisni SELECT na njegovoj stranici da pokušaš ponovno.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Neutrino datotečni sustav postavljen je na bd, ali ovaj uređaj nikad nije javio svoj broj uređaja, pa se Neutrino ne može usmjeriti na njega. Postavi Neutrino datotečni sustav ove igre na Auto ili exfat.
+  CFM_VMODE_REVERT_IN: Vraćanje za %d s
+  EMBER_DITHER: Ember dithering
+  HINT_EMBER_DITHER: Ember dithering (uključen ili isključen), zapisan u EMBER/settings.txt pokrenutog uređaja. Vrijednost po igri ima prednost.
+  EMBER_SHADING: Ember sjenčanje
+  HINT_EMBER_SHADING: 'Ember dubina boja: 15-bitna ili 24-bitna (eksperimentalno). Zapisuje se u EMBER/settings.txt pokrenutog uređaja. Vrijednost po igri ima prednost.'
+  EMBER_CONTROLLER: Ember kontroler
+  HINT_EMBER_CONTROLLER: 'Ember način kontrolera: Auto, Analogni ili D2A. Najbolje ga je postaviti po igri (Trokut > Ember postavke igre), što ima prednost.'
+  EMBER_480P_CONFIRM: Ember 480p ne prikazuje sliku preko kompozitnog kabela. Koristiti 480p?
+  EMBER_SHADING_24: 24-bitno (eksperimentalno)
+  EMBER_GAME_SETTINGS: Ember postavke igre
+  HINT_EMBER_GAME_SETTING: Samo ova igra. Pritisni OK da se prije pokretanja zapiše EMBER/games/<name>/settings.txt. Netaknuto Zadano zadržava postojeću vrijednost u datoteci; vraćanje vrijednosti na Zadano uklanja njezinu zamjenu.
+  EMBER_TIMING: Ember vremenski način
+  HINT_EMBER_TIMING: 'Ember video vremenski način: Auto prati regiju diska, NTSC nameće 60 Hz, PAL nameće 50 Hz. Zapisuje se u EMBER/settings.txt pokrenutog uređaja.'
+  EMBER_GLOBAL_WARNING: Ove Ember postavke vrijede za svaku PS1 igru, a neke se igre s njima ruše. Za promjenu samo jedne igre koristi Trokut > Ember postavke igre na toj igri.
+  PS1_SAVE_GUIDANCE: PS1 spremljene igre ovise o Emberu ili POPSTARTER-u; PS2 VMC postavke se ne primjenjuju.
+  GAME_TYPE_LABELS: Prikaži oznake [PS1]/[PS2]
+  AUTO_CREATE_VMC: Stvori VMC pri prvom pokretanju
+  AUTO_VMC_CREATING: Stvaranje VMC-a ove igre...
+  AUTO_VMC_FAILED: VMC ove igre nije se mogao stvoriti. Igra počinje bez njega.
+  FAV_SAVING: Spremanje u Favorite...
+  FAV_SAVED: Spremljeno u Favorite
+  FAV_SAVE_FAILED: Spremanje u Favorite nije uspjelo
+  FAV_REMOVED: Uklonjeno iz Favorita
+  FAV_REMOVE_FAILED: Uklanjanje iz Favorita nije uspjelo
+  POPS_UDPFS_SETTINGS: POPS UDPFS mrežne postavke
+  POPS_UDPFS_DISCOVERY: Sprema u svaku USB mapu POPS. Poslužitelj 0.0.0.0 koristi otkrivanje.
+  POPS_UDPFS_NOT_READY: POPS UDPFS zahtijeva odgovarajuće valjane IPCONFIG.DAT i UDPFSCONFIG.DAT u svakoj USB mapi POPS. Postavi ih u POPS mrežnim postavkama.
+  HINT_POPS_UDPFS_IP: Statička PS2 IP adresa koju POPS UDPFS upravljački program koristi nakon ponovnog pokretanja IOP-a.
+  POPS_UDPFS_ALL_USB_FOLDERS: Sve USB mape POPS
+  POPS_UDPFS_INVALID_SUFFIX: ' (nevaljano)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (nepotpuno)'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS zahtijeva da par upravljačkih programa .udpfs bude instaliran na memorijskoj kartici. Pripremi ga ručno ili uključi Primijeni BDMA pri pokretanju.
+  VMC_REPLACE_REQUIRES_DELETE: Promjena veličine VMC-a izbrisala bi njegove spremljene igre. Napravi sigurnosnu kopiju postojećeg VMC-a i upotrijebi Izbriši prije stvaranja nove veličine.
+  VMC_CREATE_FAILED: VMC se nije mogao stvoriti. Provjeri uređaj, vezu i pristup za pisanje. Postojeće spremljene igre nisu zamijenjene.
+  UDPFS_IP_CONFLICT: Drugi uređaj na tvojoj mreži koristi IP adresu ove konzole PS2, pa odgovori UDPFS poslužitelja idu njemu. Postavi drugu PS2 IP adresu u mrežnim postavkama.
+  CFG_TITLES: Prikaži CFG naslove u popisima igara
+  HINT_CFG_TITLES: Prikazuje naslov iz CFG-a svake igre umjesto naziva datoteke i razvrstava po njemu. Čita svaki CFG kad se popis osvježava, pa se popisi sporije učitavaju. Samo prikaz.
+  LOGOART: Slika logotipa
+  HINT_LOGOART: Prikazuje logo igre (<ID>_LGO) kad ga tema koristi. Isključeno skriva i njegovu zadanu sliku, ali zadržava omote, slike diskova i pozadine.
+  PARENLOCK_GAME: Roditeljska zaštita
+  PARENLOCK_GAME_HINT: Zahtijeva lozinku roditeljske zaštite za pokretanje ove igre.
+  PARENLOCK_GAME_NO_PASSWORD: Postavi lozinku roditeljske zaštite, inače ova igra neće biti zaključana.

@@ -317,3 +317,132 @@ translations:
   HINT_EMBER_DISPLAY: Výstupní režim, který Ember používá pro hry PS1. 240p nebo 480p se zapíše do souboru settings.txt ve složce EMBER spouštěného zařízení. Výchozí toto nastavení zase odstraní, a spolu s ním i soubor, pokud v něm nic dalšího nebylo.
   LOGOART: "Loga her"
   HINT_LOGOART: "Zobrazí logo hry (<ID>_LGO), pokud jej téma používá. Vypnutí skryje i výchozí obrázek; obaly, obrázky disků a pozadí zůstanou beze změny."
+  HINT_NEUTRINO_AUTO_ELF: Předá zaváděcí ELF hry Neutrinu, aby vyhledalo nastavení pro daný titul. Ve výchozím stavu zapnuto; ručně nastavená volba Boot ELF má přednost.
+  HINT_POPSTARTER_PATH: Kde je POPSTARTER.ELF. Když zůstane prázdné, RIPPS2 doplní ten, který najde na disku; přepište, chcete-li jiný, např. usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Argumenty Neutrina přesahují délku, kterou lze uložit. Před uložením některé pole zkraťte.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Spouštěcí argumenty Neutrina přesahují bezpečný limit. Zkraťte globální nebo herní argumenty.
+  NEUTRINO_AUTO_ELF: Automatický Boot ELF (-elf)
+  HINT_NEUTRINO_PATH: 'Kde je neutrino.elf? <nenastaveno> = zařízení hry -> mc0/mc1. Vlastní úplná cesta se zkouší první. Příklady: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Zobrazení her PS2/PS1
+  HINT_GAME_VIEW_MODE: Vše zobrazí hry PS2 a PS1 dohromady a L3 přepíná Vše, PS1, PS2. PS2 nebo PS1 zobrazí jen ten typ a vypne L3. APPS a Oblíbené hry mají vlastní pravidla zobrazení.
+  VIEW_MIXED: Zobrazeny hry PS2 + PS1
+  VIEW_PS1_ELF: Zobrazeny aplikace PS1 ELF
+  APPS_DISPLAY: Zobrazení aplikací
+  HINT_APPS_DISPLAY: Vše zobrazí každý ELF v jednom seznamu APPS s vypnutým L3. Aplikace / PS1ELF oddělí tituly s [PS1] na druhou stránku L3; spouštění se nemění.
+  VIEW: Zobrazení
+  VIEW_PS2: Zobrazeny oblíbené hry PS2
+  VIEW_PS1: Zobrazeny oblíbené hry PS1
+  VIEW_ELF: Zobrazeny oblíbené ELF
+  VIEW_ALL: Zobrazeny všechny oblíbené hry
+  VMC_FRAGMENTED_ON_CREATE: VMC byla vytvořena, ale je fragmentovaná. Emulace paměťové karty potřebuje jeden souvislý soubor, takže se tato VMC při spuštění přeskočí a použije se skutečná karta. Uvolněte místo a vytvořte ji znovu, nebo ji zkopírujte z jiného zařízení.
+  KEYB_MOVE_CURSOR: Posunout kurzor
+  TITLECOLOR: Barva názvů her
+  RA_CHECK_GAME: Zkontrolovat podporu RetroAchievements
+  RA_TEST_LINK: Otestovat spojení RetroAchievements s PC
+  RA_CHECKING_IMAGE: Kontrola obrazu, potrvá to pár sekund...
+  RA_CHECK_RUNNING: Kontrola obrazu už běží
+  RA_LOOKING_FOR_PC: Hledání klienta na PC...
+  RA_UL_UNSUPPORTED: Hry UL/USBExtreme zatím nelze kontrolovat
+  RA_UL_UNSUPPORTED2: Podporovány jsou jen obyčejné obrazy .iso v DVD/ nebo CD/
+  RA_UNKNOWN_IMAGE: RetroAchievements tento obraz nezná
+  RA_STILL_IDENTIFYING: PC obraz stále rozpoznává
+  RA_TRY_AGAIN: Zkuste to znovu za pár sekund
+  RA_NO_SOCKET: Konzole nemohla otevřít síťový socket
+  RA_NO_SOCKET2: Restartujte konzoli, nebo zkontrolujte zařízení ETH v nastavení
+  RA_TEST_NO_SOCKET2: Zkontrolujte kabel a ETH v nastavení; pokud síť běží, restartujte konzoli
+  RA_PC_NO_ANSWER: Klient na PC neodpověděl
+  RA_PC_NO_ANSWER2: Zkontrolujte, že běží xeRAbora, nebo zkuste test spojení s PC
+  RA_SUPPORTED: Podporováno RetroAchievements
+  RA_START_TO_TRACK: Spusťte hru pro sledování úspěchů
+  RA_ACHIEVEMENTS: '%d úspěchů'
+  RA_ACHIEVEMENTS_FULL: '%d úspěchů -- %d odemčeno, %d nepodporováno'
+  RA_HASH_FAILED: Hash obrazu nešlo spočítat
+  RA_HASH_FAILED2: Důvod najdete v RA/hashes.txt vedle her
+  RA_NET_BUSY: Síť používá přenos UDP
+  RA_NET_BUSY2: RA potřebuje zásobník SMB -- přepněte protokol, nebo vytvořte .wl na PC
+  RA_NET_BUSY_HASH: Hash je v RA/hashes.txt -- xeRAbora z něj může vytvořit .wl
+  RA_NO_IP: Konzole nemá IP adresu
+  RA_NO_IP2: Zkontrolujte DHCP nebo statickou adresu v nastavení sítě
+  RA_TEST_NO_ANSWER: Do 3 sekund neodpověděl žádný klient na PC
+  RA_TEST_NO_ANSWER2: Konzole%s. Zkontrolujte, že běží xeRAbora a UDP 18194 je otevřený
+  RA_TEST_FOUND: Klient na PC nalezen%s%s %s
+  RA_TEST_FOUND2: Odpověď za %u ms, konzole%s
+  RA_NA_NEUTRINO: Sledování RA potřebuje jádro <OPL> -- spuštění přes Neutrino nikdy nenačte ee_core
+  RA_NA_UDPFS: Sledování RA není na UDPFS dostupné -- hry se spouštějí přes Neutrino
+  RA_NA_PS1: Sledování RA není dostupné pro hry PS1
+  RA_TELEMETRY: Telemetrie RetroAchievements
+  RA_BADGES: Odznaky RetroAchievements
+  HTTP_GAMES: Hry HTTP
+  HTTP_SERVER: Server HTTP
+  HTTP_PORT: Port HTTP
+  HTTP_BASE_PATH: Základní cesta HTTP
+  HTTP_TEST: Otestovat server HTTP
+  HTTP_TEST_OK: Server OK -- hry vypsány
+  HTTP_TEST_EMPTY: Katalog je prázdný -- platný, ale o rozsazích bajtů nic nedokazuje
+  HTTP_TEST_NO_ISO: Katalog nemá podporovaný obraz, na kterém by šel otestovat rozsah bajtů
+  HTTP_ERR_CONNECT: Server HTTP není dosažitelný
+  HTTP_ERR_CATALOG: games.csv chybí, nejde přečíst nebo je příliš velký
+  HTTP_ERR_RANGE: Server nevrátil přesně ty bajty, o které se žádalo
+  HTTP_LAUNCH_UNAVAILABLE: Spouštění přes HTTP zatím není hotové -- katalog lze jen procházet
+  HTTP_ERR_COMPRESSED: Komprimované obrazy (.zso) přes HTTP zatím nejsou podporované
+  HTTP_NO_VMC: Virtuální paměťové karty přes HTTP nejsou dostupné -- použijte fyzickou kartu
+  HTTP_TAB_HINT: HTTP čte games.csv z vašeho serveru. Nastavte adresu, port a základní cestu v nastavení sítě a pak použijte Test.
+  RA_DISC_CHECK: 'RA: zkontrolovat podporu disku'
+  RA_DISC_LAUNCH: 'RA: spustit disk'
+  RA_DISC_CHECKING: Kontrola disku pro RetroAchievements
+  RA_DISC_HASH_FAILED: Hash disku nešlo spočítat -- zkontrolujte RA/hashes.txt ve složce nastavení
+  RA_DISC_HOME_ERROR: Cestu nastavení nelze použít pro seznamy sledování disků
+  RA_DISC_ENABLE: Nejdřív zapněte telemetrii RetroAchievements v nastavení sítě
+  RA_DISC_CHECK_FIRST: 'Pro tento disk není seznam sledování -- nejdřív použijte RA: zkontrolovat podporu disku'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: HDD nalezen, ale jeho tabulku oddílů APA nelze přečíst. Neformátujte ho -- vaše hry možná půjde zachránit.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: Disk nebyl připojen, protože jeho sektory nemají 512 bajtů (např. disk se sektory 4K). OPL umí číst jen sektory 512 bajtů.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Tento titul je samostatný oddíl APA a OPL tabulku oddílů nikdy neupravuje. Přejmenujte ho na PC.
+  POPS_SETTINGS_UNREADABLE: Nastavení POPSTARTER nešlo přečíst -- paměťová karta je zaneprázdněná nebo nečitelná. Zkuste to znovu po dokončení načítání.
+  GLOBAL_PS_EMULATION_SETTINGS: Globální nastavení emulace PS
+  RA_NO_LINK_UNTRACKED: Síť není dostupná -- tentokrát spuštění bez RetroAchievements.
+  IGR_USB_DRIVERS_PROMPT: Cesta IGR je na USB, ale v %s chybí USBD.IRX a USBHDFSD.IRX, které konzole potřebuje, aby se po In-Game Resetu dostala k USB. Bez nich IGR spadne do prohlížeče PS2. Zkopírovat tam teď ovladače RiptOPL? FMCB, OpenTuna a další exploity tyto soubory také načítají a mohou se s nimi chovat jinak. Existující soubory se nikdy nenahrazují. Jen USB s FAT32.
+  IGR_USB_DRIVERS_FAILED: Ovladače USB nešlo zkopírovat do %s (karta plná nebo nezapisovatelná). IGR spadne do prohlížeče PS2.
+  OFFICIAL_CFG_NOTIFICATION: Oficiální nastavení OPL načteno z %s
+  CFM_VMODE_HOLD_KEEP: Podržením ponecháte
+  BDM_PS2_FOLDERS_UNREADABLE: Složku CD ani DVD v %s nešlo otevřít (chyba %d), takže toto zařízení nevypisuje žádné hry PS2. Stiskněte SELECT na jeho stránce pro nový pokus.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Souborový systém Neutrina je nastaven na bd, ale toto zařízení nikdy nenahlásilo své číslo, takže na něj Neutrino nelze nasměrovat. Nastavte souborový systém Neutrina pro tuto hru na Auto nebo exfat.
+  CFM_VMODE_REVERT_IN: Vrácení za %d s
+  EMBER_DITHER: Rozptyl Ember
+  HINT_EMBER_DITHER: Rozptyl (dithering) Ember (zapnuto nebo vypnuto), zapisuje se do EMBER/settings.txt na spouštěném zařízení. Hodnota pro hru má přednost.
+  EMBER_SHADING: Stínování Ember
+  HINT_EMBER_SHADING: 'Barevná hloubka Ember: 15bitová, nebo 24bitová (experimentální). Zapisuje se do EMBER/settings.txt na spouštěném zařízení. Hodnota pro hru má přednost.'
+  EMBER_CONTROLLER: Ovladač Ember
+  HINT_EMBER_CONTROLLER: 'Režim ovladače Ember: Auto, Analog nebo D2A. Obvykle nejlépe nastavit pro hru (Trojúhelník > Nastavení hry Ember), což má přednost.'
+  EMBER_480P_CONFIRM: Ember v 480p přes kompozit nedává obraz. Použít 480p?
+  EMBER_SHADING_24: 24bitová (experimentální)
+  EMBER_GAME_SETTINGS: Nastavení hry Ember
+  HINT_EMBER_GAME_SETTING: Jen tato hra. Stiskněte OK pro zápis EMBER/games/<název>/settings.txt před spuštěním. Nedotčené Výchozí ponechá existující hodnotu v souboru; vrácení hodnoty na Výchozí odstraní její přepsání.
+  EMBER_TIMING: Časování Ember
+  HINT_EMBER_TIMING: 'Časování videa Ember: Auto se řídí regionem disku, NTSC vynutí 60 Hz, PAL vynutí 50 Hz. Zapisuje se do EMBER/settings.txt na spouštěném zařízení.'
+  EMBER_GLOBAL_WARNING: Tato nastavení Ember platí pro každou hru PS1 a některé hry s nimi padají. Chcete-li změnit jen jednu hru, použijte u ní Trojúhelník > Nastavení hry Ember.
+  PS1_SAVE_GUIDANCE: Uložené pozice PS1 závisejí na Ember nebo POPSTARTER; nastavení VMC pro PS2 neplatí.
+  GAME_TYPE_LABELS: Zobrazit štítky [PS1]/[PS2]
+  AUTO_CREATE_VMC: Vytvořit VMC při prvním spuštění
+  AUTO_VMC_CREATING: Vytváření VMC této hry...
+  AUTO_VMC_FAILED: VMC této hry nešlo vytvořit. Hra se spustí bez ní.
+  FAV_SAVING: Ukládání do Oblíbených her...
+  FAV_SAVED: Uloženo do Oblíbených her
+  FAV_SAVE_FAILED: Do Oblíbených her nešlo uložit
+  FAV_REMOVED: Odebráno z Oblíbených her
+  FAV_REMOVE_FAILED: Z Oblíbených her nešlo odebrat
+  POPS_UDPFS_SETTINGS: Síťová nastavení POPS UDPFS
+  POPS_UDPFS_DISCOVERY: Ukládá do každé složky POPS na USB. Server 0.0.0.0 použije vyhledání.
+  POPS_UDPFS_NOT_READY: POPS UDPFS potřebuje odpovídající platné IPCONFIG.DAT a UDPFSCONFIG.DAT v každé složce POPS na USB. Nastavte je v Síťových nastaveních POPS.
+  HINT_POPS_UDPFS_IP: Statická IP PS2, kterou ovladač POPS UDPFS použije po resetu IOP.
+  POPS_UDPFS_ALL_USB_FOLDERS: Všechny složky POPS na USB
+  POPS_UDPFS_INVALID_SUFFIX: ' (neplatné)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (neúplné)'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS potřebuje na paměťové kartě nainstalovanou dvojici ovladačů .udpfs. Nainstalujte ji ručně, nebo zapněte BDMA Použít při spuštění.
+  VMC_REPLACE_REQUIRES_DELETE: Změna velikosti VMC by smazala její uložené pozice. Zálohujte stávající VMC a před vytvořením nové velikosti použijte Smazat.
+  VMC_CREATE_FAILED: VMC nešlo vytvořit. Zkontrolujte zařízení, spojení a právo zápisu. Stávající uložené pozice nebyly nahrazeny.
+  UDPFS_IP_CONFLICT: Jiné zařízení ve vaší síti používá IP adresu tohoto PS2, takže odpovědi serveru UDPFS jdou jemu. V Síťových nastaveních nastavte PS2 jinou IP.
+  CFG_TITLES: Zobrazit názvy z CFG v seznamech her
+  HINT_CFG_TITLES: Zobrazí Název z CFG každé hry místo názvu souboru a řadí podle něj. Při obnovení seznamu čte každý CFG, takže se seznamy načítají pomaleji. Jen zobrazení.
+  PARENLOCK_GAME: Rodičovský zámek
+  PARENLOCK_GAME_HINT: Pro spuštění této hry vyžadovat heslo rodičovského zámku.
+  PARENLOCK_GAME_NO_PASSWORD: Nastavte heslo rodičovského zámku, jinak tato hra nebude zamčená.

@@ -317,3 +317,158 @@ translations:
   HINT_EMBER_DISPLAY: Mode keluaran yang dipakai Ember untuk gim PS1. 240p atau 480p ditulis ke settings.txt di folder EMBER pada perangkat yang diluncurkan. Bawaan menghapus pengaturan itu lagi, berikut berkasnya jika tidak berisi apa pun selain itu.
   LOGOART: "Logo Game"
   HINT_LOGOART: "Menampilkan logo game (<ID>_LGO) saat digunakan oleh tema. Mematikannya juga menyembunyikan gambar bawaan tanpa mengubah sampul, gambar cakram, atau latar belakang."
+  BDM_GAMES: Game BDM
+  HDD_GAMES: Game HDD
+  NET_GAMES: Game ETH
+  OK: OK
+  BDMMODE: Mode Mulai BDM
+  MANUAL: Manual
+  CAT_SMB_SERVER: '- Server SMB -'
+  MASK: Mask
+  GATEWAY: Gateway
+  RESET: Setel Ulang
+  VMC_STATUS: Status
+  INFO: Info
+  MODE: Mode
+  VMC_SLOT1: Slot VMC 1
+  VMC_SLOT2: Slot VMC 2
+  VSYNC: V-Sync
+  XOFFSET: POS-H
+  YOFFSET: POS-V
+  DS34BT_MODE: DualShock3/4 BT
+  MTAP_ENABLE: Emulasi Multitap
+  HINT_PADEMU_WORKAROUND: Beberapa DS3 palsu butuh cara khusus; opsi ini menyalakannya.
+  CFG_NOTIFICATION: Konfigurasi dimuat dari %s
+  THM_NOTIFICATION: Tema dimuat dari %s
+  LNG_NOTIFICATION: Bahasa dimuat dari %s
+  PARTITION_NOTIFICATION: Partisi %s terpasang.
+  PERGAME_SETTINGS: Per Game
+  HINT_NEUTRINO_AUTO_ELF: Mengirim ELF boot game ke Neutrino untuk mencari konfigurasi per judul. Nyala secara bawaan; opsi Boot ELF yang diatur manual lebih diutamakan.
+  HINT_POPSTARTER_PATH: Letak POPSTARTER.ELF. Jika dibiarkan kosong, RIPPS2 mengisi yang ditemukannya di drive; timpa untuk memakai yang lain, seperti usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Argumen Neutrino melebihi panjang yang bisa disimpan. Pendekkan satu kolom sebelum menyimpan.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Argumen peluncuran Neutrino melebihi batas aman. Pendekkan argumen global atau argumen game.
+  NEUTRINO_AUTO_ELF: Boot ELF Otomatis (-elf)
+  HINT_NEUTRINO_PATH: 'Di mana neutrino.elf berada? <belum diatur> = Perangkat game -> mc0/mc1. Jalur lengkap khusus dicoba lebih dulu. Contoh: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Tampilan Game PS2/PS1
+  HINT_GAME_VIEW_MODE: Semua menampilkan game PS2 dan PS1 bersama dan L3 berganti Semua, PS1, PS2. PS2 atau PS1 hanya menampilkan jenis itu dan mematikan L3. APPS dan Game Berbintang memakai aturan tampilannya sendiri.
+  VIEW_MIXED: Menampilkan game PS2 + PS1
+  VIEW_PS1_ELF: Menampilkan aplikasi ELF PS1
+  APPS_DISPLAY: Tampilan Aplikasi
+  HINT_APPS_DISPLAY: Semua menampilkan setiap ELF dalam satu daftar APPS dengan L3 mati. Aplikasi / PS1ELF memisahkan judul yang berisi [PS1] ke halaman L3 kedua; cara peluncuran tidak berubah.
+  VIEW: Tampilan
+  VIEW_PS2: Menampilkan game PS2 berbintang
+  VIEW_PS1: Menampilkan game PS1 berbintang
+  VIEW_ELF: Menampilkan ELF berbintang
+  VIEW_ALL: Menampilkan semua game berbintang
+  VMC_FRAGMENTED_ON_CREATE: VMC sudah dibuat, tetapi terfragmentasi. Emulasi kartu memori butuh satu file yang utuh tanpa putus, jadi VMC ini dilewati saat peluncuran dan kartu asli yang dipakai. Kosongkan ruang dan buat lagi, atau salin dari perangkat lain.
+  KEYB_MOVE_CURSOR: Gerakkan kursor
+  TITLECOLOR: Warna Judul Game
+  RA_CHECK_GAME: Periksa dukungan RetroAchievements
+  RA_TEST_LINK: Uji koneksi PC RetroAchievements
+  RA_CHECKING_IMAGE: Memeriksa image, butuh beberapa detik...
+  RA_CHECK_RUNNING: Pemeriksaan image sudah berjalan
+  RA_LOOKING_FOR_PC: Mencari klien PC...
+  RA_UL_UNSUPPORTED: Game UL/USBExtreme belum bisa diperiksa
+  RA_UL_UNSUPPORTED2: Hanya image .iso biasa di DVD/ atau CD/ yang didukung
+  RA_UNKNOWN_IMAGE: RetroAchievements tidak mengenal image ini
+  RA_STILL_IDENTIFYING: PC masih mengenali image
+  RA_TRY_AGAIN: Coba lagi beberapa detik lagi
+  RA_NO_SOCKET: Konsol tidak bisa membuka soket jaringan
+  RA_NO_SOCKET2: Mulai ulang konsol, atau periksa perangkat ETH di pengaturan
+  RA_TEST_NO_SOCKET2: Periksa kabel dan ETH di pengaturan; jika jaringan berjalan, boot ulang konsol
+  RA_PC_NO_ANSWER: Klien PC tidak menjawab
+  RA_PC_NO_ANSWER2: Pastikan xeRAbora berjalan, atau coba uji koneksi PC
+  RA_SUPPORTED: Didukung oleh RetroAchievements
+  RA_START_TO_TRACK: Jalankan game untuk melacak pencapaian
+  RA_ACHIEVEMENTS: '%d pencapaian'
+  RA_ACHIEVEMENTS_FULL: '%d pencapaian -- %d terbuka, %d tidak didukung'
+  RA_HASH_FAILED: Hash image tidak bisa dihitung
+  RA_HASH_FAILED2: Lihat RA/hashes.txt di samping game untuk alasannya
+  RA_NET_BUSY: Jaringan sedang dipakai transport UDP
+  RA_NET_BUSY2: RA butuh stack SMB -- ganti protokol, atau buat .wl di PC
+  RA_NET_BUSY_HASH: Hash ada di RA/hashes.txt -- xeRAbora bisa membuat .wl darinya
+  RA_NO_IP: Konsol tidak punya alamat IP
+  RA_NO_IP2: Periksa DHCP atau alamat statis di pengaturan Jaringan
+  RA_TEST_NO_ANSWER: Tidak ada klien PC yang menjawab dalam 3 detik
+  RA_TEST_NO_ANSWER2: Konsol%s. Pastikan xeRAbora berjalan dan UDP 18194 terbuka
+  RA_TEST_FOUND: Klien PC ditemukan%s%s %s
+  RA_TEST_FOUND2: Jawaban dalam %u ms, konsol%s
+  RA_NA_NEUTRINO: Pelacakan RA butuh inti <OPL> -- peluncuran Neutrino tidak pernah memuat ee_core
+  RA_NA_UDPFS: Pelacakan RA tidak tersedia di UDPFS -- game diluncurkan lewat Neutrino
+  RA_NA_PS1: Pelacakan RA tidak tersedia untuk game PS1
+  RA_TELEMETRY: Telemetri RetroAchievements
+  RA_BADGES: Lencana RetroAchievements
+  HTTP_GAMES: Game HTTP
+  HTTP_SERVER: Server HTTP
+  HTTP_PORT: Port HTTP
+  HTTP_BASE_PATH: Jalur dasar HTTP
+  HTTP_TEST: Uji server HTTP
+  HTTP_TEST_OK: Server OK -- game terdaftar
+  HTTP_TEST_EMPTY: Katalog kosong -- valid, tetapi tidak membuktikan apa pun soal rentang byte
+  HTTP_TEST_NO_ISO: Katalog tidak punya image yang didukung untuk menguji rentang byte
+  HTTP_ERR_CONNECT: Tidak bisa menjangkau server HTTP
+  HTTP_ERR_CATALOG: games.csv tidak ada, tidak terbaca, atau terlalu besar
+  HTTP_ERR_RANGE: Server tidak mengembalikan byte persis seperti yang diminta
+  HTTP_LAUNCH_UNAVAILABLE: Peluncuran HTTP belum diterapkan -- katalog hanya bisa dijelajahi
+  HTTP_ERR_COMPRESSED: Image terkompresi (.zso) belum didukung lewat HTTP
+  HTTP_NO_VMC: Kartu memori virtual tidak tersedia lewat HTTP -- pakai kartu fisik
+  HTTP_TAB_HINT: HTTP membaca games.csv dari servermu. Atur alamat, port, dan jalur dasar di pengaturan Jaringan, lalu pakai Uji.
+  RA_DISC_CHECK: 'RA: periksa dukungan disk'
+  RA_DISC_LAUNCH: 'RA: jalankan disk'
+  RA_DISC_CHECKING: Memeriksa disk untuk RetroAchievements
+  RA_DISC_HASH_FAILED: Hash disk tidak bisa dihitung -- periksa RA/hashes.txt di folder pengaturan
+  RA_DISC_HOME_ERROR: Jalur pengaturan tidak bisa dipakai untuk daftar pantau disk
+  RA_DISC_ENABLE: Nyalakan telemetri RetroAchievements di pengaturan Jaringan lebih dulu
+  RA_DISC_CHECK_FIRST: 'Tidak ada daftar pantau untuk disk ini -- pakai RA: periksa dukungan disk lebih dulu'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: HDD ditemukan, tetapi tabel partisi APA-nya tidak bisa dibaca. Jangan diformat -- game-gamemu mungkin masih bisa diselamatkan.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: Sebuah drive tidak dipasang karena sektornya bukan 512 byte (misalnya drive sektor 4K). OPL hanya bisa membaca sektor 512 byte.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Judul ini adalah partisi APA tersendiri, dan OPL tidak pernah mengedit tabel partisi. Ganti namanya di PC.
+  POPS_SETTINGS_UNREADABLE: Tidak bisa membaca pengaturan POPSTARTER -- kartu memori sedang sibuk atau tidak terbaca. Coba lagi setelah pemuatan selesai.
+  GLOBAL_PS_EMULATION_SETTINGS: Pengaturan Emulasi PS Global
+  RA_NO_LINK_UNTRACKED: Jaringan tidak tersedia -- kali ini diluncurkan tanpa RetroAchievements.
+  IGR_USB_DRIVERS_PROMPT: Jalur IGR ada di USB, tetapi %s tidak punya USBD.IRX dan USBHDFSD.IRX, yang dibutuhkan konsol untuk menjangkau USB setelah In-Game Reset. Tanpa keduanya, IGR jatuh ke peramban PS2. Salin driver RiptOPL ke sana sekarang? FMCB, OpenTuna, dan exploit lain juga memuat file ini dan bisa berperilaku berbeda karenanya. File yang ada tidak pernah diganti. Hanya USB FAT32.
+  IGR_USB_DRIVERS_FAILED: Tidak bisa menyalin driver USB ke %s (kartu penuh atau tidak bisa ditulisi). IGR akan jatuh ke peramban PS2.
+  OFFICIAL_CFG_NOTIFICATION: Pengaturan OPL resmi dimuat dari %s
+  CFM_VMODE_HOLD_KEEP: Tahan untuk mempertahankan
+  BDM_PS2_FOLDERS_UNREADABLE: Tidak bisa membuka folder CD atau DVD di %s (galat %d), jadi perangkat itu tidak menampilkan game PS2. Tekan SELECT di halamannya untuk mencoba lagi.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Sistem file Neutrino diatur ke bd, tetapi perangkat ini tidak pernah melaporkan nomor perangkatnya, jadi Neutrino tidak bisa diarahkan ke sana. Atur sistem file Neutrino game ini ke Auto atau exfat.
+  CFM_VMODE_REVERT_IN: Kembali dalam %d dtk
+  EMBER_DITHER: Dithering Ember
+  HINT_EMBER_DITHER: Dithering Ember (Nyala atau Mati), ditulis ke EMBER/settings.txt di perangkat yang diluncurkan. Nilai per game lebih diutamakan.
+  EMBER_SHADING: Shading Ember
+  HINT_EMBER_SHADING: 'Kedalaman warna Ember: 15-bit, atau 24-bit (eksperimental). Ditulis ke EMBER/settings.txt di perangkat yang diluncurkan. Nilai per game lebih diutamakan.'
+  EMBER_CONTROLLER: Kontroler Ember
+  HINT_EMBER_CONTROLLER: 'Mode kontroler Ember: Otomatis, Analog, atau D2A. Biasanya paling baik diatur per game (Segitiga > Pengaturan Game Ember), yang lebih diutamakan.'
+  EMBER_480P_CONFIRM: Ember 480p tidak menampilkan gambar lewat komposit. Pakai 480p?
+  EMBER_SHADING_24: 24-bit (eksperimental)
+  EMBER_GAME_SETTINGS: Pengaturan Game Ember
+  HINT_EMBER_GAME_SETTING: Hanya game ini. Tekan OK untuk menulis EMBER/games/<nama>/settings.txt sebelum peluncuran. Bawaan yang tidak disentuh mempertahankan nilai yang sudah ada di file; mengubah nilai kembali ke Bawaan menghapus penimpaannya.
+  EMBER_TIMING: Timing Ember
+  HINT_EMBER_TIMING: 'Timing video Ember: Otomatis mengikuti region disk, NTSC memaksa 60 Hz, PAL memaksa 50 Hz. Ditulis ke EMBER/settings.txt di perangkat yang diluncurkan.'
+  EMBER_GLOBAL_WARNING: Pengaturan Ember ini berlaku untuk setiap game PS1, dan beberapa game crash karenanya. Untuk mengubah satu game saja, pakai Segitiga > Pengaturan Game Ember di game itu.
+  PS1_SAVE_GUIDANCE: Simpanan PS1 bergantung pada Ember atau POPSTARTER; pengaturan VMC PS2 tidak berlaku.
+  GAME_TYPE_LABELS: Tampilkan Label [PS1]/[PS2]
+  AUTO_CREATE_VMC: Buat VMC saat Peluncuran Pertama
+  AUTO_VMC_CREATING: Membuat VMC game ini...
+  AUTO_VMC_FAILED: Tidak bisa membuat VMC game ini. Game dimulai tanpa VMC.
+  FAV_SAVING: Menyimpan ke Game Berbintang...
+  FAV_SAVED: Disimpan ke Game Berbintang
+  FAV_SAVE_FAILED: Tidak bisa menyimpan ke Game Berbintang
+  FAV_REMOVED: Dihapus dari Game Berbintang
+  FAV_REMOVE_FAILED: Tidak bisa menghapus dari Game Berbintang
+  POPS_UDPFS_SETTINGS: Pengaturan Jaringan POPS UDPFS
+  POPS_UDPFS_DISCOVERY: Menyimpan ke setiap folder POPS di USB. Server 0.0.0.0 memakai penemuan otomatis.
+  POPS_UDPFS_NOT_READY: POPS UDPFS butuh IPCONFIG.DAT dan UDPFSCONFIG.DAT yang valid dan cocok di setiap folder POPS di USB. Atur di Pengaturan Jaringan POPS.
+  HINT_POPS_UDPFS_IP: IP statis PS2 yang dipakai driver POPS UDPFS setelah reset IOP-nya.
+  POPS_UDPFS_ALL_USB_FOLDERS: Semua folder POPS di USB
+  POPS_UDPFS_INVALID_SUFFIX: ' (tidak valid)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (tidak lengkap)'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS butuh pasangan driver .udpfs terpasang di kartu memori. Pasang manual atau nyalakan BDMA Terapkan saat Peluncuran.
+  VMC_REPLACE_REQUIRES_DELETE: Mengubah ukuran VMC akan menghapus game yang tersimpan di dalamnya. Cadangkan VMC yang ada dan pakai Hapus sebelum membuat ukuran baru.
+  VMC_CREATE_FAILED: Tidak bisa membuat VMC. Periksa perangkat, koneksi, dan izin tulis. Simpanan yang ada tidak diganti.
+  UDPFS_IP_CONFLICT: Perangkat lain di jaringanmu memakai alamat IP PS2 ini, jadi jawaban server UDPFS sampai ke sana. Atur IP PS2 yang berbeda di Pengaturan Jaringan.
+  CFG_TITLES: Tampilkan Judul CFG di Daftar Game
+  HINT_CFG_TITLES: Menampilkan Judul dari CFG setiap game alih-alih nama filenya, dan mengurutkan berdasarkan itu. Membaca setiap CFG saat daftar disegarkan, jadi daftar dimuat lebih lambat. Hanya tampilan.
+  PARENLOCK_GAME: Kunci Orang Tua
+  PARENLOCK_GAME_HINT: Minta kata sandi kunci orang tua untuk menjalankan game ini.
+  PARENLOCK_GAME_NO_PASSWORD: Atur kata sandi kunci orang tua, kalau tidak game ini tidak akan terkunci.

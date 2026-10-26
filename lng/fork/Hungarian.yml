@@ -315,3 +315,145 @@ translations:
   VIEW_APPS: Alkalmazások megjelenítve
   EMBER_DISPLAY: Ember képmód
   HINT_EMBER_DISPLAY: Az a kimeneti mód, amelyet az Ember a PS1-játékokhoz használ. A 240p vagy 480p az indított eszköz EMBER mappájában lévő settings.txt fájlba íródik. Az Alapértelmezett eltávolítja ezt a beállítást, és a fájlt is, ha semmi más nem volt benne.
+  OK: OK
+  BACKSPACE: Visszatörlés
+  ENTER: Enter
+  VSYNC: Függőleges szinkron
+  DS34BT_MODE: DualShock3/4 BT
+  MTAP_ENABLE: Multitap emuláció
+  HINT_PADEMU_WORKAROUND: Néhány utángyártott DS3-nak kerülőmegoldás kell; ez a beállítás bekapcsolja.
+  CFG_NOTIFICATION: 'Beállítás betöltve innen: %s'
+  THM_NOTIFICATION: 'Téma betöltve innen: %s'
+  LNG_NOTIFICATION: 'Nyelv betöltve innen: %s'
+  PARTITION_NOTIFICATION: A(z) %s partíció csatolva.
+  HINT_NEUTRINO_AUTO_ELF: Átadja a játék rendszerindító ELF-jét a Neutrinónak a játékonkénti beállítás kikereséséhez. Alapból be van kapcsolva; a kézzel beállított Boot ELF opció elsőbbséget élvez.
+  HINT_POPSTARTER_PATH: Hol van a POPSTARTER.ELF. Ha üresen marad, a RIPPS2 beírja azt, amelyet egy meghajtón talál; írd felül, ha mást akarsz, például usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: A Neutrino argumentumai hosszabbak, mint ami menthető. Mentés előtt rövidíts meg egy mezőt.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: A Neutrino indítási argumentumai túllépik a biztonságos határt. Rövidítsd a globális vagy a játék argumentumait.
+  NEUTRINO_AUTO_ELF: Automatikus Boot ELF (-elf)
+  HINT_NEUTRINO_PATH: 'Hol van a neutrino.elf? <nincs beállítva> = a játék eszköze -> mc0/mc1. A saját teljes útvonal kerül először kipróbálásra. Példák: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: PS2/PS1 játékok megjelenítése
+  HINT_GAME_VIEW_MODE: Az Összes együtt listázza a PS2 és PS1 játékokat, az L3 pedig vált az Összes, PS1, PS2 között. A PS2 vagy PS1 csak azt a típust mutatja, és kikapcsolja az L3-at. Az APPS és a Kedvenc játékok saját megjelenítési szabályokat használnak.
+  VIEW_MIXED: PS2 + PS1 játékok láthatók
+  VIEW_PS1_ELF: PS1 ELF alkalmazások láthatók
+  APPS_DISPLAY: Alkalmazások megjelenítése
+  HINT_APPS_DISPLAY: Az Összes minden ELF-et egyetlen APPS listában mutat, kikapcsolt L3-mal. Az Alkalmazások / PS1ELF a [PS1]-et tartalmazó címeket egy második L3 oldalra teszi; az indítás nem változik.
+  VIEW: Nézet
+  VIEW_PS2: Kedvenc PS2 játékok láthatók
+  VIEW_PS1: Kedvenc PS1 játékok láthatók
+  VIEW_ELF: Kedvenc ELF-ek láthatók
+  VIEW_ALL: Minden kedvenc játék látható
+  VMC_FRAGMENTED_ON_CREATE: A VMC elkészült, de töredezett. A memóriakártya-emulációhoz egyetlen összefüggő fájl kell, ezért ez a VMC indításkor kimarad, és a valódi kártya lesz használva. Szabadíts fel helyet, és készítsd el újra, vagy másold át egy másik eszközről.
+  KEYB_MOVE_CURSOR: Kurzor mozgatása
+  TITLECOLOR: Játékcímek színe
+  RA_CHECK_GAME: RetroAchievements támogatás ellenőrzése
+  RA_TEST_LINK: RetroAchievements PC-kapcsolat tesztelése
+  RA_CHECKING_IMAGE: A kép ellenőrzése, ez néhány másodpercig tart...
+  RA_CHECK_RUNNING: Már fut egy képellenőrzés
+  RA_LOOKING_FOR_PC: A PC-s kliens keresése...
+  RA_UL_UNSUPPORTED: Az UL/USBExtreme játékok még nem ellenőrizhetők
+  RA_UL_UNSUPPORTED2: Csak a DVD/ vagy CD/ mappában lévő sima .iso képek támogatottak
+  RA_UNKNOWN_IMAGE: A RetroAchievements nem ismeri ezt a képet
+  RA_STILL_IDENTIFYING: A PC még azonosítja a képet
+  RA_TRY_AGAIN: Próbáld újra néhány másodperc múlva
+  RA_NO_SOCKET: A konzol nem tudott hálózati socketet nyitni
+  RA_NO_SOCKET2: Indítsd újra a konzolt, vagy ellenőrizd az ETH eszközt a beállításokban
+  RA_TEST_NO_SOCKET2: Ellenőrizd a kábelt és az ETH-t a beállításokban; ha a hálózat működik, indítsd újra a konzolt
+  RA_PC_NO_ANSWER: A PC-s kliens nem válaszolt
+  RA_PC_NO_ANSWER2: Ellenőrizd, hogy fut-e a xeRAbora, vagy próbáld ki a PC-kapcsolat tesztet
+  RA_SUPPORTED: A RetroAchievements támogatja
+  RA_START_TO_TRACK: Indítsd el a játékot a teljesítmények követéséhez
+  RA_ACHIEVEMENTS: '%d teljesítmény'
+  RA_ACHIEVEMENTS_FULL: '%d teljesítmény -- %d feloldva, %d nem támogatott'
+  RA_HASH_FAILED: A kép hash-e nem számítható ki
+  RA_HASH_FAILED2: Az okát lásd a játékok melletti RA/hashes.txt fájlban
+  RA_NET_BUSY: A hálózatot egy UDP átvitel használja
+  RA_NET_BUSY2: Az RA-nak SMB veremre van szüksége -- válts protokollt, vagy készítsd el a .wl fájlt a PC-n
+  RA_NET_BUSY_HASH: A hash az RA/hashes.txt fájlban van -- a xeRAbora el tudja készíteni belőle a .wl fájlt
+  RA_NO_IP: A konzolnak nincs IP-címe
+  RA_NO_IP2: Ellenőrizd a DHCP-t vagy a statikus címet a Hálózati beállításokban
+  RA_TEST_NO_ANSWER: 3 másodpercen belül egyetlen PC-s kliens sem válaszolt
+  RA_TEST_NO_ANSWER2: Konzol%s. Ellenőrizd, hogy fut-e a xeRAbora, és nyitva van-e az UDP 18194
+  RA_TEST_FOUND: PC-s kliens megtalálva%s%s %s
+  RA_TEST_FOUND2: Válasz %u ms alatt, konzol%s
+  RA_NA_NEUTRINO: Az RA-követéshez az <OPL> mag kell -- a Neutrinós indítások sosem töltik be az ee_core-t
+  RA_NA_UDPFS: Az RA-követés UDPFS-en nem érhető el -- a játékok a Neutrinón keresztül indulnak
+  RA_NA_PS1: Az RA-követés PS1 játékoknál nem érhető el
+  RA_TELEMETRY: RetroAchievements telemetria
+  RA_BADGES: RetroAchievements jelvények
+  HTTP_GAMES: HTTP játékok
+  HTTP_SERVER: HTTP szerver
+  HTTP_PORT: HTTP port
+  HTTP_BASE_PATH: HTTP alapútvonal
+  HTTP_TEST: HTTP szerver tesztelése
+  HTTP_TEST_OK: A szerver rendben -- a játékok listázva
+  HTTP_TEST_EMPTY: A katalógus üres -- érvényes, de a bájttartományokról semmit sem bizonyít
+  HTTP_TEST_NO_ISO: A katalógusban nincs támogatott kép, amelyen bájttartomány tesztelhető lenne
+  HTTP_ERR_CONNECT: A HTTP szerver nem érhető el
+  HTTP_ERR_CATALOG: A games.csv hiányzik, nem olvasható vagy túl nagy
+  HTTP_ERR_RANGE: A szerver nem pontosan a kért bájtokat küldte vissza
+  HTTP_LAUNCH_UNAVAILABLE: A HTTP-s indítás még nincs megvalósítva -- a katalógus csak böngészhető
+  HTTP_ERR_COMPRESSED: A tömörített képek (.zso) HTTP-n még nem támogatottak
+  HTTP_NO_VMC: Virtuális memóriakártya HTTP-n nem érhető el -- használj fizikai kártyát
+  HTTP_TAB_HINT: A HTTP a szerveredről olvassa a games.csv fájlt. Állítsd be a címet, a portot és az alapútvonalat a Hálózati beállításokban, aztán használd a Tesztet.
+  RA_DISC_CHECK: 'RA: lemeztámogatás ellenőrzése'
+  RA_DISC_LAUNCH: 'RA: lemez indítása'
+  RA_DISC_CHECKING: A lemez ellenőrzése a RetroAchievementshez
+  RA_DISC_HASH_FAILED: A lemez hash-e nem számítható ki -- nézd meg az RA/hashes.txt fájlt a beállítási mappában
+  RA_DISC_HOME_ERROR: A beállítási útvonal nem használható lemezek figyelési listáihoz
+  RA_DISC_ENABLE: Előbb kapcsold be a RetroAchievements telemetriát a Hálózati beállításokban
+  RA_DISC_CHECK_FIRST: 'Ehhez a lemezhez nincs figyelési lista -- előbb használd az RA: lemeztámogatás ellenőrzése opciót'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: HDD található, de az APA partíciós táblája nem olvasható. Ne formázd -- a játékaid talán még menthetők.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: Egy meghajtó nem lett csatolva, mert a szektorai nem 512 bájtosak (pl. 4K szektoros meghajtó). Az OPL csak 512 bájtos szektorokat tud olvasni.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Ez a cím egy önálló APA partíció, és az OPL sosem szerkeszti a partíciós táblát. Nevezd át PC-n.
+  POPS_SETTINGS_UNREADABLE: A POPSTARTER beállításai nem olvashatók -- a memóriakártya foglalt vagy olvashatatlan. Próbáld újra, amikor a betöltés befejeződött.
+  GLOBAL_PS_EMULATION_SETTINGS: Globális PS emulációs beállítások
+  RA_NO_LINK_UNTRACKED: A hálózat nem érhető el -- most RetroAchievements nélkül indul.
+  IGR_USB_DRIVERS_PROMPT: Az IGR útvonal USB-n van, de a(z) %s helyről hiányzik az USBD.IRX és az USBHDFSD.IRX, amelyekre a konzolnak szüksége van, hogy egy In-Game Reset után elérje az USB-t. Nélkülük az IGR a PS2 böngészőbe esik vissza. Átmásolod most oda a RiptOPL illesztőprogramjait? Az FMCB, az OpenTuna és más exploitok is betöltik ezeket a fájlokat, és másképp viselkedhetnek velük. A meglévő fájlok sosem cserélődnek le. Csak FAT32 USB.
+  IGR_USB_DRIVERS_FAILED: 'Az USB illesztőprogramokat nem sikerült ide másolni: %s (a kártya megtelt vagy nem írható). Az IGR a PS2 böngészőbe esik vissza.'
+  OFFICIAL_CFG_NOTIFICATION: 'Hivatalos OPL beállítások betöltve innen: %s'
+  CFM_VMODE_HOLD_KEEP: Tartsd lenyomva a megtartáshoz
+  BDM_PS2_FOLDERS_UNREADABLE: 'A CD vagy DVD mappa nem nyitható meg itt: %s (hiba: %d), így ez az eszköz nem listáz PS2 játékokat. Az újrapróbáláshoz nyomd meg a SELECT-et az oldalán.'
+  NEUTRINO_BD_NO_DEVICE_NUMBER: A Neutrino fájlrendszere bd-re van állítva, de ez az eszköz sosem jelentette az eszközszámát, így a Neutrino nem irányítható rá. Állítsd ennek a játéknak a Neutrino fájlrendszerét Auto-ra vagy exfat-ra.
+  CFM_VMODE_REVERT_IN: Visszaállítás %d mp múlva
+  EMBER_DITHER: Ember színkeverés
+  HINT_EMBER_DITHER: Ember színkeverés (Be vagy Ki), az indított eszköz EMBER/settings.txt fájljába írva. A játékonkénti érték elsőbbséget élvez.
+  EMBER_SHADING: Ember árnyalás
+  HINT_EMBER_SHADING: 'Ember színmélység: 15 bites vagy 24 bites (kísérleti). Az indított eszköz EMBER/settings.txt fájljába írva. A játékonkénti érték elsőbbséget élvez.'
+  EMBER_CONTROLLER: Ember kontroller
+  HINT_EMBER_CONTROLLER: 'Ember kontroller mód: Automatikus, Analóg vagy D2A. Általában a legjobb játékonként beállítani (Háromszög > Ember játékbeállítások), ami elsőbbséget élvez.'
+  EMBER_480P_CONFIRM: Az Ember 480p módban kompozit kábelen nem ad képet. Használod a 480p-t?
+  EMBER_SHADING_24: 24 bites (kísérleti)
+  EMBER_GAME_SETTINGS: Ember játékbeállítások
+  HINT_EMBER_GAME_SETTING: Csak ez a játék. Nyomd meg az OK-t, hogy indítás előtt kiíródjon az EMBER/games/<név>/settings.txt. Az érintetlen Alapértelmezett megtartja a fájlban lévő értéket; ha egy értéket visszaállítasz Alapértelmezettre, az felülírása megszűnik.
+  EMBER_TIMING: Ember időzítés
+  HINT_EMBER_TIMING: 'Ember videóidőzítés: az Automatikus a lemez régióját követi, az NTSC 60 Hz-et, a PAL 50 Hz-et kényszerít. Az indított eszköz EMBER/settings.txt fájljába írva.'
+  EMBER_GLOBAL_WARNING: Ezek az Ember beállítások minden PS1 játékra vonatkoznak, és néhány játék összeomlik tőlük. Ha csak egy játékot akarsz módosítani, használd azon a játékon a Háromszög > Ember játékbeállítások menüt.
+  PS1_SAVE_GUIDANCE: A PS1 mentések az Embertől vagy a POPSTARTER-től függenek; a PS2 VMC beállítások nem érvényesek.
+  GAME_TYPE_LABELS: '[PS1]/[PS2] címkék mutatása'
+  AUTO_CREATE_VMC: VMC létrehozása első indításkor
+  AUTO_VMC_CREATING: A játék VMC-jének létrehozása...
+  AUTO_VMC_FAILED: A játék VMC-jét nem sikerült létrehozni. A játék VMC nélkül indul.
+  FAV_SAVING: Mentés a Kedvenc játékok közé...
+  FAV_SAVED: Elmentve a Kedvenc játékok közé
+  FAV_SAVE_FAILED: Nem sikerült menteni a Kedvenc játékok közé
+  FAV_REMOVED: Eltávolítva a Kedvenc játékok közül
+  FAV_REMOVE_FAILED: Nem sikerült eltávolítani a Kedvenc játékok közül
+  POPS_UDPFS_SETTINGS: POPS UDPFS hálózati beállítások
+  POPS_UDPFS_DISCOVERY: Minden USB-s POPS mappába ment. A 0.0.0.0 szerver felderítést használ.
+  POPS_UDPFS_NOT_READY: A POPS UDPFS-hez minden USB-s POPS mappában egymásnak megfelelő, érvényes IPCONFIG.DAT és UDPFSCONFIG.DAT kell. Állítsd be őket a POPS hálózati beállításokban.
+  HINT_POPS_UDPFS_IP: A PS2 statikus IP-je, amelyet a POPS UDPFS illesztőprogram az IOP-alaphelyzetbe állítás után használ.
+  POPS_UDPFS_ALL_USB_FOLDERS: Minden USB-s POPS mappa
+  POPS_UDPFS_INVALID_SUFFIX: ' (érvénytelen)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (hiányos)'
+  POPS_UDPFS_DRIVER_NOT_READY: A POPS UDPFS-hez a memóriakártyára telepített .udpfs illesztőprogram-pár kell. Tedd fel kézzel, vagy kapcsold be a BDMA Alkalmazás indításkor opciót.
+  VMC_REPLACE_REQUIRES_DELETE: A VMC méretének módosítása törölné a rajta lévő mentéseket. Készíts biztonsági másolatot a meglévő VMC-ről, és használd a Törlést, mielőtt új méretet hozol létre.
+  VMC_CREATE_FAILED: A VMC-t nem sikerült létrehozni. Ellenőrizd az eszközt, a kapcsolatot és az írási jogot. A meglévő mentések nem lettek lecserélve.
+  UDPFS_IP_CONFLICT: A hálózatodon egy másik eszköz használja ennek a PS2-nek az IP-címét, így az UDPFS szerver válaszai oda mennek. Állíts be másik PS2 IP-t a Hálózati beállításokban.
+  CFG_TITLES: CFG címek mutatása a játéklistákban
+  HINT_CFG_TITLES: A fájlnév helyett minden játék CFG-jéből a Címet mutatja, és aszerint rendez. Lista frissítésekor minden CFG-t beolvas, így a listák lassabban töltenek be. Csak megjelenítés.
+  LOGOART: Logóképek
+  HINT_LOGOART: Megmutatja a játék logóját (<ID>_LGO), ha a téma használja. Kikapcsolva az alapértelmezett képét is elrejti, de a borítókat, lemezképeket és háttereket megtartja.
+  PARENLOCK_GAME: Szülői zár
+  PARENLOCK_GAME_HINT: A játék indításához kérje a szülői zár jelszavát.
+  PARENLOCK_GAME_NO_PASSWORD: Állíts be szülői zár jelszót, különben ez a játék nem lesz zárolva.

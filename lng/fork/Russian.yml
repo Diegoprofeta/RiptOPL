@@ -317,3 +317,133 @@ translations:
   HINT_EMBER_DISPLAY: Режим вывода, который Ember использует для игр PS1. 240p или 480p записывается в файл settings.txt в папке EMBER запускаемого устройства. По умолчанию удаляет эту настройку, а также сам файл, если в нём больше ничего не было.
   LOGOART: "Логотипы игр"
   HINT_LOGOART: "Показывает логотип игры (<ID>_LGO), если он используется темой. При отключении скрывается и изображение по умолчанию, но обложки, диски и фоны остаются."
+  DS34BT_MODE: DualShock3/4 по Bluetooth
+  HINT_NEUTRINO_AUTO_ELF: Передаёт загрузочный ELF игры в Neutrino, чтобы найти настройки для этой игры. Включено по умолчанию; заданный вручную параметр Boot ELF важнее.
+  HINT_POPSTARTER_PATH: Где лежит POPSTARTER.ELF. Если оставить пустым, RIPPS2 подставит найденный на накопителе; впишите другой путь, например usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Аргументы Neutrino длиннее, чем можно сохранить. Сократите поле перед сохранением.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Аргументы запуска Neutrino превышают безопасный предел. Сократите общие аргументы или аргументы игры.
+  NEUTRINO_AUTO_ELF: Автоматический Boot ELF (-elf)
+  HINT_NEUTRINO_PATH: 'Где лежит neutrino.elf? <не задано> = накопитель игры -> mc0/mc1. Свой полный путь пробуется первым. Примеры: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Показ игр PS2/PS1
+  HINT_GAME_VIEW_MODE: «Все» показывает игры PS2 и PS1 вместе, а L3 переключает «Все», PS1 и PS2. PS2 или PS1 показывает только этот тип и отключает L3. У APPS и «Избранных игр» свои правила.
+  VIEW_MIXED: Показаны игры PS2 + PS1
+  VIEW_PS1_ELF: Показаны приложения PS1 ELF
+  APPS_DISPLAY: Показ приложений
+  HINT_APPS_DISPLAY: «Все» показывает каждый ELF в одном списке APPS, L3 отключён. «Прил. / PS1ELF» выносит названия с [PS1] на вторую страницу L3; запуск не меняется.
+  VIEW: Вид
+  VIEW_PS2: Показаны избранные игры PS2
+  VIEW_PS1: Показаны избранные игры PS1
+  VIEW_ELF: Показаны избранные ELF
+  VIEW_ALL: Показаны все избранные игры
+  VMC_FRAGMENTED_ON_CREATE: VMC создана, но фрагментирована. Эмуляции карты памяти нужен непрерывный файл, поэтому эта VMC будет пропущена при запуске, а использоваться будет настоящая карта. Освободите место и создайте её заново или скопируйте с другого устройства.
+  KEYB_MOVE_CURSOR: Двигать курсор
+  TITLECOLOR: Цвет названия игры
+  RA_CHECK_GAME: Проверить поддержку RetroAchievements
+  RA_TEST_LINK: Проверить связь RetroAchievements с ПК
+  RA_CHECKING_IMAGE: Проверка образа, это займёт несколько секунд...
+  RA_CHECK_RUNNING: Проверка образа уже идёт
+  RA_LOOKING_FOR_PC: Поиск клиента на ПК...
+  RA_UL_UNSUPPORTED: Игры UL/USBExtreme пока нельзя проверить
+  RA_UL_UNSUPPORTED2: Поддерживаются только обычные образы .iso в DVD/ или CD/
+  RA_UNKNOWN_IMAGE: RetroAchievements не знает этот образ
+  RA_STILL_IDENTIFYING: ПК ещё определяет образ
+  RA_TRY_AGAIN: Попробуйте снова через несколько секунд
+  RA_NO_SOCKET: Консоль не смогла открыть сетевой сокет
+  RA_NO_SOCKET2: Перезапустите консоль или проверьте устройство ETH в настройках
+  RA_TEST_NO_SOCKET2: Проверьте кабель и ETH в настройках; если сеть работает, перезапустите консоль
+  RA_PC_NO_ANSWER: Клиент на ПК не ответил
+  RA_PC_NO_ANSWER2: Проверьте, что xeRAbora запущен, или проверьте связь с ПК
+  RA_SUPPORTED: Поддерживается RetroAchievements
+  RA_START_TO_TRACK: Запустите игру, чтобы отслеживать достижения
+  RA_ACHIEVEMENTS: 'Достижений: %d'
+  RA_ACHIEVEMENTS_FULL: 'Достижений: %d -- открыто %d, без поддержки %d'
+  RA_HASH_FAILED: Не удалось вычислить хэш образа
+  RA_HASH_FAILED2: Причина в RA/hashes.txt рядом с играми
+  RA_NET_BUSY: Сеть занята транспортом UDP
+  RA_NET_BUSY2: RA нужен стек SMB -- смените протокол или сделайте .wl на ПК
+  RA_NET_BUSY_HASH: Хэш записан в RA/hashes.txt -- xeRAbora может сделать по нему .wl
+  RA_NO_IP: У консоли нет IP-адреса
+  RA_NO_IP2: Проверьте DHCP или статический адрес в настройках сети
+  RA_TEST_NO_ANSWER: Ни один клиент на ПК не ответил за 3 секунды
+  RA_TEST_NO_ANSWER2: Консоль%s. Проверьте, что xeRAbora запущен, а порт UDP 18194 открыт
+  RA_TEST_FOUND: Клиент на ПК найден%s%s %s
+  RA_TEST_FOUND2: Ответ за %u мс, консоль%s
+  RA_NA_NEUTRINO: Отслеживанию RA нужно ядро <OPL> -- запуск через Neutrino никогда не загружает ee_core
+  RA_NA_UDPFS: Отслеживание RA недоступно на UDPFS -- игры запускаются через Neutrino
+  RA_NA_PS1: Отслеживание RA недоступно для игр PS1
+  RA_TELEMETRY: Телеметрия RetroAchievements
+  RA_BADGES: Значки RetroAchievements
+  HTTP_GAMES: Игры по HTTP
+  HTTP_SERVER: Сервер HTTP
+  HTTP_PORT: Порт HTTP
+  HTTP_BASE_PATH: Базовый путь HTTP
+  HTTP_TEST: Проверить сервер HTTP
+  HTTP_TEST_OK: Сервер в порядке -- игры в списке
+  HTTP_TEST_EMPTY: Каталог пуст -- это допустимо, но ничего не доказывает про диапазоны байтов
+  HTTP_TEST_NO_ISO: В каталоге нет поддерживаемого образа для проверки диапазона байтов
+  HTTP_ERR_CONNECT: Сервер HTTP недоступен
+  HTTP_ERR_CATALOG: games.csv отсутствует, не читается или слишком большой
+  HTTP_ERR_RANGE: Сервер вернул не ровно те байты, что были запрошены
+  HTTP_LAUNCH_UNAVAILABLE: Запуск по HTTP пока не реализован -- каталог можно только просматривать
+  HTTP_ERR_COMPRESSED: Сжатые образы (.zso) по HTTP пока не поддерживаются
+  HTTP_NO_VMC: Виртуальные карты памяти по HTTP недоступны -- используйте настоящую карту
+  HTTP_TAB_HINT: HTTP читает games.csv с вашего сервера. Задайте адрес, порт и базовый путь в настройках сети, затем нажмите «Проверить».
+  RA_DISC_CHECK: 'RA: проверить поддержку диска'
+  RA_DISC_LAUNCH: 'RA: запустить диск'
+  RA_DISC_CHECKING: Проверка диска для RetroAchievements
+  RA_DISC_HASH_FAILED: Не удалось вычислить хэш диска -- см. RA/hashes.txt в папке настроек
+  RA_DISC_HOME_ERROR: Папку настроек нельзя использовать для списков отслеживания дисков
+  RA_DISC_ENABLE: Сначала включите телеметрию RetroAchievements в настройках сети
+  RA_DISC_CHECK_FIRST: 'Для этого диска нет списка отслеживания -- сначала используйте «RA: проверить поддержку диска»'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: HDD найден, но его таблица разделов APA не читается. Не форматируйте его -- ваши игры, возможно, ещё можно спасти.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: накопитель не смонтирован, потому что у него секторы не по 512 байт (например, диск с секторами 4K). OPL читает только секторы по 512 байт.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Эта игра занимает собственный раздел APA, а OPL никогда не меняет таблицу разделов. Переименуйте её на ПК.
+  POPS_SETTINGS_UNREADABLE: Не удалось прочитать настройки POPSTARTER -- карта памяти занята или не читается. Попробуйте снова после окончания загрузки.
+  GLOBAL_PS_EMULATION_SETTINGS: Общие настройки эмуляции PS
+  RA_NO_LINK_UNTRACKED: Сеть недоступна -- на этот раз запуск без RetroAchievements.
+  IGR_USB_DRIVERS_PROMPT: Путь IGR указывает на USB, но в %s нет USBD.IRX и USBHDFSD.IRX, которые нужны консоли, чтобы видеть USB после In-Game Reset. Без них IGR вернётся в браузер PS2. Скопировать туда драйверы RiptOPL сейчас? FMCB, OpenTuna и другие эксплойты тоже загружают эти файлы и могут вести себя с ними иначе. Существующие файлы никогда не заменяются. Только USB с FAT32.
+  IGR_USB_DRIVERS_FAILED: Не удалось скопировать драйверы USB в %s (карта заполнена или защищена от записи). IGR вернётся в браузер PS2.
+  OFFICIAL_CFG_NOTIFICATION: Официальные настройки OPL загружены из %s
+  CFM_VMODE_HOLD_KEEP: Удерживайте, чтобы оставить
+  BDM_PS2_FOLDERS_UNREADABLE: Не удалось открыть папку CD или DVD в %s (ошибка %d), поэтому на этом устройстве нет игр PS2 в списке. Нажмите SELECT на его странице, чтобы попробовать снова.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Файловая система Neutrino задана как bd, но этот накопитель не сообщил номер устройства, поэтому Neutrino не может на него указать. Задайте для этой игры файловую систему Neutrino Auto или exfat.
+  CFM_VMODE_REVERT_IN: Возврат через %d с
+  EMBER_DITHER: Дизеринг Ember
+  HINT_EMBER_DITHER: Дизеринг Ember (вкл. или выкл.), записывается в EMBER/settings.txt накопителя запуска. Значение для отдельной игры важнее.
+  EMBER_SHADING: Цветность Ember
+  HINT_EMBER_SHADING: 'Глубина цвета Ember: 15 бит или 24 бита (экспериментально). Записывается в EMBER/settings.txt накопителя запуска. Значение для отдельной игры важнее.'
+  EMBER_CONTROLLER: Контроллер Ember
+  HINT_EMBER_CONTROLLER: 'Режим контроллера Ember: Авто, Аналог или D2A. Обычно лучше задавать для каждой игры (Треугольник > Настройки игры Ember), это важнее.'
+  EMBER_480P_CONFIRM: Ember в 480p не показывает картинку через композит. Использовать 480p?
+  EMBER_SHADING_24: 24 бита (экспериментально)
+  EMBER_GAME_SETTINGS: Настройки игры Ember
+  HINT_EMBER_GAME_SETTING: Только эта игра. Нажмите OK, чтобы записать EMBER/games/<имя>/settings.txt перед запуском. Нетронутое «По умолчанию» оставляет значение из файла; возврат значения к «По умолчанию» убирает его переопределение.
+  EMBER_TIMING: Тайминг Ember
+  HINT_EMBER_TIMING: 'Видеотайминг Ember: Авто следует региону диска, NTSC включает 60 Гц, PAL включает 50 Гц. Записывается в EMBER/settings.txt накопителя запуска.'
+  EMBER_GLOBAL_WARNING: Эти настройки Ember действуют для всех игр PS1, и некоторые игры с ними падают. Чтобы изменить одну игру, используйте Треугольник > Настройки игры Ember для этой игры.
+  PS1_SAVE_GUIDANCE: Сохранения PS1 зависят от Ember или POPSTARTER; настройки VMC для PS2 к ним не относятся.
+  GAME_TYPE_LABELS: Показывать метки [PS1]/[PS2]
+  AUTO_CREATE_VMC: Создавать VMC при первом запуске
+  AUTO_VMC_CREATING: Создание VMC для этой игры...
+  AUTO_VMC_FAILED: Не удалось создать VMC для этой игры. Игра запустится без неё.
+  FAV_SAVING: Сохранение в «Избранные игры»...
+  FAV_SAVED: Сохранено в «Избранные игры»
+  FAV_SAVE_FAILED: Не удалось сохранить в «Избранные игры»
+  FAV_REMOVED: Удалено из «Избранных игр»
+  FAV_REMOVE_FAILED: Не удалось удалить из «Избранных игр»
+  POPS_UDPFS_SETTINGS: Настройки сети UDPFS для POPS
+  POPS_UDPFS_DISCOVERY: Сохраняется в каждую папку POPS на USB. Сервер 0.0.0.0 использует автопоиск.
+  POPS_UDPFS_NOT_READY: POPS UDPFS нужны согласованные корректные IPCONFIG.DAT и UDPFSCONFIG.DAT в каждой папке POPS на USB. Настройте их в «Настройках сети POPS».
+  HINT_POPS_UDPFS_IP: Статический IP PS2, который драйвер UDPFS для POPS использует после перезапуска IOP.
+  POPS_UDPFS_ALL_USB_FOLDERS: Все папки POPS на USB
+  POPS_UDPFS_INVALID_SUFFIX: ' (неверно)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (неполно)'
+  POPS_UDPFS_DRIVER_NOT_READY: 'POPS UDPFS нужна пара драйверов .udpfs на карте памяти. Установите её вручную или включите «BDMA: применять при запуске».'
+  VMC_REPLACE_REQUIRES_DELETE: Смена размера VMC сотрёт её сохранения. Сделайте копию существующей VMC и используйте «Удалить» перед созданием нового размера.
+  VMC_CREATE_FAILED: Не удалось создать VMC. Проверьте накопитель, подключение и доступ на запись. Существующие сохранения не заменены.
+  UDPFS_IP_CONFLICT: Другое устройство в вашей сети использует IP-адрес этой PS2, поэтому ответы сервера UDPFS уходят ему. Задайте другой IP для PS2 в настройках сети.
+  CFG_TITLES: Показывать названия из CFG в списках игр
+  HINT_CFG_TITLES: Показывает название из CFG каждой игры вместо имени файла и сортирует по нему. При обновлении списка читает каждый CFG, поэтому списки грузятся медленнее. Только отображение.
+  PARENLOCK_GAME: Родительский контроль
+  PARENLOCK_GAME_HINT: Требовать пароль родительского контроля для запуска этой игры.
+  PARENLOCK_GAME_NO_PASSWORD: Задайте пароль родительского контроля, иначе эта игра не будет заблокирована.

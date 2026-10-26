@@ -315,3 +315,205 @@ translations:
   VIEW_APPS: ກຳລັງສະແດງແອັບ
   EMBER_DISPLAY: ໂໝດການສະແດງຜົນຂອງ Ember
   HINT_EMBER_DISPLAY: ໂໝດການສົ່ງພາບທີ່ Ember ໃຊ້ສຳລັບເກມ PS1. ຄ່າ 240p ຫຼື 480p ຈະຖືກຂຽນລົງໃນ settings.txt ພາຍໃນໂຟລເດີ EMBER ຂອງອຸປະກອນທີ່ເປີດ. ຄ່າເລີ່ມຕົ້ນ ຈະລຶບການຕັ້ງຄ່ານັ້ນອອກ ແລະ ລຶບໄຟລ໌ນຳຖ້າບໍ່ມີຂໍ້ມູນອື່ນຢູ່ໃນນັ້ນ.
+  SETTINGS_SAVED: ບັນທຶກການຕັ້ງຄ່າ ໄວ້ໃນ %s ແລ້ວ
+  REMOVE_ALL_SETTINGS: ລົບການຕັ້ງຄ່າ
+  BDMMODE: ໂໝດເລີ່ມຕົ້ນ BDM
+  STARTFAILNBD: ເລີ່ມເຊີບເວີ NBD ບໍ່ໄດ້.
+  CAT_SMB_SERVER: '- ເຊີບເວີ SMB -'
+  MASK: Mask
+  GATEWAY: Gateway
+  DNS_SERVER: ເຊີບເວີ DNS
+  SHARE: ແຊ
+  TEST: ທົດສອບ ການປ່ຽນແປງ
+  HINT_MODE3: ປົດ Syscall
+  HINT_MODE6: ປິດ IGR
+  START: ເລີ່ມ
+  ERR_VMC_CONTINUE: ເຂົ້າເຖິງ VMC %s ບໍ່ໄດ້. ສືບຕໍ່ ດ້ວຍເມມໂມຣີກາດ ໃນຊ່ອງ %d ບໍ?
+  RESETCOLOR: ຣີເຊັດສີ
+  BACKSPACE: ລົບຖອຍຫຼັງ
+  SPACE: ຍະຫວ່າງ
+  ENTER: ປ້ອນ
+  GAME_ID: ID ເກມ
+  DMA_MODE: ໂໝດ DMA
+  VSYNC: V-Sync
+  XOFFSET: ຕຳແໜ່ງ ລວງນອນ
+  YOFFSET: ຕຳແໜ່ງ ລວງຕັ້ງ
+  NET_UPDATE_ALL: ຂຽນທັບ ຂໍ້ມູນທີ່ມີຢູ່
+  PS2LOGO: ໂລໂກ້ PS2
+  PADEMUCONFIG: ການຈຳລອງ ຈອຍ
+  PADEMU_SETTINGS: ການຕັ້ງຄ່າ ໂຕຈຳລອງຈອຍ
+  HINT_PADEMU_MODE: ເລືອກໂໝດ ໂຕຈຳລອງຈອຍ.
+  DS34BT_MODE: DualShock3/4 BT
+  HINT_PAD_PORT: ເລືອກພອດ ໂຕຈຳລອງຈອຍ ສຳລັບການຕັ້ງຄ່າ.
+  HINT_PADEMU_PORT: ເປີດ ຫຼື ປິດ ໂຕຈຳລອງຈອຍ ສຳລັບພອດທີ່ເລືອກ.
+  HINT_PADEMU_VIB: ເປີດ ຫຼື ປິດ ການສັ່ນ ສຳລັບພອດທີ່ເລືອກ ຂອງໂຕຈຳລອງຈອຍ.
+  PAIR: ຈັບຄູ່
+  PAIR_PAD: ຈັບຄູ່ ຈອຍ DS
+  HCIVER: 'ເວີຊັນ HCI:'
+  LMPVER: 'ເວີຊັນ LMP:'
+  MANUFACTURER: 'ID ຜູ້ຜະລິດ:'
+  BT_SUPPORTED: ອະແດັບເຕີ Bluetooth ຄວນເຂົ້າກັນໄດ້ຢ່າງເຕັມທີ່ ກັບຈອຍ DS3/DS4.
+  BT_NOTSUPPORTED: ອະແດັບເຕີ Bluetooth ອາດເຮັດວຽກ ບໍ່ຖືກຕ້ອງ ກັບຈອຍ DS3/DS4.
+  HINT_MTAP_ENABLE: ເປີດ ຫຼື ປິດ ການຈຳລອງ Multitap ສຳລັບເກມທີ່ເລືອກ.
+  HINT_MTAP_PORT: ເລືອກພອດ ສຳລັບການຈຳລອງ Multitap.
+  HINT_PADEMU_WORKAROUND: DS3 ປອມບາງອັນ ຕ້ອງການວິທີແກ້ພິເສດ, ຕົວເລືອກນີ້ ເປີດມັນ.
+  HINT_GSM_FIELD_FIX: ການແກ້ ສຳລັບເກມທີ່ມີບັນຫາ ໃນໂໝດວິດີໂອ progressive.
+  PARENLOCKCONFIG: ການຕັ້ງຄ່າ ລັອກຜູ້ປົກຄອງ
+  PARENLOCK_PASSWORD: ລະຫັດຜ່ານ ລັອກຜູ້ປົກຄອງ
+  PARENLOCK_PASSWORD_HINT: ປ່ອຍວ່າງ ເພື່ອປິດ ລັອກຜູ້ປົກຄອງ.
+  PARENLOCK_ENTER_PASSWORD_TITLE: ປ້ອນລະຫັດຜ່ານ ລັອກຜູ້ປົກຄອງ
+  PARENLOCK_PASSWORD_INCORRECT: ລະຫັດຜ່ານ ລັອກຜູ້ປົກຄອງ ບໍ່ຖືກຕ້ອງ.
+  PARENLOCK_DISABLE_WARNING: ປິດ ລັອກຜູ້ປົກຄອງ ແລ້ວ.
+  BUILD_DETAILS: 'ຕົວເລືອກ ບິວ:'
+  PARENLOCK_INVALID_PASSWORD: 'ຂໍ້ຜິດພາດ: ລະຫັດຜ່ານນີ້ ໃຊ້ບໍ່ໄດ້.'
+  ERR_VMC_FRAGMENTED_CONTINUE: ໄຟລ໌ VMC %s ແຕກເປັນທ່ອນ. ສືບຕໍ່ ດ້ວຍເມມໂມຣີກາດ ໃນຊ່ອງ %d ບໍ?
+  AUDIO_SETTINGS: ການຕັ້ງຄ່າສຽງ
+  SFX_VOLUME: ລະດັບສຽງ ເອັບເຟັກ
+  BOOT_SND_VOLUME: ລະດັບສຽງ ເປີດເຄື່ອງ
+  CFM_VMODE_CHG: ຢືນຢັນ ການປ່ຽນໂໝດວິດີໂອ ບໍ?
+  CACHE_HDD_GAME_LIST: ແຄຊ ລາຍຊື່ເກມ (HDD APA)
+  CFG_NOTIFICATION: ໂຫຼດການຕັ້ງຄ່າ ຈາກ %s ແລ້ວ
+  THM_NOTIFICATION: ໂຫຼດທີມ ຈາກ %s ແລ້ວ
+  LNG_NOTIFICATION: ໂຫຼດພາສາ ຈາກ %s ແລ້ວ
+  PARTITION_NOTIFICATION: ເມົາພາທິຊັນ %s ແລ້ວ.
+  GAME_SETTINGS_SAVED: ບັນທຶກການຕັ້ງຄ່າເກມ ແລ້ວ.
+  GAME_SETTINGS_REMOVED: ລົບການຕັ້ງຄ່າ %s ແລ້ວ.
+  NET_UPDATE_HINT: ຂຽນທັບ ການຕັ້ງຄ່າຄວາມເຂົ້າກັນໄດ້ ຂອງເກມທີ່ມີຢູ່ ເມື່ອເປີດ.
+  SETTINGS_SOURCE: ໂໝດ ການຕັ້ງຄ່າ
+  PERGAME_SETTINGS: ແຕ່ລະເກມ
+  ALL_SETTINGS: ທັງໝົດ
+  GAME_SETTINGS_PROMPT: ເລືອກການຕັ້ງຄ່າ ທີ່ຈະລົບ.
+  FORUM_DETAILS: 'ຟໍຣັມ ຊ່ວຍເຫຼືອ:'
+  INFO_TITLE: ຫົວຂໍ້
+  INFO_DEVELOPER: ຜູ້ພັດທະນາ
+  HINT_NEUTRINO_AUTO_ELF: ສົ່ງ ELF ບູດຂອງເກມ ໃຫ້ Neutrino ເພື່ອຊອກການຕັ້ງຄ່າ ຂອງແຕ່ລະເກມ. ເປີດເປັນຄ່າເລີ່ມຕົ້ນ; ຕົວເລືອກ ELF ບູດ ທີ່ຕັ້ງເອງ ມີສິດກ່ອນ.
+  HINT_POPSTARTER_PATH: ບ່ອນທີ່ POPSTARTER.ELF ຢູ່. ຖ້າປ່ອຍວ່າງ, RIPPS2 ຈະໃສ່ອັນທີ່ມັນພົບ ເທິງໄດຣຟ໌; ພິມທັບ ເພື່ອໃຊ້ອັນອື່ນ, ເຊັ່ນ usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: ອາກິວເມັນ Neutrino ຍາວເກີນ ທີ່ບັນທຶກໄດ້. ເຮັດໃຫ້ຊ່ອງໜຶ່ງ ສັ້ນລົງ ກ່ອນບັນທຶກ.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: ອາກິວເມັນ ເລີ່ມ Neutrino ເກີນຂີດຈຳກັດ ທີ່ປອດໄພ. ເຮັດໃຫ້ ອາກິວເມັນ ລວມ ຫຼື ຂອງເກມ ສັ້ນລົງ.
+  NEUTRINO_AUTO_ELF: ELF ບູດ ອັດຕະໂນມັດ (-elf)
+  HINT_NEUTRINO_PATH: 'neutrino.elf ຢູ່ໃສ? <not set> = ອຸປະກອນຂອງເກມ -> mc0/mc1. ເສັ້ນທາງເຕັມ ທີ່ກຳນົດເອງ ຈະລອງກ່ອນ. ຕົວຢ່າງ: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: ການສະແດງ ເກມ PS2/PS1
+  HINT_GAME_VIEW_MODE: ທັງໝົດ ສະແດງເກມ PS2 ແລະ PS1 ນຳກັນ ແລະ L3 ປ່ຽນ ທັງໝົດ, PS1, PS2. PS2 ຫຼື PS1 ສະແດງສະເພາະປະເພດນັ້ນ ແລະ ປິດ L3. APPS ແລະ ເກມທີ່ມັກ ມີກົດການສະແດງ ຂອງມັນເອງ.
+  VIEW_MIXED: ກຳລັງສະແດງ ເກມ PS2 + PS1
+  VIEW_PS1_ELF: ກຳລັງສະແດງ ໂປຣແກຣມ PS1 ELF
+  APPS_DISPLAY: ການສະແດງ ໂປຣແກຣມ
+  HINT_APPS_DISPLAY: ທັງໝົດ ສະແດງທຸກ ELF ໃນລາຍຊື່ APPS ດຽວ ໂດຍປິດ L3. ໂປຣແກຣມ / PS1ELF ແຍກຫົວຂໍ້ທີ່ມີ [PS1] ໄປໜ້າ L3 ທີສອງ; ການເປີດ ບໍ່ປ່ຽນ.
+  VIEW: ມຸມມອງ
+  VIEW_PS2: ກຳລັງສະແດງ ເກມ PS2 ທີ່ມັກ
+  VIEW_PS1: ກຳລັງສະແດງ ເກມ PS1 ທີ່ມັກ
+  VIEW_ELF: ກຳລັງສະແດງ ELF ທີ່ມັກ
+  VIEW_ALL: ກຳລັງສະແດງ ທຸກເກມທີ່ມັກ
+  VMC_FRAGMENTED_ON_CREATE: ສ້າງ VMC ແລ້ວ, ແຕ່ມັນແຕກເປັນທ່ອນ. ການຈຳລອງເມມໂມຣີກາດ ຕ້ອງການໄຟລ໌ດຽວ ທີ່ຕໍ່ເນື່ອງ, ດັ່ງນັ້ນ VMC ນີ້ ຈະຖືກຂ້າມ ຕອນເລີ່ມ ແລະ ຈະໃຊ້ກາດແທ້ແທນ. ເຮັດໃຫ້ມີບ່ອນວ່າງ ແລ້ວສ້າງມັນໃໝ່, ຫຼື ສຳເນົາມາຈາກອຸປະກອນອື່ນ.
+  KEYB_MOVE_CURSOR: ຍ້າຍເຄີເຊີ
+  TITLECOLOR: ສີ ຊື່ເກມ
+  RA_CHECK_GAME: ກວດ ການຮອງຮັບ RetroAchievements
+  RA_TEST_LINK: ທົດສອບ ການເຊື່ອມຕໍ່ PC ຂອງ RetroAchievements
+  RA_CHECKING_IMAGE: ກຳລັງກວດຮູບ, ໃຊ້ເວລາ ສອງສາມວິນາທີ...
+  RA_CHECK_RUNNING: ມີການກວດຮູບ ກຳລັງເຮັດຢູ່ແລ້ວ
+  RA_LOOKING_FOR_PC: ກຳລັງຊອກ ໂປຣແກຣມ PC...
+  RA_UL_UNSUPPORTED: ເກມ UL/USBExtreme ຍັງກວດບໍ່ໄດ້
+  RA_UL_UNSUPPORTED2: ຮອງຮັບສະເພາະ ຮູບ .iso ທຳມະດາ ໃນ DVD/ ຫຼື CD/
+  RA_UNKNOWN_IMAGE: RetroAchievements ບໍ່ຮູ້ຈັກຮູບນີ້
+  RA_STILL_IDENTIFYING: PC ຍັງກຳລັງລະບຸຮູບ
+  RA_TRY_AGAIN: ລອງໃໝ່ ໃນສອງສາມວິນາທີ
+  RA_NO_SOCKET: ເຄື່ອງ ເປີດຊັອກເກັດເຄືອຂ່າຍ ບໍ່ໄດ້
+  RA_NO_SOCKET2: ເລີ່ມເຄື່ອງໃໝ່, ຫຼື ກວດອຸປະກອນ ETH ໃນການຕັ້ງຄ່າ
+  RA_TEST_NO_SOCKET2: ກວດສາຍ ແລະ ETH ໃນການຕັ້ງຄ່າ; ຖ້າເຄືອຂ່າຍເຮັດວຽກ, ເລີ່ມເຄື່ອງໃໝ່
+  RA_PC_NO_ANSWER: ໂປຣແກຣມ PC ບໍ່ຕອບ
+  RA_PC_NO_ANSWER2: ກວດວ່າ xeRAbora ເຮັດວຽກ, ຫຼື ລອງທົດສອບ ການເຊື່ອມຕໍ່ PC
+  RA_SUPPORTED: ຮອງຮັບໂດຍ RetroAchievements
+  RA_START_TO_TRACK: ເລີ່ມເກມ ເພື່ອຕິດຕາມ ຄວາມສຳເລັດ
+  RA_ACHIEVEMENTS: '%d ຄວາມສຳເລັດ'
+  RA_ACHIEVEMENTS_FULL: '%d ຄວາມສຳເລັດ: ປົດລັອກ %d, ບໍ່ຮອງຮັບ %d'
+  RA_HASH_FAILED: ແຮຊຮູບ ບໍ່ໄດ້
+  RA_HASH_FAILED2: ເບິ່ງ RA/hashes.txt ຂ້າງເກມ ສຳລັບເຫດຜົນ
+  RA_NET_BUSY: ເຄືອຂ່າຍ ກຳລັງຖືກໃຊ້ ໂດຍການສົ່ງ UDP
+  RA_NET_BUSY2: 'RA ຕ້ອງການ SMB stack: ປ່ຽນໂປໂຕຄອນ, ຫຼື ສ້າງ .wl ເທິງ PC'
+  RA_NET_BUSY_HASH: 'ແຮຊ ຢູ່ໃນ RA/hashes.txt: xeRAbora ສ້າງ .wl ຈາກມັນໄດ້'
+  RA_NO_IP: ເຄື່ອງ ບໍ່ມີທີ່ຢູ່ IP
+  RA_NO_IP2: ກວດ DHCP ຫຼື ທີ່ຢູ່ຄົງທີ່ ໃນການຕັ້ງຄ່າເຄືອຂ່າຍ
+  RA_TEST_NO_ANSWER: ບໍ່ມີໂປຣແກຣມ PC ໃດຕອບ ພາຍໃນ 3 ວິນາທີ
+  RA_TEST_NO_ANSWER2: ເຄື່ອງ%s. ກວດວ່າ xeRAbora ເຮັດວຽກ ແລະ UDP 18194 ເປີດຢູ່
+  RA_TEST_FOUND: ພົບໂປຣແກຣມ PC%s%s %s
+  RA_TEST_FOUND2: ຕອບໃນ %u ms, ເຄື່ອງ%s
+  RA_NA_NEUTRINO: 'ການຕິດຕາມ RA ຕ້ອງການແກນ <OPL>: ການເລີ່ມ Neutrino ບໍ່ເຄີຍໂຫຼດ ee_core'
+  RA_NA_UDPFS: 'ການຕິດຕາມ RA ໃຊ້ບໍ່ໄດ້ ເທິງ UDPFS: ເກມເລີ່ມ ຜ່ານ Neutrino'
+  RA_NA_PS1: ການຕິດຕາມ RA ໃຊ້ບໍ່ໄດ້ ສຳລັບເກມ PS1
+  RA_TELEMETRY: ເທເລເມທຣີ RetroAchievements
+  RA_BADGES: ປ້າຍ RetroAchievements
+  HTTP_GAMES: ເກມ HTTP
+  HTTP_SERVER: ເຊີບເວີ HTTP
+  HTTP_PORT: ພອດ HTTP
+  HTTP_BASE_PATH: ເສັ້ນທາງຫຼັກ HTTP
+  HTTP_TEST: ທົດສອບ ເຊີບເວີ HTTP
+  HTTP_TEST_OK: 'ເຊີບເວີ ໃຊ້ໄດ້: ສະແດງລາຍຊື່ເກມແລ້ວ'
+  HTTP_TEST_EMPTY: 'ແຄັດຕາລັອກ ວ່າງ: ຖືກຕ້ອງ, ແຕ່ບໍ່ພິສູດຫຍັງ ກ່ຽວກັບຊ່ວງໄບຕ໌'
+  HTTP_TEST_NO_ISO: ແຄັດຕາລັອກ ບໍ່ມີຮູບທີ່ຮອງຮັບ ໃຫ້ທົດສອບຊ່ວງໄບຕ໌
+  HTTP_ERR_CONNECT: ເຂົ້າເຖິງ ເຊີບເວີ HTTP ບໍ່ໄດ້
+  HTTP_ERR_CATALOG: games.csv ຂາດຫາຍ, ອ່ານບໍ່ໄດ້ ຫຼື ໃຫຍ່ເກີນ
+  HTTP_ERR_RANGE: ເຊີບເວີ ບໍ່ສົ່ງໄບຕ໌ ທີ່ຂໍ ຢ່າງຖືກຕ້ອງ
+  HTTP_LAUNCH_UNAVAILABLE: 'ການເລີ່ມຜ່ານ HTTP ຍັງບໍ່ທັນສ້າງ: ແຄັດຕາລັອກ ທ່ອງເບິ່ງໄດ້ຢ່າງດຽວ'
+  HTTP_ERR_COMPRESSED: ຮູບບີບອັດ (.zso) ຍັງບໍ່ຮອງຮັບ ຜ່ານ HTTP
+  HTTP_NO_VMC: 'ເມມໂມຣີກາດສະເໝືອນ ໃຊ້ບໍ່ໄດ້ ຜ່ານ HTTP: ໃຊ້ກາດແທ້'
+  HTTP_TAB_HINT: HTTP ອ່ານ games.csv ຈາກເຊີບເວີຂອງທ່ານ. ຕັ້ງທີ່ຢູ່, ພອດ ແລະ ເສັ້ນທາງຫຼັກ ໃນການຕັ້ງຄ່າເຄືອຂ່າຍ, ແລ້ວໃຊ້ ທົດສອບ.
+  RA_DISC_CHECK: 'RA: ກວດ ການຮອງຮັບແຜ່ນ'
+  RA_DISC_LAUNCH: 'RA: ເປີດແຜ່ນ'
+  RA_DISC_CHECKING: ກຳລັງກວດແຜ່ນ ສຳລັບ RetroAchievements
+  RA_DISC_HASH_FAILED: 'ແຮຊແຜ່ນ ບໍ່ໄດ້: ກວດ RA/hashes.txt ໃນໂຟນເດີການຕັ້ງຄ່າ'
+  RA_DISC_HOME_ERROR: ເສັ້ນທາງການຕັ້ງຄ່າ ໃຊ້ບໍ່ໄດ້ ສຳລັບລາຍການຕິດຕາມແຜ່ນ
+  RA_DISC_ENABLE: ເປີດ ເທເລເມທຣີ RetroAchievements ໃນການຕັ້ງຄ່າເຄືອຂ່າຍ ກ່ອນ
+  RA_DISC_CHECK_FIRST: 'ບໍ່ມີລາຍການຕິດຕາມ ສຳລັບແຜ່ນນີ້: ໃຊ້ RA ກວດ ການຮອງຮັບແຜ່ນ ກ່ອນ'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: ພົບ HDD, ແຕ່ອ່ານຕາຕະລາງພາທິຊັນ APA ຂອງມັນ ບໍ່ໄດ້. ຢ່າຟໍແມັດມັນ: ເກມຂອງທ່ານ ອາດກູ້ຄືນໄດ້.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: ໄດຣຟ໌ໜຶ່ງ ບໍ່ໄດ້ເມົາ ເພາະເຊັກເຕີ ຂອງມັນບໍ່ແມ່ນ 512 ໄບຕ໌ (ເຊັ່ນ ໄດຣຟ໌ ເຊັກເຕີ 4K). OPL ອ່ານໄດ້ສະເພາະ ເຊັກເຕີ 512 ໄບຕ໌.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: ຫົວຂໍ້ນີ້ ເປັນພາທິຊັນ APA ຂອງມັນເອງ, ແລະ OPL ບໍ່ເຄີຍແກ້ໄຂຕາຕະລາງພາທິຊັນ. ປ່ຽນຊື່ມັນ ເທິງ PC.
+  POPS_SETTINGS_UNREADABLE: 'ອ່ານການຕັ້ງຄ່າ POPSTARTER ບໍ່ໄດ້: ເມມໂມຣີກາດ ບໍ່ວ່າງ ຫຼື ອ່ານບໍ່ໄດ້. ລອງໃໝ່ ເມື່ອການໂຫຼດແລ້ວ.'
+  GLOBAL_PS_EMULATION_SETTINGS: ການຕັ້ງຄ່າ ການຈຳລອງ PS ລວມ
+  RA_NO_LINK_UNTRACKED: 'ເຄືອຂ່າຍ ໃຊ້ບໍ່ໄດ້: ເທື່ອນີ້ ເລີ່ມໂດຍບໍ່ມີ RetroAchievements.'
+  IGR_USB_DRIVERS_PROMPT: ເສັ້ນທາງ IGR ຢູ່ເທິງ USB, ແຕ່ %s ບໍ່ມີ USBD.IRX ແລະ USBHDFSD.IRX, ເຊິ່ງເຄື່ອງຕ້ອງການ ເພື່ອເຂົ້າເຖິງ USB ຫຼັງ In-Game Reset. ຖ້າບໍ່ມີ, IGR ຈະຕົກໄປໂຕທ່ອງ PS2. ສຳເນົາໄດຣເວີ ຂອງ RiptOPL ໄປນັ້ນ ດຽວນີ້ ບໍ? FMCB, OpenTuna ແລະ exploit ອື່ນ ກໍໂຫຼດໄຟລ໌ເຫຼົ່ານີ້ ແລະ ອາດເຮັດວຽກຕ່າງກັນ. ໄຟລ໌ທີ່ມີຢູ່ ຈະບໍ່ຖືກແທນທີ່. USB FAT32 ເທົ່ານັ້ນ.
+  IGR_USB_DRIVERS_FAILED: ສຳເນົາໄດຣເວີ USB ໄປ %s ບໍ່ໄດ້ (ກາດເຕັມ ຫຼື ຂຽນບໍ່ໄດ້). IGR ຈະຕົກໄປໂຕທ່ອງ PS2.
+  OFFICIAL_CFG_NOTIFICATION: ໂຫຼດການຕັ້ງຄ່າ OPL ທາງການ ຈາກ %s ແລ້ວ
+  CFM_VMODE_HOLD_KEEP: ກົດຄ້າງ ເພື່ອເກັບໄວ້
+  BDM_PS2_FOLDERS_UNREADABLE: ເປີດໂຟນເດີ CD ຫຼື DVD ໃນ %s ບໍ່ໄດ້ (ຂໍ້ຜິດພາດ %d), ດັ່ງນັ້ນ ອຸປະກອນນັ້ນ ບໍ່ສະແດງເກມ PS2. ກົດ SELECT ໃນໜ້າຂອງມັນ ເພື່ອລອງໃໝ່.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: ລະບົບໄຟລ໌ Neutrino ຕັ້ງເປັນ bd, ແຕ່ອຸປະກອນນີ້ ບໍ່ເຄີຍລາຍງານ ໝາຍເລກອຸປະກອນ, ດັ່ງນັ້ນ ບໍ່ສາມາດຊີ້ Neutrino ໄປຫາມັນ. ຕັ້ງລະບົບໄຟລ໌ Neutrino ຂອງເກມນີ້ ເປັນ Auto ຫຼື exfat.
+  CFM_VMODE_REVERT_IN: ກັບຄືນ ໃນ %d ວິ
+  EMBER_DITHER: Ember dithering
+  HINT_EMBER_DITHER: Ember dithering (ເປີດ ຫຼື ປິດ), ຂຽນໄວ້ໃນ EMBER/settings.txt ຂອງອຸປະກອນທີ່ເລີ່ມ. ຄ່າຂອງແຕ່ລະເກມ ມີສິດກ່ອນ.
+  EMBER_SHADING: ການແຮເງົາ Ember
+  HINT_EMBER_SHADING: 'ຄວາມເລິກສີ Ember: 15-bit, ຫຼື 24-bit (ທົດລອງ). ຂຽນໄວ້ໃນ EMBER/settings.txt ຂອງອຸປະກອນທີ່ເລີ່ມ. ຄ່າຂອງແຕ່ລະເກມ ມີສິດກ່ອນ.'
+  EMBER_CONTROLLER: ຈອຍ Ember
+  HINT_EMBER_CONTROLLER: 'ໂໝດຈອຍ Ember: Auto, Analog ຫຼື D2A. ປົກກະຕິ ຕັ້ງແຕ່ລະເກມ ດີທີ່ສຸດ (ສາມຫຼ່ຽມ > ການຕັ້ງຄ່າເກມ Ember), ເຊິ່ງມີສິດກ່ອນອັນນີ້.'
+  EMBER_480P_CONFIRM: Ember 480p ບໍ່ສະແດງພາບ ຜ່ານສາຍ composite. ໃຊ້ 480p ບໍ?
+  EMBER_SHADING_24: 24-bit (ທົດລອງ)
+  EMBER_GAME_SETTINGS: ການຕັ້ງຄ່າເກມ Ember
+  HINT_EMBER_GAME_SETTING: ເກມນີ້ເທົ່ານັ້ນ. ກົດ OK ເພື່ອຂຽນ EMBER/games/<name>/settings.txt ກ່ອນເລີ່ມ. ຄ່າເລີ່ມຕົ້ນ ທີ່ບໍ່ໄດ້ແຕະ ເກັບຄ່າທີ່ມີໃນໄຟລ໌ໄວ້; ປ່ຽນຄ່າກັບເປັນ ຄ່າເລີ່ມຕົ້ນ ຈະເອົາການແທນທີ່ ຂອງມັນອອກ.
+  EMBER_TIMING: ຈັງຫວະ Ember
+  HINT_EMBER_TIMING: 'ຈັງຫວະວິດີໂອ Ember: Auto ເຮັດຕາມພາກພື້ນ ຂອງແຜ່ນ, NTSC ບັງຄັບ 60 Hz, PAL ບັງຄັບ 50 Hz. ຂຽນໄວ້ໃນ EMBER/settings.txt ຂອງອຸປະກອນທີ່ເລີ່ມ.'
+  EMBER_GLOBAL_WARNING: ການຕັ້ງຄ່າ Ember ເຫຼົ່ານີ້ ໃຊ້ກັບທຸກເກມ PS1, ແລະ ບາງເກມ ຂັດຂ້ອງ ກັບມັນ. ເພື່ອປ່ຽນເກມດຽວ, ໃຊ້ ສາມຫຼ່ຽມ > ການຕັ້ງຄ່າເກມ Ember ເທິງເກມນັ້ນ.
+  PS1_SAVE_GUIDANCE: ເຊບ PS1 ຂຶ້ນກັບ Ember ຫຼື POPSTARTER; ການຕັ້ງຄ່າ VMC ຂອງ PS2 ບໍ່ໃຊ້.
+  GAME_TYPE_LABELS: ສະແດງປ້າຍ [PS1]/[PS2]
+  AUTO_CREATE_VMC: ສ້າງ VMC ຕອນເປີດເທື່ອທຳອິດ
+  AUTO_VMC_CREATING: ກຳລັງສ້າງ VMC ຂອງເກມນີ້...
+  AUTO_VMC_FAILED: ສ້າງ VMC ຂອງເກມນີ້ ບໍ່ໄດ້. ເກມເລີ່ມ ໂດຍບໍ່ມີມັນ.
+  FAV_SAVING: ກຳລັງບັນທຶກ ໃສ່ເກມທີ່ມັກ...
+  FAV_SAVED: ບັນທຶກ ໃສ່ເກມທີ່ມັກ ແລ້ວ
+  FAV_SAVE_FAILED: ບັນທຶກ ໃສ່ເກມທີ່ມັກ ບໍ່ໄດ້
+  FAV_REMOVED: ເອົາອອກ ຈາກເກມທີ່ມັກ ແລ້ວ
+  FAV_REMOVE_FAILED: ເອົາອອກ ຈາກເກມທີ່ມັກ ບໍ່ໄດ້
+  POPS_UDPFS_SETTINGS: ການຕັ້ງຄ່າເຄືອຂ່າຍ POPS UDPFS
+  POPS_UDPFS_DISCOVERY: ບັນທຶກໃສ່ ທຸກໂຟນເດີ POPS ເທິງ USB. ເຊີບເວີ 0.0.0.0 ໃຊ້ການຄົ້ນຫາ.
+  POPS_UDPFS_NOT_READY: POPS UDPFS ຕ້ອງການ IPCONFIG.DAT ແລະ UDPFSCONFIG.DAT ທີ່ຖືກຕ້ອງ ແລະ ກົງກັນ ໃນທຸກໂຟນເດີ POPS ເທິງ USB. ຕັ້ງພວກມັນ ໃນການຕັ້ງຄ່າເຄືອຂ່າຍ POPS.
+  HINT_POPS_UDPFS_IP: IP ຄົງທີ່ ຂອງ PS2 ທີ່ໄດຣເວີ POPS UDPFS ໃຊ້ ຫຼັງ IOP reset ຂອງມັນ.
+  POPS_UDPFS_ALL_USB_FOLDERS: ທຸກໂຟນເດີ POPS ເທິງ USB
+  POPS_UDPFS_INVALID_SUFFIX: ' (ບໍ່ຖືກຕ້ອງ)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (ບໍ່ຄົບ)'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS ຕ້ອງການຄູ່ໄດຣເວີ .udpfs ຕິດຕັ້ງ ເທິງເມມໂມຣີກາດ. ກຽມມັນເອງ ຫຼື ເປີດ ໃຊ້ VCD BDMA ຕອນເລີ່ມ.
+  VMC_REPLACE_REQUIRES_DELETE: ການປ່ຽນຂະໜາດ VMC ຈະລົບເຊບ ຂອງມັນ. ສຳຮອງ VMC ທີ່ມີຢູ່ ແລະ ໃຊ້ ລົບ ກ່ອນສ້າງຂະໜາດໃໝ່.
+  VMC_CREATE_FAILED: ສ້າງ VMC ບໍ່ໄດ້. ກວດອຸປະກອນ, ການເຊື່ອມຕໍ່ ແລະ ສິດຂຽນ. ເຊບທີ່ມີຢູ່ ບໍ່ຖືກແທນທີ່.
+  UDPFS_IP_CONFLICT: ອຸປະກອນອື່ນ ໃນເຄືອຂ່າຍຂອງທ່ານ ໃຊ້ທີ່ຢູ່ IP ຂອງ PS2 ນີ້, ດັ່ງນັ້ນ ຄຳຕອບ ຂອງເຊີບເວີ UDPFS ໄປຫາມັນ. ຕັ້ງ IP ອື່ນ ໃຫ້ PS2 ໃນການຕັ້ງຄ່າເຄືອຂ່າຍ.
+  CFG_TITLES: ສະແດງຊື່ CFG ໃນລາຍຊື່ເກມ
+  HINT_CFG_TITLES: ສະແດງ ຊື່ຈາກ CFG ຂອງແຕ່ລະເກມ ແທນຊື່ໄຟລ໌, ແລະ ຈັດລຽງຕາມມັນ. ອ່ານທຸກ CFG ເມື່ອລາຍຊື່ເອີ້ນຄືນໃໝ່, ດັ່ງນັ້ນ ລາຍຊື່ໂຫຼດຊ້າລົງ. ການສະແດງເທົ່ານັ້ນ.
+  LOGOART: ຮູບໂລໂກ້
+  HINT_LOGOART: ສະແດງໂລໂກ້ ຂອງເກມ (<ID>_LGO) ເມື່ອທີມໃຊ້ມັນ. ປິດ ເຊື່ອງຮູບເລີ່ມຕົ້ນ ຂອງມັນນຳ, ແຕ່ເກັບ ໜ້າປົກ, ຮູບແຜ່ນ ແລະ ພື້ນຫຼັງໄວ້.
+  PARENLOCK_GAME: ລັອກຜູ້ປົກຄອງ
+  PARENLOCK_GAME_HINT: ຕ້ອງໃສ່ ລະຫັດລັອກຜູ້ປົກຄອງ ເພື່ອເລີ່ມເກມນີ້.
+  PARENLOCK_GAME_NO_PASSWORD: ຕັ້ງ ລະຫັດລັອກຜູ້ປົກຄອງ, ບໍ່ດັ່ງນັ້ນ ເກມນີ້ ຈະບໍ່ຖືກລັອກ.

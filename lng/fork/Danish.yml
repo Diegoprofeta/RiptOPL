@@ -317,3 +317,149 @@ translations:
   HINT_EMBER_DISPLAY: Den udgangstilstand, Ember bruger til PS1-spil. 240p eller 480p skrives til settings.txt i EMBER-mappen på den enhed, der startes. Standard fjerner indstillingen igen -- og filen med, hvis den ikke indeholdt andet.
   LOGOART: "Spillogoer"
   HINT_LOGOART: "Viser spillets logo (<ID>_LGO), når temaet bruger det. Deaktivering skjuler også standardbilledet uden at ændre covers, diskbilleder eller baggrunde."
+  OK: OK
+  MEDIUM: Mellem
+  BDMMODE: Starttilstand for BDM
+  GATEWAY: Gateway
+  START: Start
+  VMC_STATUS: Status
+  INFO: Info
+  VSYNC: Lodret synkronisering
+  DS34BT_MODE: DualShock3/4 BT
+  HCIVER: 'HCI-version:'
+  LMPVER: 'LMP-version:'
+  MTAP_ENABLE: Multitap-emulering
+  HINT_PADEMU_WORKAROUND: Nogle falske DS3'er har brug for en omgåelse; denne indstilling slår den til.
+  CFG_NOTIFICATION: Konfiguration indlæst fra %s
+  THM_NOTIFICATION: Tema indlæst fra %s
+  LNG_NOTIFICATION: Sprog indlæst fra %s
+  PARTITION_NOTIFICATION: Partitionen %s er monteret.
+  HINT_NEUTRINO_AUTO_ELF: Sender spillets start-ELF til Neutrino for at slå konfiguration op pr. titel. Slået til som standard; en manuelt indstillet Boot ELF-indstilling går forud.
+  HINT_POPSTARTER_PATH: Hvor POPSTARTER.ELF ligger. Står feltet tomt, udfylder RIPPS2 det med en, den finder på et drev; skriv over den for at bruge en anden, som usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Neutrino-argumenterne er længere, end der kan gemmes. Gør et felt kortere, før du gemmer.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Neutrinos startargumenter overskrider den sikre grænse. Gør de globale argumenter eller spillets argumenter kortere.
+  NEUTRINO_AUTO_ELF: Automatisk Boot ELF (-elf)
+  HINT_NEUTRINO_PATH: 'Hvor ligger neutrino.elf? <ikke angivet> = spillets enhed -> mc0/mc1. En egen fuld sti prøves først. Eksempler: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Visning af PS2/PS1-spil
+  HINT_GAME_VIEW_MODE: Alle viser PS2- og PS1-spil sammen, og L3 skifter mellem Alle, PS1, PS2. PS2 eller PS1 viser kun den type og slår L3 fra. APPS og Stjernemarkerede spil har deres egne visningsregler.
+  VIEW_MIXED: Viser PS2- + PS1-spil
+  VIEW_PS1_ELF: Viser PS1 ELF-apps
+  APPS_DISPLAY: Visning af programmer
+  HINT_APPS_DISPLAY: Alle viser hver ELF i én APPS-liste med L3 slået fra. Apps / PS1ELF deler titler, der indeholder [PS1], over på en anden L3-side; startadfærden ændres ikke.
+  VIEW: Visning
+  VIEW_PS2: Viser stjernemarkerede PS2-spil
+  VIEW_PS1: Viser stjernemarkerede PS1-spil
+  VIEW_ELF: Viser stjernemarkerede ELF'er
+  VIEW_ALL: Viser alle stjernemarkerede spil
+  VMC_FRAGMENTED_ON_CREATE: VMC oprettet, men den er fragmenteret. Emulering af memorykort kræver én sammenhængende fil, så denne VMC springes over ved start, og det rigtige kort bruges i stedet. Frigør plads, og opret den igen, eller kopier en ind fra en anden enhed.
+  KEYB_MOVE_CURSOR: Flyt markøren
+  TITLECOLOR: Farve på spiltitler
+  RA_CHECK_GAME: Tjek understøttelse af RetroAchievements
+  RA_TEST_LINK: Test RetroAchievements-forbindelsen til pc
+  RA_CHECKING_IMAGE: Tjekker billedet, det tager et par sekunder...
+  RA_CHECK_RUNNING: Et tjek af et billede kører allerede
+  RA_LOOKING_FOR_PC: Leder efter pc-klienten...
+  RA_UL_UNSUPPORTED: UL/USBExtreme-spil kan ikke tjekkes endnu
+  RA_UL_UNSUPPORTED2: Kun almindelige .iso-billeder i DVD/ eller CD/ understøttes
+  RA_UNKNOWN_IMAGE: RetroAchievements kender ikke dette billede
+  RA_STILL_IDENTIFYING: Pc'en identificerer stadig billedet
+  RA_TRY_AGAIN: Prøv igen om et par sekunder
+  RA_NO_SOCKET: Konsollen kunne ikke åbne en netværkssocket
+  RA_NO_SOCKET2: Genstart konsollen, eller tjek ETH-enheden i indstillingerne
+  RA_TEST_NO_SOCKET2: Tjek kablet og ETH i indstillingerne; hvis netværket kører, så genstart konsollen
+  RA_PC_NO_ANSWER: Pc-klienten svarede ikke
+  RA_PC_NO_ANSWER2: Tjek, at xeRAbora kører, eller prøv testen af pc-forbindelsen
+  RA_SUPPORTED: Understøttet af RetroAchievements
+  RA_START_TO_TRACK: Start spillet for at spore præstationer
+  RA_ACHIEVEMENTS: '%d præstationer'
+  RA_ACHIEVEMENTS_FULL: '%d præstationer -- %d låst op, %d ikke understøttet'
+  RA_HASH_FAILED: Billedets hash kunne ikke beregnes
+  RA_HASH_FAILED2: Se RA/hashes.txt ved siden af spillene for årsagen
+  RA_NET_BUSY: Netværket bruges af en UDP-overførsel
+  RA_NET_BUSY2: RA kræver SMB-stakken -- skift protokol, eller byg .wl på pc'en
+  RA_NET_BUSY_HASH: Hashen ligger i RA/hashes.txt -- xeRAbora kan bygge .wl ud fra den
+  RA_NO_IP: Konsollen har ingen IP-adresse
+  RA_NO_IP2: Tjek DHCP eller den statiske adresse i netværksindstillingerne
+  RA_TEST_NO_ANSWER: Ingen pc-klient svarede inden for 3 sekunder
+  RA_TEST_NO_ANSWER2: Konsol%s. Tjek, at xeRAbora kører, og at UDP 18194 er åben
+  RA_TEST_FOUND: Pc-klient fundet%s%s %s
+  RA_TEST_FOUND2: Svar på %u ms, konsol%s
+  RA_NA_NEUTRINO: RA-sporing kræver <OPL>-kernen -- starter via Neutrino indlæser aldrig ee_core
+  RA_NA_UDPFS: RA-sporing findes ikke på UDPFS -- spil starter via Neutrino
+  RA_NA_PS1: RA-sporing findes ikke for PS1-spil
+  RA_TELEMETRY: RetroAchievements-telemetri
+  RA_BADGES: RetroAchievements-mærker
+  HTTP_GAMES: HTTP-spil
+  HTTP_SERVER: HTTP-server
+  HTTP_PORT: HTTP-port
+  HTTP_BASE_PATH: HTTP-basissti
+  HTTP_TEST: Test HTTP-serveren
+  HTTP_TEST_OK: Serveren OK -- spil vist
+  HTTP_TEST_EMPTY: Kataloget er tomt -- gyldigt, men det beviser intet om byteintervaller
+  HTTP_TEST_NO_ISO: Kataloget har intet understøttet billede at teste et byteinterval på
+  HTTP_ERR_CONNECT: Kan ikke nå HTTP-serveren
+  HTTP_ERR_CATALOG: games.csv mangler, kan ikke læses eller er for stor
+  HTTP_ERR_RANGE: Serveren returnerede ikke præcis de byte, der blev bedt om
+  HTTP_LAUNCH_UNAVAILABLE: Start via HTTP er ikke implementeret endnu -- kataloget kan kun gennemses
+  HTTP_ERR_COMPRESSED: Komprimerede billeder (.zso) understøttes ikke via HTTP endnu
+  HTTP_NO_VMC: Virtuelle memorykort er ikke tilgængelige via HTTP -- brug et fysisk kort
+  HTTP_TAB_HINT: HTTP læser games.csv fra din server. Angiv adresse, port og basissti i netværksindstillingerne, og brug så Test.
+  RA_DISC_CHECK: 'RA: tjek diskunderstøttelse'
+  RA_DISC_LAUNCH: 'RA: start disk'
+  RA_DISC_CHECKING: Tjekker disken for RetroAchievements
+  RA_DISC_HASH_FAILED: Diskens hash kunne ikke beregnes -- tjek RA/hashes.txt i indstillingsmappen
+  RA_DISC_HOME_ERROR: Indstillingsstien kan ikke bruges til diskenes overvågningslister
+  RA_DISC_ENABLE: Slå RetroAchievements-telemetri til i netværksindstillingerne først
+  RA_DISC_CHECK_FIRST: 'Ingen overvågningsliste for denne disk -- brug RA: tjek diskunderstøttelse først'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: HDD fundet, men dens APA-partitionstabel kan ikke læses. Formater den ikke -- dine spil kan måske reddes.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: Et drev blev ikke monteret, fordi dets sektorer ikke er på 512 byte (f.eks. et drev med 4K-sektorer). OPL kan kun læse sektorer på 512 byte.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Denne titel er sin egen APA-partition, og OPL redigerer aldrig partitionstabellen. Omdøb den på en pc.
+  POPS_SETTINGS_UNREADABLE: Kunne ikke læse POPSTARTER's indstillinger -- memorykortet er optaget eller kan ikke læses. Prøv igen, når indlæsningen er færdig.
+  GLOBAL_PS_EMULATION_SETTINGS: Globale indstillinger for PS-emulering
+  RA_NO_LINK_UNTRACKED: Netværket er ikke tilgængeligt -- starter uden RetroAchievements denne gang.
+  IGR_USB_DRIVERS_PROMPT: IGR-stien ligger på USB, men %s mangler USBD.IRX og USBHDFSD.IRX, som konsollen skal bruge for at nå USB efter en In-Game Reset. Uden dem havner IGR i PS2-browseren. Kopier RiptOPL's drivere derhen nu? FMCB, OpenTuna og andre exploits indlæser også disse filer og kan opføre sig anderledes med dem. Eksisterende filer erstattes aldrig. Kun FAT32-USB.
+  IGR_USB_DRIVERS_FAILED: Kunne ikke kopiere USB-driverne til %s (kortet er fuldt eller kan ikke skrives til). IGR havner i PS2-browseren.
+  OFFICIAL_CFG_NOTIFICATION: Officielle OPL-indstillinger indlæst fra %s
+  CFM_VMODE_HOLD_KEEP: Hold nede for at beholde
+  BDM_PS2_FOLDERS_UNREADABLE: Kunne ikke åbne CD- eller DVD-mappen i %s (fejl %d), så den enhed viser ingen PS2-spil. Tryk på SELECT på dens side for at prøve igen.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Neutrinos filsystem er sat til bd, men denne enhed har aldrig oplyst sit enhedsnummer, så Neutrino kan ikke peges mod den. Sæt Neutrinos filsystem for dette spil til Auto eller exfat.
+  CFM_VMODE_REVERT_IN: Går tilbage om %d s
+  EMBER_DITHER: Ember-dithering
+  HINT_EMBER_DITHER: Ember-dithering (Til eller Fra), skrevet til EMBER/settings.txt på den startede enhed. En værdi pr. spil går forud.
+  EMBER_SHADING: Ember-skygning
+  HINT_EMBER_SHADING: 'Embers farvedybde: 15 bit, eller 24 bit (eksperimentelt). Skrevet til EMBER/settings.txt på den startede enhed. En værdi pr. spil går forud.'
+  EMBER_CONTROLLER: Ember-controller
+  HINT_EMBER_CONTROLLER: 'Embers controllertilstand: Auto, Analog eller D2A. Bedst indstillet pr. spil (Trekant > Ember-spilindstillinger), som går forud.'
+  EMBER_480P_CONFIRM: Ember i 480p giver intet billede over komposit. Brug 480p?
+  EMBER_SHADING_24: 24 bit (eksperimentelt)
+  EMBER_GAME_SETTINGS: Ember-spilindstillinger
+  HINT_EMBER_GAME_SETTING: Kun dette spil. Tryk på OK for at skrive EMBER/games/<navn>/settings.txt før start. En urørt Standard beholder en eksisterende værdi i filen; at sætte en værdi tilbage til Standard fjerner dens tilsidesættelse.
+  EMBER_TIMING: Ember-timing
+  HINT_EMBER_TIMING: 'Embers videotiming: Auto følger diskens region, NTSC tvinger 60 Hz, PAL tvinger 50 Hz. Skrevet til EMBER/settings.txt på den startede enhed.'
+  EMBER_GLOBAL_WARNING: Disse Ember-indstillinger gælder hvert PS1-spil, og nogle spil går ned med dem. For kun at ændre ét spil skal du bruge Trekant > Ember-spilindstillinger på det spil.
+  PS1_SAVE_GUIDANCE: PS1-gemte spil afhænger af Ember eller POPSTARTER; PS2's VMC-indstillinger gælder ikke.
+  GAME_TYPE_LABELS: Vis etiketterne [PS1]/[PS2]
+  AUTO_CREATE_VMC: Opret VMC ved første start
+  AUTO_VMC_CREATING: Opretter dette spils VMC...
+  AUTO_VMC_FAILED: Kunne ikke oprette dette spils VMC. Spillet starter uden.
+  FAV_SAVING: Gemmer i Stjernemarkerede spil...
+  FAV_SAVED: Gemt i Stjernemarkerede spil
+  FAV_SAVE_FAILED: Kunne ikke gemme i Stjernemarkerede spil
+  FAV_REMOVED: Fjernet fra Stjernemarkerede spil
+  FAV_REMOVE_FAILED: Kunne ikke fjerne fra Stjernemarkerede spil
+  POPS_UDPFS_SETTINGS: Netværksindstillinger for POPS UDPFS
+  POPS_UDPFS_DISCOVERY: Gemmer i hver POPS-mappe på USB. Serveren 0.0.0.0 bruger registrering.
+  POPS_UDPFS_NOT_READY: POPS UDPFS kræver matchende gyldige IPCONFIG.DAT og UDPFSCONFIG.DAT i hver POPS-mappe på USB. Konfigurer dem i netværksindstillingerne for POPS.
+  HINT_POPS_UDPFS_IP: Statisk PS2-IP, som POPS UDPFS-driveren bruger efter sin IOP-nulstilling.
+  POPS_UDPFS_ALL_USB_FOLDERS: Alle POPS-mapper på USB
+  POPS_UDPFS_INVALID_SUFFIX: ' (ugyldig)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (ufuldstændig)'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS kræver driverparret .udpfs installeret på memorykortet. Læg det på manuelt, eller slå BDMA Anvend ved start til.
+  VMC_REPLACE_REQUIRES_DELETE: At ændre VMC-størrelsen ville slette dens gemte spil. Tag en sikkerhedskopi af den eksisterende VMC, og brug Slet, før du opretter en ny størrelse.
+  VMC_CREATE_FAILED: Kunne ikke oprette VMC'en. Tjek enheden, forbindelsen og skriveadgangen. Eksisterende gemte spil blev ikke erstattet.
+  UDPFS_IP_CONFLICT: En anden enhed på dit netværk bruger denne PS2's IP-adresse, så UDPFS-serverens svar går til den. Angiv en anden PS2-IP i netværksindstillingerne.
+  CFG_TITLES: Vis CFG-titler i spillister
+  HINT_CFG_TITLES: Viser titlen fra hvert spils CFG i stedet for filnavnet og sorterer efter den. Læser hver CFG, når en liste opdateres, så lister indlæses langsommere. Kun visning.
+  PARENLOCK_GAME: Forældrelås
+  PARENLOCK_GAME_HINT: Kræv forældrelåsens adgangskode for at starte dette spil.
+  PARENLOCK_GAME_NO_PASSWORD: Angiv en adgangskode til forældrelåsen, ellers bliver dette spil ikke låst.

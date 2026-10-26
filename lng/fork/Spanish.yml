@@ -317,3 +317,134 @@ translations:
   HINT_EMBER_DISPLAY: Modo de salida que Ember usa para los juegos de PS1. 240p o 480p se escribe en settings.txt dentro de la carpeta EMBER del dispositivo iniciado. Por defecto elimina ese ajuste, y también el archivo si no contenía nada más.
   LOGOART: "Logotipos de juegos"
   HINT_LOGOART: "Muestra el logotipo del juego (<ID>_LGO) si el tema lo utiliza. Desactivarlo también oculta su imagen predeterminada; las carátulas, discos y fondos no cambian."
+  CFG_TITLES: Mostrar títulos del CFG en las listas de juegos
+  HINT_CFG_TITLES: Muestra el título del CFG de cada juego en lugar del nombre del archivo y ordena por él. Lee todos los CFG al actualizar la lista, por lo que tarda más en cargar. Solo afecta a la visualización.
+  PARENLOCK_GAME: Bloqueo parental
+  PARENLOCK_GAME_HINT: Solicitar la contraseña del bloqueo parental para iniciar este juego.
+  PARENLOCK_GAME_NO_PASSWORD: Establece una contraseña de bloqueo parental; de lo contrario, este juego no quedará bloqueado.
+  NEUTRINO_VMC_FRAG_BUDGET_CONTINUE: Los archivos del juego y de la VMC usan %d/%d fragmentos, superando el límite compartido de Neutrino. ¿Omitir la VMC %s y usar la tarjeta de memoria física en la ranura %d?
+  VMC_PFS_LIMIT_ON_CREATE: Se creó la VMC, pero el HDD la almacenó en más fragmentos de los que el núcleo nativo puede asignar; se omitirá al iniciar y se usará la tarjeta real. Libera espacio en la partición OPL y vuelve a crearla.
+  HINT_NEUTRINO_AUTO_ELF: Pasa el ELF de arranque del juego a Neutrino para buscar su configuración por título. Activado por defecto; una opción Boot ELF puesta a mano tiene prioridad.
+  HINT_POPSTARTER_PATH: Dónde está POPSTARTER.ELF. Si lo dejas vacío, RIPPS2 pone uno que encuentre en una unidad; escribe encima para usar otro, como usb:/POPS/POPSTARTER.ELF
+  NEUTRINO_ARGS_TOO_LONG: Los argumentos de Neutrino superan la longitud que se puede guardar. Acorta un campo antes de guardar.
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Los argumentos de inicio de Neutrino superan el límite seguro. Acorta los argumentos globales o los del juego.
+  NEUTRINO_AUTO_ELF: Boot ELF automático (-elf)
+  HINT_NEUTRINO_PATH: '¿Dónde está neutrino.elf? <sin definir> = Unidad del juego -> mc0/mc1. Una ruta completa personalizada se prueba primero. Ejemplos: mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf'
+  GAME_VIEW_MODE: Visualización de juegos PS2/PS1
+  HINT_GAME_VIEW_MODE: Todo muestra juntos los juegos de PS2 y PS1, y L3 alterna entre Todo, PS1 y PS2. PS2 o PS1 muestra solo ese tipo y desactiva L3. APPS y Juegos favoritos tienen sus propias reglas.
+  VIEW_MIXED: Mostrando juegos de PS2 + PS1
+  VIEW_PS1_ELF: Mostrando apps PS1 ELF
+  APPS_DISPLAY: Visualización de aplicaciones
+  HINT_APPS_DISPLAY: Todo muestra cada ELF en una sola lista APPS con L3 desactivado. Apps / PS1ELF lleva los títulos con [PS1] a una segunda página de L3; el inicio no cambia.
+  VIEW: Vista
+  VIEW_PS2: Mostrando juegos de PS2 favoritos
+  VIEW_PS1: Mostrando juegos de PS1 favoritos
+  VIEW_ELF: Mostrando ELF favoritos
+  VIEW_ALL: Mostrando todos los juegos favoritos
+  VMC_FRAGMENTED_ON_CREATE: VMC creada, pero está fragmentada. La emulación de tarjeta de memoria necesita un archivo continuo, así que esta VMC se omitirá al iniciar y se usará la tarjeta real. Libera espacio y créala de nuevo, o copia una desde otro dispositivo.
+  KEYB_MOVE_CURSOR: Mover el cursor
+  TITLECOLOR: Color del título del juego
+  RA_CHECK_GAME: Comprobar compatibilidad con RetroAchievements
+  RA_TEST_LINK: Probar la conexión de RetroAchievements con el PC
+  RA_CHECKING_IMAGE: Comprobando la imagen, tarda unos segundos...
+  RA_CHECK_RUNNING: Ya hay una comprobación de imagen en curso
+  RA_LOOKING_FOR_PC: Buscando el cliente del PC...
+  RA_UL_UNSUPPORTED: Los juegos UL/USBExtreme aún no se pueden comprobar
+  RA_UL_UNSUPPORTED2: Solo se admiten imágenes .iso normales en DVD/ o CD/
+  RA_UNKNOWN_IMAGE: RetroAchievements no conoce esta imagen
+  RA_STILL_IDENTIFYING: El PC aún está identificando la imagen
+  RA_TRY_AGAIN: Inténtalo de nuevo en unos segundos
+  RA_NO_SOCKET: La consola no pudo abrir un socket de red
+  RA_NO_SOCKET2: Reinicia la consola, o revisa el dispositivo ETH en los ajustes
+  RA_TEST_NO_SOCKET2: Revisa el cable y ETH en los ajustes; si la red funciona, reinicia la consola
+  RA_PC_NO_ANSWER: El cliente del PC no respondió
+  RA_PC_NO_ANSWER2: Comprueba que xeRAbora esté en marcha, o prueba la conexión con el PC
+  RA_SUPPORTED: Compatible con RetroAchievements
+  RA_START_TO_TRACK: Inicia el juego para seguir los logros
+  RA_ACHIEVEMENTS: '%d logros'
+  RA_ACHIEVEMENTS_FULL: '%d logros -- %d desbloqueados, %d no compatibles'
+  RA_HASH_FAILED: No se pudo calcular el hash de la imagen
+  RA_HASH_FAILED2: Mira RA/hashes.txt junto a los juegos para ver el motivo
+  RA_NET_BUSY: La red la está usando un transporte UDP
+  RA_NET_BUSY2: RA necesita la pila SMB -- cambia de protocolo, o crea el .wl en el PC
+  RA_NET_BUSY_HASH: El hash está en RA/hashes.txt -- xeRAbora puede crear el .wl con él
+  RA_NO_IP: La consola no tiene dirección IP
+  RA_NO_IP2: Revisa el DHCP o la dirección fija en los ajustes de red
+  RA_TEST_NO_ANSWER: Ningún cliente del PC respondió en 3 segundos
+  RA_TEST_NO_ANSWER2: Consola%s. Comprueba que xeRAbora esté en marcha y el puerto UDP 18194 abierto
+  RA_TEST_FOUND: Cliente del PC encontrado%s%s %s
+  RA_TEST_FOUND2: Respuesta en %u ms, consola%s
+  RA_NA_NEUTRINO: El seguimiento RA necesita el núcleo <OPL> -- los inicios con Neutrino nunca cargan ee_core
+  RA_NA_UDPFS: El seguimiento RA no está disponible en UDPFS -- los juegos se inician con Neutrino
+  RA_NA_PS1: El seguimiento RA no está disponible para juegos de PS1
+  RA_TELEMETRY: Telemetría de RetroAchievements
+  RA_BADGES: Insignias de RetroAchievements
+  HTTP_GAMES: Juegos HTTP
+  HTTP_SERVER: Servidor HTTP
+  HTTP_PORT: Puerto HTTP
+  HTTP_BASE_PATH: Ruta base HTTP
+  HTTP_TEST: Probar el servidor HTTP
+  HTTP_TEST_OK: Servidor OK -- juegos listados
+  HTTP_TEST_EMPTY: El catálogo está vacío -- es válido, pero no demuestra nada sobre los rangos de bytes
+  HTTP_TEST_NO_ISO: El catálogo no tiene ninguna imagen compatible para probar un rango de bytes
+  HTTP_ERR_CONNECT: No se puede contactar con el servidor HTTP
+  HTTP_ERR_CATALOG: games.csv falta, no se puede leer o es demasiado grande
+  HTTP_ERR_RANGE: El servidor no devolvió exactamente los bytes pedidos
+  HTTP_LAUNCH_UNAVAILABLE: El inicio por HTTP aún no está implementado -- el catálogo solo se puede explorar
+  HTTP_ERR_COMPRESSED: Las imágenes comprimidas (.zso) aún no se admiten por HTTP
+  HTTP_NO_VMC: Las tarjetas de memoria virtuales no están disponibles por HTTP -- usa una tarjeta física
+  HTTP_TAB_HINT: HTTP lee games.csv de tu servidor. Pon la dirección, el puerto y la ruta base en los ajustes de red y usa Probar.
+  RA_DISC_CHECK: 'RA: comprobar compatibilidad del disco'
+  RA_DISC_LAUNCH: 'RA: iniciar el disco'
+  RA_DISC_CHECKING: Comprobando el disco para RetroAchievements
+  RA_DISC_HASH_FAILED: No se pudo calcular el hash del disco -- mira RA/hashes.txt en la carpeta de ajustes
+  RA_DISC_HOME_ERROR: La carpeta de ajustes no se puede usar para las listas de seguimiento de discos
+  RA_DISC_ENABLE: Activa primero la telemetría de RetroAchievements en los ajustes de red
+  RA_DISC_CHECK_FIRST: 'No hay lista de seguimiento para este disco -- usa primero RA: comprobar compatibilidad del disco'
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d: disco duro encontrado, pero su tabla de particiones APA no se puede leer. No lo formatees -- puede que tus juegos se puedan recuperar.'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d: una unidad no se montó porque sus sectores no son de 512 bytes (por ejemplo, un disco de sectores de 4K). OPL solo puede leer sectores de 512 bytes.'
+  HDD_PARTITION_RENAME_UNSUPPORTED: Este título es su propia partición APA, y OPL nunca edita la tabla de particiones. Cámbiale el nombre en un PC.
+  POPS_SETTINGS_UNREADABLE: No se pudieron leer los ajustes de POPSTARTER -- la tarjeta de memoria está ocupada o no se puede leer. Inténtalo de nuevo cuando termine la carga.
+  GLOBAL_PS_EMULATION_SETTINGS: Ajustes globales de emulación de PS
+  RA_NO_LINK_UNTRACKED: Red no disponible -- esta vez se inicia sin RetroAchievements.
+  IGR_USB_DRIVERS_PROMPT: La ruta del IGR está en USB, pero faltan USBD.IRX y USBHDFSD.IRX en %s, que la consola necesita para llegar al USB tras un In-Game Reset. Sin ellos, el IGR vuelve al navegador de PS2. ¿Copiar ahora los controladores de RiptOPL? FMCB, OpenTuna y otros exploits también cargan estos archivos y pueden comportarse distinto con ellos. Los archivos existentes nunca se reemplazan. Solo USB FAT32.
+  IGR_USB_DRIVERS_FAILED: No se pudieron copiar los controladores USB en %s (tarjeta llena o sin permiso de escritura). El IGR volverá al navegador de PS2.
+  OFFICIAL_CFG_NOTIFICATION: Ajustes oficiales de OPL cargados desde %s
+  CFM_VMODE_HOLD_KEEP: Mantén para conservar
+  BDM_PS2_FOLDERS_UNREADABLE: No se pudo abrir la carpeta CD o DVD en %s (error %d), así que esa unidad no muestra juegos de PS2. Pulsa SELECT en su página para reintentarlo.
+  NEUTRINO_BD_NO_DEVICE_NUMBER: El sistema de archivos de Neutrino está en bd, pero esta unidad nunca informó de su número de dispositivo, así que Neutrino no puede apuntar a ella. Pon el sistema de archivos de Neutrino de este juego en Auto o exfat.
+  CFM_VMODE_REVERT_IN: Se revierte en %d s
+  EMBER_DITHER: Tramado de Ember
+  HINT_EMBER_DITHER: Tramado de Ember (activado o desactivado), escrito en EMBER/settings.txt de la unidad de inicio. Un valor por juego tiene prioridad.
+  EMBER_SHADING: Sombreado de Ember
+  HINT_EMBER_SHADING: 'Profundidad de color de Ember: 15 bits, o 24 bits (experimental). Se escribe en EMBER/settings.txt de la unidad de inicio. Un valor por juego tiene prioridad.'
+  EMBER_CONTROLLER: Mando de Ember
+  HINT_EMBER_CONTROLLER: 'Modo de mando de Ember: Auto, Analógico o D2A. Normalmente es mejor ponerlo por juego (Triángulo > Ajustes de juego de Ember), que tiene prioridad.'
+  EMBER_480P_CONFIRM: Ember en 480p no muestra imagen por compuesto. ¿Usar 480p?
+  EMBER_SHADING_24: 24 bits (experimental)
+  EMBER_GAME_SETTINGS: Ajustes de juego de Ember
+  HINT_EMBER_GAME_SETTING: Solo este juego. Pulsa OK para escribir EMBER/games/<nombre>/settings.txt antes de iniciar. Un Predeterminado sin tocar conserva el valor del archivo; volver un valor a Predeterminado quita su ajuste propio.
+  EMBER_TIMING: Sincronización de Ember
+  HINT_EMBER_TIMING: 'Sincronización de vídeo de Ember: Auto sigue la región del disco, NTSC fuerza 60 Hz, PAL fuerza 50 Hz. Se escribe en EMBER/settings.txt de la unidad de inicio.'
+  EMBER_GLOBAL_WARNING: Estos ajustes de Ember se aplican a todos los juegos de PS1, y algunos juegos fallan con ellos. Para cambiar solo un juego, usa Triángulo > Ajustes de juego de Ember en ese juego.
+  PS1_SAVE_GUIDANCE: Las partidas de PS1 dependen de Ember o POPSTARTER; los ajustes de VMC de PS2 no se aplican.
+  GAME_TYPE_LABELS: Mostrar etiquetas [PS1]/[PS2]
+  AUTO_CREATE_VMC: Crear VMC en el primer inicio
+  AUTO_VMC_CREATING: Creando la VMC de este juego...
+  AUTO_VMC_FAILED: No se pudo crear la VMC de este juego. El juego se inicia sin ella.
+  FAV_SAVING: Guardando en Juegos favoritos...
+  FAV_SAVED: Guardado en Juegos favoritos
+  FAV_SAVE_FAILED: No se pudo guardar en Juegos favoritos
+  FAV_REMOVED: Quitado de Juegos favoritos
+  FAV_REMOVE_FAILED: No se pudo quitar de Juegos favoritos
+  POPS_UDPFS_SETTINGS: Ajustes de red UDPFS de POPS
+  POPS_UDPFS_DISCOVERY: Guarda en cada carpeta POPS de USB. El servidor 0.0.0.0 usa detección.
+  POPS_UDPFS_NOT_READY: POPS UDPFS necesita IPCONFIG.DAT y UDPFSCONFIG.DAT válidos y a juego en cada carpeta POPS de USB. Configúralos en Ajustes de red de POPS.
+  HINT_POPS_UDPFS_IP: IP fija de la PS2 que usa el controlador UDPFS de POPS tras reiniciar el IOP.
+  POPS_UDPFS_ALL_USB_FOLDERS: Todas las carpetas POPS de USB
+  POPS_UDPFS_INVALID_SUFFIX: ' (no válido)'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' (incompleto)'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS necesita el par de controladores .udpfs instalado en la tarjeta de memoria. Instálalo a mano o activa BDMA Aplicar al iniciar.
+  VMC_REPLACE_REQUIRES_DELETE: Cambiar el tamaño de la VMC borraría sus partidas. Haz una copia de la VMC existente y usa Borrar antes de crear un tamaño nuevo.
+  VMC_CREATE_FAILED: No se pudo crear la VMC. Revisa la unidad, la conexión y el acceso de escritura. Las partidas existentes no se reemplazaron.
+  UDPFS_IP_CONFLICT: Otro aparato de tu red usa la dirección IP de esta PS2, así que las respuestas del servidor UDPFS van a él. Pon otra IP para la PS2 en los ajustes de red.

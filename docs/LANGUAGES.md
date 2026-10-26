@@ -98,3 +98,26 @@ run clones the upstream lang repo into `lng_src/`). CI does this automatically.
 Fork-added strings are the labels in `lng/tmpl/_base.yml` that upstream doesn't have. To
 see which are still English-only in a given language, run `make languages` and look for
 `untranslated` entries in `lng_src/<Language>.yml` after the overlay step.
+
+## Where language files are found
+
+Language registration grows as needed (no 15-file limit). Precedence, highest first:
+
+1. **Beside the launched ELF (CWD)**, e.g. `mass0:/APPS/APP_RIPTOPL/lang_French.lng`.
+2. **CWD/LNG/**, e.g. `mass0:/APPS/APP_RIPTOPL/LNG/lang_French.lng`.
+3. **Other locations**: `mc0:/OPL/` and each enabled device's `LNG/` folder.
+
+Only files named `lang_<Name>.lng` (any case) count. A name appears once in the menu; a
+higher-priority copy wins, including one whose folder only becomes readable after the storage
+drivers mount. A matching `font_<Name>.ttf`/`.otf` beside the file is loaded with it.
+
+## Translations that misread their arguments
+
+Every string in a loaded `.lng` is checked against its English string's printf conversions. A
+translation that would read different arguments (upstream French "Auto start" has `%s` where
+English has `%i`, which crashed the countdown) is replaced by the English string. The same
+conversions, or fewer of them in the same order, are kept.
+
+The fork overlays were backfilled from the original project's `lng_fork/` translations, only for
+labels whose English text is identical here and only where an overlay lacked the label. Galician
+and Serbian now have overlays too. These are machine-assisted and still need speaker review.

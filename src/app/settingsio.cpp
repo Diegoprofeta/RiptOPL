@@ -1442,6 +1442,8 @@ void _loadConfig()
     int value, themeID = -1, langID = -1;
     const char *temp;
     resolveBootDirToMass(); // usb0:/ata0:/mx4sio0:/APPS -> mass0:/APPS (boot-device massN:) before the first read
+    // Discover the resolved CWD (and CWD/LNG) before restoring the saved language.
+    lngRefreshBootLanguages(-1);
     int result = configReadMulti(lscstatus);
 
     if (lscstatus & CONFIG_OPL) {

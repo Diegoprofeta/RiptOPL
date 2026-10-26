@@ -317,3 +317,133 @@ translations:
   HINT_EMBER_DISPLAY: Ember が PS1 ゲームで使用する出力モードです。240p または 480p を選ぶと、起動したデバイスの EMBER フォルダ内の settings.txt に書き込まれます。既定 を選ぶとその設定は削除され、ほかに何も無ければファイルごと削除されます。
   LOGOART: "ゲームロゴ"
   HINT_LOGOART: "テーマで使用するゲームロゴ (<ID>_LGO) を表示します。オフにすると既定画像も非表示になります。カバー、ディスク画像、背景には影響しません。"
+  IP_ADDRESS_TYPE_STATIC: 固定
+  HINT_NEUTRINO_AUTO_ELF: ゲームの起動 ELF を Neutrino に渡し、タイトルごとの設定を探させます。既定でオン。手動で設定した Boot ELF オプションが優先されます。
+  HINT_POPSTARTER_PATH: POPSTARTER.ELF の場所。空欄なら RIPPS2 がドライブ上で見つけたものを入れます。別のものを使うには上書きしてください（例：usb:/POPS/POPSTARTER.ELF）
+  NEUTRINO_ARGS_TOO_LONG: Neutrino の引数が保存できる長さを超えています。保存する前にいずれかの欄を短くしてください。
+  NEUTRINO_LAUNCH_ARGS_OVERFLOW: Neutrino の起動引数が安全な上限を超えています。グローバルまたはゲームの引数を短くしてください。
+  NEUTRINO_AUTO_ELF: Boot ELF を自動（-elf）
+  HINT_NEUTRINO_PATH: neutrino.elf はどこにありますか？<未設定> = ゲームのデバイス -> mc0/mc1。指定したフルパスが最初に試されます。例：mass0:/neutrino/neutrino.elf | ata:/neutrino/neutrino.elf | mmce0:/neutrino/neutrino.elf | mc0:/neutrino/neutrino.elf | pfs0:/neutrino/neutrino.elf
+  GAME_VIEW_MODE: PS2/PS1 ゲームの表示
+  HINT_GAME_VIEW_MODE: 「すべて」は PS2 と PS1 のゲームを一緒に並べ、L3 で すべて、PS1、PS2 を切り替えます。PS2 か PS1 ではその種類だけを表示し、L3 は無効になります。APPS とお気に入りゲームには独自の表示ルールがあります。
+  VIEW_MIXED: PS2 + PS1 ゲームを表示中
+  VIEW_PS1_ELF: PS1 ELF アプリを表示中
+  APPS_DISPLAY: アプリケーションの表示
+  HINT_APPS_DISPLAY: 「すべて」はすべての ELF を 1 つの APPS リストに並べ、L3 は無効です。「アプリ / PS1ELF」は [PS1] を含むタイトルを L3 の 2 ページ目に分けます。起動のしかたは変わりません。
+  VIEW: 表示
+  VIEW_PS2: お気に入りの PS2 ゲームを表示中
+  VIEW_PS1: お気に入りの PS1 ゲームを表示中
+  VIEW_ELF: お気に入りの ELF を表示中
+  VIEW_ALL: お気に入りのゲームをすべて表示中
+  VMC_FRAGMENTED_ON_CREATE: VMC を作成しましたが、断片化しています。メモリーカードのエミュレーションには途切れのない 1 つのファイルが必要なため、起動時にこの VMC は使われず、実際のカードが使われます。空きを作ってから作り直すか、別のデバイスからコピーしてください。
+  KEYB_MOVE_CURSOR: カーソル移動
+  TITLECOLOR: ゲームタイトルの色
+  RA_CHECK_GAME: RetroAchievements の対応を確認
+  RA_TEST_LINK: RetroAchievements の PC 接続をテスト
+  RA_CHECKING_IMAGE: イメージを確認しています。数秒かかります...
+  RA_CHECK_RUNNING: イメージの確認が既に実行中です
+  RA_LOOKING_FOR_PC: PC クライアントを探しています...
+  RA_UL_UNSUPPORTED: UL/USBExtreme のゲームはまだ確認できません
+  RA_UL_UNSUPPORTED2: 対応しているのは DVD/ または CD/ にある通常の .iso イメージだけです
+  RA_UNKNOWN_IMAGE: RetroAchievements はこのイメージを知りません
+  RA_STILL_IDENTIFYING: PC がまだイメージを識別しています
+  RA_TRY_AGAIN: 数秒後にもう一度お試しください
+  RA_NO_SOCKET: 本体がネットワークソケットを開けませんでした
+  RA_NO_SOCKET2: 本体を再起動するか、設定で ETH デバイスを確認してください
+  RA_TEST_NO_SOCKET2: ケーブルと設定の ETH を確認してください。ネットワークが動いているなら本体を再起動してください
+  RA_PC_NO_ANSWER: PC クライアントが応答しませんでした
+  RA_PC_NO_ANSWER2: xeRAbora が動いているか確認するか、PC 接続テストを試してください
+  RA_SUPPORTED: RetroAchievements 対応
+  RA_START_TO_TRACK: 実績を追跡するにはゲームを起動してください
+  RA_ACHIEVEMENTS: 実績 %d 個
+  RA_ACHIEVEMENTS_FULL: 実績 %d 個 -- 解除済み %d、非対応 %d
+  RA_HASH_FAILED: イメージのハッシュを計算できませんでした
+  RA_HASH_FAILED2: 理由はゲームの隣の RA/hashes.txt を見てください
+  RA_NET_BUSY: ネットワークは UDP 転送で使用中です
+  RA_NET_BUSY2: RA には SMB スタックが必要です -- プロトコルを切り替えるか、PC で .wl を作成してください
+  RA_NET_BUSY_HASH: ハッシュは RA/hashes.txt にあります -- xeRAbora はそこから .wl を作成できます
+  RA_NO_IP: 本体に IP アドレスがありません
+  RA_NO_IP2: ネットワーク設定の DHCP か固定アドレスを確認してください
+  RA_TEST_NO_ANSWER: 3 秒以内に応答した PC クライアントはありません
+  RA_TEST_NO_ANSWER2: 本体%s。xeRAbora が動いていて UDP 18194 が開いているか確認してください
+  RA_TEST_FOUND: PC クライアントが見つかりました%s%s %s
+  RA_TEST_FOUND2: '%u ms で応答、本体%s'
+  RA_NA_NEUTRINO: RA の追跡には <OPL> コアが必要です -- Neutrino での起動では ee_core を読み込みません
+  RA_NA_UDPFS: UDPFS では RA の追跡は使えません -- ゲームは Neutrino で起動します
+  RA_NA_PS1: PS1 ゲームでは RA の追跡は使えません
+  RA_TELEMETRY: RetroAchievements テレメトリー
+  RA_BADGES: RetroAchievements バッジ
+  HTTP_GAMES: HTTP ゲーム
+  HTTP_SERVER: HTTP サーバー
+  HTTP_PORT: HTTP ポート
+  HTTP_BASE_PATH: HTTP ベースパス
+  HTTP_TEST: HTTP サーバーをテスト
+  HTTP_TEST_OK: サーバー OK -- ゲームを一覧表示しました
+  HTTP_TEST_EMPTY: カタログが空です -- 有効ですが、バイト範囲については何も確かめられません
+  HTTP_TEST_NO_ISO: カタログにはバイト範囲をテストできる対応イメージがありません
+  HTTP_ERR_CONNECT: HTTP サーバーに接続できません
+  HTTP_ERR_CATALOG: games.csv がないか、読めないか、大きすぎます
+  HTTP_ERR_RANGE: サーバーが要求したとおりのバイトを返しませんでした
+  HTTP_LAUNCH_UNAVAILABLE: HTTP からの起動はまだ実装されていません -- カタログの閲覧のみです
+  HTTP_ERR_COMPRESSED: 圧縮イメージ（.zso）は HTTP ではまだ対応していません
+  HTTP_NO_VMC: HTTP では仮想メモリーカードは使えません -- 実際のカードを使ってください
+  HTTP_TAB_HINT: HTTP はサーバーから games.csv を読みます。ネットワーク設定でアドレス、ポート、ベースパスを設定してから「テスト」を使ってください。
+  RA_DISC_CHECK: RA：ディスクの対応を確認
+  RA_DISC_LAUNCH: RA：ディスクを起動
+  RA_DISC_CHECKING: RetroAchievements 用にディスクを確認しています
+  RA_DISC_HASH_FAILED: ディスクのハッシュを計算できませんでした -- 設定フォルダの RA/hashes.txt を確認してください
+  RA_DISC_HOME_ERROR: この設定のパスはディスクの追跡リストに使えません
+  RA_DISC_ENABLE: まずネットワーク設定で RetroAchievements テレメトリーをオンにしてください
+  RA_DISC_CHECK_FIRST: このディスクの追跡リストがありません -- まず「RA：ディスクの対応を確認」を使ってください
+  HDD_APA_TABLE_UNREADABLE_ERROR: '%d：HDD は見つかりましたが、APA パーティションテーブルを読めません。フォーマットしないでください -- ゲームを取り戻せるかもしれません。'
+  BDM_UNSUPPORTED_SECTOR_SIZE_ERROR: '%d：セクターが 512 バイトではないドライブ（4K セクターのドライブなど）をマウントしませんでした。OPL は 512 バイトのセクターしか読めません。'
+  HDD_PARTITION_RENAME_UNSUPPORTED: このタイトルはそれ自体が APA パーティションで、OPL はパーティションテーブルを編集しません。PC で名前を変更してください。
+  POPS_SETTINGS_UNREADABLE: POPSTARTER の設定を読めませんでした -- メモリーカードが使用中か読めません。読み込みが終わってからもう一度お試しください。
+  GLOBAL_PS_EMULATION_SETTINGS: グローバル PS エミュレーション設定
+  RA_NO_LINK_UNTRACKED: ネットワークが使えません -- 今回は RetroAchievements なしで起動します。
+  IGR_USB_DRIVERS_PROMPT: IGR パスは USB 上にありますが、%s には USBD.IRX と USBHDFSD.IRX がありません。本体はインゲームリセットの後に USB に届くためにこれらが必要です。ないと IGR は PS2 ブラウザーに戻ります。今 RiptOPL のドライバーをそこへコピーしますか？FMCB、OpenTuna などのエクスプロイトもこれらのファイルを読み込み、動作が変わることがあります。既存のファイルは置き換えません。FAT32 の USB のみ。
+  IGR_USB_DRIVERS_FAILED: USB ドライバーを %s にコピーできませんでした（カードがいっぱいか書き込めません）。IGR は PS2 ブラウザーに戻ります。
+  OFFICIAL_CFG_NOTIFICATION: OPL 公式の設定を %s から読み込みました
+  CFM_VMODE_HOLD_KEEP: 押し続けて維持
+  BDM_PS2_FOLDERS_UNREADABLE: '%s の CD または DVD フォルダを開けなかったため（エラー %d）、そのデバイスには PS2 ゲームが表示されません。そのページで SELECT を押してもう一度試してください。'
+  NEUTRINO_BD_NO_DEVICE_NUMBER: Neutrino のファイルシステムが bd に設定されていますが、このデバイスはデバイス番号を報告しなかったため、Neutrino をそこへ向けられません。このゲームの Neutrino ファイルシステムを Auto か exfat にしてください。
+  CFM_VMODE_REVERT_IN: '%d 秒後に元に戻します'
+  EMBER_DITHER: Ember ディザリング
+  HINT_EMBER_DITHER: Ember のディザリング（オンまたはオフ）。起動するデバイスの EMBER/settings.txt に書き込みます。ゲームごとの値がこれより優先されます。
+  EMBER_SHADING: Ember シェーディング
+  HINT_EMBER_SHADING: Ember の色深度：15 ビット、または 24 ビット（実験的）。起動するデバイスの EMBER/settings.txt に書き込みます。ゲームごとの値がこれより優先されます。
+  EMBER_CONTROLLER: Ember コントローラー
+  HINT_EMBER_CONTROLLER: Ember のコントローラーモード：自動、アナログ、D2A。ゲームごとの設定（三角 > Ember ゲーム設定）が優先されるので、通常はそちらで設定するのが最適です。
+  EMBER_480P_CONFIRM: Ember の 480p はコンポジットでは映りません。480p を使いますか？
+  EMBER_SHADING_24: 24 ビット（実験的）
+  EMBER_GAME_SETTINGS: Ember ゲーム設定
+  HINT_EMBER_GAME_SETTING: このゲームのみ。OK を押すと起動前に EMBER/games/<名前>/settings.txt に書き込みます。触っていない「既定」はファイルの既存の値を残し、値を「既定」に戻すとその上書きを取り除きます。
+  EMBER_TIMING: Ember タイミング
+  HINT_EMBER_TIMING: Ember の映像タイミング：自動はディスクのリージョンに従い、NTSC は 60 Hz、PAL は 50 Hz に固定します。起動するデバイスの EMBER/settings.txt に書き込みます。
+  EMBER_GLOBAL_WARNING: これらの Ember 設定はすべての PS1 ゲームに適用され、一部のゲームはこれで落ちます。1 本のゲームだけを変えるには、そのゲームで 三角 > Ember ゲーム設定 を使ってください。
+  PS1_SAVE_GUIDANCE: PS1 のセーブデータは Ember か POPSTARTER しだいです。PS2 の VMC 設定は適用されません。
+  GAME_TYPE_LABELS: '[PS1]/[PS2] ラベルを表示'
+  AUTO_CREATE_VMC: 初回起動時に VMC を作成
+  AUTO_VMC_CREATING: このゲームの VMC を作成しています...
+  AUTO_VMC_FAILED: このゲームの VMC を作成できませんでした。ゲームは VMC なしで起動します。
+  FAV_SAVING: お気に入りゲームに保存しています...
+  FAV_SAVED: お気に入りゲームに保存しました
+  FAV_SAVE_FAILED: お気に入りゲームに保存できませんでした
+  FAV_REMOVED: お気に入りゲームから外しました
+  FAV_REMOVE_FAILED: お気に入りゲームから外せませんでした
+  POPS_UDPFS_SETTINGS: POPS UDPFS ネットワーク設定
+  POPS_UDPFS_DISCOVERY: すべての USB の POPS フォルダに保存します。サーバー 0.0.0.0 は自動検出を使います。
+  POPS_UDPFS_NOT_READY: POPS UDPFS には、すべての USB の POPS フォルダに有効で一致する IPCONFIG.DAT と UDPFSCONFIG.DAT が必要です。POPS ネットワーク設定で設定してください。
+  HINT_POPS_UDPFS_IP: POPS の UDPFS ドライバーが IOP リセット後に使う PS2 の固定 IP。
+  POPS_UDPFS_ALL_USB_FOLDERS: すべての USB の POPS フォルダ
+  POPS_UDPFS_INVALID_SUFFIX: ' （無効）'
+  POPS_UDPFS_INCOMPLETE_SUFFIX: ' （不完全）'
+  POPS_UDPFS_DRIVER_NOT_READY: POPS UDPFS にはメモリーカードに .udpfs ドライバーの組がインストールされている必要があります。手動で入れるか、BDMA の「起動時に適用」をオンにしてください。
+  VMC_REPLACE_REQUIRES_DELETE: VMC のサイズを変えると中のセーブデータが消えます。新しいサイズで作る前に、既存の VMC をバックアップして「削除」を使ってください。
+  VMC_CREATE_FAILED: VMC を作成できませんでした。デバイス、接続、書き込み権限を確認してください。既存のセーブデータは置き換えていません。
+  UDPFS_IP_CONFLICT: ネットワーク上の別の機器がこの PS2 の IP アドレスを使っているため、UDPFS サーバーの応答はそちらへ行きます。ネットワーク設定で PS2 に別の IP を設定してください。
+  CFG_TITLES: ゲームリストに CFG のタイトルを表示
+  HINT_CFG_TITLES: ファイル名の代わりに各ゲームの CFG のタイトルを表示し、それで並べます。リストの更新時にすべての CFG を読むので、読み込みが遅くなります。表示のみ。
+  PARENLOCK_GAME: ペアレンタルロック
+  PARENLOCK_GAME_HINT: このゲームを起動するのにペアレンタルロックのパスワードを求めます。
+  PARENLOCK_GAME_NO_PASSWORD: ペアレンタルロックのパスワードを設定してください。設定しないとこのゲームはロックされません。
