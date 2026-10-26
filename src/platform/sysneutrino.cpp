@@ -280,6 +280,95 @@ static const char *sysLastPathSeparator(const char *path)
     return slash;
 }
 
+// The most a torn tail can be: one shortened ip loses at most 8 characters (15 down to 7), and a
+// card may have been through a few such rewrites before this fix.
+#define NEUTRINO_TOML_TORN_TAIL_MAX 32
+
+// Length of the toml with a torn tail cut off, `len` when there is none, or -1 when it is broken some
+// other way -- a hand-edited file is the user's to fix and is left alone. Reads just enough TOML for
+// this: comments, the four string forms and bracket depth. A line is complete at its end, or as soon
+// as its key's value or its table header closes; past that point only spaces and a comment may follow,
+// which is how a tear on a final line WITHOUT a newline (`env = ["EE"]"]`) is found. The cut is the
+// last complete point, and only a short tail is ever dropped.
+static int sysTomlTornTailCut(const char *text, int len)
+{
+    int depth = 0, complete = 0, i = 0;
+    int lineStart = 1, header = 0, assigned = 0, ended = 0;
+
+    while (i < len) {
+        char c = text[i];
+
+        if (c == '\n') {
+            i++;
+            if (depth == 0)
+                complete = i;
+            lineStart = 1;
+            ended = 0;
+            if (depth == 0) // a multi-line array keeps its key's line going until it closes
+                header = assigned = 0;
+            continue;
+        }
+        if (c == '#') {
+            while (i < len && text[i] != '\n')
+                i++;
+            continue;
+        }
+        if (c == ' ' || c == '\t' || c == '\r') {
+            i++;
+            continue;
+        }
+        if (ended)
+            goto broken; // something after a finished value or header on the same line
+        if (lineStart && depth == 0 && c == '[')
+            header = 1;
+        lineStart = 0;
+        if (c == '"' || c == '\'') {
+            if (i + 2 < len && text[i + 1] == c && text[i + 2] == c) {
+                // Multi-line string: runs to the next triple quote, across lines.
+                for (i += 3; i + 2 < len && !(text[i] == c && text[i + 1] == c && text[i + 2] == c); i++) {
+                    if (c == '"' && text[i] == '\\')
+                        i++;
+                }
+                if (i + 2 >= len)
+                    goto broken;
+                i += 3;
+            } else {
+                // Single-line string: must close before the line ends.
+                for (i++; i < len && text[i] != c && text[i] != '\n'; i++) {
+                    if (c == '"' && text[i] == '\\' && i + 1 < len && text[i + 1] != '\n')
+                        i++;
+                }
+                if (i >= len || text[i] != c)
+                    goto broken;
+                i++;
+            }
+            if (depth == 0 && assigned) {
+                ended = 1;
+                complete = i;
+            }
+            continue;
+        }
+        if (c == '=' && depth == 0)
+            assigned = 1;
+        if (c == '[' || c == '{')
+            depth++;
+        else if ((c == ']' || c == '}') && --depth < 0)
+            goto broken;
+        i++;
+        if ((c == ']' || c == '}') && depth == 0 && (assigned || header)) {
+            ended = 1;
+            complete = i;
+        }
+    }
+    if (depth == 0)
+        return len;
+
+broken:
+    if (complete == 0 || len - complete > NEUTRINO_TOML_TORN_TAIL_MAX)
+        return -1;
+    return complete;
+}
+
 static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *deviceName)
 {
     static char toml[4096]; // Δ6: raised from 2048 -- an annotated toml no longer gets skipped
@@ -299,7 +388,14 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         LOG("[NEUTRINO] no %s -- neutrino cannot boot this transport without it\n", tomlPath);
         return -1; // missing bsd toml = guaranteed post-teardown failure -> abort while GUI is alive
     }
-    len = read(fd, toml, sizeof(toml) - 1);
+    // Accumulate: a short read must not become a rewrite that drops the rest of the file.
+    len = 0;
+    for (int got; len < (int)sizeof(toml) - 1 && (got = read(fd, toml + len, sizeof(toml) - 1 - len)) != 0; len += got) {
+        if (got < 0) {
+            len = got;
+            break;
+        }
+    }
     close(fd);
     if (len <= 0)
         return -1; // unreadable/empty bsd toml -> same guaranteed failure
@@ -308,6 +404,17 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         return 0; // exotic hand-built toml: proceed on the old hand-edit contract
     }
     toml[len] = '\0';
+
+    // A tail torn by an earlier sync sits after the ip, so the ip already matches and nothing below
+    // would rewrite the file again: every later launch fails the same way. Cut it off here, and
+    // write the file back below even when the ip is unchanged (original #1011).
+    int cut = sysTomlTornTailCut(toml, len);
+    int repaired = cut >= 0 && cut < len;
+    if (repaired) {
+        LOG("[NEUTRINO] %s has %d stray byte(s) after its end -- removing them\n", tomlPath, len - cut);
+        len = cut;
+        toml[len] = '\0';
+    }
 
     char *tok = strstr(toml, "\"ip=");
     if (tok == NULL) {
@@ -320,7 +427,7 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         valEnd++;
 
     snprintf(newIp, sizeof(newIp), "%d.%d.%d.%d", ps2_ip[0], ps2_ip[1], ps2_ip[2], ps2_ip[3]);
-    if ((int)strlen(newIp) == (int)(valEnd - valStart) && !strncmp(valStart, newIp, strlen(newIp)))
+    if (!repaired && (int)strlen(newIp) == (int)(valEnd - valStart) && !strncmp(valStart, newIp, strlen(newIp)))
         return 0; // already in sync -- don't touch the file
 
     snprintf(updated, sizeof(updated), "%.*s%s%s", (int)(valStart - toml), toml, newIp, valEnd);
