@@ -233,6 +233,7 @@ int gEnableNotifications;
 #ifdef RETROACHIEVEMENTS
 int gRATelemetry;
 int gRABadges;
+int gRABadgeSuffix;
 #endif
 int gEnableArt;
 int gEnableDiscArt;
@@ -742,9 +743,11 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                 gup->submenu.id = i;
 #ifdef RETROACHIEVEMENTS
                 {
-                    // The RA badge prefix, when this game has a watch list. NULL means plain name.
+                    // The source name stays the row's identity; the badge is copied now, before the next
+                    // raBadgeRefresh frees the cache it lives in. NULL means plain name.
                     const char *badge = raBadgeText(mdl->support, i);
-                    gup->submenu.text = (char *)(badge != NULL ? badge : gsOf(mdl->support)->name(mdl->support, i));
+                    gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);
+                    gup->submenu.raText = badge != NULL ? strdup(badge) : NULL;
                     /* Resolve the cover mark HERE, on the I/O thread that owns the badge cache,
                        and carry the answer to the renderer as a plain int. */
                     gup->submenu.raBadged = (badge != NULL);

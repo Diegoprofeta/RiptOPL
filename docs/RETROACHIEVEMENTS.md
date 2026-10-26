@@ -49,7 +49,8 @@ Two settings, on the **Network** settings page:
 | Setting | Default | Effect |
 | --- | --- | --- |
 | RetroAchievements telemetry | **Off** | The master switch. While it is off an RA build launches a game for exactly what the standard build costs — no in-game network stack, no `raudp`, no snapshots. |
-| RetroAchievements badges | On | The `RA ` prefix in the game list and the mark over the cover. Cosmetic, and it follows the master switch: badges stay dark while telemetry is off. |
+| RetroAchievements badges | On | Shows the RA mark in the game list and over the cover. Cosmetic, and it follows the master switch: badges stay dark while telemetry is off. |
+| RA mark in game list | Prefix | Where the list mark goes: **Prefix** (`RA Name`) or **Suffix** (`Name [RA]`). Both sort by the clean game title and keep the file name for Favorites, rename and artwork. |
 
 Two actions on a game's own menu:
 

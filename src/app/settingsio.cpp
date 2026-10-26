@@ -1456,6 +1456,9 @@ void _loadConfig()
 
             settingsLoad(configOPL); // every plain key; the special cases below (recovery combo, clamps, migrations) follow
             gFontSize = fntValidFontSize(gFontSize);
+#ifdef RETROACHIEVEMENTS
+            gRABadgeSuffix = (gRABadgeSuffix == 1); // any stored value but 1 is Prefix
+#endif
 
 
             if (getKeyPressed(KEY_TRIANGLE) && getKeyPressed(KEY_CROSS)) {

@@ -35,6 +35,10 @@ int DeferredOpQueue::enqueue(struct gui_update_t *op)
         /* OOM: the lock releases on return so future callers are not permanently locked out. The op
            is ours to release too -- ownership transfers on enqueue, so a caller that got -1 back has
            no pointer left to free and would otherwise leak the very object we could not queue. */
+#ifdef RETROACHIEVEMENTS
+        if (op->type == GUI_OP_APPEND_MENU)
+            free(op->submenu.raText);
+#endif
         free(op);
         return -1;
     }

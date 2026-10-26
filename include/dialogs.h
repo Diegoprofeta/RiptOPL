@@ -212,6 +212,7 @@ enum UI_ITEMS {
     // guard one and not the other and the array carries an id the enum does not define.
     NETCFG_RA_TELEMETRY,
     NETCFG_RA_BADGES,
+    NETCFG_RA_BADGE_SUFFIX,
 #endif
 
     CHTCFG_CHEATSOURCE,

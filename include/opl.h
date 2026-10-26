@@ -338,6 +338,9 @@ extern int gRATelemetry;
 // List badges and the cover mark. Cosmetic, and subordinate to gRATelemetry: badges advertise a
 // feature, so they stay dark while the feature is switched off.
 extern int gRABadges;
+// RA mark placement: 0 = "RA " before the name, 1 = " [RA]" after it. Display only: rows keep
+// their source name and sort by the clean title.
+extern int gRABadgeSuffix;
 #endif
 extern int gEnableArt;
 extern int gEnableDiscArt; // ItemIcon/ICO disc artwork; independent of cover art

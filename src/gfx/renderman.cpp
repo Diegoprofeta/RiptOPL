@@ -517,49 +517,6 @@ void Renderer::drawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned
     }
 }
 
-#ifdef RETROACHIEVEMENTS
-/* RA: the cover mark, drawn as a quadrilateral INSIDE the cover's own (possibly slanted)
-   coordinate system. Same mapping as the overlay/inlay pair above, minus the reflection:
-   the mark is a badge, not art. */
-void Renderer::drawInlayPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color,
-                       int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry)
-{
-    rm_quad_t quad;
-    setupQuad(txt, x, y, aligned, w, h, scaled, color, &quad);
-
-    ulx = scaleX(ulx * aspectWidth_) >> 2;
-    urx = scaleX(urx * aspectWidth_) >> 2;
-    blx = scaleX(blx * aspectWidth_) >> 2;
-    brx = scaleX(brx * aspectWidth_) >> 2;
-    uly = scaleY(uly);
-    ury = scaleY(ury);
-    bly = scaleY(bly);
-    bry = scaleY(bry);
-
-    /* Alpha test as in rmDrawQuad: without it the transparent background
-       of the image is painted and the mark becomes a solid square. */
-    if ((txt->PSM == GS_PSM_CT32) || (txt->Clut && txt->ClutPSM == GS_PSM_CT32)) {
-        gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
-        gsKit_set_test(gsGlobal, GS_ATEST_ON);
-    } else {
-        gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
-        gsKit_set_test(gsGlobal, GS_ATEST_OFF);
-    }
-
-    gsKit_TexManager_bind(gsGlobal, txt);
-    gsKit_prim_quad_texture(gsGlobal, txt,
-                            quad.ul.x + ulx + renderXOff_, quad.ul.y + uly + renderYOff_,
-                            0.0f, 0.0f,
-                            quad.ul.x + urx + renderXOff_, quad.ul.y + ury + renderYOff_,
-                            txt->Width, 0.0f,
-                            quad.ul.x + blx + renderXOff_, quad.ul.y + bly + renderYOff_,
-                            0.0f, txt->Height,
-                            quad.ul.x + brx + renderXOff_, quad.ul.y + bry + renderYOff_,
-                            txt->Width, txt->Height, order_, color);
-    order_++;
-}
-#endif
-
 void Renderer::drawRect(int x, int y, int w, int h, u64 color)
 {
     float fx = scaleX(x) + renderXOff_;
@@ -757,13 +714,6 @@ void rmDrawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned, int w,
 {
     gRenderer.drawOverlayPixmap(overlay, x, y, aligned, w, h, scaled, color, inlay, ulx, uly, urx, ury, blx, bly, brx, bry, reflection);
 }
-
-#ifdef RETROACHIEVEMENTS
-void rmDrawInlayPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry)
-{
-    gRenderer.drawInlayPixmap(txt, x, y, aligned, w, h, scaled, color, ulx, uly, urx, ury, blx, bly, brx, bry);
-}
-#endif
 
 void rmDrawRect(int x, int y, int w, int h, u64 color)
 {

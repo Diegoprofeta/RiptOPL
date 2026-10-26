@@ -19,6 +19,7 @@ harness = r'''
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 #define MODE_COUNT 8
 enum { BDM_MODE, ETH_MODE, HDD_MODE, APP_MODE, FAV_MODE };
 #define GAME_FORMAT_FOLDER 9
@@ -45,7 +46,12 @@ static void configFree(config_set_t *c) { (void)c; configFrees++; }
 static void guiLock(void) { locks++; }
 static void guiUnlock(void) { unlocks++; }
 static int folderModeSupported(int mode) { return mode == BDM_MODE; }
-static const char *vcdDisplayNameForRow(item_list_t *l, int id, const char *text) { (void)l; (void)id; return text; }
+static int hideVcdPrefix;
+static const char *vcdDisplayNameForRow(item_list_t *l, int id, const char *text)
+{
+    (void)l, (void)id;
+    return hideVcdPrefix && !strncmp(text, "SLUS_012.15.", 12) ? text + 12 : text;
+}
 static int favSource[8];
 static int favGetItemSourceMode(int id) { return favSource[id]; }
 #ifdef RETROACHIEVEMENTS
@@ -72,8 +78,8 @@ menusys = (ROOT / "src/ui/menusys.cpp").read_text(encoding="utf-8")
 compare_at = menusys.index("static int submenuSortCompare(")
 compare = menusys[compare_at:menusys.index("\n}", compare_at) + 2]
 source += r'''
-struct submenu_list_t { struct {int isFolder, id; char *text;} item; };
-static char *submenuItemGetText(decltype(submenu_list_t::item) *item) { return item->text; }
+struct submenu_list_t { struct {int isFolder, id; char *text; int text_id;} item; };
+static char *_l(int id) { (void)id; return NULL; }
 ''' + compare
 tests = r'''
 int main(void)
@@ -164,6 +170,32 @@ int main(void)
     cfgTitleRefresh(&bdm, 2);
     assert(!strcmp(cfgTitleForRow(&bdm, 0), "RA ãƒ‰ãƒ©ã‚´ãƒ³ã‚¯ã‚¨ã‚¹ãƒˆVIII"));
     assert(!strcmp(cfgTitleForRow(&bdm, 1), "Kingdom Hearts")); /* badge does not end with the name */
+    assert(!strcmp(cfgTitleSortName(&bdm, 0, names[0]), titles[0])); /* sorts without the mark */
+    /* ra_badge_suffix: the mark stays after the title, and sorting stays clean. */
+    badges[0] = "Dragon Quest VIII [RA]";
+    badges[1] = "SLPM_655.55 [RA]";
+    cfgTitleRefresh(&bdm, 2);
+    assert(!strcmp(cfgTitleForRow(&bdm, 0), (std::string(titles[0]) + " [RA]").c_str()));
+    assert(!strcmp(cfgTitleForRow(&bdm, 1), "Kingdom Hearts [RA]"));
+    assert(!strcmp(cfgTitleSortName(&bdm, 1, names[1]), "Kingdom Hearts"));
+    /* A file literally named "[RA]" is not mistaken for the mark. */
+    const char *savedName = names[0];
+    names[0] = "[RA]";
+    badges[0] = "[RA] [RA]";
+    cfgTitleRefresh(&bdm, 1);
+    assert(!strcmp(cfgTitleForRow(&bdm, 0), (std::string(titles[0]) + " [RA]").c_str()));
+    /* PS1 rows match the badge against the display name (game id hidden). */
+    names[0] = "SLUS_012.15.Dragon Quest VIII";
+    hideVcdPrefix = 1;
+    badges[0] = "RA Dragon Quest VIII";
+    cfgTitleRefresh(&bdm, 1);
+    assert(!strncmp(cfgTitleForRow(&bdm, 0), "RA ", 3));
+    badges[0] = "Dragon Quest VIII [RA]";
+    cfgTitleRefresh(&bdm, 1);
+    assert(strstr(cfgTitleForRow(&bdm, 0), " [RA]") != NULL);
+    hideVcdPrefix = 0;
+    names[0] = savedName;
+    badges[0] = badges[1] = NULL;
     gCfgTitlesInLists = 0;
     cfgTitleRefresh(&bdm, 2);
 #endif
@@ -192,7 +224,7 @@ int main(void)
     cfgTitleForget(&bdm);
     // Execute the actual menu comparator against the real cache, not a copied sort key.
     char rawA[] = "A filename", rawZ[] = "Z filename";
-    submenu_list_t a{{0,0,rawA}}, b{{0,1,rawZ}};
+    submenu_list_t a{{0,0,rawA,-1}}, b{{0,1,rawZ,-1}};
     titles[0] = "Zulu Override"; titles[1] = "Alpha Override";
     cfgTitleRefresh(&bdm, 2);
     assert(submenuSortCompare(&a, &b, &bdm) > 0);
@@ -228,13 +260,13 @@ assert "gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);" in updat
 menusys = (ROOT / "src/ui/menusys.cpp").read_text(encoding="utf-8")
 sort = menusys[menusys.index("static int submenuSortCompare("):]
 sort = sort[:sort.index("\n}\n")]
-assert "cfgTitleDisplayName(support, a->item.id, txt1)" in sort and "vcdDisplayNameForRow" not in sort
+assert "cfgTitleSortName(support, a->item.id, txt1)" in sort and "vcdDisplayNameForRow" not in sort
 themes = (ROOT / "src/gfx/themeelems.cpp").read_text(encoding="utf-8")
 assert "host::library().listDisplayName(list, ps->item.id, submenuItemGetText(&ps->item))" in themes
 assert 'include/cfgtitle.h' not in themes
 host = (ROOT / "src/app/host.cpp").read_text(encoding="utf-8")
 assert "return cfgTitleDisplayName(itemList, id, text);" in host
-assert menusys.count("cfgTitleDisplayName(") >= 3  # sort + both game-menu headers
+assert menusys.count("cfgTitleDisplayName(") >= 2  # both game-menu headers
 settings = (ROOT / "src/core/settings.cpp").read_text(encoding="utf-8")
 assert "intSetting(CONFIG_OPL_CFG_TITLES, &gCfgTitlesInLists, 0)" in settings
 dialogs = (ROOT / "src/ui/dialogs.cpp").read_text(encoding="utf-8")
@@ -246,7 +278,7 @@ assert gui.count("diaGetInt(diaUIConfig, UICFG_CFG_TITLES") + gui.count("diaGetI
 refresh = gui[gui.index("static void guiRefreshCfgTitles(void)"):]
 refresh = refresh[:refresh.index("\n}\n")]
 assert "libViewMarkAllDirty();" in refresh and "oplQueueLibraryDeviceUpdates();" in refresh and "httpGetObject(0)" in refresh
-assert gui.count("guiRefreshCfgTitles();") == 2
+assert gui.count("guiRefreshCfgTitles();") == 3  # both CFG-title flips + the RA badge (#1039) flip
 base = (ROOT / "lng/tmpl/_base.yml").read_text(encoding="utf-8")
 assert base.index("- label: CFG_TITLES") > base.index("- label: AUTO_VMC_TIMEOUT")
 print("PASS: CFG titles in game lists are opt-in, display-only and read once per rebuild")

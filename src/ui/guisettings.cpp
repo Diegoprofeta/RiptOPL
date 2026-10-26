@@ -945,6 +945,9 @@ int guiShowNetConfig(void)
 #ifdef RETROACHIEVEMENTS
     diaSetInt(diaNetConfig, NETCFG_RA_TELEMETRY, gRATelemetry);
     diaSetInt(diaNetConfig, NETCFG_RA_BADGES, gRABadges);
+    const char *raBadgePos[] = {_l(_STR_RA_BADGE_PREFIX), _l(_STR_RA_BADGE_SUFFIX), NULL};
+    diaSetEnum(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, raBadgePos);
+    diaSetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, gRABadgeSuffix);
 #endif
 
     // Protocol rows, seeded from the authoritative gNetworkProtocol.
@@ -1030,8 +1033,15 @@ reshow_network:
         }
         diaGetInt(diaNetConfig, NETCFG_ETHOPMODE, &gETHOpMode);
 #ifdef RETROACHIEVEMENTS
+        int raBadgeState = gRATelemetry << 2 | gRABadges << 1 | gRABadgeSuffix;
         diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &gRATelemetry);
         diaGetInt(diaNetConfig, NETCFG_RA_BADGES, &gRABadges);
+        diaGetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, &gRABadgeSuffix);
+        gRABadgeSuffix = (gRABadgeSuffix == 1);
+        // Badges are resolved on the I/O thread when rows are built: rebuild every list (HTTP and
+        // Favorites too) when visibility or placement changes, not on the next unrelated rescan.
+        if ((gRATelemetry << 2 | gRABadges << 1 | gRABadgeSuffix) != raBadgeState)
+            guiRefreshCfgTitles();
 #endif
 
         diaGetInt(diaNetConfig, NETCFG_SHARE_PORT, &gPCPort);

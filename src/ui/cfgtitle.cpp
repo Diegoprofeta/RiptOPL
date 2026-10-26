@@ -135,11 +135,13 @@ static int isFolderRow(item_list_t *support, int id)
     return game != NULL && game->format == GAME_FORMAT_FOLDER;
 }
 
-/* The title as the row should show it: in RA builds a tracked game's badge prefix stays in front. */
+/* The title as the row should show it: in RA builds a tracked game keeps its mark where the badge
+   placed it. The whole known affix must match, so a file literally named "[RA]" is not mistaken for
+   it. RA builds store the clean title after the shown one, for badge-independent sorting. */
 static char *keepTitle(item_list_t *support, int id, const char *clean)
 {
-    const char *prefix = "";
-    size_t prefixLen = 0, len;
+    const char *prefix = "", *suffix = "";
+    size_t prefixLen = 0, suffixLen = 0, len = strlen(clean), sortLen = 0;
     char *kept;
 
 #ifdef RETROACHIEVEMENTS
@@ -147,23 +149,26 @@ static char *keepTitle(item_list_t *support, int id, const char *clean)
         const char *badge = raBadgeText(support, id);
         const char *name = gsOf(support)->name(support, id);
         if (badge != NULL && name != NULL) {
+            name = vcdDisplayNameForRow(support, id, name);
             size_t badgeLen = strlen(badge), nameLen = strlen(name);
-            if (badgeLen > nameLen && !strcmp(badge + badgeLen - nameLen, name)) {
-                prefix = badge;
-                prefixLen = badgeLen - nameLen;
-            }
+            if (badgeLen == nameLen + 3 && !strncmp(badge, "RA ", 3) && !strcmp(badge + 3, name))
+                prefix = badge, prefixLen = 3;
+            else if (badgeLen == nameLen + 5 && !strncmp(badge, name, nameLen) && !strcmp(badge + nameLen, " [RA]"))
+                suffix = badge + nameLen, suffixLen = 5;
         }
     }
+    sortLen = len + 1;
 #else
     (void)support;
     (void)id;
 #endif
-    len = strlen(clean);
-    kept = (char *)malloc(prefixLen + len + 1);
+    kept = (char *)malloc(prefixLen + len + suffixLen + 1 + sortLen);
     if (kept == NULL)
         return NULL;
     memcpy(kept, prefix, prefixLen);
-    memcpy(kept + prefixLen, clean, len + 1);
+    memcpy(kept + prefixLen, clean, len);
+    memcpy(kept + prefixLen + len, suffix, suffixLen + 1);
+    memcpy(kept + prefixLen + len + suffixLen + 1, clean, sortLen);
     return kept;
 }
 
@@ -250,9 +255,20 @@ const char *CfgTitles::displayName(item_list_t *support, int id, const char *tex
     return title != NULL ? title : vcdDisplayNameForRow(support, id, text);
 }
 
+const char *CfgTitles::sortName(item_list_t *support, int id, const char *text)
+{
+    const char *title = forRow(support, id);
+#ifdef RETROACHIEVEMENTS
+    if (title != NULL)
+        title += strlen(title) + 1; // the clean copy keepTitle stores after the shown title
+#endif
+    return title != NULL ? title : vcdDisplayNameForRow(support, id, text);
+}
+
 // Forwarding API follows the existing RaBadge cache boundary.
 int cfgTitleClean(const char *in, char *out, int size) { return CfgTitles::clean(in, out, size); }
 void cfgTitleRefresh(item_list_t *support, int count) { gCfgTitles.refresh(support, count); }
 void cfgTitleForget(item_list_t *support) { gCfgTitles.forget(support); }
 const char *cfgTitleForRow(item_list_t *support, int id) { return gCfgTitles.forRow(support, id); }
 const char *cfgTitleDisplayName(item_list_t *support, int id, const char *text) { return gCfgTitles.displayName(support, id, text); }
+const char *cfgTitleSortName(item_list_t *support, int id, const char *text) { return gCfgTitles.sortName(support, id, text); }

@@ -11,6 +11,7 @@ CHECK(gRATelemetry == (0));
 #endif
 #ifdef RETROACHIEVEMENTS
 CHECK(gRABadges == (1));
+CHECK(gRABadgeSuffix == (0));
 #endif
 CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));

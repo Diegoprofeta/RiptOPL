@@ -26,9 +26,6 @@ public:
     void setReflectionYOffset(int yoff);
     void drawPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color, int reflection);
     void drawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned, int w, int h, short scaled, u64 color, GSTEXTURE *inlay, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry, int reflection);
-#ifdef RETROACHIEVEMENTS
-    void drawInlayPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry);
-#endif
     void drawRect(int x, int y, int w, int h, u64 color);
     void drawFramedRect(int x, int y, int w, int h, int border, u64 frameColor, u64 fillColor);
     void drawLine(int x1, int y1, int x2, int y2, u64 color);

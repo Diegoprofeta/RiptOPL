@@ -30,13 +30,15 @@
 #include "include/supportbase.h"
 #include "include/rabadge.h"
 #include "include/gamesource.h"
+#include "include/vcdsupport.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
-#define RA_BADGE      "RA " /* prefix before the name; ASCII only, the stock \
-                               theme font has no other glyphs */
+#define RA_BADGE      "RA "   /* prefix before the name; ASCII only, the stock \
+                                 theme font has no other glyphs */
+#define RA_SUFFIX     " [RA]" /* the same mark after the name (gRABadgeSuffix) */
 #define RA_BADGE_TEXT (ISO_GAME_NAME_MAX + 8)
 
 RaBadge gRaBadge;
@@ -134,10 +136,14 @@ void RaBadge::refresh(item_list_t *support, int count)
         char *dst = slot->text + (size_t)i * RA_BADGE_TEXT;
         const char *serial = gsOf(support)->startup(support, i);
 
-        if (watchListExists(prefix, serial))
-            snprintf(dst, RA_BADGE_TEXT, "%s%s", RA_BADGE,
-                     gsOf(support)->name(support, i));
-        else
+        if (watchListExists(prefix, serial)) {
+            // Placement changes only this display text; row identity and sorting stay clean.
+            const char *name = vcdDisplayNameForRow(support, i, gsOf(support)->name(support, i));
+            if (gRABadgeSuffix)
+                snprintf(dst, RA_BADGE_TEXT, "%s%s", name, RA_SUFFIX);
+            else
+                snprintf(dst, RA_BADGE_TEXT, "%s%s", RA_BADGE, name);
+        } else
             dst[0] = '\0'; /* empty means show the plain name */
     }
 }
