@@ -1279,35 +1279,47 @@ static void menuFolderResetLeaving(struct menu_list *leaving)
 
 static void menuNextH()
 {
-    raii::SemaLock lock(menuSemaId);
-    struct menu_list *next = selected_item->next;
-    while (next != NULL && next->item->visible == 0)
-        next = next->next;
+    int moved = 0;
+    {
+        // Match the async config worker's snapshot/publish lock, including traversal.
+        raii::SemaLock lock(menuSemaId);
+        struct menu_list *next = selected_item != NULL ? selected_item->next : NULL;
+        while (next != NULL && next->item->visible == 0)
+            next = next->next;
 
-    // If we found a valid menu transition to it.
-    if (next != NULL) {
-        menuFolderResetLeaving(selected_item);
-        selected_item = next;
-        itemConfigId = -1;
-        itemConfigGeneration++;
-        sfxPlay(SFX_CURSOR);
+        // If we found a valid menu transition to it.
+        if (next != NULL) {
+            menuFolderResetLeaving(selected_item);
+            selected_item = next;
+            itemConfigId = -1;
+            itemConfigGeneration++;
+            moved = 1;
+        }
     }
+    if (moved)
+        sfxPlay(SFX_CURSOR); // audio RPCs must not hold up config publication
 }
 
 static void menuPrevH()
 {
-    raii::SemaLock lock(menuSemaId);
-    struct menu_list *prev = selected_item->prev;
-    while (prev != NULL && prev->item->visible == 0)
-        prev = prev->prev;
+    int moved = 0;
+    {
+        // Match the async config worker's snapshot/publish lock, including traversal.
+        raii::SemaLock lock(menuSemaId);
+        struct menu_list *prev = selected_item != NULL ? selected_item->prev : NULL;
+        while (prev != NULL && prev->item->visible == 0)
+            prev = prev->prev;
 
-    if (prev != NULL) {
-        menuFolderResetLeaving(selected_item);
-        selected_item = prev;
-        itemConfigId = -1;
-        itemConfigGeneration++;
-        sfxPlay(SFX_CURSOR);
+        if (prev != NULL) {
+            menuFolderResetLeaving(selected_item);
+            selected_item = prev;
+            itemConfigId = -1;
+            itemConfigGeneration++;
+            moved = 1;
+        }
     }
+    if (moved)
+        sfxPlay(SFX_CURSOR); // audio RPCs must not hold up config publication
 }
 
 static void menuFirstPage()
