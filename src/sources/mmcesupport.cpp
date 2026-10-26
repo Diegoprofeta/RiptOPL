@@ -1096,6 +1096,26 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         }
     }
 
+    // Sum the size of all parts, for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763).
+    // One part that cannot be opened or sized makes the whole size unknown: a partial total would be
+    // too small a bound and refuse reads in the missing part, while an unknown size keeps the driver
+    // on the PVD, as before (sbGetMediaLsnCount).
+    u64 isoTotalBytes = 0;
+    int isoSizeKnown = 1;
+    for (int part = 0; part < game->parts; part++) {
+        sbCreatePath(game, partname, gMmceSupport.prefix, "/", part);
+        int fd = open(partname, O_RDONLY, 0666);
+        s64 partBytes = -1;
+        if (fd >= 0) {
+            partBytes = lseek64(fd, 0, SEEK_END);
+            close(fd);
+        }
+        if (partBytes > 0)
+            isoTotalBytes += (u64)partBytes;
+        else
+            isoSizeKnown = 0;
+    }
+
     // Initialize layer 1 information.
     sbCreatePath(game, partname, gMmceSupport.prefix, "/", 0);
 
@@ -1108,6 +1128,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     layer1_start = sbGetISO9660MaxLBA(partname);
+    settings->common.mediaLsnCount = sbGetMediaLsnCount(partname, isoSizeKnown ? isoTotalBytes : 0);
 
     switch (game->format) {
         case GAME_FORMAT_USBLD:

@@ -723,6 +723,8 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     struct cdvdman_fragfile *iso_frag = &settings->fragfile[0];
     iso_frag->frag_start = 0;
     iso_frag->frag_count = 0;
+    u64 isoTotalBytes = 0;
+    int isoSizeKnown = 1;
     for (i = 0; i < game->parts; i++) {
         // Open file
         sbCreatePath(game, partname, pDeviceData->bdmPrefix, "/", i);
@@ -748,6 +750,14 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
         iso_frag->frag_count += iFragCount;
         iTotalFragCount += iFragCount;
 
+        // A part whose size cannot be read makes the whole size unknown: a partial or wrapped total
+        // would be a wrong bound, and an unknown one keeps CDVDMAN on the PVD (sbGetMediaLsnCount).
+        s64 partBytes = lseek64(fd, 0, SEEK_END);
+        if (partBytes > 0)
+            isoTotalBytes += (u64)partBytes;
+        else
+            isoSizeKnown = 0;
+
         if ((gPS2Logo) && (i == 0))
             EnablePS2Logo = CheckPS2Logo(fd, 0);
 
@@ -757,6 +767,11 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     // Initialize layer 1 information.
     sbCreatePath(game, partname, pDeviceData->bdmPrefix, "/", 0);
     layer1_start = sbGetISO9660MaxLBA(partname);
+
+    // Real media size, for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763). The ISO9660
+    // PVD cannot be trusted for this: badly mastered discs understate it and read data past the end
+    // of the volume by raw LBA.
+    settings->common.mediaLsnCount = sbGetMediaLsnCount(partname, isoSizeKnown ? isoTotalBytes : 0);
 
     switch (game->format) {
         case GAME_FORMAT_USBLD:

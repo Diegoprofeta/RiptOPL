@@ -737,6 +737,26 @@ static int ProbeZISO(int fd)
     }
 }
 
+u32 sbGetMediaLsnCount(const char *path, u64 totalBytes)
+{
+    size_t len = strlen(path);
+    u32 lsnCount = 0;
+    int fd;
+
+    if ((fd = open(path, O_RDONLY, 0666)) < 0)
+        return 0; // cannot tell what the image is
+
+    if (ProbeZISO(fd))
+        lsnCount = ziso_total_block;
+    // A ZSO file's size is its COMPRESSED size, so only its header's block count bounds the image.
+    // ProbeZISO also fails on a header it could not read, so a .zso it rejects stays at 0.
+    else if (len < 4 || strcasecmp(&path[len - 4], ".zso") != 0)
+        lsnCount = (u32)(totalBytes / 2048);
+    close(fd);
+
+    return lsnCount;
+}
+
 u32 sbGetISO9660MaxLBA(const char *path)
 {
     u32 maxLBA;
@@ -979,6 +999,7 @@ int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman,
         settings->flags |= IOPCORE_ENABLE_POFF;
     }
 
+    settings->mediaLsnCount = 0; // each device leg measures it after sbPrepare; 0 = trust the PVD
     settings->fakemodule_flags = 0;
     settings->fakemodule_flags |= FAKE_MODULE_FLAG_CDVDFSV;
     settings->fakemodule_flags |= FAKE_MODULE_FLAG_CDVDSTM;

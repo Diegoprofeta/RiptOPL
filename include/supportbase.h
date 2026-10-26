@@ -82,6 +82,9 @@ void sbCreateFolders(const char *path, int createDiscImgFolders);
 
 // ISO9660 filesystem management functions.
 u32 sbGetISO9660MaxLBA(const char *path);
+// Real sector count of an image (upstream OPL #1763): the ZSO header's block count, else totalBytes / 2048.
+// 0 = unknown (unopenable, an unreadable ZSO header, or totalBytes 0), which keeps CDVDMAN on the PVD.
+u32 sbGetMediaLsnCount(const char *path, u64 totalBytes);
 int sbProbeISO9660(const char *path, base_game_info_t *game, u32 layer1_offset);
 
 int sbLoadCheats(const char *path, const char *file);
