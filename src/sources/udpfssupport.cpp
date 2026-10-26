@@ -12,6 +12,7 @@
 #include "include/util.h"
 #include "include/renderman.h"
 #include "include/themes.h"
+#include "include/lang.h"
 #include "include/textures.h"
 #include "include/texcache.h"
 #include "include/artindex.h"
@@ -46,6 +47,7 @@ static char *udpfsBase;      // device root ("udpfs:")
 static int udpfsIomanModLoaded = 0;
 static int udpfsWaitingForServer = 0; // the last scan got no answer from the server; see udpfsSetWaitingForServer
 static int udpfsThemesScanned = 0;    // THM is registered once per active UDPFS session, after THM opens
+static int udpfsLanguagesScanned = 0; // LNG uses the shared registry once its directory becomes readable
 static int udpfsPs1Scanned = 0;       // a PS1-view scan has reached the server this session; see udpfsNeedsUpdate
 // The share's spelling of ART: a case-sensitive server keeps "art" and "ART" apart. Resolved once per
 // session by udpfsDiscoverArtFolder, never per image.
@@ -275,11 +277,11 @@ void UdpfsSupport::clearGameLists()
 static void udpfsSetWaitingForServer(int waiting)
 {
     udpfsWaitingForServer = waiting;
-    // Keep the lightweight background poll alive until THM and ART resolution complete. The server
+    // Keep the lightweight background poll alive until THM, LNG and ART resolution complete. The server
     // root/game folders can become usable slightly before those folders; without this, a failed first
     // attempt drops back to the normal cadence and, with Automatic Refresh off, is never retried for
     // the rest of the session (original #1036/#1037).
-    (*udpfsInstance()).updateDelay = (waiting || !udpfsThemesScanned || !udpfsArtCaseChecked) ? MENU_UPD_DELAY_GENREFRESH : UDPFS_MODE_UPDATE_DELAY;
+    (*udpfsInstance()).updateDelay = (waiting || !udpfsThemesScanned || !udpfsLanguagesScanned || !udpfsArtCaseChecked) ? MENU_UPD_DELAY_GENREFRESH : UDPFS_MODE_UPDATE_DELAY;
 }
 
 void UdpfsSource::init(item_list_t *itemList)
@@ -294,6 +296,7 @@ void UdpfsSource::init(item_list_t *itemList)
 
     udpfsBase = "udpfs:";
     udpfsThemesScanned = 0;
+    udpfsLanguagesScanned = 0;
     udpfsPs1Scanned = 0;
     udpfsArtCaseIndex = 0;
     udpfsArtCaseChecked = 0;
@@ -377,6 +380,47 @@ static void udpfsDiscoverThemes(void)
     udpfsThemesScanned = 1;
     // If server-waiting is already clear, retire the temporary general-refresh cadence now that
     // theme discovery really completed. If the server is still considered down, preserve that wait.
+    udpfsSetWaitingForServer(udpfsWaitingForServer);
+}
+
+// UDPFS registered no languages at all (original #1035). Match the shared LNG registration the other
+// devices use, scanning every case variant so an empty auto-created LNG cannot hide a populated lng.
+// A failed root listing or an unopenable LNG keeps retrying.
+static void udpfsDiscoverLanguages(void)
+{
+    char path[128];
+    DIR *root, *dir;
+    struct dirent *entry;
+    int found = 0, failed = 0, error;
+
+    if (udpfsLanguagesScanned || !udpfsIomanModLoaded || !udpfsServerAnswers())
+        return;
+    root = opendir(udpfsPrefix);
+    if (root == NULL)
+        return;
+    for (;;) {
+        errno = 0;
+        entry = readdir(root);
+        if (entry == NULL) {
+            error = errno;
+            break;
+        }
+        if (strcasecmp(entry->d_name, "LNG") != 0)
+            continue;
+        snprintf(path, sizeof(path), "%s%s", udpfsPrefix, entry->d_name);
+        dir = opendir(path);
+        if (dir == NULL) {
+            failed = 1;
+            continue;
+        }
+        closedir(dir);
+        lngAddLanguages(path, "/", (*udpfsInstance()).mode);
+        found = 1;
+    }
+    closedir(root);
+    if (!found || failed || error)
+        return;
+    udpfsLanguagesScanned = 1;
     udpfsSetWaitingForServer(udpfsWaitingForServer);
 }
 
@@ -503,8 +547,9 @@ int UdpfsSource::needsUpdate(item_list_t *itemList)
     int result = 0;
 
     // Keep this before every view-specific early return so a remembered PS1/Ember page cannot
-    // suppress theme or ART discovery.
+    // suppress theme, language or ART discovery.
     udpfsDiscoverThemes();
+    udpfsDiscoverLanguages();
     udpfsDiscoverArtFolder();
 
     // PS1/Ember view: force a rescan once on toggle, then refresh on toggle only (skip disc heuristics).
@@ -582,6 +627,8 @@ int UdpfsSource::update(item_list_t *itemList)
     // directory open and leaves the background retry cadence armed.
     if (answeredBefore)
         udpfsDiscoverThemes();
+    if (answeredBefore)
+        udpfsDiscoverLanguages();
 
     if (view == LIB_VIEW_PS1 || view == LIB_VIEW_MIXED) {
         // Ember inherits this mount; POPSTARTER restores networking through the UDPFS BDMA pair.

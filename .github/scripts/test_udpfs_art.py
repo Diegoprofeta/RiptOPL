@@ -76,7 +76,7 @@ struct dirent { char d_name[128]; };
 static char udpfsPrefix[40] = "udpfs:/";
 static int udpfsIomanModLoaded = 1, serverOnline = 1;
 static int invalidations, indexInvalidations, rootOpens, folderOpens;
-static int udpfsWaitingForServer, udpfsThemesScanned = 1;
+static int udpfsWaitingForServer, udpfsThemesScanned = 1, udpfsLanguagesScanned = 1;
 static struct { int updateDelay; } instance;
 #define udpfsInstance() (&instance)
 static const char *rootNames[12];

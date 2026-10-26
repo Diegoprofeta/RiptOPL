@@ -121,3 +121,9 @@ conversions, or fewer of them in the same order, are kept.
 The fork overlays were backfilled from the original project's `lng_fork/` translations, only for
 labels whose English text is identical here and only where an overlay lacked the label. Galician
 and Serbian now have overlays too. These are machine-assisted and still need speaker review.
+
+For **UDPFS Files**, language files on the PC belong directly in the served root's `LNG/` folder
+(any case), e.g. `LNG/lang_Portuguese.lng`, with its font beside it. RiptOPL registers that folder
+once the server answers, including while a remembered PS1 page is shown. Copy the files out of the
+release pack's language subfolder rather than placing the whole pack directory under `LNG/`. This
+does not apply to UDPFS IMG or UDPBD disk-image roots.

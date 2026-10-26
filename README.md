@@ -107,7 +107,8 @@ the PS2 and supported backward-compatible PS3 units (see [PS3 BC](#ps3-bc)). Rip
 | HTTP | OPL | ISO listed in `games.csv`; compressed images refuse to launch | No VMC; use physical memory cards |
 
 Neutrino does not read local ZSO or UL split images. A compatible UDPFS server can instead
-decompress an image on the PC and expose it to the console as an ISO; that is server-side support.
+decompress an image on the PC and expose it to the console as an ISO; that is server-side support
+([compressed images](docs/COMPRESSED-IMAGES.md)).
 ELF apps and PS1 games have their own launch paths, described below.
 
 >[!NOTE]
