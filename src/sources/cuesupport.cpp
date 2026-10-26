@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <errno.h>  // errno/ENOENT in the absent-vs-contended split, mirroring vcdScanOpenDir
 #include <malloc.h> // memalign -- the published list matches sbReadList's alignment
+#include <sys/stat.h>
 
 #include "include/opl.h"        // pulls <dirent.h> (opendir/readdir/DIR) + strcasecmp, like vcdsupport.c
 #include "include/ioman.h"      // LOG
@@ -358,12 +359,32 @@ static int cueEntryIsGame(const char *devPrefix, const char *gamesDir, const str
     // "smb0:\\EMBER\\games/NAME" -- mixed, and rejected by any handler that cares. Latent today
     // (no backslash device lists Ember yet) and load-bearing the moment one does.
     snprintf(probe, sizeof(probe), "%s%c%s", gamesDir, cueSep(devPrefix), de->d_name);
+    errno = 0;
     d = opendir(probe);
-    if (d == NULL)
-        return 0;
+    if (d == NULL) {
+        if (errno == 0 || errno == ENOENT || errno == ENOTDIR || errno == EPERM)
+            return 0;
+        // BDM FatFs answers a regular file with -FR_NO_PATH, which newlib turns into EIO. Only a
+        // confirmed file is "not a game"; a real folder read failure keeps the last-good list.
+        LOG("[CUE] cannot open '%s' (errno %d)\n", probe, errno);
+        struct stat st;
+        if (stat(probe, &st) == 0 && S_ISREG(st.st_mode))
+            return 0;
+        return -1;
+    }
 
-    while (!found && (sub = readdir(d)) != NULL)
+    while (!found) {
+        errno = 0;
+        sub = readdir(d);
+        if (sub == NULL) {
+            if (errno != 0) {
+                LOG("[CUE] cannot enumerate '%s' (errno %d)\n", probe, errno);
+                found = -1;
+            }
+            break;
+        }
         found = cueNameIsDiscImage(sub->d_name, (int)strlen(sub->d_name));
+    }
     closedir(d);
 
     if (!found)
@@ -374,10 +395,10 @@ static int cueEntryIsGame(const char *devPrefix, const char *gamesDir, const str
 int cueScanDir(const char *devPrefix, cue_entry_t **outList)
 {
     char gamesDir[288];
-    cue_entry_t *list;
+    cue_entry_t *list = NULL;
     struct dirent *de;
     DIR *dir;
-    int count = 0;
+    int count = 0, capacity = 0;
 
     if (outList == NULL)
         return 0;
@@ -425,20 +446,20 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
             return 0;
         // Anything else: the directory could not be READ (bus contended, device mid-detach). Signal
         // failure so the caller preserves its last-good list rather than blanking the page.
-        // MMCE caveat, same as the VCD scan: mmceman's dopen collapses every failure into a bare -1
-        // (EE sees EPERM, not ENOENT) unless the paired mmceman patch is in the build, so on mmceN:
-        // an absent EMBER folder lands here. That costs a preserved list, never a wrong one.
         LOG("[CUE] cannot read '%s' (errno %d)\n", gamesDir, errno);
         return -1;
     }
 
-    list = (cue_entry_t *)calloc(CUE_MAX_ITEMS, sizeof(cue_entry_t));
-    if (list == NULL) {
-        closedir(dir);
-        return -1; // OOM: preserve the caller's current list rather than blank it
-    }
-
-    while (count < CUE_MAX_ITEMS && (de = readdir(dir)) != NULL) {
+    // Grow as rows are found instead of reserving CUE_MAX_ITEMS rows (several hundred KiB) for
+    // every scan: that allocation can fail on a full EE heap and leave the PS1 page unscanned.
+    while (count < CUE_MAX_ITEMS) {
+        errno = 0;
+        de = readdir(dir);
+        if (de == NULL) {
+            if (errno != 0)
+                goto scan_failed; // a listing cut short is not the whole library
+            break;
+        }
         if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, ".."))
             continue;
 
@@ -455,9 +476,22 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
             LOG("[CUE] skip (name > %d chars): %s\n", ISO_GAME_NAME_MAX, de->d_name);
             continue;
         }
-        if (!cueEntryIsGame(devPrefix, gamesDir, de))
+        int isGame = cueEntryIsGame(devPrefix, gamesDir, de);
+        if (isGame < 0)
+            goto scan_failed;
+        if (!isGame)
             continue; // only folders with a top-level image Ember accepts are game rows
 
+        if (count == capacity) {
+            int grown = capacity ? capacity * 2 : 8;
+            if (grown > CUE_MAX_ITEMS)
+                grown = CUE_MAX_ITEMS;
+            cue_entry_t *next = (cue_entry_t *)realloc(list, (size_t)grown * sizeof(cue_entry_t));
+            if (next == NULL)
+                goto scan_failed; // OOM: preserve the caller's current list rather than blank it
+            list = next;
+            capacity = grown;
+        }
         snprintf(list[count].name, sizeof(list[count].name), "%s", de->d_name);
         count++;
     }
@@ -471,6 +505,12 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
 
     *outList = list;
     return count;
+
+scan_failed:
+    LOG("[CUE] incomplete scan of '%s' -- keeping last-good list\n", gamesDir);
+    free(list);
+    closedir(dir);
+    return -1;
 }
 
 typedef struct
