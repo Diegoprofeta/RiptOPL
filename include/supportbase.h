@@ -87,7 +87,14 @@ u32 sbGetISO9660MaxLBA(const char *path);
 u32 sbGetMediaLsnCount(const char *path, u64 totalBytes);
 int sbProbeISO9660(const char *path, base_game_info_t *game, u32 layer1_offset);
 
-int sbLoadCheats(const char *path, const char *file);
+int sbLoadCheats(const char *path, const char *file, config_set_t *configSet);
+// The cheats of a Neutrino launch whose leg skips the native preparation (BDM, APA): this game's cheat
+// settings, its .cht from <prefix>CHT/ (Select mode: remembered picks, then the picker), then
+// sbNeutrinoHandCheats. 0 = launch; <0 = the user chose to stay in the menu.
+// The enabled codes of the cheats loaded for `startup`, handed to Neutrino (sysNeutrinoHandCheats). With
+// cheats off or a NULL startup it only clears the last hand-over. 0 = launch; <0 = stay in the menu.
+int sbNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs);
+int sbNeutrinoLoadCheats(const char *prefix, const char *startup, config_set_t *configSet, const char *neutrinoPath, const char *extraArgs);
 
 
 

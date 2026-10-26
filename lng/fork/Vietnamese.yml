@@ -590,3 +590,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Hiện tham số chạy
   HINT_NEUTRINO_SHOW_ARGS: Trước mỗi lần chạy qua Neutrino, hiện mọi tham số Neutrino sẽ nhận và hỏi có tiếp tục không. Quay lại sẽ về menu mà không chạy.
   NEUTRINO_ARGS_CONFIRM: Neutrino sẽ chạy với các tham số này. Chạy?
+  NEUTRINO_CHEATS_WRITE_FAILED: Không lưu được danh sách mã gian lận vào thư mục Neutrino, nên Neutrino không dùng được. Chạy không có mã gian lận?

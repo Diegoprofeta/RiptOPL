@@ -570,3 +570,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Tampilkan Argumen Peluncuran
   HINT_NEUTRINO_SHOW_ARGS: Sebelum setiap peluncuran Neutrino, tampilkan semua argumen yang akan diterima Neutrino dan tanyakan apakah lanjut. Kembali kembali ke menu tanpa meluncurkan.
   NEUTRINO_ARGS_CONFIRM: Neutrino akan mulai dengan argumen ini. Luncurkan?
+  NEUTRINO_CHEATS_WRITE_FAILED: Daftar cheat tidak bisa disimpan ke folder Neutrino, jadi Neutrino tidak bisa memakainya. Luncurkan tanpa cheat?

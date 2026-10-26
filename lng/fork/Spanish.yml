@@ -546,3 +546,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Mostrar los argumentos de inicio
   HINT_NEUTRINO_SHOW_ARGS: Antes de cada inicio con Neutrino, muestra todos los argumentos que recibirá Neutrino y pregunta si continuar. Atrás vuelve al menú sin iniciar.
   NEUTRINO_ARGS_CONFIRM: Neutrino se iniciará con estos argumentos. ¿Iniciar?
+  NEUTRINO_CHEATS_WRITE_FAILED: La lista de trucos no se pudo guardar en la carpeta de Neutrino, así que Neutrino no puede usarla. ¿Iniciar sin trucos?

@@ -779,3 +779,4 @@ translations:
   NEUTRINO_SHOW_ARGS: نمایش آرگومان‌های اجرا
   HINT_NEUTRINO_SHOW_ARGS: پیش از هر اجرای Neutrino، همه آرگومان‌هایی را که Neutrino می‌گیرد نشان می‌دهد و برای ادامه می‌پرسد. بازگشت بدون اجرا به منو برمی‌گرداند.
   NEUTRINO_ARGS_CONFIRM: Neutrino با این آرگومان‌ها شروع می‌شود. اجرا شود؟
+  NEUTRINO_CHEATS_WRITE_FAILED: فهرست تقلب‌ها در پوشه Neutrino ذخیره نشد، پس Neutrino نمی‌تواند از آن استفاده کند. بدون تقلب اجرا شود؟

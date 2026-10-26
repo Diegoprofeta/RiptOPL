@@ -51,6 +51,11 @@ int sysNeutrinoPreflight(const char *driver, const char *neutrinoPath, int neutr
 
 // Compose the exact launch argv while the GUI is still live. Refuses a launch that would exceed
 // the 14-entry or 256-byte ExecPS2 budget, with a visible warning instead of dropping arguments.
+// Neutrino cheats: write `pairs` address/value code pairs where Neutrino resolves -cfg=riptopl-cheats and
+// add that flag to its argv. Every call clears the last hand-over first; NULL startup or no pairs hands
+// over nothing. 0 = launch; <0 = the user chose to stay in the menu. Callers go through
+// sbNeutrinoHandCheats, which reads the codes from the cheat engine.
+int sysNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs, const u32 *list, int pairs);
 int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs);
 
 // Launch an external POPSTARTER.ELF for a PS1 VCD. selector = the target's argv[0]

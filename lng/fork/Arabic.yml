@@ -599,3 +599,4 @@ translations:
   NEUTRINO_SHOW_ARGS: عرض وسائط التشغيل
   HINT_NEUTRINO_SHOW_ARGS: قبل كل تشغيل عبر Neutrino، يعرض كل وسيط سيتلقاه Neutrino ويسأل هل تتابع. الرجوع يعيدك إلى القائمة دون تشغيل.
   NEUTRINO_ARGS_CONFIRM: سيبدأ Neutrino بهذه الوسائط. تشغيل؟
+  NEUTRINO_CHEATS_WRITE_FAILED: تعذّر حفظ قائمة الغش في مجلد Neutrino، لذا لا يستطيع Neutrino استخدامها. التشغيل دون غش؟

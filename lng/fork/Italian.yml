@@ -546,3 +546,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Mostra gli argomenti di avvio
   HINT_NEUTRINO_SHOW_ARGS: Prima di ogni avvio con Neutrino, mostra tutti gli argomenti che Neutrino riceverà e chiede se continuare. Indietro torna al menu senza avviare.
   NEUTRINO_ARGS_CONFIRM: Neutrino partirà con questi argomenti. Avviare?
+  NEUTRINO_CHEATS_WRITE_FAILED: La lista dei trucchi non è stata salvata nella cartella di Neutrino, quindi Neutrino non può usarla. Avviare senza trucchi?

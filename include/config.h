@@ -81,6 +81,9 @@ enum CONFIG_INDEX {
 #define CONFIG_ITEM_CHEATMODE    "$CheatMode"
 #define CONFIG_ITEM_ENABLEIMAGE  "$EnableImage"
 
+// + NNN: the remembered Select-mode cheat picks (cheatconfig.cpp)
+#define CONFIG_ITEM_CHEAT_SELECTION_PREFIX "$CheatSel"
+
 #define CONFIG_ITEM_PADEMUSOURCE     "$PADEMUSource"
 #define CONFIG_ITEM_ENABLEPADEMU     "$EnablePadEmu"
 #define CONFIG_ITEM_PADEMUSETTINGS   "$PadEmuSettings"

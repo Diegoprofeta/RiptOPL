@@ -43,7 +43,8 @@ def function_text(signature):
 member_max = re.search(r'^#define CHT_TAR_MEMBER_MAX\s+(.+)$', source, re.M)
 if member_max is None:
     failures.append('src/sources/supportbase.c: #define CHT_TAR_MEMBER_MAX not found')
-functions = function_text('static void sbCheatLogAppend(') + function_text('int sbLoadCheats(')
+functions = (function_text('static void sbCheatLogAppend(') + function_text('static void sbCheatsSelect(') +
+             function_text('int sbLoadCheats('))
 
 HARNESS = r'''
 #include <errno.h>
@@ -52,6 +53,7 @@ HARNESS = r'''
 #include <string.h>
 
 typedef unsigned int u32;
+typedef struct { int unused; } config_set_t;
 #define LOG(...) ((void)0)
 #define O_RDONLY 0
 #define CHT_TAR_MEMBER_MAX @MEMBER_MAX@
@@ -67,7 +69,8 @@ static int tarPresent, tarParse;
 static TarEntryBase tarEntry;
 
 static int GetCheatsEnabled(void) { return 1; }
-static void guiManageCheats(void) {}
+static void guiManageCheats(config_set_t *c) { (void)c; }
+static void cheatConfigLoadSelections(config_set_t *c) { (void)c; }
 static const char *tarGetDevicePrefix(TarKind k) { (void)k; return "mass0:"; }
 static TarEntryBase *tarFind(TarKind k, const char *name) { (void)k; return (tarPresent && strstr(name, ".cht")) ? &tarEntry : NULL; }
 static u32 tarRead(TarKind k, const TarEntryBase *e, void *dst, u32 n) { (void)k; (void)e; memset(dst, 'x', n); return n; }
@@ -94,7 +97,7 @@ static void scenario(const char *name, int le, int ll, int ue, int ul, int tp, u
     int got;
     lowerExists = le; lowerLoad = ll; upperExists = ue; upperLoad = ul;
     tarPresent = tp; tarEntry.rawSize = tsize; tarParse = tparse;
-    got = sbLoadCheats("mass0:/", "SLUS_203.70");
+    got = sbLoadCheats("mass0:/", "SLUS_203.70", NULL);
     /* want: -ENOENT exactly, a load FAILURE (any negative but -ENOENT), or a mode >= 0 */
     if ((want == -ENOENT && got != -ENOENT) || (want == -1 && (got >= 0 || got == -ENOENT)) || (want >= 0 && got != want)) {
         printf("FAIL %s: sbLoadCheats returned %d (want %s)\n", name, got,

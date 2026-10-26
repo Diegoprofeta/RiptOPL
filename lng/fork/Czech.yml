@@ -544,3 +544,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Zobrazit spouštěcí argumenty
   HINT_NEUTRINO_SHOW_ARGS: Před každým spuštěním přes Neutrino ukáže všechny argumenty, které Neutrino dostane, a zeptá se, zda pokračovat. Zpět se vrátí do menu bez spuštění.
   NEUTRINO_ARGS_CONFIRM: Neutrino se spustí s těmito argumenty. Spustit?
+  NEUTRINO_CHEATS_WRITE_FAILED: Seznam cheatů nešlo uložit do složky Neutrina, takže ho Neutrino nemůže použít. Spustit bez cheatů?

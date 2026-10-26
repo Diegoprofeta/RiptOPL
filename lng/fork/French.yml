@@ -546,3 +546,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Afficher les arguments de lancement
   HINT_NEUTRINO_SHOW_ARGS: Avant chaque lancement Neutrino, affiche tous les arguments que Neutrino recevra et demande de continuer. Retour revient au menu sans lancer.
   NEUTRINO_ARGS_CONFIRM: Neutrino va démarrer avec ces arguments. Lancer ?
+  NEUTRINO_CHEATS_WRITE_FAILED: La liste de codes n'a pas pu être enregistrée dans le dossier Neutrino, Neutrino ne peut donc pas l'utiliser. Lancer sans codes ?

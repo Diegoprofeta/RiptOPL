@@ -545,3 +545,4 @@ translations:
   NEUTRINO_SHOW_ARGS: 실행 인수 표시
   HINT_NEUTRINO_SHOW_ARGS: Neutrino로 실행할 때마다 Neutrino가 받을 모든 인수를 보여 주고 계속할지 묻습니다. 뒤로를 누르면 실행하지 않고 메뉴로 돌아갑니다.
   NEUTRINO_ARGS_CONFIRM: Neutrino가 이 인수로 시작합니다. 실행할까요?
+  NEUTRINO_CHEATS_WRITE_FAILED: 치트 목록을 Neutrino 폴더에 저장할 수 없어서 Neutrino가 쓸 수 없습니다. 치트 없이 실행할까요?

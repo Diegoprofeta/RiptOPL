@@ -566,3 +566,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Visa startargument
   HINT_NEUTRINO_SHOW_ARGS: Före varje start via Neutrino visas varje argument som Neutrino får och du tillfrågas om du vill fortsätta. Tillbaka återgår till menyn utan att starta.
   NEUTRINO_ARGS_CONFIRM: Neutrino startar med de här argumenten. Starta?
+  NEUTRINO_CHEATS_WRITE_FAILED: Fusklistan kunde inte sparas i Neutrino-mappen, så Neutrino kan inte använda den. Starta utan fusk?

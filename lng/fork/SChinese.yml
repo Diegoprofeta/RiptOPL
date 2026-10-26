@@ -546,3 +546,4 @@ translations:
   NEUTRINO_SHOW_ARGS: 显示启动参数
   HINT_NEUTRINO_SHOW_ARGS: 每次通过 Neutrino 启动前，显示 Neutrino 将收到的全部参数并询问是否继续。返回会回到菜单而不启动。
   NEUTRINO_ARGS_CONFIRM: Neutrino 将使用这些参数启动。启动吗？
+  NEUTRINO_CHEATS_WRITE_FAILED: 无法把金手指列表保存到 Neutrino 文件夹，因此 Neutrino 无法使用。不带金手指启动吗？

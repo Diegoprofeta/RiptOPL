@@ -429,6 +429,11 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
     // Δ6 preflight (driver token + network toml sync) -- abort stays in a live menu.
     if (sysNeutrinoPreflight(bdmCurrentDriver, neutrinoPath, neutrinoBsdfs, neutrinoExtraArgs, bdmDevNr) < 0)
         return abortLaunch(failResult, configSet);
+    // Cheats: the same per-game settings, .cht and Select-mode picker as the native leg, handed to
+    // Neutrino as a config file. After the preflight, so a launch that falls back to the native
+    // core asks nothing twice; backing out returns to the menu, never to the other core.
+    if (sbNeutrinoLoadCheats(pDeviceData->bdmPrefix, game->startup, configSet, neutrinoPath, neutrinoExtraArgs) < 0)
+        return abortLaunch(1, configSet);
     if (sysNeutrinoArgsPreflight(bdmCurrentDriver, partname, game->startup, compatmask, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdmDevNr, &neutrinoVmc) < 0)
         return abortLaunch(1, configSet); // an overfull Neutrino argv must not silently fall back to the native core
     if (gLaunchDiag)
@@ -802,7 +807,7 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     // launch. Absent is normal -- the game is simply not tracked.
     sbLoadWatchList(pDeviceData->bdmPrefix, game->startup);
 #endif
-    if ((result = sbLoadCheats(pDeviceData->bdmPrefix, game->startup)) < 0) {
+    if ((result = sbLoadCheats(pDeviceData->bdmPrefix, game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
         // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
         if (!sbCheatsMissingContinue(&settings->common, result))

@@ -555,3 +555,4 @@ translations:
   NEUTRINO_SHOW_ARGS: 顯示啟動參數
   HINT_NEUTRINO_SHOW_ARGS: 每次透過 Neutrino 啟動前，顯示 Neutrino 將收到的全部參數並詢問是否繼續。返回會回到選單而不啟動。
   NEUTRINO_ARGS_CONFIRM: Neutrino 將以這些參數啟動。要啟動嗎？
+  NEUTRINO_CHEATS_WRITE_FAILED: 無法把金手指清單儲存到 Neutrino 資料夾，因此 Neutrino 無法使用。要不帶金手指啟動嗎？

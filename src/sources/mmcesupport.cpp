@@ -1156,7 +1156,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // launch. Absent is normal -- the game is simply not tracked.
     sbLoadWatchList(gMmceSupport.prefix, game->startup);
 #endif
-    if ((result = sbLoadCheats(gMmceSupport.prefix, game->startup)) < 0) {
+    if ((result = sbLoadCheats(gMmceSupport.prefix, game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
         // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
         if (!sbCheatsMissingContinue(&settings->common, result)) {
@@ -1258,10 +1258,21 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             fileXioClose(vmc_fds[0]);
         if (vmc_fds[1] >= 0)
             fileXioClose(vmc_fds[1]);
-        if (sysNeutrinoPreflight("mmce", neutrinoPath, 0, NULL, -1) < 0) // D6 pre-teardown validation
+        // Every way back to the menu from here undoes the native preparation this leg shares
+        // (sbPrepare above): a zone left patched fails the next MMCE launch's sbPrepare.
+        if (sysNeutrinoPreflight("mmce", neutrinoPath, 0, NULL, -1) < 0) { // D6 pre-teardown validation
+            sbUnprepare(&settings->common);
             return;
-        if (sysNeutrinoArgsPreflight("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0)
+        }
+        // Cheats: loaded above with the native preparation; hand them to Neutrino.
+        if (sbNeutrinoHandCheats(mmceStartup, neutrinoPath, neutrinoExtraArgs) < 0) {
+            sbUnprepare(&settings->common);
             return;
+        }
+        if (sysNeutrinoArgsPreflight("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0) {
+            sbUnprepare(&settings->common);
+            return;
+        }
         // GameID for the NEUTRINO core (issue #68): the native OPL-core launch deliberately does
         // NOT push a launcher GameID (see the issue-#50 note below -- in OPL core the in-game
         // card is OPL's mcemu, and a mid-launch re-switch froze early-MC-probing games). That

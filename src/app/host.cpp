@@ -48,7 +48,7 @@ public:
     void bootStatusSticky(const char *label) override { guiSetBootStatusSticky(label); }
     void bootStatusStickyCopy(const char *label) override { guiSetBootStatusStickyCopy(label); }
     void renderTextScreen(const char *message) override { guiRenderTextScreen(message); }
-    void manageCheats() override { guiManageCheats(); }
+    void manageCheats(config_set_t *configSet) override { guiManageCheats(configSet); }
     int showVcdUsbMode() override { return guiShowVcdUsbMode(); }
     int pickEmberDisc(const char *folder, const struct cue_disc_list *list) override { return guiShowEmberDiscList(folder, list); }
     int promptRebootIop() override { return guiPromptRebootIop(); }
@@ -56,6 +56,8 @@ public:
     int confirmId(int strId, const char *detail) override
     {
         char text[480];
+        if (detail == NULL)
+            return guiMsgBox(_l(strId), 1, NULL);
         snprintf(text, sizeof(text), "%s\n\n%s", _l(strId), detail);
         return guiMsgBox(text, 1, NULL);
     }

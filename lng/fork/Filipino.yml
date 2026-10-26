@@ -584,3 +584,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Ipakita ang mga launch argument
   HINT_NEUTRINO_SHOW_ARGS: Bago ang bawat paglulunsad sa Neutrino, ipinapakita ang bawat argument na matatanggap ng Neutrino at nagtatanong kung magpapatuloy. Ibinabalik ka ng Back sa menu nang hindi naglulunsad.
   NEUTRINO_ARGS_CONFIRM: Magsisimula ang Neutrino gamit ang mga argument na ito. Ilunsad?
+  NEUTRINO_CHEATS_WRITE_FAILED: Hindi ma-save ang cheat list sa Neutrino folder, kaya hindi ito magagamit ng Neutrino. Ilunsad nang walang cheat?

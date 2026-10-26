@@ -615,3 +615,4 @@ translations:
   NEUTRINO_SHOW_ARGS: ສະແດງ ອາກິວເມັນເລີ່ມ
   HINT_NEUTRINO_SHOW_ARGS: ກ່ອນເລີ່ມ Neutrino ແຕ່ລະເທື່ອ, ສະແດງທຸກອາກິວເມັນ ທີ່ Neutrino ຈະໄດ້ຮັບ ແລະ ຖາມວ່າ ສືບຕໍ່ ບໍ. ກັບຄືນ ກັບໄປເມນູ ໂດຍບໍ່ເລີ່ມ.
   NEUTRINO_ARGS_CONFIRM: Neutrino ຈະເລີ່ມ ດ້ວຍອາກິວເມັນເຫຼົ່ານີ້. ເລີ່ມ ບໍ?
+  NEUTRINO_CHEATS_WRITE_FAILED: ບັນທຶກລາຍການສູດໂກງ ໃສ່ໂຟນເດີ Neutrino ບໍ່ໄດ້, ດັ່ງນັ້ນ Neutrino ໃຊ້ມັນບໍ່ໄດ້. ເລີ່ມ ໂດຍບໍ່ມີສູດໂກງ ບໍ?

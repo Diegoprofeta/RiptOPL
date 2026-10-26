@@ -34,6 +34,7 @@ row is source/host-tested only; none is hardware-tested.
 | Original `tools/audit_translations.py` | Ported with this refresh and run by the host tests. Fixed on the way: after a build has merged the overlays into `lng_src/`, the original reports a bad overlay string as a community warning, so `--strict` passes it (original issue #1055). |
 | Original Show Launch Arguments (`neutrino_show_args`) | Ported with this refresh. The preflight shows the exact composed argv and Back stays in the menu with no overflow warning; autolaunch and the real handoff never ask. The question goes through `host::ui().confirmId`, so the platform layer gains no UI dependency. Default off. NOT TESTED on hardware. |
 | Original real media size for CDVDMAN (upstream OPL #1763) | Ported with this refresh. `cdvdman_settings_common` gains `mediaLsnCount` (HTTP tripwires move by 4), `searchfile.c` prefers it over the PVD, and BDM, SMB, MMCE, HDD and HTTP fill it: a ZSO counts by its header, an unmeasured part makes it 0 (keep the PVD). `sbPrepare` clears it. NOT TESTED on hardware. |
+| Original cheat selection memory (upstream OPL #1748) and Neutrino cheats | Ported with this refresh. Select-mode picks are saved by name in the game CFG (`$CheatSelNNN`), master codes stay on, and Neutrino launches get the enabled codes as `-cfg=riptopl-cheats` from all four Neutrino legs. The hand-over is split by layer: `sysNeutrinoHandCheats` (platform) writes the codes it is given, `sbNeutrinoHandCheats` (sources) reads the cheat engine. Fixed on the way: the UDPFS and MMCE Neutrino legs went back to the menu with the cdvdman patch zone still patched, so the next launch's `sbPrepare` failed. NOT TESTED on hardware. |
 | #1044 release build versions | Already covered: every RiptOPL build job checks out with `fetch-depth: 0`. |
 | #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
 | #1047, #998, #1025 | Original-only documentation; nothing to port. |
@@ -41,8 +42,7 @@ row is source/host-tested only; none is hardware-tested.
 Remaining gaps found by this audit:
 - RA mode/host IP/experimental cards and PS1 watch keys in the RA badge, the
   INGAMEDIAG freeze report.
-- Found by comparing the original's host tests with this branch's: cheat
-  selection memory (upstream OPL #1748) and the Neutrino cheat hand-over; the
+- Found by comparing the original's host tests with this branch's: the
   Caduceus achievement browser, Xerabora browser, RA client mode, verified peer,
   RA over TLS and RA over Neutrino; DVR and PC CARD CF.
 

@@ -568,3 +568,4 @@ translations:
   NEUTRINO_SHOW_ARGS: Shfaq argumentet e nisjes
   HINT_NEUTRINO_SHOW_ARGS: Para çdo nisjeje me Neutrino, shfaq çdo argument që do të marrë Neutrino dhe pyet nëse të vazhdojë. Prapa kthehet te menyja pa nisur.
   NEUTRINO_ARGS_CONFIRM: Neutrino do të niset me këto argumente. Ta nis?
+  NEUTRINO_CHEATS_WRITE_FAILED: Lista e mashtrimeve nuk u ruajt dot në dosjen Neutrino, ndaj Neutrino nuk mund ta përdorë. Të niset pa mashtrime?
