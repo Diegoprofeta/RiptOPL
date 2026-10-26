@@ -52,7 +52,7 @@ static void *uncached(void *p) { assert(!intrEnabled);reads++;return p; }
 #define UNCACHED_SEG(p) uncached(p)
 static struct { u16 libpad,libversion;u8 *pad_buf;int vb_count;
  int pos_combo1,pos_combo2,pos_state,pos_frame;u8 combo_type,prev_frame; } Pad_Data;
-static struct { int press,vb_count; } Power_Button;
+static struct { int press,vb_count,latched; } Power_Button;
 static int IGR_Thread_ID=-1, IGR_Intc_ID=-1, padOpen_hooked;
 static int creates, starts, handlers, enables, snapshots, deletes;
 static int createResult=5, startResult=0, handlerResult=7;

@@ -250,7 +250,7 @@ static struct { int GameMode; } cfg;
 #define UNCACHED_SEG(x) (x)
 static struct { u8 *pad_buf; int pos_state,pos_frame,pos_combo1,pos_combo2;
  int libpad,vb_count,prev_frame,combo_type; } Pad_Data;
-static struct { int press,vb_count; } Power_Button;
+static struct { int press,vb_count,latched; } Power_Button;
 static u8 ndin=0x20, poff=0x04, sdin=0x55, scmd=0x55;
 #define CDVD_R_NDIN (&ndin)
 #define CDVD_R_POFF (&poff)

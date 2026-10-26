@@ -801,6 +801,7 @@ static const struct
     int compatModes;
 } sbTitleCompatDefaults[] = {
     {"SLES_511.14", COMPAT_MODE_1}, // Pro Evolution Soccer 2 (Europe): streamed audio breaks without Accurate Reads (upstream OPL #1686)
+    {"SLUS_217.23", COMPAT_MODE_6}, // Fatal Fury: Battle Archives Volume 2 (USA): black screen with IGR's VBLANK_END handler (upstream OPL #1762)
 };
 
 int sbTitleCompatDefault(config_set_t *configSet)

@@ -145,9 +145,11 @@ static void IGR_Thread(void *arg)
     USE_LOCAL_EECORE_CONFIG;
     u32 Cop0_Perf;
 
-    // Place our IGR thread in WAIT state
-    // It will be woken up by our IGR interrupt handler
-    SleepThread();
+    // Wait for the VBLANK_END handler, which latches the request, stops DMA/GS, suspends every
+    // other thread and raises this one to priority 0 before waking it. Recheck the latch so a stray
+    // wakeup cannot start a shutdown nobody asked for.
+    while (Pad_Data.combo_type == 0x00)
+        SleepThread();
 
     DPRINTF("IGR thread woken up!\n");
 
@@ -350,14 +352,21 @@ static int IGR_Intc_Handler(int cause)
     {
         ee_kmode_enter();
 
-        // Check power button press
-        if ((*CDVD_R_NDIN & 0x20) && (*CDVD_R_POFF & 0x04)) {
-            // Increment button press counter
-            Power_Button.press++;
+        // Check power button press. The CDVD power-off status is a LATCHED condition, not a new
+        // press each frame: if the cancel below takes longer than a frame to clear it, counting it
+        // every frame turns one press (power off) into a false double press (reset). Count a press
+        // when the status appears and re-arm once it clears, which keeps real double presses.
+        {
+            int pending = (*CDVD_R_NDIN & 0x20) && (*CDVD_R_POFF & 0x04);
+            if (pending && !Power_Button.latched) {
+                if (Power_Button.press < 2)
+                    Power_Button.press++;
 
-            // Cancel poweroff to catch the second button press
-            *CDVD_R_SDIN = 0x00;
-            *CDVD_R_SCMD = 0x1B;
+                // Cancel poweroff to catch the second button press
+                *CDVD_R_SDIN = 0x00;
+                *CDVD_R_SCMD = 0x1B;
+            }
+            Power_Button.latched = pending;
         }
 
         // Start VBlank counter when power button is pressed
@@ -488,6 +497,7 @@ void Install_IGR(void)
         ee_thread_t thread_param = {0};
         Power_Button.press = 0;
         Power_Button.vb_count = 0;
+        Power_Button.latched = 0;
         Pad_Data.pad_buf = NULL;
         Pad_Data.vb_count = 0;
         Pad_Data.combo_type = 0x00;
