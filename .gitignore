@@ -16,6 +16,8 @@
 *.map
 *.o
 *.patch
+# The embedded mmceman fork records its fixes as patches (test_mmceman_fork.py reads them).
+!modules/mmce/mmceman/patches/*.patch
 *.rej
 *.s
 *.zip
