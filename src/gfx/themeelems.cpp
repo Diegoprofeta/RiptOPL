@@ -18,6 +18,7 @@
 #include "include/gamesource.h"
 #include "include/vcdsupport.h" // vcdDisplayName -- display-only VCD game-ID prefix hide
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
+#include "include/saveicon.h"   // SaveIcon: the selected game's 3D save icon
 #ifdef RETROACHIEVEMENTS
 #include "include/rabadge.h" // RA: mark over the cover
 #endif
@@ -1905,6 +1906,68 @@ void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *th
     // elem->endElem = &endBasic; does the job
 
     elem->drawElem = &drawItemsList;
+}
+
+// SaveIcon (original fork-gaps OR1): the selected game's save icon -- from the game's own VMC, else a
+// memory card -- spinning in the element's box. Draws nothing while 3D Save Icons is off, on a row
+// that is not a game, or when no save is found, so a theme can place it unconditionally.
+void drawSaveIcon(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)
+{
+    char vmc[2][SAVEICON_PATH_SIZE];
+    const char *startup = NULL;
+    item_list_t *support = NULL;
+    float xScale;
+    int w, h, cx, cy, ps1 = 0, ember = 0;
+
+    vmc[0][0] = vmc[1][0] = '\0';
+    if (gEnableSaveIcons && menu != NULL && menu->item != NULL && item != NULL)
+        support = static_cast<item_list_t *>(menu->item->userdata);
+    if (support != NULL && support->mode != APP_MODE) {
+        int view = libListRowView(support, item->item.id);
+        startup = gsOf(support)->startup(support, item->item.id);
+        ps1 = view == LIB_VIEW_PS1;
+        // PS1: the source names the game's dedicated VMC folder (and, on HDD, the partition to mount).
+        if (ps1 ? !gsOf(support)->ps1SaveDir(support, item->item.id, startup, &ember, vmc[0], sizeof(vmc[0]), vmc[1], sizeof(vmc[1])) :
+                  view != LIB_VIEW_ISO)
+            startup = NULL;
+    }
+    if (startup != NULL && !ps1 && config != NULL) {
+        // The same path the VMC check opens: <device prefix>VMC<separator><name>.bin.
+        char *prefix = gsOf(support)->rowPrefix(support, item->item.id);
+        for (int slot = 0; slot < 2 && prefix != NULL; slot++) {
+            char name[32];
+            int disabled = 0, len = (int)strlen(prefix);
+            name[0] = '\0';
+            configGetVMC(config, name, sizeof(name), slot);
+            configGetVMCDisable(config, slot, &disabled);
+            if (name[0] != '\0' && !disabled)
+                snprintf(vmc[slot], sizeof(vmc[slot]), "%sVMC%s%s.bin", prefix, (len > 0 && prefix[len - 1] == '\\') ? "\\" : "/", name);
+        }
+    }
+    if (ps1 && startup != NULL)
+        saveIconSelectPs1(vmc[0], vmc[1], ember);
+    else
+        saveIconSelect(startup, vmc[0], vmc[1], config != NULL);
+    if (startup == NULL)
+        return;
+
+    // The element's box, placed the way rmSetupQuad places an image of that size.
+    w = elem->width > 0 ? elem->width : 64;
+    h = elem->height > 0 ? elem->height : 64;
+    xScale = (elem->scaled & SCALING_RATIO) ? rmWideScale(1024) / 1024.0f : 1.0f;
+    if (elem->aligned & ALIGN_HCENTER)
+        cx = elem->posX;
+    else if (elem->aligned & ALIGN_RIGHT)
+        cx = elem->posX - (int)(w * xScale) / 2;
+    else
+        cx = elem->posX + (int)(w * xScale) / 2;
+    if (elem->aligned & ALIGN_VCENTER)
+        cy = elem->posY;
+    else if (elem->aligned & ALIGN_BOTTOM)
+        cy = elem->posY - h / 2;
+    else
+        cy = elem->posY + h / 2;
+    saveIconDraw(cx, cy, w, h, xScale);
 }
 
 void drawItemText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)

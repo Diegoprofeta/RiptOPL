@@ -452,3 +452,5 @@ translations:
   VMC_REPLACE_REQUIRES_DELETE: Die VMC-Größe zu ändern würde ihre Spielstände löschen. Sichere die vorhandene VMC und nutze Löschen, bevor du eine neue Größe anlegst.
   VMC_CREATE_FAILED: Die VMC konnte nicht angelegt werden. Prüfe Laufwerk, Verbindung und Schreibzugriff. Vorhandene Spielstände wurden nicht ersetzt.
   UDPFS_IP_CONFLICT: Ein anderes Gerät in deinem Netzwerk nutzt die IP-Adresse dieser PS2, also gehen die Antworten des UDPFS-Servers dorthin. Stelle in den Netzwerkeinstellungen eine andere PS2-IP ein.
+  SAVE_ICONS: 3D-Spielstandsymbole
+  HINT_SAVE_ICONS: Zeigt das Spielstandsymbol des gewählten Spiels, sich drehend, wo das Design einen Platz dafür hat. Liest zuerst die VMC des Spiels, dann die Speicherkarten.

@@ -358,3 +358,5 @@ translations:
   PARENLOCK_GAME: Roditeljska zaštita
   PARENLOCK_GAME_HINT: Zahteva lozinku roditeljske zaštite za pokretanje ove igre.
   PARENLOCK_GAME_NO_PASSWORD: Postavite lozinku roditeljske zaštite, inače ova igra neće biti zaključana.
+  SAVE_ICONS: 3D ikone sačuvanih igara
+  HINT_SAVE_ICONS: Prikazuje ikonu sačuvane igre izabrane igre, kako se okreće, gde tema ima mesto za nju. Prvo čita sopstveni VMC igre, pa memorijske kartice.

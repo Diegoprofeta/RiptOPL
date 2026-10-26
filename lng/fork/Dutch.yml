@@ -511,3 +511,5 @@ translations:
   PARENLOCK_GAME: Ouderlijk slot
   PARENLOCK_GAME_HINT: Vraag het wachtwoord van het ouderlijk slot om deze game te starten.
   PARENLOCK_GAME_NO_PASSWORD: Stel een wachtwoord voor het ouderlijk slot in, anders wordt deze game niet vergrendeld.
+  SAVE_ICONS: 3D-savepictogrammen
+  HINT_SAVE_ICONS: Toont het savepictogram van de gekozen game, draaiend, waar het thema er een plek voor heeft. Leest eerst de eigen VMC van de game, daarna de geheugenkaarten.

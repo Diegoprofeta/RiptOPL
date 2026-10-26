@@ -452,3 +452,5 @@ translations:
   PARENLOCK_GAME: Ebeveyn Kilidi
   PARENLOCK_GAME_HINT: Bu oyunu başlatmak için ebeveyn kilidi parolasını iste.
   PARENLOCK_GAME_NO_PASSWORD: Bir ebeveyn kilidi parolası ayarlayın, yoksa bu oyun kilitlenmez.
+  SAVE_ICONS: 3D Kayıt Simgeleri
+  HINT_SAVE_ICONS: Temada yeri varsa seçili oyunun kayıt simgesini dönerek gösterir. Önce oyunun kendi VMC'sini, sonra hafıza kartlarını okur.

@@ -57,7 +57,8 @@ const char *const elementsType[ELEM_TYPE_COUNT] = {
     "BdmIndex",
     "GameCountText",
     "Coverflow",
-    "PSBBNFlow"};
+    "PSBBNFlow",
+    "SaveIcon"};
 
 static void validateBackgroundElems(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_elems_t *mainElems, theme_elems_t *infoElems)
 {
@@ -718,6 +719,10 @@ static int addGUIElem(const char *themePath, config_set_t *themeConfig, theme_t 
                 int size = psbbnFlowSize(gThmScreenWidth, gThmScreenHeight);
                 elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_GAME_IMAGE, gThmScreenWidth - 186, gThmScreenHeight >> 1, ALIGN_CENTER, size, size, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
                 initPsbbnFlow(themePath, themeConfig, theme, elem, name);
+            } else if (!strcmp(elementsType[ELEM_TYPE_SAVE_ICON], type)) {
+                elems->needsSaveIconConfig = 1;
+                elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_SAVE_ICON, gThmScreenWidth >> 1, gThmScreenHeight >> 1, ALIGN_CENTER, 64, 64, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
+                elem->drawElem = &drawSaveIcon;
             }
 
             if (elem) {

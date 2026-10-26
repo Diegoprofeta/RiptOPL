@@ -476,3 +476,5 @@ translations:
   PARENLOCK_GAME: Parental Lock
   PARENLOCK_GAME_HINT: Kinahanglan ang parental lock password aron masugdan kining dula.
   PARENLOCK_GAME_NO_PASSWORD: Pag-set og parental lock password, kay kung dili, dili ma-lock kining dula.
+  SAVE_ICONS: Mga 3D save icon
+  HINT_SAVE_ICONS: Ipakita ang nagtuyok nga save icon sa gipiling dula, kung asa adunay lugar ang tema alang niini. Basahon una ang kaugalingong VMC sa dula, unya ang mga memory card.

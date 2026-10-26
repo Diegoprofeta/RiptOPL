@@ -8,6 +8,7 @@
 #include "include/hddsupport.h"
 #include "include/hddint.h"
 #include "include/cuesupport.h" // Ember rows share the HDD PS1 list with the VCD ones
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/vcdsupport.h" // HDD VCD view: vcdScanDirRoot + vcd_entry_t
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/util.h"
@@ -67,6 +68,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -2831,6 +2834,46 @@ void hddLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
 int hddGetArtArchivePath(item_list_t *itemList, char *out, int outSize)
 {
     return hddInstance()->artArchivePath(itemList, out, outSize);
+}
+
+int HddSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    int i, n;
+    if (gHddSupport.vcdParts == NULL || name == NULL || !ps1RowKind(itemList, id, ember))
+        return 0;
+    i = sourceId(itemList, id);
+    if (gHddSupport.activeVcd(i) == &gHddSupport.emptyVcd || strcmp(gHddSupport.activeVcd(i)->name, name) != 0) {
+        // Favourites can keep a source id from before a refresh. Resolve a unique name, but never
+        // pick an arbitrary partition when names collide.
+        i = -1;
+        for (int candidate = 0; candidate < gHddSupport.vcdGameCount; candidate++) {
+            if (strcmp(gHddSupport.vcdGames[candidate].name, name) == 0) {
+                if (i >= 0)
+                    return 0;
+                i = candidate;
+            }
+        }
+        if (i < 0 || cueIsCueEntry(&gHddSupport.vcdGames[i]) != *ember)
+            return 0;
+    }
+    if (*ember) {
+        char mountSource[APA_IDMAX + 6];
+        snprintf(mountSource, sizeof(mountSource), "hdd0:%s", gHddSupport.vcdParts[i]);
+        if (gHDDPrefix != NULL && !strcmp(gOPLPart, mountSource)) {
+            partition[0] = '\0';
+            return saveIconPs1Directory("pfs0:/", name, 1, directory, directorySize);
+        }
+        n = snprintf(partition, partitionSize, "%s", mountSource);
+        return n > 0 && n < partitionSize && saveIconPs1Directory("pfs1:/", name, 1, directory, directorySize);
+    }
+    // POPSTARTER's VMC home is __common/POPS, whichever partition holds the VCD.
+    if (gHDDPrefix != NULL && !strcmp(gOPLPart, "hdd0:__common")) {
+        partition[0] = '\0';
+        return saveIconPs1Directory("pfs0:/", name, 0, directory, directorySize);
+    }
+    n = snprintf(partition, partitionSize, "hdd0:__common");
+    return n > 0 && n < partitionSize && saveIconPs1Directory("pfs1:/", name, 0, directory, directorySize);
 }
 
 int HddSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

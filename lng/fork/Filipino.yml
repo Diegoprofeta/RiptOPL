@@ -486,3 +486,5 @@ translations:
   PARENLOCK_GAME: Parental Lock
   PARENLOCK_GAME_HINT: Kailangan ang parental lock password para simulan ang larong ito.
   PARENLOCK_GAME_NO_PASSWORD: Magtakda ng parental lock password, kung hindi ay hindi mala-lock ang larong ito.
+  SAVE_ICONS: Mga 3D save icon
+  HINT_SAVE_ICONS: Ipinapakita ang umiikot na save icon ng napiling laro, kung saan may puwesto para dito ang theme. Binabasa muna ang sariling VMC ng laro, saka ang mga memory card.

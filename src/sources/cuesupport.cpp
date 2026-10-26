@@ -27,6 +27,7 @@
 #include "include/host.h"
 #include "include/lang.h"
 #include "include/retrogem.h"
+#include "include/saveicon.h"
 
 // The one CUE support instance (declared in include/cuesupport.h). Constant-initialized: it owns
 // only the extension table the launch-path image probe matches against.
@@ -114,6 +115,31 @@ int cueNameLaunchable(const char *name)
         return 0;
 
     return 1;
+}
+
+// A PS1 game's own folder, where its dedicated VMCs live: <root>POPS<sep><name> for POPSTARTER,
+// <root>EMBER<sep>games<sep><name> for Ember. Declared in saveicon.h; the 3D save icon reads from it.
+int saveIconPs1Directory(const char *root, const char *name, int ember, char *out, int outSize)
+{
+    char base[SAVEICON_PATH_SIZE];
+    int n, len = (int)strlen(root);
+    char sep = len > 0 && root[len - 1] == '\\' ? '\\' : '/';
+
+    if (name == NULL || name[0] == '\0' || strchr(name, '/') != NULL || strchr(name, '\\') != NULL ||
+        strchr(name, ':') != NULL || !strcmp(name, ".") || !strcmp(name, "..") ||
+        (ember && !cueNameLaunchable(name)))
+        return 0;
+    if (strlen(root) + strlen(cueEmberFolder()) + strlen("/games") >= sizeof(base))
+        return 0;
+    if (ember)
+        cueBuildGamesDir(root, base, sizeof(base));
+    else {
+        n = snprintf(base, sizeof(base), "%sPOPS", root);
+        if (n <= 0 || n >= (int)sizeof(base))
+            return 0;
+    }
+    n = snprintf(out, outSize, "%s%c%s", base, sep, name);
+    return n > 0 && n < outSize;
 }
 
 int cueBuildDiscArgument(const char *folder, const char *disc, char *out, int outSize)

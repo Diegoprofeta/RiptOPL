@@ -113,9 +113,11 @@ void rmDrawFramedRect(int x, int y, int w, int h, int border, u64 frameColor, u6
 /** Queues a single color line to be rendered */
 void rmDrawLine(int x1, int y1, int x2, int y2, u64 color);
 
-/** Queues count alpha-blended triangles: xy holds 3 virtual 640x480 points per triangle, colors one
- * gouraud colour per point (alpha 0x80 = opaque). Textured from txt with uv in texels when txt is not
- * NULL (uv may be NULL otherwise). A texture without an alpha channel fades by the first vertex's alpha. */
+/** Queues count triangles: xy holds 3 virtual 640x480 points per triangle, colors one gouraud colour
+ * per point. Textured from txt with uv in texels when txt is not NULL (uv may be NULL otherwise).
+ * rmDrawTriangles draws them opaque; rmDrawBlendedTriangles blends by vertex alpha (0x80 = opaque),
+ * and a texture without an alpha channel fades by the first vertex's alpha. */
+void rmDrawTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors);
 void rmDrawBlendedTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors);
 
 /** Starts the frame - first to call every frame */

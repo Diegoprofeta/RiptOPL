@@ -502,3 +502,5 @@ translations:
   PARENLOCK_GAME: Control parental
   PARENLOCK_GAME_HINT: Cere parola de control parental ca să pornești acest joc.
   PARENLOCK_GAME_NO_PASSWORD: Setează o parolă de control parental, altfel acest joc nu va fi blocat.
+  SAVE_ICONS: Pictograme de salvare 3D
+  HINT_SAVE_ICONS: Arată pictograma de salvare a jocului ales, rotindu-se, acolo unde tema are loc pentru ea. Citește întâi VMC-ul jocului, apoi cardurile de memorie.

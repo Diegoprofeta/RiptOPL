@@ -447,3 +447,5 @@ translations:
   PARENLOCK_GAME: ペアレンタルロック
   PARENLOCK_GAME_HINT: このゲームを起動するのにペアレンタルロックのパスワードを求めます。
   PARENLOCK_GAME_NO_PASSWORD: ペアレンタルロックのパスワードを設定してください。設定しないとこのゲームはロックされません。
+  SAVE_ICONS: 3D セーブアイコン
+  HINT_SAVE_ICONS: テーマに場所があれば、選んだゲームのセーブアイコンを回転させて表示します。まずゲーム自身の VMC を、次にメモリーカードを読みます。

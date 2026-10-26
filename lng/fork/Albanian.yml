@@ -470,3 +470,5 @@ translations:
   PARENLOCK_GAME: Kyçi prindëror
   PARENLOCK_GAME_HINT: Kërkon fjalëkalimin e kyçit prindëror për të nisur këtë lojë.
   PARENLOCK_GAME_NO_PASSWORD: Vendos një fjalëkalim për kyçin prindëror, përndryshe kjo lojë nuk do të kyçet.
+  SAVE_ICONS: Ikonat 3D të ruajtjeve
+  HINT_SAVE_ICONS: Shfaq ikonën e ruajtjes së lojës së zgjedhur, duke u rrotulluar, aty ku tema ka vend për të. Lexon së pari VMC-në e vetë lojës, pastaj kartat e memories.

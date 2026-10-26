@@ -1062,6 +1062,9 @@ public:
     int count(item_list_t *itemList) override;
     int rowView(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    char *rowPrefix(item_list_t *itemList, int id) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
     char *startup(item_list_t *itemList, int id) override;
@@ -1397,6 +1400,29 @@ item_list_t *favGetObject(int initOnly)
     if (initOnly && !(*favInstance()).enabled)
         return NULL;
     return &(*favInstance());
+}
+
+int FavSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    item_list_t ownerView;
+    (void)itemList;
+    const fav_rec_t *entry = gFavSupport.entry(id);
+    if (entry == NULL || (entry->kind != FAV_KIND_VCD && entry->kind != FAV_KIND_CUE))
+        return 0;
+    item_list_t *owner = gFavSupport.ownerView(id, &ownerView);
+    return owner != NULL &&
+           gsOf(owner)->ps1SaveDir(owner, entry->id, name, ember, directory, directorySize, partition, partitionSize) &&
+           *ember == (entry->kind == FAV_KIND_CUE);
+}
+
+char *FavSource::rowPrefix(item_list_t *itemList, int id)
+{
+    item_list_t ownerView;
+    (void)itemList;
+    const fav_rec_t *entry = gFavSupport.entry(id);
+    item_list_t *owner = gFavSupport.ownerView(id, &ownerView);
+    return entry != NULL && owner != NULL ? gsOf(owner)->rowPrefix(owner, entry->id) : NULL;
 }
 
 int FavSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

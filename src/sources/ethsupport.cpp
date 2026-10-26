@@ -8,6 +8,7 @@
 #include "include/netsupport.h" // the shared TCP/IP stack; this file owns only the SMB session on top of it
 #include "include/vcdsupport.h"
 #include "include/cuesupport.h" // ps1FillGameList + the Ember launch helpers
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/util.h"
 #include "include/renderman.h"
@@ -153,6 +154,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     int count(item_list_t *itemList) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
@@ -1158,6 +1161,16 @@ int ethGetNetConfig(u8 *ip_address, u8 *netmask, u8 *gateway)
 int ethGetDHCPStatus(void)
 {
     return netGetDHCPStatus();
+}
+
+int EthSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    return gPCShareName[0] && saveIconPs1Directory(gEthSupport.prefix(), name, *ember, directory, directorySize);
 }
 
 int EthSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

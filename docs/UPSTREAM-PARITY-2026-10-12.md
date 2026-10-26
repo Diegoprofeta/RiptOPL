@@ -29,12 +29,12 @@ row is source/host-tested only; none is hardware-tested.
 | #977/#1023 PSBBN Flow | Ported in `08f6eb0`, plus a fix: disk-theme discovery no longer drops a live built-in selection. |
 | #1005 MMCE end of directory | Ported in `f5fa0b2` as an embedded `mmceman_fork`. The ps2build package also lacked the close-slot and ENOENT fixes, so all four ship. |
 | Original PS1 scan hardening (pre-`b35ff38c`) | Ported with this refresh: a listing cut short, an unreadable game folder or a failed allocation keeps the last-good Ember list, and rows grow on demand instead of reserving 2,048. |
+| Original 3D `SaveIcon` element (fork-gaps OR1) | Ported with this refresh. Each source names a PS1 row's VMC folder through `GameSource::ps1SaveDir`, and favourites resolve VMC paths through `rowPrefix`, so the element adds no upward dependency. Ethernet and HDD rows, Ember and POPSTARTER, are covered as in the original. Default off. NOT TESTED on hardware. |
 | #1044 release build versions | Already covered: every RiptOPL build job checks out with `fetch-depth: 0`. |
 | #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
 | #1047, #998, #1025 | Original-only documentation; nothing to port. |
 
 Remaining gaps found by this audit:
-- The original's 3D `SaveIcon` theme element (needs a triangle draw path).
 - RA mode/host IP/experimental cards and PS1 watch keys in the RA badge, the
   INGAMEDIAG freeze report, `-1` dialog hints and `audit_translations.py`.
 

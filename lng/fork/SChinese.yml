@@ -448,3 +448,5 @@ translations:
   PARENLOCK_GAME: 家长锁
   PARENLOCK_GAME_HINT: 启动这个游戏时需要家长锁密码。
   PARENLOCK_GAME_NO_PASSWORD: 请设置家长锁密码，否则这个游戏不会被锁定。
+  SAVE_ICONS: 3D 存档图标
+  HINT_SAVE_ICONS: 在主题留有位置的地方显示所选游戏的旋转存档图标。先读取游戏的 VMC，再读取记忆卡。

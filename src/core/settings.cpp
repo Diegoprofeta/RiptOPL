@@ -123,6 +123,7 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_VCD_FIRST_DISC_ONLY, &gVcdFirstDiscOnly, 1),       // hide discs 2+ of multi-disc PS1 sets by default (POPSLoader parity)
     intSetting(CONFIG_OPL_VCD_SHOW_PP_POPS, &gVcdShowPpPops, 1),             // list strict PP.<ID>.POPS.<name> one-game HDD partitions by default
     intSetting(CONFIG_OPL_ENABLE_BGART, &gEnableBGArt, 1),                   // fork parity; gEnableArt is 1 above, so this is live
+    intSetting(CONFIG_OPL_ENABLE_SAVE_ICONS, &gEnableSaveIcons, 0),
     intSetting(CONFIG_OPL_ENABLE_ART_TAR, &gEnableArtTar, 0),
     // NO SETTLE BY DEFAULT. This is the number of INACTIVE frames the menu must see before art is
     // even asked for, and it shipped at 8 -- the slowest of the four values the UI offers {0,2,5,8}

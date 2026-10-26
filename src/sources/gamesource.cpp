@@ -31,6 +31,17 @@ void GameSource::launchCue(item_list_t *, const char *, config_set_t *) {}
 int GameSource::rowView(item_list_t *, int) { return 0; }
 int GameSource::sourceId(item_list_t *, int id) { return id; }
 int GameSource::saveCueSettings(item_list_t *, int, const char *, config_set_t *) { return 0; }
+char *GameSource::rowPrefix(item_list_t *itemList, int) { return hasPrefix() ? prefix(itemList) : NULL; }
+int GameSource::ps1SaveDir(item_list_t *, int, const char *, int *, char *, int, char *, int) { return 0; }
+
+int GameSource::ps1RowKind(item_list_t *itemList, int id, int *ember)
+{
+    const base_game_info_t *row = hasGame() ? (const base_game_info_t *)game(itemList, id) : NULL;
+    if (row == NULL)
+        return 0;
+    *ember = cueIsCueEntry(row);
+    return *ember || strcasecmp(row->extension, ".VCD") == 0;
+}
 
 int GameSource::ps1ArtId(item_list_t *itemList, int id, const char *startup, char *out, int outSize)
 {

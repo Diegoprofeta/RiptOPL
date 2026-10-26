@@ -6,6 +6,7 @@
 #include "include/supportbase.h"
 #include "include/udpfssupport.h"
 #include "include/cuesupport.h" // combined POPSTARTER/Ember PS1 view
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/vcdsupport.h"
 #include "include/libview.h" // libViewActive / libListViewActive -- which list this page shows
 #include "include/folderbrowse.h"
@@ -202,6 +203,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     int needsUpdate(item_list_t *itemList) override;
     int update(item_list_t *itemList) override;
     int count(item_list_t *itemList) override;
@@ -1002,6 +1005,16 @@ char *UdpfsSource::prefix(item_list_t *itemList)
     return udpfsPrefix;
 }
 
+
+int UdpfsSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                            char *partition, int partitionSize)
+{
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    return *ember && saveIconPs1Directory(udpfsPrefix, name, 1, directory, directorySize);
+}
 
 int UdpfsSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)
 {

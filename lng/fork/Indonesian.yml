@@ -472,3 +472,5 @@ translations:
   PARENLOCK_GAME: Kunci Orang Tua
   PARENLOCK_GAME_HINT: Minta kata sandi kunci orang tua untuk menjalankan game ini.
   PARENLOCK_GAME_NO_PASSWORD: Atur kata sandi kunci orang tua, kalau tidak game ini tidak akan terkunci.
+  SAVE_ICONS: Ikon Simpanan 3D
+  HINT_SAVE_ICONS: Menampilkan ikon simpanan game yang dipilih, berputar, di tempat yang disediakan tema. Membaca VMC milik game lebih dulu, lalu kartu memori.

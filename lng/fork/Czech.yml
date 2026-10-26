@@ -446,3 +446,5 @@ translations:
   PARENLOCK_GAME: Rodičovský zámek
   PARENLOCK_GAME_HINT: Pro spuštění této hry vyžadovat heslo rodičovského zámku.
   PARENLOCK_GAME_NO_PASSWORD: Nastavte heslo rodičovského zámku, jinak tato hra nebude zamčená.
+  SAVE_ICONS: 3D ikony uložených pozic
+  HINT_SAVE_ICONS: Ukáže otáčející se ikonu uložené pozice vybrané hry tam, kde pro ni má motiv místo. Nejdřív čte vlastní VMC hry, pak paměťové karty.

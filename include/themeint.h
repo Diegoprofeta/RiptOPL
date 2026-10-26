@@ -56,6 +56,7 @@ enum ELEM_ATTRIBUTE_TYPE {
     ELEM_TYPE_GAME_COUNT_TEXT,
     ELEM_TYPE_COVERFLOW,
     ELEM_TYPE_PSBBN_FLOW,
+    ELEM_TYPE_SAVE_ICON,
     ELEM_TYPE_COUNT
 };
 
@@ -109,6 +110,7 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
 void itemsListFit(items_list_t *itemsList, int height);
 void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name, const char *decorator);
 void drawItemText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
+void drawSaveIcon(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
 void drawHintText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
 void drawInfoHintText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
 

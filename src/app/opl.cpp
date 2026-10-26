@@ -212,6 +212,7 @@ int gVcdFirstDiscOnly;             // hide discs 2+ of multi-disc PS1 sets
 char gBootDir[256];                // boot directory (cwd) OPL launched from; "" if undeterminable
 int gEnableILK;
 int gEnableBGArt;
+int gEnableSaveIcons;                    // 3D save icon theme element (SaveIcon)
 int gEnableArtTar;                       // .tar art packs (item 45); no UI until gate D
 int gArtDelay;                           // inactivity frames before art loads; safe default until gate D tunes it
 int gEnableFolderNav;                    // folder browsing in game lists (item 34)

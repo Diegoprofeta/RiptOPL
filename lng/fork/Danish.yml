@@ -463,3 +463,5 @@ translations:
   PARENLOCK_GAME: Forældrelås
   PARENLOCK_GAME_HINT: Kræv forældrelåsens adgangskode for at starte dette spil.
   PARENLOCK_GAME_NO_PASSWORD: Angiv en adgangskode til forældrelåsen, ellers bliver dette spil ikke låst.
+  SAVE_ICONS: 3D-gemmeikoner
+  HINT_SAVE_ICONS: Viser det valgte spils gemmeikon, snurrende, hvor temaet har plads til det. Læser spillets egen VMC først, derefter memorykortene.

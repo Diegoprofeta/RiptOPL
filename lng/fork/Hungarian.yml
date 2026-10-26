@@ -457,3 +457,5 @@ translations:
   PARENLOCK_GAME: Szülői zár
   PARENLOCK_GAME_HINT: A játék indításához kérje a szülői zár jelszavát.
   PARENLOCK_GAME_NO_PASSWORD: Állíts be szülői zár jelszót, különben ez a játék nem lesz zárolva.
+  SAVE_ICONS: 3D mentésikonok
+  HINT_SAVE_ICONS: A kiválasztott játék mentésikonját forogva mutatja ott, ahol a téma helyet ad neki. Előbb a játék saját VMC-jét olvassa, aztán a memóriakártyákat.

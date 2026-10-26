@@ -1546,3 +1546,7 @@ gui_strings:
   string: "Suffix"
 - label: HINT_RA_BADGE_SUFFIX
   string: "Prefix puts \"RA \" before the name. Suffix puts \" [RA]\" after it. Both keep alphabetical order."
+- label: SAVE_ICONS
+  string: "3D Save Icons"
+- label: HINT_SAVE_ICONS
+  string: "Shows the selected game's save icon, spinning, where the theme has a spot for it. Reads the game's own VMC first, then the memory cards."

@@ -61,6 +61,14 @@ public:
     virtual int rowView(item_list_t *itemList, int id);
     virtual int sourceId(item_list_t *itemList, int id);
     virtual int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet);
+    // A PS1 row's own folder, which holds its dedicated VMCs, for the 3D save icon: 1 with directory
+    // set, *ember = 1 for an Ember row, and partition = the APA partition to mount on pfs1: first
+    // ("" when the folder is already reachable). 0 when the source has none. String work only.
+    // The device prefix a row's files live under (its VMC folder), or NULL. Favourites answer for
+    // the source the row belongs to.
+    virtual char *rowPrefix(item_list_t *itemList, int id);
+    virtual int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                           char *partition, int partitionSize);
 
     // RetroGEM art key for a PS1 row on a device page (original #1049): 1 and the row's disc id --
     // disc-verified, or the free filename parse until the queued background verify lands. 0 for
@@ -80,6 +88,8 @@ public:
 
 protected:
     ~GameSource() = default; // sources are static objects; never deleted through the base
+    // 1 and *ember for the PS1 row behind id (an Ember .CUE row or a POPSTARTER .VCD row), else 0.
+    int ps1RowKind(item_list_t *itemList, int id, int *ember);
 
 private:
     unsigned caps_;

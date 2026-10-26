@@ -369,3 +369,5 @@ translations:
   PARENLOCK_GAME: Control parental
   PARENLOCK_GAME_HINT: Pide o contrasinal do control parental para iniciar este xogo.
   PARENLOCK_GAME_NO_PASSWORD: Defina un contrasinal de control parental, ou este xogo non quedará bloqueado.
+  SAVE_ICONS: Iconas 3D de gardados
+  HINT_SAVE_ICONS: Mostra a icona de gardado do xogo escollido, xirando, onde o tema ten sitio para ela. Le primeiro o propio VMC do xogo, e despois as tarxetas de memoria.

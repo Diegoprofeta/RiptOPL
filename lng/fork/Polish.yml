@@ -454,3 +454,5 @@ translations:
   PARENLOCK_GAME: Blokada rodzicielska
   PARENLOCK_GAME_HINT: Wymagaj hasła blokady rodzicielskiej, aby uruchomić tę grę.
   PARENLOCK_GAME_NO_PASSWORD: Ustaw hasło blokady rodzicielskiej, inaczej ta gra nie będzie zablokowana.
+  SAVE_ICONS: Ikony zapisów 3D
+  HINT_SAVE_ICONS: Pokazuje obracającą się ikonę zapisu wybranej gry tam, gdzie motyw ma na nią miejsce. Najpierw czyta własny VMC gry, potem karty pamięci.

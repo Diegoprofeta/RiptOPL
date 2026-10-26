@@ -10,6 +10,7 @@
 #include "include/bdmint.h"
 #include "include/vcdsupport.h"
 #include "include/cuesupport.h" // PS1 rows can belong to either core; the ROW decides
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/folderbrowse.h"
 #include "include/util.h"
@@ -20,9 +21,9 @@
 #include "include/launchdiag.h" // UDPBD hang-triage stage markers (inert unless a udp launch arms them)
 #include "include/system.h"
 #include "modules/vmc/genvmc/genvmc.h" // VMC_CREATE_CONTIGUOUS
-#include "include/ethsupport.h"   // ethGetModulesLoaded() for the UDPBD<->SMB NIC interlock
-#include "include/udpfssupport.h" // udpfsGetModulesLoaded() -- symmetric backstop vs the udpfs_ioman filesystem stack
-#include "include/mmcesupport.h"  // mmceSendGameID() cross-device game-id (#261)
+#include "include/ethsupport.h"        // ethGetModulesLoaded() for the UDPBD<->SMB NIC interlock
+#include "include/udpfssupport.h"      // udpfsGetModulesLoaded() -- symmetric backstop vs the udpfs_ioman filesystem stack
+#include "include/mmcesupport.h"       // mmceSendGameID() cross-device game-id (#261)
 #include "include/extern_irx.h"
 #include "include/cheatman.h"
 #include "include/sound.h"
@@ -1381,6 +1382,8 @@ public:
     int count(item_list_t *itemList) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -2119,6 +2122,18 @@ int bdmFindPartition(char *target, const char *name, int write)
     else
         sprintf(target, "mass0:");
     return 0;
+}
+
+int BdmSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    char root[64];
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    bdmBuildPs1Prefix(root, sizeof(root), itemList->mode);
+    return saveIconPs1Directory(root, name, *ember, directory, directorySize);
 }
 
 int BdmSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

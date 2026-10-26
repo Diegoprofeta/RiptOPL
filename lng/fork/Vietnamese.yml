@@ -492,3 +492,5 @@ translations:
   PARENLOCK_GAME: Khóa phụ huynh
   PARENLOCK_GAME_HINT: Yêu cầu mật khẩu khóa phụ huynh để chạy trò chơi này.
   PARENLOCK_GAME_NO_PASSWORD: Hãy đặt mật khẩu khóa phụ huynh, nếu không trò chơi này sẽ không bị khóa.
+  SAVE_ICONS: Biểu tượng bản lưu 3D
+  HINT_SAVE_ICONS: Hiện biểu tượng bản lưu của trò chơi đang chọn, xoay tròn, ở chỗ chủ đề dành cho nó. Đọc VMC riêng của trò chơi trước, rồi tới thẻ nhớ.

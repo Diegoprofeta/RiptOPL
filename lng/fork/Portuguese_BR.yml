@@ -452,3 +452,5 @@ translations:
   VMC_REPLACE_REQUIRES_DELETE: Mudar o tamanho da VMC apagaria os saves dela. Faça backup da VMC existente e use Apagar antes de criar um tamanho novo.
   VMC_CREATE_FAILED: Não foi possível criar a VMC. Confira a unidade, a conexão e a permissão de gravação. Os saves existentes não foram substituídos.
   UDPFS_IP_CONFLICT: Outro aparelho da sua rede está usando o IP deste PS2, então as respostas do servidor UDPFS vão para ele. Defina outro IP para o PS2 em Configurações de rede.
+  SAVE_ICONS: Ícones de save em 3D
+  HINT_SAVE_ICONS: Mostra o ícone de save do jogo escolhido, girando, onde o tema tem um lugar para ele. Lê primeiro a VMC do jogo, depois os cartões de memória.

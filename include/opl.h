@@ -282,6 +282,7 @@ extern int gVcdShowPpPops;    // enumeration-only: list strict PP.<ID>.POPS.<nam
 extern int gVcdFirstDiscOnly; // hide discs 2+ of multi-disc PS1 sets
 extern char gBootDir[256];    // boot directory (cwd) OPL launched from; "" if undeterminable
 extern int gEnableBGArt;
+extern int gEnableSaveIcons; // 3D save icon theme element (SaveIcon)
 extern int gEnableArtTar;    // .tar art packs (item 45); OFF until the Artwork UI returns
 extern int gArtDelay;        // frames of inactivity before art loads (item 45); safe official-like default until gate D
 extern int gEnableFolderNav; // folder browsing in game lists (item 34)

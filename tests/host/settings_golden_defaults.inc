@@ -65,6 +65,7 @@ CHECK(gVcdHideGameId == (1));
 CHECK(gVcdFirstDiscOnly == (1));
 CHECK(gVcdShowPpPops == (1));
 CHECK(gEnableBGArt == (1));
+CHECK(gEnableSaveIcons == (0));
 CHECK(gEnableArtTar == (0));
 CHECK(gArtDelay == (0));
 CHECK(gEnableFolderNav == (0));

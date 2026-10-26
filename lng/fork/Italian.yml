@@ -448,3 +448,5 @@ translations:
   PARENLOCK_GAME: Blocco genitori
   PARENLOCK_GAME_HINT: Chiedi la password del blocco genitori per avviare questo gioco.
   PARENLOCK_GAME_NO_PASSWORD: Imposta una password del blocco genitori, altrimenti questo gioco non verrà bloccato.
+  SAVE_ICONS: Icone di salvataggio 3D
+  HINT_SAVE_ICONS: Mostra l'icona di salvataggio del gioco scelto, che ruota, dove il tema prevede un posto per essa. Legge prima la VMC del gioco, poi le memory card.
