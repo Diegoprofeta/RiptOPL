@@ -139,6 +139,25 @@ re-registers the selected device driver as bare `mass:` before it resolves that 
 > still returned POPSTARTER to wLaunchELF on an SCPH-39001 in all four SDK flavours. Ember passed on
 > the same iLink disk. Treat iLink POPSTARTER as **wired but not hardware-confirmed** until a later
 > build passes; the statement above documents the argument contract, not a claimed successful boot.
+>
+> **i.LINK after POPSTARTER's IOP reset.** POPSTARTER's i.LINK driver (`usbhdfsd.irx.ilink`)
+> never logs out of the drive, so after POPSTARTER resets the IOP the drive still holds the previous
+> driver's exclusive login for its reconnect hold (at least 1 s) and refuses the new one. The old
+> driver stopped asking after about 0.8 s and never asked again. The driver now shipped in `POPS/`
+> keeps asking for up to 5 s, waits for the drive to become ready, and offers it only once it is.
+> It also corrects the reversed SBP-2 data direction, three manager recovery defects, transfer byte
+> limits and sector counts, matches completions to their requests, unwinds a failed combined
+> startup, accepts extended SCSI GOOD status and reports a bus reset consistently across transmit
+> and response waits ([audit](ILINK_CODE_AUDIT_2026-10-22.md)). It is **27,145 bytes**; every
+> earlier build (21,609, 22,025, 23,452, 27,081 bytes) is treated as stale.
+> Copy this release's whole `POPS/` folder to the iLink drive: with **VCD BDMA Apply on Launch** on,
+> a card still holding an old driver then gets the new one at the next iLink launch, because the
+> size no longer matches. If the drive's `POPS/` still has an old file, RiptOPL does not copy it: it
+> warns *The device's POPS folder has old BDMA drivers -- copy this release's POPS folder there.*,
+> leaves the card as it is, and the launch goes ahead with the card's current driver.
+> RiptOPL's embedded `iLinkman` and `IEEE1394_bd` modules, and the `IEEE1394_bd_mini.irx` that
+> replaces Neutrino's own in the release kit, are built from the same corrected sources in `modules/ilink/`.
+> Source- and host-tested only; not yet confirmed on hardware.
 
 Where `POPSTARTER.ELF` is loaded from is controlled by **PS Emulation Settings →
 POPSTARTER.ELF Path**. The old device picker is gone. The path field displays **`<not set>`** until
@@ -391,7 +410,7 @@ Work down this ladder; each step isolates a different stage (from the #154 foren
 7. **iLink returns to wLaunchELF?** Inspect the card after the attempt. A successful RiptOPL equip
    leaves `mc?:/POPSTARTER/bdma_config.txt` containing exactly `ilink`, plus `usbd.irx` (48,500 bytes;
    SHA-256 `5EA4818BA1CF5207F6D7CADB4C13B5AFA88C37C260750C21155B079A8C18F369`) and `usbhdfsd.irx`
-   (23,452 bytes; SHA-256 `145CF1C0AF130EA7AC5CEC6696AA7E60B5C66A2AC46B8DEA94DB17BB3B911BCC`). Missing or different files
+   (27,145 bytes; SHA-256 `1A9C1BAAF1DD020E35B75082B630F325B90E884819C743DDD5E1F27F106EFCB6`). Missing or different files
    put the defect on RiptOPL's external-equip side; exact files narrow it to POPSTARTER/BDMA runtime
    reinitialization after the handoff.
 8. **UDPFS Files shows Ember but no VCDs?** Check for uppercase `.VCD` files in the

@@ -13,9 +13,13 @@ PS2 Device Emulator"*. Home: <https://github.com/rickgaiser/neutrino>.
 
 The RiptOPL release package
 normally bundles the official latest build, re-fetched from upstream at publish time (a failed download/extraction can omit it; check the release notes), under Neutrino's
-**AFL-3.0** licence. We add exactly one file to that folder — `config/bsd-udpfsbd.toml`, because
+**AFL-3.0** licence. We add one file to that folder — `config/bsd-udpfsbd.toml`, because
 Neutrino ships `udpfs_bd.irx` without a matching `-bsd` token and RiptOPL launches UDPFS as
-`-bsd=udpfsbd`. Nothing of rickgaiser's is altered or removed.
+`-bsd=udpfsbd` — and replace one module: `modules/IEEE1394_bd_mini.irx`, the i.LINK driver, is
+RiptOPL's build of the same ps2sdk driver (`modules/ilink/IEEE1394_bd`, see its `ORIGIN.txt`). The
+stock driver gives up logging in to an i.LINK drive before the drive lets go of the login held
+across an IOP reset, so i.LINK games never started. Packaging fails rather than ship the stock
+file. Nothing else of rickgaiser's is altered or removed. Not yet confirmed on hardware.
 
 Neutrino is deliberately **UI-agnostic**: it has no interface of its own, and that is exactly what
 makes a front-end like this one possible. RiptOPL is one of several — **[LUNA](https://github.com/dnunezx/LUNA)**

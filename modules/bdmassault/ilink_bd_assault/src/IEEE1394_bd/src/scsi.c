@@ -1,9 +1,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <sysclib.h>
+#include <thbase.h>
 #include <thsemap.h>
 
 #include "include/scsi.h"
+#include "include/sbp2_disk.h"
 #include <bdm.h>
 
 // #define DEBUG  //comment out this line when not debugging
@@ -11,6 +13,37 @@
 
 #define getBI32(__buf)   ((((u8 *)(__buf))[3] << 0) | (((u8 *)(__buf))[2] << 8) | (((u8 *)(__buf))[1] << 16) | (((u8 *)(__buf))[0] << 24))
 #define SCSI_MAX_RETRIES 16
+
+/* Limit warm-up by elapsed time as well as the existing poll count. */
+#define SCSI_READY_TRIES    300
+#define SCSI_READY_RETRY_US (100 * 1000)
+
+
+#define SCSI_READY_BUDGET_US (30 * 1000 * 1000)
+/* Only the bus-reset thread performs warm-up. Include command time, not just
+ * the delays between TEST UNIT READY polls, in its elapsed-time budget. */
+static struct scsi_interface *warmup_interface;
+static iop_sys_clock_t warmup_start;
+
+static int scsiCommandBudget(struct scsi_interface *scsi)
+{
+    iop_sys_clock_t now, diff;
+    u64 ticks;
+    u32 sec, usec, elapsed;
+    scsi->timeout_us = 0;
+    if (scsi != warmup_interface)
+        return 1;
+    GetSystemTime(&now);
+    ticks = (((u64)now.hi << 32) | now.lo) - (((u64)warmup_start.hi << 32) | warmup_start.lo);
+    diff.hi = (u32)(ticks >> 32);
+    diff.lo = (u32)ticks;
+    SysClock2USec(&diff, &sec, &usec);
+    elapsed = sec * 1000000 + usec;
+    if (elapsed >= SCSI_READY_BUDGET_US)
+        return 0;
+    scsi->timeout_us = SCSI_READY_BUDGET_US - elapsed;
+    return 1;
+}
 
 typedef struct _inquiry_data
 {
@@ -60,6 +93,8 @@ static int scsi_cmd(struct block_device *bd, unsigned char cmd, void *buffer, in
     comData[0] = cmd;
     comData[4] = cmd_size;
 
+    if (!scsiCommandBudget(scsi))
+        return -1;
     return scsi->queue_cmd(scsi, comData, 12, buffer, buf_size, 0);
 }
 
@@ -102,6 +137,7 @@ static int scsi_cmd_rw_sector(struct block_device *bd, u64 lba, const void *buff
 {
     unsigned char comData[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     struct scsi_interface *scsi = (struct scsi_interface *)bd->priv;
+    scsi->timeout_us = 0;
 
     M_DEBUG("scsi_cmd_rw_sector - 0x%08x%08x %p 0x%04x\n", U64_2XU32(&lba), buffer, sectorCount);
 
@@ -144,9 +180,16 @@ static int scsi_warmup(struct block_device *bd)
     M_PRINTF("Product: %.16s\n", id.product);
     M_PRINTF("Revision: %.4s\n", id.revision);
 
+    int tries = 0;
     while ((stat = scsi_cmd_test_unit_ready(bd)) != 0) {
         M_PRINTF("ERROR: scsi_cmd_test_unit_ready %d\n", stat);
+        if (++tries >= SCSI_READY_TRIES || !scsiCommandBudget(scsi)) {
+            M_PRINTF("ERROR: device not ready after %d tries\n", tries);
+            return -1;
+        }
+        DelayThread(SCSI_READY_RETRY_US);
 
+        memset(&sd, 0, sizeof(sense_data));
         stat = scsi_cmd_request_sense(bd, &sd, sizeof(sense_data));
         if (stat != 0) {
             M_PRINTF("ERROR: scsi_cmd_request_sense %d\n", stat);
@@ -172,9 +215,20 @@ static int scsi_warmup(struct block_device *bd)
 
     bd->sectorSize = getBI32(&rcd.block_length);
     bd->sectorOffset = 0;
-    bd->sectorCount = getBI32(&rcd.last_lba);
-    M_PRINTF("%u %u-byte logical blocks: (%uMB / %uMiB)\n", bd->sectorCount, bd->sectorSize, bd->sectorCount / ((1000 * 1000) / bd->sectorSize), bd->sectorCount / ((1024 * 1024) / bd->sectorSize));
+    // READ CAPACITY returns the last valid LBA, not a count.
+    bd->sectorCount = (u64)(u32)getBI32(&rcd.last_lba) + 1;
 
+    // RiptOPL: a zero block length would divide by zero below and in every consumer (#1018).
+    if (bd->sectorSize == 0 || bd->sectorSize > XFER_BLOCK_SIZE) {
+        M_PRINTF("ERROR: unsupported block length %u\n", bd->sectorSize);
+        return -1;
+    }
+
+    M_PRINTF("0x%08x%08x %u-byte logical blocks: (%uMB / %uMiB)\n", U64_2XU32(&bd->sectorCount), bd->sectorSize,
+             (u32)(bd->sectorCount / ((1000 * 1000) / bd->sectorSize)), (u32)(bd->sectorCount / ((1024 * 1024) / bd->sectorSize)));
+
+    // The ORB length field and the shared write buffer are bounded in bytes.
+    scsi->max_sectors = XFER_BLOCK_SIZE / bd->sectorSize;
     return 0;
 }
 
@@ -260,7 +314,7 @@ static int scsi_stop(struct block_device *bd)
 //
 // Public functions
 //
-void scsi_connect(struct scsi_interface *scsi)
+int scsi_connect(struct scsi_interface *scsi)
 {
     int i;
 
@@ -272,11 +326,25 @@ void scsi_connect(struct scsi_interface *scsi)
 
             bd->priv = scsi;
             bd->name = scsi->name;
-            scsi_warmup(bd);
+            // RiptOPL: publish the device only once it answered, is ready and has a geometry. The
+            // SDK ignored scsi_warmup's result and connected a drive whose inquiry, readiness or
+            // capacity had failed, so BDM and POPSTARTER read through a device with no sector size
+            // (#1018). A failed drive frees its slot; the next bus reset tries it again.
+            warmup_interface = scsi;
+            GetSystemTime(&warmup_start);
+            int result = scsi_warmup(bd);
+            warmup_interface = NULL;
+            scsi->timeout_us = 0;
+            if (result != 0) {
+                M_PRINTF("ERROR: device not offered to BDM\n");
+                bd->priv = NULL;
+                return -1;
+            }
             bdm_connect_bd(bd);
-            break;
+            return 0;
         }
     }
+    return -1;
 }
 
 void scsi_disconnect(struct scsi_interface *scsi)

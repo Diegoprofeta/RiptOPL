@@ -304,6 +304,7 @@ def verify(args: argparse.Namespace) -> None:
             "EMBER/games/Per-Game-Folder/GAME FILES",
             "neutrino/neutrino.elf",
             "neutrino/config/bsd-udpfsbd.toml",
+            "neutrino/modules/IEEE1394_bd_mini.irx",
             "neutrino/config/bsd-udpfs.toml",
             "neutrino/config/system.toml",
             "PS2-Servers.url",

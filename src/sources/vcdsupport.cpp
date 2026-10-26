@@ -1548,19 +1548,18 @@ static const bdma_pair_sig_t vcdBdmaPairSig[VCD_BDMA_MODE_COUNT] = {
     {48500, 14993}, // mx4sio
     {11841, 19733}, // mmce
     {42749, 21837}, // ata
-    {48500, 21609}, // iLink
+    {48500, 27145}, // iLink (21609 before the #1018/#1042 driver fixes, so older card pairs re-equip)
     {76365, 34508}  // UDPFS Alpha
 };
 
-// Keep recognizing the older iLink pair accepted before the shipped-size fix.
-// This preserves the existing size-based policy; it does not authenticate a module.
+// Size-based, as before; it does not authenticate a module. Only the CURRENT pair matches: every
+// older iLink driver (21609, the legacy 23452, ...) loses its login after POPSTARTER's IOP reset, so a
+// card holding one must re-equip rather than be accepted.
 static int vcdBdmaPairMatches(int mode, int usbdSize, int hdfsdSize)
 {
     if (mode <= VCD_BDMA_FAT32 || mode >= VCD_BDMA_MODE_COUNT)
         return 0;
-    if (usbdSize == vcdBdmaPairSig[mode].usbdSize && hdfsdSize == vcdBdmaPairSig[mode].hdfsdSize)
-        return 1;
-    return mode == VCD_BDMA_ILINK && usbdSize == 48500 && hdfsdSize == 23452;
+    return usbdSize == vcdBdmaPairSig[mode].usbdSize && hdfsdSize == vcdBdmaPairSig[mode].hdfsdSize;
 }
 
 // Returns file size in bytes, or -1 if absent / unreadable.

@@ -100,6 +100,8 @@ def main():
         raise ValueError("source checkout changed during build")
     stage.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(elf, stage / "RIPTOPL.ELF")
+    # The i.LINK driver the ELF embeds also replaces the Neutrino bundle's copy (package_edition.py).
+    shutil.copyfile(output / "bin/IEEE1394_bd_mini_fork.irx", stage / "IEEE1394_bd_mini.irx")
     sdk = Path(os.environ.get("PS2BUILD_HOME", shutil.which("ps2build") or "")).resolve()
     if sdk.is_file():
         sdk = sdk.parent
@@ -111,6 +113,7 @@ def main():
         "components": yaml.safe_load((sdk / "versions.yaml").read_text()) if (sdk / "versions.yaml").exists() else {},
         "definition_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "elf_sha256": hashlib.sha256(elf.read_bytes()).hexdigest(),
+        "ilink_bd_sha256": hashlib.sha256((stage / "IEEE1394_bd_mini.irx").read_bytes()).hexdigest(),
         "version": (ROOT / "asm/opl_version.h").read_text().strip(),
         "run_url": os.environ.get("GITHUB_SERVER_URL", "https://github.com") + "/" +
             os.environ.get("GITHUB_REPOSITORY", "NathanNeurotic/RiptOPL") + "/actions/runs/" + os.environ.get("GITHUB_RUN_ID", "local"),

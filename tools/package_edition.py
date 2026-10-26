@@ -65,6 +65,14 @@ def package(edition, neutrino_archive):
                 raise ValueError("Neutrino archive contains a link")
         subprocess.run([extractor, "x", "-y", "-o" + str(kit / "neutrino"), str(neutrino_archive)], check=True, stdout=subprocess.DEVNULL)
         shutil.copyfile(ROOT / "ship/neutrino/bsd-udpfsbd.toml", kit / "neutrino/config/bsd-udpfsbd.toml")
+        # i.LINK: Neutrino's own IEEE1394_bd_mini.irx loses its login after an IOP reset (original
+        # #1018). Replace it with RiptOPL's build of the same driver -- the one the ELF embeds -- and
+        # refuse to package if upstream stopped shipping the file bsd-ilink.toml loads.
+        ilink = kit / "neutrino/modules/IEEE1394_bd_mini.irx"
+        ours = built / "IEEE1394_bd_mini.irx"
+        if not ilink.is_file() or hashlib.sha256(ours.read_bytes()).hexdigest() != manifest["ilink_bd_sha256"]:
+            raise ValueError("cannot replace neutrino/modules/IEEE1394_bd_mini.irx (upstream file or RiptOPL build missing)")
+        shutil.copyfile(ours, ilink)
         shortcuts = {name: name for name in ("PS2-Servers.url", "OrbitPS2-Manager.url", "OPL-PS1-AIO-Converter-GUI.url", "PS2RD-CHT-Manager.url")}
         shortcuts["android-udpfs-server.url"] = "udpfs-server.url"
         for target, source in shortcuts.items():

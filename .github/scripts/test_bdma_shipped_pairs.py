@@ -47,19 +47,20 @@ int main() {
         pairSize[1]=-1;assert(!vcdBdmaManualPairMatches(mode));
         markerMode=mode;assert(!vcdBdmaEnvironmentValid(mode));
     }
-    pairSize[0]=48500;pairSize[1]=23452;markerMode=VCD_BDMA_ILINK;markerExists=true;
-    assert(vcdBdmaEnvironmentValid(VCD_BDMA_ILINK));
-    markerExists=false;assert(vcdBdmaManualPairMatches(VCD_BDMA_ILINK));
-    for(int other=1;other<VCD_BDMA_MODE_COUNT;++other)
-        if(other!=VCD_BDMA_ILINK)assert(!vcdBdmaManualPairMatches(other));
-    --pairSize[0];assert(!vcdBdmaManualPairMatches(VCD_BDMA_ILINK));
-    assert(!vcdBdmaPairMatches(-1,48500,23452)&&!vcdBdmaPairMatches(7,48500,23452));
+    /* Every older iLink driver loses its login after the IOP reset: a card holding one re-equips. */
+    const int staleIlink[]={21609,23452,21977,22025,22185,27081};
+    for(int stale:staleIlink) {
+        pairSize[0]=48500;pairSize[1]=stale;markerMode=VCD_BDMA_ILINK;markerExists=true;
+        assert(!vcdBdmaEnvironmentValid(VCD_BDMA_ILINK));
+        markerExists=false;assert(!vcdBdmaManualPairMatches(VCD_BDMA_ILINK));
+    }
+    assert(!vcdBdmaPairMatches(-1,48500,27145)&&!vcdBdmaPairMatches(7,48500,27145));
     pairSize[0]=pairSize[1]=-1;assert(vcdBdmaEnvironmentValid(0));
     pairSize[0]=48500;assert(!vcdBdmaEnvironmentValid(0));
     cardExists=false;assert(!vcdBdmaEnvironmentValid(1)&&!vcdBdmaManualPairMatches(1));
     assert(!vcdBdmaEnvironmentValid(-1)&&!vcdBdmaEnvironmentValid(7));
     assert(!vcdBdmaManualPairMatches(0)&&!vcdBdmaManualPairMatches(7));
-    puts("PASS: all six shipped BDMA pairs accepted by actual validators; family/marker/missing/truncated pairs refused");
+    puts("PASS: all six shipped BDMA pairs accepted by actual validators; stale iLink, family/marker/missing/truncated pairs refused");
 }
 '''.replace('@TABLE@',table).replace('@FUNCTIONS@','\n'.join(function(s) for s in ['static int vcdBdmaPairMatches(', 'static int vcdBdmaEnvironmentValid(', 'static int vcdBdmaManualPairMatches('])).replace('@SIZES@','{'+','.join('{'+','.join(map(str,p))+'}' for p in sizes)+'}')
 with tempfile.TemporaryDirectory() as tmp:
