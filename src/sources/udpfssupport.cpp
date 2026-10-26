@@ -13,6 +13,8 @@
 #include "include/renderman.h"
 #include "include/themes.h"
 #include "include/textures.h"
+#include "include/texcache.h"
+#include "include/artindex.h"
 #include "include/ioman.h"
 #include "include/system.h"
 #include "include/extern_irx.h"
@@ -27,6 +29,7 @@
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h>
 #include <delaythread.h>
+#include <errno.h>
 
 // udpfs is a network FILESYSTEM device: the iomanX device "udpfs:" is served by the udpfs_ioman IRX
 // chain (smap -> ministack(ip=) -> udpfs_ioman). Games are read straight off "udpfs:/" and boot through
@@ -44,6 +47,12 @@ static int udpfsIomanModLoaded = 0;
 static int udpfsWaitingForServer = 0; // the last scan got no answer from the server; see udpfsSetWaitingForServer
 static int udpfsThemesScanned = 0;    // THM is registered once per active UDPFS session, after THM opens
 static int udpfsPs1Scanned = 0;       // a PS1-view scan has reached the server this session; see udpfsNeedsUpdate
+// The share's spelling of ART: a case-sensitive server keeps "art" and "ART" apart. Resolved once per
+// session by udpfsDiscoverArtFolder, never per image.
+static const char *const udpfsArtCaseNames[8] = {
+    "ART", "ARt", "ArT", "Art", "aRT", "aRt", "arT", "art"};
+static volatile unsigned int udpfsArtCaseIndex = 0;
+static int udpfsArtCaseChecked = 0;
 
 // Another device answering for this PS2's IP (udpfs_ioman devctl, value shared with udpfs_ioman.c).
 // The scan runs on the IO thread, but guiWarning draws, so the scan only queues the text and the GUI
@@ -266,11 +275,11 @@ void UdpfsSupport::clearGameLists()
 static void udpfsSetWaitingForServer(int waiting)
 {
     udpfsWaitingForServer = waiting;
-    // Keep the lightweight background poll alive until THM itself has been opened successfully.
-    // The server root/game folders can become usable slightly before udpfs:/THM does; without this,
-    // a failed first THM attempt drops back to the normal cadence and, with Automatic Refresh off,
-    // is never retried for the rest of the session.
-    (*udpfsInstance()).updateDelay = (waiting || !udpfsThemesScanned) ? MENU_UPD_DELAY_GENREFRESH : UDPFS_MODE_UPDATE_DELAY;
+    // Keep the lightweight background poll alive until THM and ART resolution complete. The server
+    // root/game folders can become usable slightly before those folders; without this, a failed first
+    // attempt drops back to the normal cadence and, with Automatic Refresh off, is never retried for
+    // the rest of the session (original #1036/#1037).
+    (*udpfsInstance()).updateDelay = (waiting || !udpfsThemesScanned || !udpfsArtCaseChecked) ? MENU_UPD_DELAY_GENREFRESH : UDPFS_MODE_UPDATE_DELAY;
 }
 
 void UdpfsSource::init(item_list_t *itemList)
@@ -286,6 +295,8 @@ void UdpfsSource::init(item_list_t *itemList)
     udpfsBase = "udpfs:";
     udpfsThemesScanned = 0;
     udpfsPs1Scanned = 0;
+    udpfsArtCaseIndex = 0;
+    udpfsArtCaseChecked = 0;
     // The games live directly at the device root; no share/prefix to prepend (unlike SMB).
     snprintf(udpfsPrefix, sizeof(udpfsPrefix), "udpfs:/");
     gUdpfsSupport.resetScanState();
@@ -369,13 +380,132 @@ static void udpfsDiscoverThemes(void)
     udpfsSetWaitingForServer(udpfsWaitingForServer);
 }
 
+// 1 if udpfs:/<variant> lists at least one entry, 0 if empty, -1 if it cannot be opened (a file named
+// "art", say), -2 on a read error (transient: discovery must retry, not latch).
+static int udpfsArtFolderHasFiles(unsigned int variant)
+{
+    char path[64];
+    DIR *dir;
+    struct dirent *entry;
+    int found = 0;
+
+    snprintf(path, sizeof(path), "%s%s", udpfsPrefix, udpfsArtCaseNames[variant]);
+    dir = opendir(path);
+    if (dir == NULL)
+        return -1;
+    for (;;) {
+        errno = 0;
+        entry = readdir(dir);
+        if (entry == NULL) {
+            if (errno != 0)
+                found = -2;
+            break;
+        }
+        if (entry->d_name[0] != '.') {
+            found = 1;
+            break;
+        }
+    }
+    closedir(dir);
+    return found;
+}
+
+// Resolve the share's ART spelling once its root can be fully listed. The ordinary path stays
+// udpfs:/ART, including on new shares; if a case-sensitive server has both an empty auto-created ART
+// and a populated art, the populated one wins. A single canonical ART costs no extra directory open.
+// Discovery always ends by re-arming covers parked as missing and the art index: first-connect probes
+// can memoize both before the server's ART is known (original #1037).
+static void udpfsDiscoverArtFolder(void)
+{
+    DIR *root;
+    struct dirent *entry;
+    unsigned int candidates = 0;
+    unsigned int chosen = 0;
+    int readError;
+
+    if (udpfsArtCaseChecked || !udpfsIomanModLoaded || !udpfsServerAnswers())
+        return;
+
+    root = opendir(udpfsPrefix);
+    if (root == NULL)
+        return;
+    for (;;) {
+        errno = 0;
+        if ((entry = readdir(root)) == NULL)
+            break;
+        if (strlen(entry->d_name) == 3 && strcasecmp(entry->d_name, "ART") == 0) {
+            for (unsigned int i = 0; i < 8; i++) {
+                if (strcmp(entry->d_name, udpfsArtCaseNames[i]) == 0) {
+                    candidates |= 1u << i;
+                    break;
+                }
+            }
+        }
+    }
+    readError = errno;
+    closedir(root);
+    if (readError != 0)
+        return; // an incomplete root listing must not become a permanent answer
+
+    if (candidates != 0 && !(candidates & 1u)) {
+        for (unsigned int i = 1; i < 8; i++) {
+            if (candidates & (1u << i)) {
+                chosen = i;
+                break;
+            }
+        }
+    }
+    if (candidates & (candidates - 1u)) {
+        int chosenState = udpfsArtFolderHasFiles(chosen);
+        if (chosenState == -2)
+            return;
+        if (chosenState <= 0) {
+            unsigned int fallback = chosenState == 0 ? chosen : 0;
+            int haveFallback = chosenState == 0;
+            int foundPopulated = 0;
+            for (unsigned int i = 0; i < 8; i++) {
+                if (i == chosen || !(candidates & (1u << i)))
+                    continue;
+                int candidateState = udpfsArtFolderHasFiles(i);
+                if (candidateState == -2)
+                    return;
+                if (candidateState > 0) {
+                    chosen = i;
+                    foundPopulated = 1;
+                    break;
+                }
+                if (candidateState == 0 && !haveFallback) {
+                    fallback = i;
+                    haveFallback = 1;
+                }
+            }
+            if (!foundPopulated)
+                chosen = haveFallback ? fallback : 0;
+        }
+    } else if (chosen != 0) {
+        // A single noncanonical entry must really be a directory; d_type is unreliable here.
+        int chosenState = udpfsArtFolderHasFiles(chosen);
+        if (chosenState == -2)
+            return;
+        if (chosenState < 0)
+            chosen = 0;
+    }
+
+    udpfsArtCaseChecked = 1;
+    udpfsArtCaseIndex = chosen;
+    cacheInvalidateFailMemo();
+    artIndexInvalidate();
+    udpfsSetWaitingForServer(udpfsWaitingForServer);
+}
+
 int UdpfsSource::needsUpdate(item_list_t *itemList)
 {
     int result = 0;
 
     // Keep this before every view-specific early return so a remembered PS1/Ember page cannot
-    // suppress theme discovery.
+    // suppress theme or ART discovery.
     udpfsDiscoverThemes();
+    udpfsDiscoverArtFolder();
 
     // PS1/Ember view: force a rescan once on toggle, then refresh on toggle only (skip disc heuristics).
     if (host::library().consumeDirty(itemList->mode))
@@ -435,6 +565,10 @@ int UdpfsSource::update(item_list_t *itemList)
     // even when it "succeeds" -- the Ember scan reports an unreachable server as "no titles" -- so
     // such a pass always keeps polling, and the next poll rescans once the server answers.
     answeredBefore = udpfsServerAnswers();
+
+    // Resolve an existing lowercase ART before sbCreateFolders creates an empty ART beside it.
+    if (answeredBefore)
+        udpfsDiscoverArtFolder();
 
     // Latch only once the server can hear us. A scan that ran before it answered used to latch here, so
     // the CD/DVD folders were never created for the rest of the boot.
@@ -763,9 +897,10 @@ int UdpfsSource::image(item_list_t *itemList, char *folder, int isRelative, char
 {
     char path[256];
 
-    if (isRelative)
-        snprintf(path, sizeof(path), "%s%s/%s_%s", udpfsPrefix, folder, value, suffix);
-    else
+    if (isRelative) {
+        const char *imageFolder = strcmp(folder, "ART") == 0 ? udpfsArtCaseNames[udpfsArtCaseIndex] : folder;
+        snprintf(path, sizeof(path), "%s%s/%s_%s", udpfsPrefix, imageFolder, value, suffix);
+    } else
         snprintf(path, sizeof(path), "%s%s_%s", folder, value, suffix);
     int r = texDiscoverLoad(resultTex, path, -1);
     // ART LIVES IN THE ART FOLDER, and nowhere else. A PS1 cover is

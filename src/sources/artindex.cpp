@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <errno.h>
 #include <kernel.h>
 
 #include "include/opl.h"
@@ -162,7 +163,16 @@ ArtIndex::Dir *ArtIndex::build(const char *dir)
     int overflowed = 0;
     struct dirent *e;
 
-    while ((e = readdir(d)) != NULL) {
+    // POSIX readdir returns NULL for BOTH end-of-directory and an I/O error. UDPFS can lose a
+    // session halfway through this sweep: publishing the entries collected before that failure as a
+    // complete index would hide every omitted cover. Only a completed listing may answer "absent".
+    int readError = 0;
+    for (;;) {
+        errno = 0;
+        if ((e = readdir(d)) == NULL) {
+            readError = errno;
+            break;
+        }
         if (e->d_name[0] == '\0' || e->d_name[0] == '.')
             continue;
 
@@ -175,6 +185,14 @@ ArtIndex::Dir *ArtIndex::build(const char *dir)
     }
 
     closedir(d);
+
+    if (readError != 0) {
+        // A failed sweep is unknown, not empty: the slot stays invalid and probes use the device.
+        sweepFailed_++;
+        LOG("ARTINDEX: '%s' listing failed (errno %d) -- probing files directly\n", dir, readError);
+        free(hashes);
+        return slot;
+    }
 
     if (overflowed) {
         // A partial listing is the one thing that could make this answer "absent" about a file that
