@@ -7,7 +7,7 @@ legacy Makefile/EE-core/IOP flags. Edition-specific RA and assets stay in build_
 CONFIGURATIONS = (
     "standard", "pademu0", "ds5", "extras", "extras_ds5", "dtl", "diag",
     "debug", "debug_uart", "ingame_debug", "iopcore_debug", "eesio_debug",
-    "ingame_debug_uart", "iopcore_debug_uart",
+    "ingame_debug_uart", "iopcore_debug_uart", "ingamediag",
 )
 
 
@@ -37,6 +37,25 @@ def apply_configuration(config, configuration):
         main["embed_irx"] = ["udnl-t300:udnl" if v == "udnl" else v for v in main["embed_irx"]]
     if configuration == "diag":
         add(main, "defines", "__OPLDIAG")
+    if configuration == "ingamediag":
+        # In-game freeze report: the IGR combo after a freeze writes mc0:/RIPTFRZ.TXT (see
+        # ee_core/src/freeze_diag.c). RA runs IGR from VBLANK, so the two cannot be combined.
+        if "RETROACHIEVEMENTS" in core.get("defines", []):
+            raise ValueError("ingamediag is not supported with RetroAchievements")
+        for target in config["targets"]:
+            if target["name"] in ("riptopl", "eecore", "cdvdfsv") or target["name"].endswith("_cdvdman"):
+                add(target, "defines", "INGAMEDIAG")
+        add(core, "sources", "ee_core/src/freeze_diag.c")
+        # The formatter is ee_core's, shared so the host test covers what runs on the IOP.
+        config["targets"].append({
+            "name": "freezediag", "type": "iop",
+            "sources": ["modules/iopcore/freezediag/freezediag.c", "ee_core/src/freeze_diag_format.c"],
+            "include_dirs": ["modules/iopcore/freezediag", "ee_core/include", "asm"],
+            "defines": ["FREEZEDIAG_BUILD=OPL_VERSION"], "cflags": ["-include", "opl_version.h"],
+            "headers": list(targets["resetspu"]["headers"]),
+            "imports_lst": "modules/iopcore/freezediag/imports.lst",
+        })
+        add(main, "embed_irx", "freezediag")
     if "debug" in configuration:
         uart = configuration.endswith("_uart")
         add(main, "defines", "__DEBUG", "__OPLDIAG", "TTY_PPC_UART" if uart else "TTY_UDP")

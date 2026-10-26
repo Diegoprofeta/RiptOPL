@@ -161,7 +161,12 @@ int LoadOPLModule(int id, int mode, int arg_len, const char *args)
                     DBGCOL(0x00FFDC, MODMGR, "IRX loading error (from MODLOAD)");
                     delay(3);
                 }
-                if (result == -400) {
+                // The freeze report writer is optional: it must never trap IGR in the OOM loop.
+                if (result == -400
+#ifdef INGAMEDIAG
+                    && id != OPL_MODULE_ID_FREEZEDIAG
+#endif
+                ) {
                     DBGCOL_BLNK(1, 0x0000FF, true, MODMGR, "MODLOAD: out of IOP Memory"); // yellow blinking
                     while (1)
                         ;

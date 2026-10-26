@@ -38,6 +38,9 @@
 #include "cheat_api.h"
 #include "cd_igr_rpc.h"
 #include "coreconfig.h"
+#ifdef INGAMEDIAG
+#include "freeze_diag_core.h"
+#endif
 
 /* scePadPortOpen & scePad2CreateSocket prototypes */
 static int (*scePadPortOpen)(int port, int slot, void *addr);
@@ -153,6 +156,19 @@ static void IGR_Thread(void *arg)
 
     DPRINTF("IGR thread woken up!\n");
 
+#ifdef INGAMEDIAG
+    // Freeze report: the handler has suspended the game's threads, so this records their state.
+    if (Pad_Data.combo_type == IGR_COMBO_START_SELECT) {
+        unsigned int pad_state = 0, pad_frame = 0;
+
+        if (Pad_Data.pad_buf != NULL) {
+            pad_state = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_state];
+            pad_frame = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_frame];
+        }
+        FreezeDiag_Begin(Pad_Data.libpad, pad_state, pad_frame);
+    }
+#endif
+
     if (EnableDebug)
         DBGCOL(0xFFFFFF, IGR, "Thread WakeUp");
 
@@ -169,11 +185,17 @@ static void IGR_Thread(void *arg)
         if (EnableDebug)
             DBGCOL(0xFF8000, IGR, "oplIGRShutdown()");
 
+#ifdef INGAMEDIAG
+        // Freeze report: fetch the IOP's record, then shut down with a deadline. A stuck IOP must
+        // not hang IGR before the report is written. Without a report this is oplIGRShutdown(0).
+        FreezeDiag_FetchAndShutdown();
+#else
 #ifdef RETROACHIEVEMENTS
         // The shutdown RPC belongs to OPL CDVDMAN, absent in physical-disc mode.
         if (config->GameMode != DISC_MODE)
 #endif
             oplIGRShutdown(0);
+#endif
 
         if (EnableDebug)
             DBGCOL(0x0000FF, IGR, "Reset IOP");
@@ -236,6 +258,11 @@ static void IGR_Thread(void *arg)
         SifInitIopHeap();
         LoadFileInit();
         sbv_patch_enable_lmb();
+
+#ifdef INGAMEDIAG
+        // Freeze report: write it with the clean IOP, which FreezeDiag_Write reboots again after.
+        FreezeDiag_Write();
+#endif
 
         if (EnableDebug)
             DBGCOL(0x800000, IGR, "Execute RESETSPU.IRX");
@@ -303,6 +330,10 @@ static int IGR_Intc_Handler(int cause)
 
 #ifdef RETROACHIEVEMENTS
     RA_OnVblank(); /* RetroAchievements: per-frame memory snapshot */
+#endif
+
+#ifdef INGAMEDIAG
+    g_freeze_diag_polls++;
 #endif
 
     if (Pad_Data.pad_buf != NULL) {

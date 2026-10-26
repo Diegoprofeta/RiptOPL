@@ -26,7 +26,18 @@ class ConfigurationTests(unittest.TestCase):
         for edition in editions.EDITIONS:
             for configuration in editions.CONFIGURATIONS:
                 with self.subTest(edition=edition, configuration=configuration):
+                    if edition == "ra" and configuration == "ingamediag":
+                        with self.assertRaisesRegex(ValueError, "RetroAchievements"):
+                            self.targets(edition, configuration)
+                        continue
                     targets = self.targets(edition, configuration)
+                    diag = configuration == "ingamediag"
+                    self.assertEqual("freezediag" in targets, diag)
+                    self.assertEqual("freezediag" in targets["riptopl"]["embed_irx"], diag)
+                    self.assertEqual("ee_core/src/freeze_diag.c" in targets["eecore"]["sources"], diag)
+                    for target in targets.values():
+                        self.assertEqual("INGAMEDIAG" in target.get("defines", []), diag and (
+                            target["name"] in ("riptopl", "eecore", "cdvdfsv") or target["name"].endswith("_cdvdman")))
                     for name in ("riptopl", "eecore"):
                         self.assertEqual("RETROACHIEVEMENTS" in targets[name]["defines"], edition == "ra")
                         self.assertEqual("PADEMU" in targets[name]["defines"], configuration != "pademu0")

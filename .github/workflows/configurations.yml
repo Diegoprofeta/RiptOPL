@@ -36,6 +36,7 @@ jobs:
           - {edition: korium, configuration: eesio_debug}
           - {edition: korium, configuration: ingame_debug_uart}
           - {edition: korium, configuration: iopcore_debug_uart}
+          - {edition: korium, configuration: ingamediag}
           - {edition: ra, configuration: pademu0}
           - {edition: ra, configuration: ingame_debug}
           - {edition: incebtion, configuration: extras_ds5}
