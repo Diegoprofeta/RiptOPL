@@ -154,6 +154,8 @@ static int thmIsFavKindFamily(theme_t *theme, theme_elems_t *elems)
            elems == &theme->favsAppsMainElems || elems == &theme->favsAppsInfoElems;
 }
 
+static int loadedFontSize = FONT_SIZE_DEFAULT; // the size gTheme's list geometry was computed for
+
 static int isFilteredDecoratorCoverImage(theme_t *theme, mutable_image_t *gameImage)
 {
     theme_elems_t *groups[12] = {&theme->mainElems, &theme->infoElems, &theme->appsMainElems, &theme->appsInfoElems,
@@ -1380,8 +1382,30 @@ static int thmLoad(const char *themePath)
     if (curT == NULL)
         cacheCancelPendingImageLoads(); // first load: pre-cacheInit, nothing queued -- plain no-op drain
     gTheme = newT;
+    loadedFontSize = gFontSize;
     thmFree(curT);
     return 0;
+}
+
+int thmRefreshFontSize(void)
+{
+    if (gTheme == NULL || loadedFontSize == gFontSize)
+        return 0;
+
+    // Font changes only alter geometry. Keep artwork and disk-theme resources in place.
+    theme_elems_t *families[] = {
+        &gTheme->mainElems, &gTheme->infoElems, &gTheme->appsMainElems, &gTheme->appsInfoElems,
+        &gTheme->favsMainElems, &gTheme->favsInfoElems, &gTheme->vcdMainElems, &gTheme->vcdInfoElems,
+        &gTheme->favsVcdMainElems, &gTheme->favsVcdInfoElems, &gTheme->favsAppsMainElems, &gTheme->favsAppsInfoElems};
+    for (theme_elems_t *family : families) {
+        for (theme_element_t *elem = family->first; elem != NULL; elem = elem->next) {
+            if (elem->type == ELEM_TYPE_ITEMS_LIST && elem->extended != NULL)
+                itemsListFit((items_list_t *)elem->extended, elem->height);
+        }
+        thmComputeTextRooms(family);
+    }
+    loadedFontSize = gFontSize;
+    return 1;
 }
 
 int ThemeCatalog::readEntryCallback(int index, const char *path, const char *separator, const char *name, unsigned char d_type)

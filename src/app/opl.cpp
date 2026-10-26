@@ -238,6 +238,7 @@ int gEnableArt;
 int gEnableDiscArt;
 int gEnableLogoArt;
 int gWideScreen;
+int gFontSize = FONT_SIZE_DEFAULT;
 int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
 int gXOff;
 int gYOff;
@@ -1668,6 +1669,9 @@ void miniInit(int mode)
         if (ret & CONFIG_OPL) {
             config_set_t *configOPL = configGetByType(CONFIG_OPL);
 
+            // Autolaunch error dialogs use the same menu font size as the interactive menu.
+            configGetInt(configOPL, CONFIG_OPL_FONT_SIZE, &gFontSize);
+            gFontSize = fntValidFontSize(gFontSize);
             configGetInt(configOPL, CONFIG_OPL_PS2LOGO, &gPS2Logo);
             configGetStrCopy(configOPL, CONFIG_OPL_EXIT_PATH, gExitPath, sizeof(gExitPath));
             configGetInt(configOPL, CONFIG_OPL_HDD_SPINDOWN, &gHDDSpindown);

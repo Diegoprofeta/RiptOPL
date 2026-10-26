@@ -106,6 +106,7 @@ void drawMenuIcon(struct menu_list *menu, struct submenu_list *item, config_set_
 void drawMenuText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
 void drawBDMIndex(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
 void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
+void itemsListFit(items_list_t *itemsList, int height);
 void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name, const char *decorator);
 void drawItemText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);
 void drawHintText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem);

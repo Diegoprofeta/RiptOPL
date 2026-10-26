@@ -993,6 +993,14 @@ static void refreshMenuPosition(void)
         selected_item = cur;
 }
 
+void menuResetPageStarts(void)
+{
+    for (menu_list_t *cur = menu; cur != NULL; cur = cur->next) {
+        if (cur->item != NULL)
+            cur->item->pagestart = cur->item->current;
+    }
+}
+
 void submenuRebuildCache(submenu_list_t *submenu)
 {
     while (submenu) {

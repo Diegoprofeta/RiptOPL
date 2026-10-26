@@ -16,6 +16,7 @@ CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));
 CHECK(gEnableLogoArt == (1));
 CHECK(gWideScreen == (1));
+CHECK(gFontSize == (FONT_SIZE_DEFAULT));
 CHECK(gVMode == (0));
 CHECK(gXOff == (0));
 CHECK(gYOff == (0));

@@ -1924,6 +1924,14 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
     }
 }
 
+// Rows that fit the list's height at the current menu font size; a list always shows at least one.
+void itemsListFit(items_list_t *itemsList, int height)
+{
+    itemsList->displayedItems = height / MENU_ITEM_HEIGHT;
+    if (itemsList->displayedItems < 1)
+        itemsList->displayedItems = 1;
+}
+
 void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name, const char *decorator)
 {
     char elemProp[64];
@@ -1936,7 +1944,7 @@ void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *th
     if (elem->height == DIM_UNDEF)
         elem->height = theme->usedHeight - (MENU_POS_V + HINT_HEIGHT);
 
-    itemsList->displayedItems = elem->height / MENU_ITEM_HEIGHT;
+    itemsListFit(itemsList, elem->height);
     LOG("THEMES ItemsList %s: displaying %d elems, item height: %d\n", name, itemsList->displayedItems, elem->height);
 
     itemsList->decorator = NULL;

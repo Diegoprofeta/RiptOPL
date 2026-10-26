@@ -223,6 +223,9 @@ void thmTriggerCoverflowAnim(int dir);
 void thmInit(void);
 void thmReinit(const char *path);
 void thmReloadScreenExtents(void);
+// Recompute list rows and text rooms for the current menu font size (original #1038). Caller holds
+// guiLock. 1 when the geometry changed.
+int thmRefreshFontSize(void);
 int thmAddElements(char *path, const char *separator, int forceRefresh);
 const char *thmGetValue(void);
 GSTEXTURE *thmGetTexture(unsigned int id);

@@ -497,7 +497,8 @@ void FontSystem::updateAspectRatioLocked(void)
         if (fonts_[i].isValid) {
             cacheFlush(&fonts_[i]);
             // TODO: this seems correct, but the rest of the OPL UI (i.e. spacers) doesn't seem to be correctly scaled.
-            FT_Set_Char_Size(fonts_[i].face, fonts_[i].fontSize * 64, fonts_[i].fontSize * 64, fDPI * ws, fDPI * hs);
+            int size = fntScaleFontSize(fonts_[i].fontSize);
+            FT_Set_Char_Size(fonts_[i].face, size * 64, size * 64, fDPI * ws, fDPI * hs);
         }
     }
 }
@@ -556,10 +557,11 @@ int FontSystem::renderString(int id, int x, int y, short aligned, size_t width, 
         }
     }
 
+    int fontSize = fntScaleFontSize(fonts_[id].fontSize);
     if (aligned & ALIGN_VCENTER) {
-        y += rmScaleY(fonts_[id].fontSize - 4) >> 1;
+        y += rmScaleY(fontSize - 4) >> 1;
     } else {
-        y += rmScaleY(fonts_[id].fontSize - 2);
+        y += rmScaleY(fontSize - 2);
     }
 
     run.quad.color = colour;
@@ -685,10 +687,11 @@ int FontSystem::renderString(int id, int x, int y, short aligned, size_t width, 
         }
     }
 
+    int fontSize = fntScaleFontSize(fonts_[id].fontSize);
     if (aligned & ALIGN_VCENTER) {
-        y += rmScaleY(fonts_[id].fontSize - 4) >> 1;
+        y += rmScaleY(fontSize - 4) >> 1;
     } else {
-        y += rmScaleY(fonts_[id].fontSize - 2);
+        y += rmScaleY(fontSize - 2);
     }
 
     run.quad.color = colour;
@@ -970,6 +973,18 @@ void fntInit()
 void fntEnd()
 {
     gFonts.end();
+}
+
+int fntScaleFontSize(int baseSize)
+{
+    // Themes can deliberately use larger titles or smaller labels. Preserve those sizes.
+    if (baseSize == FNTSYS_DEFAULT_SIZE) {
+        if (gFontSize == FONT_SIZE_SMALL)
+            return 15;
+        if (gFontSize == FONT_SIZE_LARGE)
+            return 19;
+    }
+    return baseSize;
 }
 
 int fntLoadFile(char *path, int fontSize)

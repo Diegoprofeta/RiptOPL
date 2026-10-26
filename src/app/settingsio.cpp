@@ -1455,6 +1455,7 @@ void _loadConfig()
             config_set_t *configOPL = configGetByType(CONFIG_OPL);
 
             settingsLoad(configOPL); // every plain key; the special cases below (recovery combo, clamps, migrations) follow
+            gFontSize = fntValidFontSize(gFontSize);
 
 
             if (getKeyPressed(KEY_TRIANGLE) && getKeyPressed(KEY_CROSS)) {

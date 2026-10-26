@@ -8,6 +8,24 @@ constexpr int FNT_ERROR = (-1);
 
 constexpr int FNTSYS_DEFAULT_SIZE = 17;
 
+// Menu font size (original #1038): applies to text using FNTSYS_DEFAULT_SIZE, translated and
+// fallback fonts included. Theme fonts with an explicit point size keep it.
+enum {
+    FONT_SIZE_SMALL = 0,
+    FONT_SIZE_DEFAULT,
+    FONT_SIZE_LARGE,
+    FONT_SIZE_COUNT
+};
+
+/** Menu fonts use 15/17/19 px. Other theme-requested point sizes stay unchanged. */
+int fntScaleFontSize(int baseSize);
+
+/** A stored size outside FONT_SIZE_* reads as Default. */
+inline int fntValidFontSize(int size)
+{
+    return (size >= FONT_SIZE_SMALL && size < FONT_SIZE_COUNT) ? size : FONT_SIZE_DEFAULT;
+}
+
 /** Initializes the font subsystem */
 void fntInit();
 

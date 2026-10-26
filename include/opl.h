@@ -43,6 +43,7 @@ extern "C" {
 #include <debug.h>
 #include <ps2smb.h>
 #include "config.h"
+#include "fntsys.h"
 
 #include "include/hddsupport.h"
 #include "include/supportbase.h"
@@ -342,7 +343,8 @@ extern int gEnableArt;
 extern int gEnableDiscArt; // ItemIcon/ICO disc artwork; independent of cover art
 extern int gEnableLogoArt; // per-game LGO logo artwork; independent of cover, disc and boot logo
 extern int gWideScreen;
-extern int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
+extern int gFontSize; // FONT_SIZE_* (fntsys.h)
+extern int gVMode;    // 0 - Auto, 1 - PAL, 2 - NTSC
 extern int gXOff;
 extern int gYOff;
 extern int gOverscan;
@@ -447,7 +449,7 @@ void initSupport(item_list_t *itemList, int mode, int force_reinit);
 
 void setDefaultColors(void);
 
-#define MENU_ITEM_HEIGHT 19
+#define MENU_ITEM_HEIGHT (fntScaleFontSize(FNTSYS_DEFAULT_SIZE) + 2)
 
 #include "include/menusys.h"
 

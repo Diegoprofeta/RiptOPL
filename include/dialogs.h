@@ -26,6 +26,7 @@ enum UI_ITEMS {
     UICFG_ENABLE_ANALOG_NAV,
     UICFG_ART_DELAY,
     UICFG_WIDESCREEN,
+    UICFG_FONT_SIZE, // original #1038: Interface page Font Size (FONT_SIZE_*)
     UICFG_AUTOREFRESH,
     UICFG_VMODE,
     UICFG_XOFF,

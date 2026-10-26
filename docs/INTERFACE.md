@@ -18,6 +18,17 @@ hides them. Back and L1/R1 keep edits for the session; **Save Changes** keeps th
 
 ---
 
+## Menu font size
+
+**Settings → Interface → Font Size.** Choose **Small**, **Default** or **Large**.
+
+The size change applies immediately and is saved with your settings. Standard menu text uses
+15, 17 or 19 pixels, with list rows and dialog spacing adjusted to match. Theme and language fonts
+using the standard 17-pixel size follow this choice, and so does a `font_CJK.ttf` fallback.
+Explicit custom theme point sizes stay unchanged.
+
+---
+
 ## Folder browsing
 
 **Settings → General & System → Browse Folders in Game List.** Off by default.

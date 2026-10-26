@@ -442,6 +442,11 @@ void Gui::updateScrollSpeed()
 void Gui::updateScreenScale()
 {
     fntUpdateAspectRatio();
+    lock();
+    // A shorter page must still show the selection when returning from Settings.
+    if (thmRefreshFontSize())
+        menuResetPageStarts();
+    unlock();
 }
 
 void Gui::showToast(const char *text)
