@@ -29,7 +29,9 @@ public:
 
 private:
     struct ra_badge_slot *slotFor(item_list_t *support);
-    static int watchListExists(const char *prefix, const char *serial);
+    static const char *rowPrefix(item_list_t *support, int idx);
+    static int vcdKey(item_list_t *support, int idx, const char *prefix, char *out, int outSize);
+    static int watchListExists(const char *prefix, const char *serial, int localOnly);
 
     /* Keyed on MODE_COUNT: the fork has more device lists than upstream's
        four, and a four-slot table mis-attributes lists across devices. */

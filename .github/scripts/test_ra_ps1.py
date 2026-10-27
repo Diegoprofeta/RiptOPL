@@ -461,3 +461,133 @@ int main(void) {
     puts("PASS: PS1 read windows, unaligned and last-byte reads, failed read suppresses frame, recovery and trailer");
 }
 ''')
+
+    # Compile the production badge cache against real directories. PS1 artwork and settings still
+    # use the VCD filename; only the RA watch files use the P key.
+    header = re.sub(r'^#include.*$', '', (root/'include/rabadge.h').read_text(), flags=re.M)
+    badge_source = re.sub(r'^#include.*$', '', (root/'src/sources/rabadge.cpp').read_text(), flags=re.M)
+    run('badge_ps1', r'''
+/* constexpr: compiled as C++, like the source */
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#define RETROACHIEVEMENTS 1
+#define MODE_COUNT 15
+#define FAV_MODE 13
+#define LIB_VIEW_PS1 1
+#define ISO_GAME_NAME_MAX 160
+#define FAV_KIND_VCD 1
+struct item_list { int mode; };
+typedef struct item_list item_list_t;
+typedef struct { char extension[8]; } base_game_info_t;
+static int gRATelemetry=1, gRABadges=1, gRABadgeSuffix=0, view=1, favkind=1, favmode=0, gVcdHideGameId;
+static char name[32]="First", startup[32]="First", full[256], usbPrefix[]="mass0:/games/";
+static base_game_info_t game={".VCD"};
+static item_list_t usb={0}, favorite={FAV_MODE};
+struct GameSource {
+    bool hasPrefix() const {return this==&usbSource;}
+    bool hasGame() const {return this==&usbSource;}
+    char *prefix(item_list_t *x) {(void)x;return usbPrefix;}
+    void *game(item_list_t *x,int i) {(void)x;(void)i;return &::game;}
+    char *name(item_list_t *x,int i) {(void)x;(void)i;return ::name;}
+    char *startup(item_list_t *x,int i) {(void)x;(void)i;return ::startup;}
+    static GameSource usbSource, favSource;
+};
+GameSource GameSource::usbSource, GameSource::favSource;
+static GameSource *gsOf(item_list_t *x) {return x->mode==FAV_MODE ? &GameSource::favSource : &GameSource::usbSource;}
+struct FavSupport {
+    item_list_t *ownerView(int i,item_list_t *v) {(void)i;v->mode=favmode;return v;}
+};
+static FavSupport gFavSupport;
+namespace host {
+struct Library { int listRowView(item_list_t *x,int i) {(void)x;(void)i;return view;} };
+static Library theLibrary;
+static Library &library() {return theLibrary;}
+}
+static const char *vcdDisplayNameForRow(item_list_t *x,int i,const char *text) {
+    (void)x;(void)i;
+    return gVcdHideGameId && view==LIB_VIEW_PS1 && !strncmp(text,"SLUS_012.15.",12) ? text+12 : text;
+}
+static int favGetItemKind(int i){(void)i;return favkind;}
+static int favGetItemSourceMode(int i){(void)i;return favmode;}
+static int bdmModeIsUSB(int m){return m==0;}
+static int raVcdWatchKey(const char *p,char *out,int sz) {
+    snprintf(full,sizeof(full),"%s",p);
+    return snprintf(out,sz,"P123456789abcde")==15?0:-1;
+}
+''' + header + badge_source + r'''
+int main(void) {
+    mkdir("mass0:",0700);
+    mkdir("mass0:/games",0700);
+    mkdir("mass0:/games/RA",0700);
+    FILE *f=fopen("mass0:/games/RA/P123456789abcde.wl","wb");
+    assert(f); fputs("watch",f);fclose(f);
+
+    raBadgeRefresh(&usb,1);
+    assert(raBadgeText(&usb,0) && !strcmp(raBadgeText(&usb,0),"RA First"));
+    assert(!strcmp(full,"mass0:/POPS/First.VCD"));
+
+    raBadgeRefresh(&favorite,1);
+    assert(raBadgeText(&favorite,0) && !strcmp(raBadgeText(&favorite,0),"RA First"));
+
+    gRABadgeSuffix=1;
+    raBadgeRefresh(&usb,1);
+    assert(raBadgeText(&usb,0) && !strcmp(raBadgeText(&usb,0),"First [RA]"));
+    raBadgeRefresh(&favorite,1);
+    assert(raBadgeText(&favorite,0) && !strcmp(raBadgeText(&favorite,0),"First [RA]"));
+    gRABadgeSuffix=0;
+
+    strcpy(name,"SLUS_012.15.First");
+    gVcdHideGameId=1;
+    raBadgeRefresh(&usb,1);
+    assert(!strcmp(raBadgeText(&usb,0),"RA First"));
+    assert(!strcmp(full,"mass0:/POPS/SLUS_012.15.First.VCD"));
+    raBadgeRefresh(&favorite,1);
+    assert(!strcmp(raBadgeText(&favorite,0),"RA First"));
+    gVcdHideGameId=0;
+    raBadgeRefresh(&usb,1);
+    assert(!strcmp(raBadgeText(&usb,0),"RA SLUS_012.15.First"));
+    strcpy(name,"First");
+
+    favkind=2; /* Ember CUE cannot be tracked by the POPStarter bridge. */
+    raBadgeRefresh(&favorite,1);
+    assert(raBadgeText(&favorite,0)==NULL);
+    favkind=FAV_KIND_VCD;favmode=5; /* A VCD favourite from a non-USB device. */
+    raBadgeRefresh(&favorite,1);
+    assert(raBadgeText(&favorite,0)==NULL);
+    favmode=0;
+
+    /* An SMB-only PS1 watch list cannot be loaded by USB POPStarter and must not
+       trigger remote probes or a false local badge. */
+    assert(unlink("mass0:/games/RA/P123456789abcde.wl")==0);
+    assert(mkdir("smb0:RA",0700)==0);
+    f=fopen("smb0:RA/P123456789abcde.wl","wb");
+    assert(f);fputs("remote",f);fclose(f);
+    raBadgeRefresh(&usb,1);
+    assert(raBadgeText(&usb,0)==NULL);
+    raBadgeRefresh(&favorite,1);
+    assert(raBadgeText(&favorite,0)==NULL);
+
+    /* PS2 rows: their serial, the share fallback, and favourites through their source device. */
+    view=0; strcpy(startup,"SLUS_210.65");
+    f=fopen("mass0:/games/RA/SLUS_210.65.wl","wb");
+    assert(f);fputs("watch",f);fclose(f);
+    raBadgeRefresh(&usb,1);
+    assert(raBadgeText(&usb,0) && !strcmp(raBadgeText(&usb,0),"RA First"));
+    raBadgeRefresh(&favorite,1);
+    assert(raBadgeText(&favorite,0) && !strcmp(raBadgeText(&favorite,0),"RA First"));
+    assert(unlink("mass0:/games/RA/SLUS_210.65.wl")==0);
+    f=fopen("smb0:RA/SLUS_210.65.wl","wb");
+    assert(f);fputs("remote",f);fclose(f);
+    raBadgeRefresh(&usb,1);
+    assert(raBadgeText(&usb,0) && !strcmp(raBadgeText(&usb,0),"RA First"));
+
+    gRABadges=0;raBadgeRefresh(&usb,1);
+    assert(raBadgeText(&usb,0)==NULL);
+    puts("PASS: USB PS1/Favorites per-VCD badges, excluded Ember and non-USB VCDs, PS2 and PS2 favourite badges");
+}
+''')

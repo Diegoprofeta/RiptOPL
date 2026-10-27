@@ -32,6 +32,8 @@ int achievementsBusy(void);
 int achievementsRequest(char kind, int page, int filter, const char *target);
 // One ISO image's set, found by its hash.
 int achievementsRequestImage(const char *path, const char *startup);
+// A PS1 VCD's set, found by the hash of the executable its SYSTEM.CNF names.
+int achievementsRequestVcd(const char *path);
 void achievementsSnapshot(achievement_page_t *result);
 // A Caduceus CADB1 page body.
 int achievementsParse(char *reply, achievement_page_t *result);

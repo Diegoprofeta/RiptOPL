@@ -55,6 +55,8 @@ static int read(int, void *out, int size) { int n = file_length < size ? file_le
 static int close(int) { return 0; }
 static int ioPutRequest(int, void *fn) { worker = reinterpret_cast<void (*)(void)>(fn); return queue_fail ? -1 : 0; }
 static int raHashIsoDirect(const char *, const char *, char *out) { hashed++; memset(out, 'b', 32); out[32] = 0; return 0; }
+static int vcdHashed;
+static int raHashVcd(const char *, char *boot, int n, char *out) { vcdHashed++; snprintf(boot, n, "SLUS_012.15"); memset(out, 'c', 32); out[32] = 0; return 0; }
 static int raCaduceusPage(const char *request, unsigned, char *out, int size) {
     strcpy(received, request); snprintf(out, size, "%s", reply); return network_fail ? -1 : 0;
 }
@@ -92,6 +94,9 @@ int main() {
  network_fail = 1; assert(achievementsRequest('G', 0, 0, "0")); worker(); achievementsSnapshot(&page); assert(page.state == ACH_ERROR); network_fail = 0;
  assert(achievementsRequestImage("mass0:DVD/Game.iso", "SLUS_123.45")); worker();
  assert(hashed == 1 && strstr(received, " A 0 0 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb "));
+ /* A PS1 VCD hashes by its boot executable, not as an ISO. */
+ assert(achievementsRequestVcd("mass0:/POPS/Game.VCD")); worker();
+ assert(vcdHashed == 1 && hashed == 1 && strstr(received, " A 0 0 cccccccccccccccccccccccccccccccc "));
  assert(!achievementsRequestImage("", "SLUS_123.45") && !achievementsRequestImage("x", NULL));
  { /* never truncate into another image's identity */
   char longPath[300]; memset(longPath, 'p', 299); longPath[299] = 0;
@@ -257,9 +262,10 @@ ui = r"""
 #include <cstring>
 #include "include/achievements.h"
 enum {KEY_CROSS = 1, KEY_CIRCLE, KEY_START, KEY_SELECT, KEY_SQUARE, KEY_L1, KEY_R1, KEY_UP, KEY_DOWN};
-enum {GUI_SCREEN_MENU = 1, GUI_SCREEN_GAME_MENU = 3, SFX_CURSOR};
+enum {GUI_SCREEN_MENU = 1, GUI_SCREEN_GAME_MENU = 3, GUI_SCREEN_APP_MENU = 4, SFX_CURSOR};
 static int achFromCard, achKind, achPage, achLibraryPage, achFilter, achSelected, achNeedsPage;
 static char achTarget[33], achImagePath[256], achImageStartup[16];
+static int achImageVcd, achReturnScreen = GUI_SCREEN_GAME_MENU, vcdRetries;
 static int achIconIds[3], gSelectButton = KEY_CROSS, key, busy, screen, retries, forgets;
 static achievement_page_t current;
 void achievementsSnapshot(achievement_page_t *out) { *out = current; }
@@ -269,6 +275,7 @@ static int getKey(int k) { return key == k; }
 static void guiSwitchScreen(int id) { screen = id; }
 static void sfxPlay(int) {}
 int achievementsRequestImage(const char *, const char *) { retries++; return 1; }
+int achievementsRequestVcd(const char *) { vcdRetries++; return 1; }
 void achievementsForget(void) { forgets++; }
 """
 uicheck = r"""
@@ -278,6 +285,11 @@ int main() {
  key = KEY_SELECT; menuHandleInputAchievements(); assert(retries == 1 && !achNeedsPage && !forgets);
  busy = 1; key = KEY_SELECT; menuHandleInputAchievements(); assert(retries == 1);
  key = KEY_CIRCLE; menuHandleInputAchievements(); assert(screen == GUI_SCREEN_GAME_MENU); busy = 0;
+ /* A VCD card retries as a VCD and returns to the PS1 menu it came from. */
+ achImageVcd = 1; achReturnScreen = GUI_SCREEN_APP_MENU;
+ key = KEY_SELECT; menuHandleInputAchievements(); assert(vcdRetries == 1 && retries == 1);
+ key = KEY_CIRCLE; menuHandleInputAchievements(); assert(screen == GUI_SCREEN_APP_MENU);
+ achImageVcd = 0; achReturnScreen = GUI_SCREEN_GAME_MENU;
  achFromCard = 0; achKind = 'G'; current.state = ACH_READY; current.count = 1; current.entries[0].id = 42;
  key = KEY_CROSS; menuHandleInputAchievements(); assert(achKind == 'A' && !strcmp(achTarget, "42") && achNeedsPage);
  achNeedsPage = 0; current.kind = 'A'; current.total = 6; achFilter = 3;

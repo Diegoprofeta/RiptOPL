@@ -88,6 +88,12 @@ static int read(int fd, void *o, int n) { (void)fd; (void)o; (void)n; return -1;
 static int close(int fd) { (void)fd; return 0; }
 static int ioPutRequest(int type, void *fn) { (void)type; worker = reinterpret_cast<void (*)(void)>(fn); return 0; }
 static const char *hashOverride;
+static int vcdHashed;
+static int raHashVcd(const char *p, char *boot, int n, char *out)
+{
+    (void)p; vcdHashed++; snprintf(boot, n, "SLUS_012.15");
+    memset(out, 'c', 32); out[32] = 0; return 0;
+}
 static int raHashIsoDirect(const char *p, const char *s, char *out)
 {
     (void)p; (void)s; hashed++;
@@ -115,9 +121,11 @@ int raHttpsGet(const char *host, const char *path, char *buf, int max, int *leng
     return h;
 }
 static int raCaduceusPage(const char *r, unsigned s, char *o, int n) { (void)r; (void)s; (void)o; (void)n; assert(!"no bridge in Xerabora mode"); return -1; }
+static char identifiedSerial[16];
 static int raNetXeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int tsz, int *count)
 {
-    (void)serial;
+    if (hash != NULL)
+        snprintf(identifiedSerial, sizeof(identifiedSerial), "%s", serial ? serial : "");
     *host = 0x0201a8c0;
     /* "RAA1 NO" (1) and "RAA1 WAIT" (-7) answer a hash query; the host-only query (hash NULL)
        never gets them. */
@@ -178,6 +186,9 @@ int main(void)
     /* From a game card: RAQ1 title -> library ID -> the set. */
     assert(achievementsRequestImage("mass0:DVD/NFSU2.iso", "SLUS_210.65")); worker(); achievementsSnapshot(&p);
     assert(hashed == 1 && p.state == ACH_READY && p.gameId == 19040 && p.total == 5);
+    /* A PS1 VCD: hashed by its boot executable, whose name the PC matches by title. */
+    assert(achievementsRequestVcd("mass0:/POPS/Game.VCD")); worker(); achievementsSnapshot(&p);
+    assert(vcdHashed == 1 && hashed == 1 && !strcmp(identifiedSerial, "SLUS_012.15") && p.state == ACH_READY);
     /* Known to RetroAchievements but never played: say so, with title and count. */
     strcpy(idTitle, "Never Played Game");
     assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker(); achievementsSnapshot(&p);

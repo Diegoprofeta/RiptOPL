@@ -28,6 +28,7 @@ static char requestKind;
 static int requestPage, requestFilter;
 static char requestTarget[33];
 static char imagePath[256], imageStartup[16];
+static int imageIsVcd;
 /* Empty fields are significant; strtok would merge them. */
 static char *field(char **cursor, char separator)
 {
@@ -517,6 +518,15 @@ static int raHttpsGameId(const char *hash)
     return achievementsParseGameId(doc + body, length - body);
 }
 
+/* A PS1 VCD hashes by the executable its SYSTEM.CNF names; that boot name then stands in for the
+   serial when the PC identifies the game by title. */
+static int hashImage(char *hash)
+{
+    if (imageIsVcd)
+        return raHashVcd(imagePath, imageStartup, sizeof(imageStartup), hash);
+    return raHashIsoDirect(imagePath, imageStartup, hash);
+}
+
 static void loadXerabora(void)
 {
     char hash[33], title[57];
@@ -524,7 +534,7 @@ static void loadXerabora(void)
     int count, id, rc;
 
     if (imagePath[0]) {
-        if (raHashIsoDirect(imagePath, imageStartup, hash) != 0)
+        if (hashImage(hash) != 0)
             return; /* ACH_ERROR */
         /* The xeRAbora PC serves the list either way: find it first (this
            also brings the network up). */
@@ -623,7 +633,7 @@ static void loadPage(void)
         goto done;
     }
     if (imagePath[0]) {
-        if (raHashIsoDirect(imagePath, imageStartup, hash) != 0)
+        if (hashImage(hash) != 0)
             goto done;
         snprintf(request, sizeof(request), "CADA1 %u A 0 0 %s", serial, hash);
     }
@@ -686,13 +696,14 @@ int achievementsRequest(char kind, int page, int filter, const char *target)
     }
     return 1;
 }
-int achievementsRequestImage(const char *path, const char *startup)
+static int requestImage(const char *path, const char *startup, int isVcd)
 {
     if (busy || sbHashGameBusy() || discCheckBusy() || !path || !*path || !startup ||
         strlen(path) >= sizeof(imagePath) || strlen(startup) >= sizeof(imageStartup))
         return 0;
     requestKind = 'A';
     requestPage = 0;
+    imageIsVcd = isVcd;
     snprintf(imagePath, sizeof(imagePath), "%s", path);
     snprintf(imageStartup, sizeof(imageStartup), "%s", startup);
     busy = 1;
@@ -703,6 +714,14 @@ int achievementsRequestImage(const char *path, const char *startup)
         return 0;
     }
     return 1;
+}
+int achievementsRequestImage(const char *path, const char *startup)
+{
+    return requestImage(path, startup, 0);
+}
+int achievementsRequestVcd(const char *path)
+{
+    return requestImage(path, "", 1);
 }
 void achievementsSnapshot(achievement_page_t *out)
 {

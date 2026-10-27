@@ -216,8 +216,12 @@ Put a stock `POPS/POPSTARTER.ELF` and the `.VCD` games in the USB device's root 
   build removes its own leftover before every BDM VCD launch. The standard build, and SMB and MMCE VCD
   launches, ask before deleting one, then offer **Continue anyway**; declining cancels the launch.
 
-Not yet ported from the original: PS1 list badges and the Caduceus browser for a VCD. Host tests
-cover the hashing, module ownership, the handoff and the reader; **none of this
+- **Menu, badges and browser.** A POPStarter row's menu has the RA entries (Ember rows do not). A
+  tracked USB VCD, and its favourite, carries the RA badge; the badge looks only on the game's own
+  device, as POPStarter's reader does, never on the share. **View achievements** opens the set by the
+  VCD's executable hash and returns to the PS1 menu.
+
+Host tests cover the hashing, module ownership, the handoff and the reader; **none of this
 is tested on a console**, and POPS compatibility is not established by a build.
 
 ## Networking

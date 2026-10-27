@@ -720,6 +720,7 @@ int menuSaveSettings(void)
    the account library ('G') and one game's set ('A'), three rows a page, from a game card or the
    main menu. The I/O thread fetches; this screen draws the latest snapshot. */
 static int achFromCard, achKind, achPage, achLibraryPage, achFilter, achSelected, achNeedsPage;
+static int achImageVcd, achReturnScreen; // the card's image is a PS1 VCD; the menu it was opened from
 static char achTarget[33], achImagePath[256], achImageStartup[16];
 static image_cache_t *achIcons;
 static int achIconIds[ACH_PAGE_SIZE] = {-1, -1, -1}, achIconUids[ACH_PAGE_SIZE];
@@ -733,6 +734,8 @@ static void menuCardText(int x, int y, int w, int h, const char *text, u64 color
 static void menuOpenAchievements(const char *hash)
 {
     achFromCard = hash != NULL;
+    achReturnScreen = GUI_SCREEN_GAME_MENU;
+    achImageVcd = 0;
     achKind = hash ? 'A' : 'G';
     snprintf(achTarget, sizeof(achTarget), "%s", hash ? hash : "0");
     achPage = achLibraryPage = achFilter = achSelected = 0;
@@ -867,7 +870,7 @@ void menuHandleInputAchievements()
     achievementsSnapshot(&page);
     if (getKeyOn(gSelectButton == KEY_CIRCLE ? KEY_CROSS : KEY_CIRCLE) || (getKeyOn(KEY_START) && !achFromCard && achKind == 'G')) {
         if (achFromCard)
-            guiSwitchScreen(GUI_SCREEN_GAME_MENU);
+            guiSwitchScreen(achReturnScreen);
         else if (achKind == 'A') { // back from a game to the library page it was opened from
             achKind = 'G';
             achPage = achLibraryPage;
@@ -881,9 +884,12 @@ void menuHandleInputAchievements()
     if (discCheckBusy() || achNeedsPage)
         return;
     if (getKeyOn(KEY_SELECT)) {
-        if (achFromCard && !strcmp(achTarget, "image"))
-            achievementsRequestImage(achImagePath, achImageStartup);
-        else {
+        if (achFromCard && !strcmp(achTarget, "image")) {
+            if (achImageVcd)
+                achievementsRequestVcd(achImagePath);
+            else
+                achievementsRequestImage(achImagePath, achImageStartup);
+        } else {
             achievementsForget();
             achievementReload();
         }
@@ -1005,6 +1011,14 @@ void menuInitVcdMenu(int isEmber)
     if (isEmber)
         submenuAppendItem(&appMenu, -1, NULL, APP_EMBER_GAME_SETTINGS, _STR_EMBER_GAME_SETTINGS);
     submenuAppendItem(&appMenu, -1, NULL, APP_RENAME, _STR_RENAME);
+#ifdef RETROACHIEVEMENTS
+    // POPStarter VCDs can be tracked (USB only, said on use); Ember launches carry no telemetry.
+    if (!isEmber) {
+        submenuAppendItem(&appMenu, -1, NULL, GAME_RA_CHECK, _STR_RA_CHECK_GAME);
+        submenuAppendItem(&appMenu, -1, NULL, GAME_RA_TEST, _STR_RA_TEST_LINK);
+        submenuAppendItem(&appMenu, -1, NULL, GAME_RA_ACHIEVEMENTS, _STR_CAD_VIEW_ACHIEVEMENTS);
+    }
+#endif
 
     appMenuCurrent = appMenu;
 }
@@ -2358,6 +2372,108 @@ static int gameMenuCoreIsNeutrino(void)
     return coreLoader;
 }
 
+#ifdef RETROACHIEVEMENTS
+static void menuCheckSelectedGameSupport(void)
+{
+    /* RA: hash the selected image, on demand. Hashing every image during the scan would
+       hold the console on the splash screen: the scan runs before the menu appears and
+       each image has to be opened and read.
+       Every refusal SAYS why -- a silent no-op reads as broken, and hashing an image
+       nothing will ever watch is worse. Only the four legs that reach sysLaunchLoaderElf
+       (BDM, ETH/SMB, HDD/APA, MMCE) can ever carry telemetry; the rest exec an external
+       ELF and ee_core never loads. */
+    item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
+    int gid = selected_item->item->current->item.id;
+
+    if (menuSelectedRowView(support) == LIB_VIEW_PS1) {
+        /* PS1 rows never reach ee_core. A USB VCD carries its own telemetry module into
+           POPStarter (rapopslaunch.cpp); Ember rows and other devices are untracked. */
+        item_list_t ownerView;
+        item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(gid, &ownerView) : support;
+        base_game_info_t *g = NULL;
+        const char *prefix = owner != NULL && gsOf(owner)->hasPrefix() ? gsOf(owner)->prefix(owner) : NULL;
+        base_game_info_t favorite;
+
+        if (support->mode == FAV_MODE) {
+            if (favGetItemKind(gid) == FAV_KIND_VCD) {
+                memset(&favorite, 0, sizeof(favorite));
+                snprintf(favorite.name, sizeof(favorite.name), "%s", gsOf(support)->name(support, gid));
+                strcpy(favorite.extension, ".VCD");
+                favorite.format = GAME_FORMAT_ISO;
+                g = &favorite;
+            }
+        } else if (gsOf(support)->hasGame())
+            g = (base_game_info_t *)gsOf(support)->game(support, gid);
+        if (owner != NULL && bdmModeIsUSB(owner->mode) && g && g->name[0] && prefix && !strcasecmp(g->extension, ".VCD")) {
+            if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
+                guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+            else
+                guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        } else
+            guiShowRANotice(_l(_STR_PS1_RA_USB_REQUIRED), NULL);
+    } else if (bdmModeIsPCCF(support->mode)) {
+        // CF owns DEV9 in game, so the RA network modules never load beside it.
+        guiShowRANotice(_l(_STR_PCCF_UNSUPPORTED_GAME), NULL);
+    } else if (support->mode == UDPFS_MODE) {
+        // UDPFS is Neutrino-only in this fork.
+        guiShowRANotice(_l(_STR_RA_NA_UDPFS), NULL);
+    } else if (gameMenuCoreIsNeutrino()) {
+        guiShowRANotice(_l(_STR_RA_NA_NEUTRINO), NULL);
+    } else if (support->mode == HDD_MODE) {
+        /* An HDLoader install has no image file: hash through its partition map, read-only,
+           on the I/O worker. */
+        hdl_game_info_t *g = gsOf(support)->hasGame() ? (hdl_game_info_t *)gsOf(support)->game(support, gid) : NULL;
+        const char *prefix = gsOf(support)->hasPrefix() ? gsOf(support)->prefix(support) : NULL;
+
+        if (g && g->start_sector && g->startup[0] && prefix && prefix[0]) {
+            if (sbHashHdlDeferred(prefix, g->name, g->startup, g->start_sector))
+                guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+            else
+                guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        } else
+            guiShowRANotice(_l(_STR_RA_NA_HDD), _l(_STR_RA_NA_HDD2));
+    } else if (gsOf(support)->hasGame() && gsOf(support)->hasPrefix()) {
+        base_game_info_t *g = (base_game_info_t *)gsOf(support)->game(support, gid);
+        const char *prefix = gsOf(support)->prefix(support);
+
+        if (g != NULL && prefix != NULL && g->format != GAME_FORMAT_FOLDER) {
+            if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
+                guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+            else
+                guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        }
+    }
+}
+
+// A USB VCD's set, from the PS1 menu (or a VCD favourite). Other PS1 rows cannot be tracked.
+static void menuOpenSelectedVcdAchievements(void)
+{
+    item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
+    int gid = selected_item->item->current->item.id;
+    item_list_t ownerView;
+    item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(gid, &ownerView) : support;
+    const char *prefix = owner != NULL && gsOf(owner)->hasPrefix() ? gsOf(owner)->prefix(owner) : NULL;
+    const char *name = gsOf(support)->name(support, gid);
+    const char *colon = prefix ? strchr(prefix, ':') : NULL;
+    char path[256];
+
+    if (owner == NULL || !bdmModeIsUSB(owner->mode) || colon == NULL || name == NULL || !name[0] ||
+        menuSelectedRowView(support) != LIB_VIEW_PS1 || (support->mode == FAV_MODE && favGetItemKind(gid) != FAV_KIND_VCD) ||
+        snprintf(path, sizeof(path), "%.*s/POPS/%s.VCD", (int)(colon - prefix) + 1, prefix, name) >= (int)sizeof(path)) {
+        guiShowRANotice(_l(_STR_CAD_HASH_UNSUPPORTED), NULL);
+        return;
+    }
+    if (achievementsRequestVcd(path)) {
+        snprintf(achImagePath, sizeof(achImagePath), "%s", path);
+        achImageStartup[0] = '\0';
+        menuOpenAchievements("image");
+        achImageVcd = 1;
+        achReturnScreen = GUI_SCREEN_APP_MENU;
+    } else
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+}
+#endif
+
 void menuHandleInputGameMenu()
 {
     if (!gameMenu)
@@ -2391,74 +2507,7 @@ void menuHandleInputGameMenu()
 
 #ifdef RETROACHIEVEMENTS
         if (menuID == GAME_RA_CHECK) {
-            /* RA: hash the selected image, on demand. Hashing every image during the scan would
-               hold the console on the splash screen: the scan runs before the menu appears and
-               each image has to be opened and read.
-               Every refusal SAYS why -- a silent no-op reads as broken, and hashing an image
-               nothing will ever watch is worse. Only the four legs that reach sysLaunchLoaderElf
-               (BDM, ETH/SMB, HDD/APA, MMCE) can ever carry telemetry; the rest exec an external
-               ELF and ee_core never loads. */
-            item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
-            int gid = selected_item->item->current->item.id;
-
-            if (menuSelectedRowView(support) == LIB_VIEW_PS1) {
-                /* PS1 rows never reach ee_core. A USB VCD carries its own telemetry module into
-                   POPStarter (rapopslaunch.cpp); Ember rows and other devices are untracked. */
-                item_list_t ownerView;
-                item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(gid, &ownerView) : support;
-                base_game_info_t *g = NULL;
-                const char *prefix = owner != NULL && gsOf(owner)->hasPrefix() ? gsOf(owner)->prefix(owner) : NULL;
-                base_game_info_t favorite;
-
-                if (support->mode == FAV_MODE) {
-                    if (favGetItemKind(gid) == FAV_KIND_VCD) {
-                        memset(&favorite, 0, sizeof(favorite));
-                        snprintf(favorite.name, sizeof(favorite.name), "%s", gsOf(support)->name(support, gid));
-                        strcpy(favorite.extension, ".VCD");
-                        favorite.format = GAME_FORMAT_ISO;
-                        g = &favorite;
-                    }
-                } else if (gsOf(support)->hasGame())
-                    g = (base_game_info_t *)gsOf(support)->game(support, gid);
-                if (owner != NULL && bdmModeIsUSB(owner->mode) && g && g->name[0] && prefix && !strcasecmp(g->extension, ".VCD")) {
-                    if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
-                        guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
-                    else
-                        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
-                } else
-                    guiShowRANotice(_l(_STR_PS1_RA_USB_REQUIRED), NULL);
-            } else if (bdmModeIsPCCF(support->mode)) {
-                // CF owns DEV9 in game, so the RA network modules never load beside it.
-                guiShowRANotice(_l(_STR_PCCF_UNSUPPORTED_GAME), NULL);
-            } else if (support->mode == UDPFS_MODE) {
-                // UDPFS is Neutrino-only in this fork.
-                guiShowRANotice(_l(_STR_RA_NA_UDPFS), NULL);
-            } else if (gameMenuCoreIsNeutrino()) {
-                guiShowRANotice(_l(_STR_RA_NA_NEUTRINO), NULL);
-            } else if (support->mode == HDD_MODE) {
-                /* An HDLoader install has no image file: hash through its partition map, read-only,
-                   on the I/O worker. */
-                hdl_game_info_t *g = gsOf(support)->hasGame() ? (hdl_game_info_t *)gsOf(support)->game(support, gid) : NULL;
-                const char *prefix = gsOf(support)->hasPrefix() ? gsOf(support)->prefix(support) : NULL;
-
-                if (g && g->start_sector && g->startup[0] && prefix && prefix[0]) {
-                    if (sbHashHdlDeferred(prefix, g->name, g->startup, g->start_sector))
-                        guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
-                    else
-                        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
-                } else
-                    guiShowRANotice(_l(_STR_RA_NA_HDD), _l(_STR_RA_NA_HDD2));
-            } else if (gsOf(support)->hasGame() && gsOf(support)->hasPrefix()) {
-                base_game_info_t *g = (base_game_info_t *)gsOf(support)->game(support, gid);
-                const char *prefix = gsOf(support)->prefix(support);
-
-                if (g != NULL && prefix != NULL && g->format != GAME_FORMAT_FOLDER) {
-                    if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
-                        guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
-                    else
-                        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
-                }
-            }
+            menuCheckSelectedGameSupport();
         } else if (menuID == GAME_RA_ACHIEVEMENTS) {
             // A whole ISO hashes; HDLoader entries and PS1 rows have no image to read here.
             item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
@@ -2647,6 +2696,15 @@ void menuHandleInputAppMenu()
             guiShowPsEmulationSettings();
         } else if (menuID == APP_EMBER_GAME_SETTINGS) {
             guiShowEmberGameSettings();
+#ifdef RETROACHIEVEMENTS
+        } else if (menuID == GAME_RA_CHECK) {
+            menuCheckSelectedGameSupport();
+        } else if (menuID == GAME_RA_TEST) {
+            sbTestPCLinkDeferred();
+            guiShowRANotice(_l(_STR_RA_LOOKING_FOR_PC), NULL);
+        } else if (menuID == GAME_RA_ACHIEVEMENTS) {
+            menuOpenSelectedVcdAchievements();
+#endif
         }
         // so the exit press wont propagate twice
         readPads();
