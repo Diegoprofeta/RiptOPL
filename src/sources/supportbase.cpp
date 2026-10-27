@@ -1068,14 +1068,22 @@ void sbUnprepare(void *pCommon)
     memcpy(pCommon, &cdvdman_settings_common_sample, sizeof(struct cdvdman_settings_common));
 }
 
-static void sbRebuildULCfg(base_game_info_t **list, const char *prefix, int gamecount, int excludeID)
+// ul.cfg lists every USBLD game on the device, so it is never truncated in place: the new list is
+// written to ul.cfg.new and replaces the old one only after every record and the close succeeded.
+// A failed write (full device, removed media) leaves ul.cfg as it was: -1. Drivers that refuse to
+// rename onto an existing file get the old list removed first; if that rename then fails, the new
+// list exists only as ul.cfg.new (rename it on a PC): 1. 0 = ul.cfg holds the new list.
+static int sbRebuildULCfg(base_game_info_t **list, const char *prefix, int gamecount, int excludeID)
 {
-    char path[256];
+    char path[256], staged[264];
     USBExtreme_game_entry_t GameEntry;
     snprintf(path, sizeof(path), "%sul.cfg", prefix);
+    snprintf(staged, sizeof(staged), "%s.new", path);
 
-    FILE *file = fopen(path, "wb");
+    int ok = 0;
+    FILE *file = fopen(staged, "wb");
     if (file != NULL) {
+        ok = 1;
         int i;
         base_game_info_t *game;
 
@@ -1093,12 +1101,22 @@ static void sbRebuildULCfg(base_game_info_t **list, const char *prefix, int game
                 GameEntry.parts = game->parts;
                 GameEntry.media = game->media;
 
-                fwrite(&GameEntry, sizeof(GameEntry), 1, file);
+                if (fwrite(&GameEntry, sizeof(GameEntry), 1, file) != 1)
+                    ok = 0;
             }
         }
 
-        fclose(file);
+        if (fclose(file) != 0)
+            ok = 0;
     }
+    if (!ok) {
+        unlink(staged);
+        return -1;
+    }
+    if (rename(staged, path) == 0)
+        return 0;
+    unlink(path);
+    return rename(staged, path) == 0 ? 0 : 1;
 }
 
 static void sbCreatePath_name(const base_game_info_t *game, char *path, const char *prefix, const char *sep, int part, const char *game_name)
@@ -1152,23 +1170,40 @@ void sbDelete(base_game_info_t **list, const char *prefix, const char *sep, int 
     }
 }
 
+// Renames parts [0, count) of a game from one name to another; returns how many were renamed.
+static int sbRenameParts(const base_game_info_t *game, const char *prefix, const char *sep, int count, const char *from, const char *to)
+{
+    char oldpath[256], newpath[256];
+    int part;
+    for (part = 0; part < count; part++) {
+        sbCreatePath_name(game, oldpath, prefix, sep, part, from);
+        sbCreatePath_name(game, newpath, prefix, sep, part, to);
+        if (rename(oldpath, newpath) != 0)
+            break;
+    }
+    return part;
+}
+
 void sbRename(base_game_info_t **list, const char *prefix, const char *sep, int gamecount, int id, char *newname)
 {
-    int part;
-    char oldpath[256], newpath[256];
     base_game_info_t *game = &(*list)[id];
+    char oldname[UL_GAME_NAME_MAX + 1];
 
-    for (part = 0; part < game->parts; part++) {
-        sbCreatePath_name(game, oldpath, prefix, sep, part, game->name);
-        sbCreatePath_name(game, newpath, prefix, sep, part, newname);
-        rename(oldpath, newpath);
-    }
-
-    if (game->format == GAME_FORMAT_USBLD) {
+    int renamed = sbRenameParts(game, prefix, sep, game->parts, game->name, newname);
+    if (renamed == game->parts) {
+        if (game->format != GAME_FORMAT_USBLD)
+            return;
+        memcpy(oldname, game->name, sizeof(oldname));
         memset(game->name, 0, UL_GAME_NAME_MAX + 1);
         memcpy(game->name, newname, UL_GAME_NAME_MAX);
-        sbRebuildULCfg(list, prefix, gamecount, -1);
+        if (sbRebuildULCfg(list, prefix, gamecount, -1) >= 0)
+            return; // 1: the old ul.cfg is gone and ul.cfg.new lists the new name, so keep it
+
+        memcpy(game->name, oldname, sizeof(oldname));
     }
+    // A split game whose parts carry two names, or whose ul.cfg entry names neither, cannot be
+    // found: put the renamed parts back and keep the old name.
+    sbRenameParts(game, prefix, sep, renamed, newname, game->name);
 }
 
 // When 0 (the default, used while scrolling the game list) sbPopulateConfig skips the
