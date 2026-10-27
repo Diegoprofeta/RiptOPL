@@ -2770,3 +2770,24 @@ void sbTestPCLinkDeferred(void)
     ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&sbTestPCLinkWorker));
 }
 #endif
+
+void sysNeutrinoWarnPadEmu(config_set_t *configSet)
+{
+#ifdef PADEMU
+    // Match sbPrepare's inheritance: a present per-game source key selects the per-game values.
+    // Read the config directly: APA's Neutrino path need not have called sbPrepare for this game.
+    int source = 0, enabled = 0;
+    config_set_t *settings = configGetByType(CONFIG_GAME);
+    if (configGetInt(configSet, CONFIG_ITEM_PADEMUSOURCE, &source))
+        settings = configSet;
+    configGetInt(settings, CONFIG_ITEM_ENABLEPADEMU, &enabled);
+    if (enabled) {
+        LOG("[NEUTRINO] pad emulation configured but unsupported\n");
+        // Autolaunch runs before the interactive menu: never leave it waiting for a modal.
+        if (gAutoLaunchGame == NULL && gAutoLaunchBDMGame == NULL)
+            host::ui().msgBox(_l(_STR_NEUTRINO_PADEMU_WARN), 0, NULL);
+    }
+#else
+    (void)configSet;
+#endif
+}

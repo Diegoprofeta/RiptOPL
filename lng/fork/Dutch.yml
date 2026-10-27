@@ -615,3 +615,4 @@ translations:
   PCCF_GAMES: PC CARD CF-games
   PCCF_UNAVAILABLE: 'CF niet beschikbaar: vereist een vroege Japanse PS2 met PC CARD, een compatibele kaart en geen actieve DEV9-, HDD- of netwerkdriver.'
   PCCF_UNSUPPORTED_GAME: CF ondersteunt nu alleen echte PS2-games. CF-VMC, PS1 laden en netwerkprestaties zijn niet beschikbaar.
+  NEUTRINO_PADEMU_WARN: Pademulatie is niet beschikbaar met Neutrino. Gebruik een PS2-controller of een bron die de <OPL>-kern ondersteunt.

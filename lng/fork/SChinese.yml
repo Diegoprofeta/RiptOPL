@@ -552,3 +552,4 @@ translations:
   PCCF_GAMES: PC CARD CF 游戏
   PCCF_UNAVAILABLE: CF 不可用：需要带 PC CARD 的早期日版 PS2、兼容的卡，并且没有已启用的 DEV9/硬盘/网络驱动。
   PCCF_UNSUPPORTED_GAME: CF 目前只支持原生 PS2 游戏。CF 上的 VMC、PS1 加载和网络成就不可用。
+  NEUTRINO_PADEMU_WARN: 使用 Neutrino 时无法模拟手柄。请使用 PS2 手柄，或支持 <OPL> 核心的来源。

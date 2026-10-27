@@ -621,3 +621,4 @@ translations:
   PCCF_GAMES: ເກມ PC CARD CF
   PCCF_UNAVAILABLE: 'CF ໃຊ້ບໍ່ໄດ້: ຕ້ອງການ PS2 ຍີ່ປຸ່ນ ລຸ້ນທຳອິດ ທີ່ມີ PC CARD, ກາດທີ່ເຂົ້າກັນໄດ້, ແລະ ບໍ່ມີໄດຣເວີ DEV9/HDD/ເຄືອຂ່າຍ ທີ່ເຮັດວຽກ.'
   PCCF_UNSUPPORTED_GAME: ດຽວນີ້ CF ຮອງຮັບ ເກມ PS2 ແທ້ ເທົ່ານັ້ນ. CF VMC, ການໂຫຼດ PS1 ແລະ ຄວາມສຳເລັດ ຜ່ານເຄືອຂ່າຍ ໃຊ້ບໍ່ໄດ້.
+  NEUTRINO_PADEMU_WARN: ການຈຳລອງຈອຍ ໃຊ້ບໍ່ໄດ້ ກັບ Neutrino. ໃຊ້ຈອຍ PS2 ຫຼື ແຫຼ່ງທີ່ຮອງຮັບແກນ <OPL>.

@@ -785,3 +785,4 @@ translations:
   PCCF_GAMES: بازی‌های PC CARD CF
   PCCF_UNAVAILABLE: 'CF در دسترس نیست: یک PS2 ژاپنی اولیه با PC CARD، یک کارت سازگار و نبود هیچ درایور فعال DEV9/هارد/شبکه لازم است.'
   PCCF_UNSUPPORTED_GAME: CF اکنون فقط بازی‌های بومی PS2 را پشتیبانی می‌کند. VMC روی CF، بارگذاری PS1 و دستاوردهای شبکه در دسترس نیستند.
+  NEUTRINO_PADEMU_WARN: شبیه‌سازی دسته با Neutrino در دسترس نیست. از دسته PS2 یا منبعی که هسته <OPL> را پشتیبانی می‌کند استفاده کنید.

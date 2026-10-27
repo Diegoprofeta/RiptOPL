@@ -580,3 +580,4 @@ translations:
   PCCF_GAMES: Mga dula sa PC CARD CF
   PCCF_UNAVAILABLE: 'Dili magamit ang CF: kinahanglan og sayo nga Japanese PC CARD PS2, tugma nga card, ug walay aktibo nga DEV9/HDD/network driver.'
   PCCF_UNSUPPORTED_GAME: Native nga PS2 dula ra ang suportado sa CF karon. Dili magamit ang CF VMC, pag-load sa PS1 ug network achievements.
+  NEUTRINO_PADEMU_WARN: Dili magamit ang pad emulation sa Neutrino. Gamita ang PS2 controller o source nga mosuporta sa <OPL> core.

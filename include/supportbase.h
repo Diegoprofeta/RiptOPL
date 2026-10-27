@@ -159,4 +159,7 @@ int sbHashGameDeferred(const char *path, const char *name, const char *ext, cons
 void sbTestPCLinkDeferred(void);
 #endif
 
+// Neutrino has no pad emulation: tell the user when this game has it on (no-op without PADEMU).
+void sysNeutrinoWarnPadEmu(config_set_t *configSet);
+
 #endif

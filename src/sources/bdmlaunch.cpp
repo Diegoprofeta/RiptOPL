@@ -440,6 +440,7 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
         return abortLaunch(1, configSet);
     if (sysNeutrinoArgsPreflight(bdmCurrentDriver, partname, game->startup, compatmask, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdmDevNr, &neutrinoVmc) < 0)
         return abortLaunch(1, configSet); // an overfull Neutrino argv must not silently fall back to the native core
+    sysNeutrinoWarnPadEmu(configSet);
     if (gLaunchDiag)
         launchDiagMark(3);
 

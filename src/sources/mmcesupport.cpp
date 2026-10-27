@@ -1276,6 +1276,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             sbUnprepare(&settings->common);
             return;
         }
+        sysNeutrinoWarnPadEmu(configSet);
         // GameID for the NEUTRINO core (issue #68): the native OPL-core launch deliberately does
         // NOT push a launcher GameID (see the issue-#50 note below -- in OPL core the in-game
         // card is OPL's mcemu, and a mid-launch re-switch froze early-MC-probing games). That

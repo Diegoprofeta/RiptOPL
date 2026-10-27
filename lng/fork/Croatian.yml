@@ -572,3 +572,4 @@ translations:
   PCCF_GAMES: PC CARD CF igre
   PCCF_UNAVAILABLE: 'CF nije dostupan: potrebni su rani japanski PC CARD PS2, kompatibilna kartica i nijedan aktivan DEV9/HDD/mrežni upravljački program.'
   PCCF_UNSUPPORTED_GAME: CF trenutno podržava samo izvorne PS2 igre. CF VMC, učitavanje PS1 igara i mrežna postignuća nisu dostupni.
+  NEUTRINO_PADEMU_WARN: Emulacija kontrolera nije dostupna s Neutrinom. Koristi PS2 kontroler ili izvor koji podržava jezgru <OPL>.

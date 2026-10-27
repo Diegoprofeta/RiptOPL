@@ -552,3 +552,4 @@ translations:
   PCCF_GAMES: "Jeux PC CARD CF"
   PCCF_UNAVAILABLE: "CF indisponible : nécessite une ancienne PS2 japonaise avec PC CARD, une carte compatible et aucun pilote DEV9/HDD/réseau actif."
   PCCF_UNSUPPORTED_GAME: "CF ne prend actuellement en charge que les jeux PS2 natifs. VMC sur CF, jeux PS1 et succès en réseau sont indisponibles."
+  NEUTRINO_PADEMU_WARN: L'émulation de manette n'est pas disponible avec Neutrino. Utilisez une manette PS2 ou une source qui prend en charge le noyau <OPL>.

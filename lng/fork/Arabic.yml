@@ -605,3 +605,4 @@ translations:
   PCCF_GAMES: ألعاب PC CARD CF
   PCCF_UNAVAILABLE: 'CF غير متاح: يتطلب جهاز PS2 ياباني مبكراً بمنفذ PC CARD، وبطاقة متوافقة، وعدم وجود برنامج تشغيل DEV9/HDD/شبكة نشط.'
   PCCF_UNSUPPORTED_GAME: يدعم CF حالياً ألعاب PS2 الأصلية فقط. VMC على CF وتحميل PS1 وإنجازات الشبكة غير متاحة.
+  NEUTRINO_PADEMU_WARN: محاكاة وحدة التحكم غير متاحة مع Neutrino. استخدم وحدة تحكم PS2 أو مصدراً يدعم نواة <OPL>.

@@ -572,3 +572,4 @@ translations:
   PCCF_GAMES: PC CARD CF-spel
   PCCF_UNAVAILABLE: 'CF är inte tillgängligt: kräver en tidig japansk PS2 med PC CARD, ett kompatibelt kort och ingen aktiv DEV9-, HDD- eller nätverksdrivrutin.'
   PCCF_UNSUPPORTED_GAME: CF stöder för närvarande bara inbyggda PS2-spel. VMC på CF, PS1-laddning och nätverksprestationer är inte tillgängliga.
+  NEUTRINO_PADEMU_WARN: Handkontrollsemulering är inte tillgänglig med Neutrino. Använd en PS2-handkontroll eller en källa som stöder <OPL>-kärnan.

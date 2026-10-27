@@ -556,3 +556,4 @@ translations:
   PCCF_GAMES: PC CARD CF Oyunları
   PCCF_UNAVAILABLE: 'CF kullanılamıyor: erken bir Japon PC CARD PS2, uyumlu bir kart ve etkin olmayan DEV9/HDD/ağ sürücüsü gerekir.'
   PCCF_UNSUPPORTED_GAME: CF şu anda yalnızca yerel PS2 oyunlarını destekler. CF VMC, PS1 yükleme ve ağ başarımları kullanılamaz.
+  NEUTRINO_PADEMU_WARN: Neutrino ile kol öykünmesi kullanılamaz. Bir PS2 denetleyicisi ya da <OPL> çekirdeğini destekleyen bir kaynak kullanın.
