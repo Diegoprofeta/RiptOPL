@@ -57,7 +57,8 @@ static int raVcdWatchGuardStore(const char *, const char *, const char *) { retu
 static void DelayThread(int) {}
 static int ethLoadInitModules() { ethInits++; return 0; }
 static int ethGetNetConfig(u8 *ip, u8 *, u8 *) { for (int i = 0; i < 4; i++) ip[i] = ps2_ip[i]; return 0; }
-static int ethGetDHCPStatus() { return 1; }
+static int dhcpState = 1;
+static int ethGetDHCPStatus() { return dhcpState; }
 #define NETMAN_NETIF_IOCTL_GET_LINK_STATUS 1
 #define NETMAN_NETIF_ETH_LINK_STATE_UP 1
 static int linkState = 1;
@@ -193,6 +194,7 @@ static void reset()
     gNetworkProtocol = NET_PROTO_SMB; udpbdLoaded = udpfsLoaded = 0; mstackVersion = -19; mstackGetIp = 4;
     sockets = closed = bindFails = ethInits = devctls = opens = written = unlinked = writeShort = 0;
     warnings = cleared = 0; lastWarning = -1; watchCount = 0; linkState = 1;
+    dhcpState = 1; ps2_ip_use_dhcp = 0; ps2_ip[0] = 192; ps2_ip[1] = 168; ps2_ip[2] = 1; ps2_ip[3] = 10;
 }
 static int check() { return client.askPc("0123456789abcdef0123456789abcdef", "SLUS_123.45", "mass0:", info, sizeof(info), info2, sizeof(info2)); }
 
@@ -266,6 +268,13 @@ int main()
     reset(); watchCount = 1; gRAMode = RA_MODE_CADUCEUS; client.launchNetworkUp();
     assert(cleared == 0 && warnings == 0 && client.peerIP() == PC && sent[0].port == RA_CADUCEUS_PORT);
     reset(); watchCount = 1; linkState = 0; client.launchNetworkUp();
+    assert(cleared == 1 && lastWarning == 0);
+    /* A resident stack with a link is not enough: a pending lease or no address drops it too. */
+    reset(); watchCount = 1; ps2_ip_use_dhcp = 1; dhcpState = 0; client.launchNetworkUp();
+    assert(cleared == 1 && lastWarning == 0 && sent.empty());
+    reset(); watchCount = 1; ps2_ip_use_dhcp = 1; client.launchNetworkUp();
+    assert(cleared == 0);
+    reset(); watchCount = 1; ps2_ip[0] = ps2_ip[1] = ps2_ip[2] = ps2_ip[3] = 0; client.launchNetworkUp();
     assert(cleared == 1 && lastWarning == 0);
     reset(); watchCount = 1; client.launchNetworkUp(); /* Xerabora sends nothing at launch */
     assert(cleared == 0 && sent.empty());
