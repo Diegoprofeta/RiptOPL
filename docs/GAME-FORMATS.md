@@ -84,9 +84,11 @@ Renaming or deleting a UL game from the menu renames or removes its parts and
 rewrites `ul.cfg` at the device root. The new list is written to `ul.cfg.new`
 first, and `ul.cfg` is replaced only when that file is complete, so a drive or
 share that drops out mid-write leaves the previous `ul.cfg` in place. If a part
-cannot be renamed, or `ul.cfg` keeps the old list, a rename puts the parts it
-already renamed back under the old name. The menu shows no message when either
-fails; the debug log does. A `ul.cfg.new` left at the root holds the newer list
+cannot be renamed, or `ul.cfg` keeps the old list, a rename tries to put the
+parts it already renamed back under the old name. That can fail too if the drive
+or share is gone, so after a disconnect compare `ul.cfg` with the part names on a
+PC before the next menu edit. The menu shows no message when any of this fails;
+the debug log does. A `ul.cfg.new` left at the root holds the newer list
 when `ul.cfg` is missing or short: rename it to `ul.cfg` on a PC before you
 delete or rename another UL game, because that rewrites `ul.cfg.new`.
 
