@@ -38,6 +38,7 @@ Use the references below for implementation details, exact limits and contributo
 - [Interface, folders and audio](INTERFACE.md), [theme authoring](THEME_ENGINE.md), [languages](LANGUAGES.md), [Unicode game titles](UNICODE-GAME-TITLES.md) and [CFG titles](CFG-TITLES.md).
 - [Favorites storage](FAVORITES-STORAGE.md), [per-game parental locks](PARENTAL-LOCK.md) and [autolaunch/global settings](AUTOLAUNCH-GLOBAL-SETTINGS.md).
 - [SIO2MAN compatibility](SIO2MAN-COMPATIBILITY.md) for contributors investigating VMC/pad hooks.
+- [Notes for ps2sdk](PS2SDK-NOTES.md): the ps2sdk defects behind every IOP module RiptOPL builds or patches, with patches for ps2sdk.
 
 ## Migration and history
 
