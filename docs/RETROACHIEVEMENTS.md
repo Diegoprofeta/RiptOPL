@@ -10,11 +10,15 @@ else — talking to the RetroAchievements servers, deciding what unlocked, your 
 PC.
 
 Based on the RetroAchievements implementation by **[hacan359 (yoba)](https://github.com/hacan359/Open-PS2-Loader/pull/1)**.
-Use the upstream **[xeRAbora PC client](https://github.com/hacan359/xerabora)** with RiptOPL's RA build. Download the required **[v0.1.0-alpha.10 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)**.
+Use the upstream **[xeRAbora PC client](https://github.com/hacan359/xerabora)** with RiptOPL's RA build. Download the required **[v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)**.
 
 RiptOPL's real-hardware stabilization was contributed by **[oMrRexD](https://github.com/oMrRexD)** through
 PRs **#702–#705**, covering the ee_core stack squeeze, MMCE DEV9 dependency, cold-launch network
 bring-up / unusable-IP fallback, and the misplaced RA settings rows.
+
+## Mode 6 (IGR disabled)
+
+When per-game Compatibility Mode 6 disables IGR, the RA build keeps the in-game snapshot tick through a dedicated VBLANK handler, but only when telemetry successfully initialized. It installs no IGR worker or pad-open hooks. Achievements can still be recorded; controller IGR and the client's **RESET CONSOLE** are unavailable. Mode 6 does not help a game that rejects a VBLANK handler itself. This follows xeRAbora alpha.17. **NOT TESTED on hardware** in RiptOPL.
 
 ---
 
@@ -264,17 +268,26 @@ launch or a network settings change waits until the page has loaded.
 
 **The browser is NOT TESTED on hardware.**
 
-The console integration follows **xeRAbora v0.1.0-alpha.10** (`ebd18ed6`, paired with console commit `0c5f61a3` / `6c7e9a79` and CodeRabbit hardening `136f2620`). This release brings significant stability improvements between OPL and RA:
+The PS2 console core follows **xeRAbora v0.1.0-alpha.15** (client
+[`d36ee3a5`](https://github.com/hacan359/xerabora/commit/d36ee3a54c8769825c99756f908367b2cc2622f3),
+which pins console [`f4d559a3`](https://github.com/hacan359/Open-PS2-Loader/commit/f4d559a38f510bf644ac0f3f23431f15f6c9dc3a)),
+and the Mode 6 snapshot handling follows alpha.17. The console fix in alpha.18 (console
+[`c6e14e6b`](https://github.com/hacan359/Open-PS2-Loader/commit/c6e14e6b943be74210981e3a7bd51a25702a8df0):
+a watch-list chunk whose data began with a whitespace byte lost that byte, and the list was refused)
+was already in RiptOPL: the `RAC1` header ends at the length and its one space is stepped over by hand.
+Updating the external client alone does not update the telemetry code in your ELF.
 
-- **Console pointer-chain resolution:** Achievements that read through pointers previously never unlocked because the console only read a flat list of addresses (one measured set lost 22 of 50 achievements). In alpha.10, xeRAbora compiles pointer chains into nodes (parent, static offset, read size) sent as a tail after the watch addresses. `ee_core` walks the nodes once per frame and appends the dynamic `(address, value)` pair per node.
-- **Null base and broken chain protection:** If a chain's base pointer resolves to 0 (a null pointer or an out-of-range parent), RiptOPL forces the pair out as address 0 rather than adding the offset and reading random memory from the VBlank interrupt handler.
-- **Interrupt memory safety:** Addresses outside `0x00080000..0x02000000` (such as `0x00000000` found in some achievement sets like X-Men Origins) are never dereferenced in the interrupt handler. Reading outside mapped RAM caused TLB misses during VBlank and hung games on loading screens. Unreadable entries are reported as 0 so the snapshot maintains its structure.
-- **PC client stability:** xeRAbora v0.1.0-alpha.10 drops tracked leaderboards when the console disconnects instead of hanging stale on screen.
-- **Snapshot delivery:** Telemetry polls every 4 ms, sends each new snapshot once, retries busy or torn copies, repeats unchanged snapshots after ~1 second without a new one, and commits only the staged sequence once accepted.
+- **Pointer chains:** xeRAbora compiles pointer chains into nodes (parent, static offset, read size) sent as a tail after the watch addresses. `ee_core` walks the nodes once per frame and appends the dynamic `(address, value)` pair per node. A base that resolves to 0 (a null pointer or an out-of-range parent) sends address 0 instead of reading through it.
+- **Larger achievement sets:** up to 4,096 direct watches and 128 pointer-chain nodes, subject to the snapshot byte limit. The block in module storage is sized to the actual set, so ee_core's limited memory carries no tables.
+- **Bounded telemetry cadence:** up to three snapshot packets per video frame on average. Sets needing four to six parts are sampled every second frame, seven to nine parts every third frame; smaller sets every frame.
+- **Read-cost diagnostics:** the PC receives the COP0 ticks spent reading a snapshot and the ticks per video frame.
+- **Watch-list validation and read safety:** only 1-, 2- and 4-byte entries with an exact declared byte sum are accepted. Addresses outside `0x00080000..0x02000000` (some sets, like X-Men Origins, carry `0x00000000`) are never read from the VBlank handler, where they took a TLB miss and hung the game; they are sent as 0 so the snapshot keeps its shape.
+- **Set identification:** while the PC replies WAIT, the console pauses 500 ms between up to 20 rounds. A newer client's refusal reason is shown rather than a generic unknown-image message.
+- **PC-requested return:** the client's return command takes the existing IGR path, so it is unavailable in Mode 6.
+- **Snapshot delivery:** telemetry polls every 4 ms, sends each new snapshot once, retries busy or torn copies, repeats an unchanged snapshot after ~1 second, and marks the staged sequence sent only after every part is accepted.
 
 > [!IMPORTANT]
-> **Client Version Compatibility:** Always use **[xeRAbora v0.1.0-alpha.10](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)** with this build. Using earlier versions (alpha.8/alpha.9) lacks pointer-chain nodes and out-of-range memory handling, while arbitrary unverified versions risk protocol drift.
-
+> Use **[xeRAbora v0.1.0-alpha.17](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)** with this build, the version the original OPL fork also pairs with. Its wire protocol is unchanged since alpha.10. Later releases (v1.0.x) have not been checked against this build. Host tests and successful builds do not establish console timing or game compatibility; the alpha.10 hardware report above is historical evidence, not validation of this update.
 
 ---
 
@@ -324,7 +337,7 @@ labelled builds below, in the order listed. The archive keeps those labelled loa
 The labelled folders are the two ps2dev builds, so they say `PINNED`/`ROLLING` where the main
 package says `PS2DEVPINNED`/`PS2DEVROLLING`. The names are kept short on purpose: a memory card file
 name stops at 31 characters, and the release workflow fails rather than ship a longer one. The
-archive also carries **`xeRAbora.url`** (pointing directly to the paired [v0.1.0-alpha.10 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)), because the loader does nothing without the PC client.
+archive also carries **`xeRAbora.url`** (pointing directly to the paired [v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)), because the loader does nothing without the PC client.
 
 It is deliberately *not* an entry in `RIPTOPL-VARIANTS-*.zip`: that archive is a ~120 MB bag of every
 build permutation, and the release workflow excludes it from the permanent MEGA archive as a
