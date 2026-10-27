@@ -74,7 +74,7 @@ LANGS_README = """RiptOPL translations
 The loader has English built in. To use another language, copy that language's folder contents --
 the lang_*.lng file and, when there is one, its font_*.ttf or font_*.otf -- to the folder RIPTOPL.ELF
 runs from, or to an LNG folder beside it. Do not rename the files. Then pick the language under
-Settings > Display and save your settings. Every edition reads the same files.
+Settings > Language and save your settings. Every edition reads the same files.
 """
 
 

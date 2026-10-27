@@ -68,13 +68,18 @@ Each channel carries exactly these assets (the app/ELF names differ for RA):
 - `APP_RIPTOPL.psu` / `APP_RIPTOPL-RA.psu`: only the app's direct files, with
   deterministic SAS timestamps and metadata matching the packaged ELF.
 - `RIPTOPL-src.zip`: Git's source archive of the exact built commit.
+- `RIPTOPL-LANGS.zip`: every translation and the font its script needs, one folder per language.
 - `BUILD-MANIFEST.json` and `SHA256SUMS.txt`: build identity and asset checksums.
+
+The Korium channel also carries `RIPTOPL-VARIANTS.zip` (pademu0, ds5, extras, extras_ds5) and
+`RIPTOPL-DEBUG.zip` (every debug and diagnostic configuration): one folder per configuration with
+its RIPTOPL.ELF and manifest, each checked against the Korium kit's commit and SDK components.
+See [Build configurations](docs/BUILD-CONFIGURATIONS.md).
 
 Standard kits reject RA resources. The RA kit adds the xeRAbora client shortcut;
 the newer production RA browser/client and ORBIT adapter are still tracked in
 the parity ledger and are not implied by a successful RA compile. No BIOS is
-redistributed. Translation/debug/extra-feature bundles are pending parity work;
-the three release channels do not imply those configurations are implemented.
+redistributed.
 
 ## Preview and publication
 

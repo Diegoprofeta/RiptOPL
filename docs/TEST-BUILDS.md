@@ -1,0 +1,64 @@
+# Testing a PR or Actions build
+
+A test artifact belongs to one GitHub Actions run and commit. It is separate from the published
+release channels, which can lag while builds run. Open the supplied run, verify its source commit,
+sign into GitHub, then download the requested ZIP from Artifacts. Expired artifacts need a new build.
+
+| Workflow | Artifact | What it holds |
+| --- | --- | --- |
+| Rolling Release | `release-korium`, `release-ra`, `release-incebtion` | The complete install kit and every channel asset for that edition, exactly as publication would upload them |
+| Rolling Release | `variant-<configuration>` | One Korium configuration build (ELF and manifest); the VARIANTS and DEBUG release zips are made from these |
+| ps2build-configurations | `configuration-<edition>-<configuration>-<gcc or llvm>` | One configuration build per compiler, with its manifest and resolved definition |
+| ps2build | `riptopl-ps2build-gcc`, `riptopl-ps2build-llvm` | The bare packed loader from the compiler gate |
+
+Each configuration is described in [Build configurations](BUILD-CONFIGURATIONS.md). For
+Japanese/Unicode game-name font fallback, see [Unicode Game Titles](UNICODE-GAME-TITLES.md);
+the optional `font_CJK.ttf` is user-provided and not in any artifact.
+
+Extract the ZIP and read `BUILD-MANIFEST.json` for the source commit, edition, configuration,
+compiler and ps2build components. Launch the ELF requested in the test instructions. A
+configuration artifact is a loader build and its manifest only, so keep the complete companion
+installation from a `release-*` kit for Neutrino, Ember, POPSTARTER and artwork.
+
+Replacing only RIPTOPL.ELF does not update companion cores or modules. Use the full install kit
+when its notes announce such updates; back up configuration and save cards first.
+
+A useful result names the PS2 model, exact RiptOPL version/commit, edition and configuration,
+loader/device, filesystem, selected core, changed settings, VMC state, PADEMU state, exact
+error/stage and reproduction steps. Compare the same setup against a known-good build.
+Compilation and host tests are not a console pass.
+
+The Settings index and About both show the full running build identifier; a nonstandard
+configuration names itself there. See [release channels and packaging](../ROLLING_RELEASE.md),
+[the release guide](https://nathanneurotic.github.io/RiptOPL/releases.html) and
+[troubleshooting](https://nathanneurotic.github.io/RiptOPL/troubleshooting.html).
+
+## In-game freeze report (ingamediag)
+
+Use the `ingamediag` configuration (in the DEBUG bundle, or a `variant-ingamediag` /
+`configuration-korium-ingamediag-gcc` artifact) when a game freezes during play. Play as usual.
+When it freezes, press **L1 + L2 + R1 + R2 + Start + Select** (the normal IGR combo). The build
+saves `RIPTFRZ.TXT` to the root of the memory card in slot 1 (slot 2 if slot 1 fails), then exits
+as IGR always does. Copy that file off the card with wLaunchELF and send it with your report. Each
+freeze overwrites the previous file.
+
+The file records thread waits and priorities after IGR has suspended the game threads; their
+status includes that suspension. It also records the last disc reads and any read that started
+and never finished, memory card (VMC) activity, and whether the I/O processor still answered.
+Its `hint=` line says which of those looks stuck.
+
+If the combo does nothing, report that and confirm Compatibility Mode 6 was off. An unresponsive
+combo alone does not establish a main-CPU freeze: IGR can be disabled or fail to detect input.
+Compatibility Mode 6 turns IGR off, so it also turns this report off. The configuration is
+otherwise a normal Korium or IncebtIon build; it is refused for RetroAchievements, which runs
+IGR from VBLANK.
+
+## Favorites and automatic VMC failure recovery
+
+If a Favorites edit cannot stage a complete replacement, including when the device is full,
+the edit fails and the existing list is preserved. Free space before retrying.
+
+Automatic VMC probing checks the superblock of whole-MB images before assigning them.
+A full-size image left by failed formatting is not treated as a usable card solely because
+its length matches. Invalid existing files are preserved and require explicit user action;
+odd-size Neutrino cards retain their existing handling.

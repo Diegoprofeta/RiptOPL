@@ -55,7 +55,7 @@ nothing on them.
 the size field is intentionally left blank rather than computed.
 
 **R3** does nothing when Favorites is disabled — it never writes silently. On the Favorites page
-itself, R3 removes the selected entry. See [the Favorites docs](https://nathanneurotic.github.io/Open-PS2-Loader/favourites.html).
+itself, R3 removes the selected entry. See [the Favorites docs](https://nathanneurotic.github.io/RiptOPL/favourites.html).
 
 **Select / Refresh** is also the retry for a device page that failed to populate — a network share
 that was not up when RiptOPL started, for example. A USB, MX4SIO, iLink, UDPBD or BDM HDD page whose
