@@ -579,6 +579,68 @@ static int prepareHddSettingsFallback(char *path, int pathLen)
     return (n >= 0 && n < pathLen) ? 1 : -1;
 }
 
+// A memory card only creates a file through "mcN:/FILE", never "mcN:FILE" -- and a bare "mc1:" (a
+// launcher's CWD, or what anyone types for "save my settings on mc1") or a compact "mc1:APPS/X" is
+// exactly that shape. Insert the slash so every memory-card home has the one form file creation takes.
+void normalizeMcPath(char *path, size_t size)
+{
+    size_t len;
+
+    if (strncmp(path, "mc", 2) || (path[2] != '0' && path[2] != '1') || path[3] != ':' || path[4] == '/')
+        return;
+    len = strlen(path);
+    if (len + 1 >= size)
+        return;
+    memmove(&path[5], &path[4], len - 3);
+    path[4] = '/';
+}
+
+// The folder of a memory-card Custom Settings Path, made when it is not there yet: settings go to "a
+// folder you choose", and the per-file O_CREAT that writes them cannot make one. Save-time only -- the
+// boot-time read must never create anything. 0 = ready (or not a card path); -1 = it could not be made,
+// with gLastSaveErrno saying why.
+static int createMcSettingsFolder(const char *path)
+{
+    char folder[sizeof(gCustomSettingsPath)];
+    size_t len;
+    DIR *dir;
+
+    if (strncmp(path, "mc", 2) || (path[2] != '0' && path[2] != '1') || path[3] != ':')
+        return 0;
+    snprintf(folder, sizeof(folder), "%s", path);
+    len = strlen(folder);
+    while (len > 5 && folder[len - 1] == '/')
+        folder[--len] = '\0';
+    if (len <= 5) // "mcN:/": the card root is always there
+        return 0;
+    dir = opendir(folder);
+    if (dir != NULL) {
+        closedir(dir);
+        return 0;
+    }
+    // Each missing level in turn, since mkdir makes only the last one: "mc1:/APPS/OPL" on a card
+    // without APPS needs both.
+    for (size_t i = 6; i <= len; i++) {
+        if ((folder[i] != '/' && folder[i] != '\0') || folder[i - 1] == '/')
+            continue;
+        char end = folder[i];
+        folder[i] = '\0';
+        dir = opendir(folder);
+        if (dir != NULL)
+            closedir(dir);
+        else {
+            errno = 0;
+            if (mkdir(folder, 0777) < 0) {
+                gLastSaveErrno = errno != 0 ? errno : EIO;
+                return -1;
+            }
+            LOG("CONFIG created settings folder %s\n", folder);
+        }
+        folder[i] = end;
+    }
+    return 0;
+}
+
 // Make a typed settings path usable: the user may name a device that is not mounted yet. APA/PFS
 // paths are handled first and rewritten to OPL's already-mounted pfs0: data partition; BDM paths
 // keep the existing transport resolver. HDD targets have a deterministic safe fallback in
@@ -589,6 +651,8 @@ static int prepareCustomSettingsPath(char *path, int pathLen)
 
     if (path == NULL || path[0] == '\0')
         return 0;
+
+    normalizeMcPath(path, (size_t)pathLen);
 
     if (isApaSettingsPath(path))
         return prepareCustomApaSettingsPath(path, pathLen);
@@ -638,6 +702,12 @@ static int bootHomeIsConcreteMc(void)
 {
     return !strncmp(gBootDir, "mc", 2) &&
            (gBootDir[2] == '0' || gBootDir[2] == '1') && gBootDir[3] == ':';
+}
+
+// The launcher handed over the bare card ("mc1:" / "mc1:/"): there is no boot folder to save beside.
+static int bootHomeIsMcRoot(void)
+{
+    return bootHomeIsConcreteMc() && (gBootDir[4] == '\0' || (gBootDir[4] == '/' && gBootDir[5] == '\0'));
 }
 
 static int bootHomeIsKnownMmce(void)
@@ -760,13 +830,14 @@ static void restoreRecoverySaveHome(const char *recoveredHome)
             configSetMove((char *)mcHome);
         else
             configSetMove(NULL); // no concrete MC is reachable: keep the normal fail-visible wildcard home
-    } else if (sameConcreteMcSlot(gBootDir, recoveredHome) && !configOplIsOfficialSeed()) {
-        // A concrete MC boot that recovered its existing settings from the same card keeps that
-        // exact directory as its save owner. In particular, a launcher that supplies only "mc1:"
-        // as the boot CWD must not move a successfully read mc1:/OPL configuration to the card
-        // root (or to mc0 when both cards are inserted). This applies to RiptOPL's OWN settings
-        // only: an official conf_opl.cfg is a read-only seed and must not pull our save home into
-        // official OPL's folder, so that case falls through to the boot dir below.
+    } else if (sameConcreteMcSlot(gBootDir, recoveredHome) && !configOplIsOfficialSeed() && bootHomeIsMcRoot()) {
+        // A launcher that supplies only "mc1:" as the boot CWD leaves no folder to save beside, so a
+        // configuration recovered from the same card (mc1:/OPL) keeps that folder rather than moving
+        // to the card root (or to mc0 when both cards are inserted). Every other MC boot saves beside
+        // its ELF like any other boot -- settings follow the CWD -- through the branch below: an
+        // mc1:/APP_RIPTOPL boot that found older settings in mc1:/OPL reads them once and writes its
+        // next save beside the ELF, instead of keeping mc1:/OPL as its home for good. This applies to
+        // RiptOPL's OWN settings only: an official conf_opl.cfg is a read-only seed and never our home.
         configSetMove((char *)recoveredHome);
     } else if (gBootDir[0] != '\0') {
         configSetMove(gBootDir);
@@ -2207,6 +2278,14 @@ static void _saveConfig()
                 return;
             }
         } else {
+            // A memory-card folder has to exist before the per-file O_CREAT below ("settings not
+            // saving on mc1"). Made here, at save time, never by the boot-time read.
+            if (createMcSettingsFolder(customSettingsTarget) < 0) {
+                LOG("CONFIG custom settings folder %s could not be created (errno %d)\n", customSettingsTarget, gLastSaveErrno);
+                lscret = 0;
+                lscstatus = 0;
+                return;
+            }
             configSetMove(customSettingsTarget);
             customSettingsExplicit = 1;
         }

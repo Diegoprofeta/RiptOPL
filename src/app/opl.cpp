@@ -1742,21 +1742,49 @@ void miniDeinit(config_set_t *configSet)
 }
 
 // --------------------- Main --------------------
+// "mc?:" names no card. A launcher that hands over its configured wildcard leaves the slot to us,
+// and the file helpers would then use whichever card checkMC() prefers -- mc0 whenever both are
+// inserted -- so an mc1 install read and saved its settings on the other card. The card holding the
+// booted ELF (or, with no ELF name, the boot folder) is the boot card. Runs after reset() has loaded
+// the card driver; when neither card answers, the wildcard stays and nothing changes.
+static void resolveMcWildcardBootDir(void)
+{
+    char probe[sizeof(gBootDir) + sizeof(gBootElfName) + 8];
+    const char *rest;
+    DIR *dir;
+    int slot, fd;
+
+    if (strncmp(gBootDir, "mc?:", 4))
+        return;
+    rest = gBootDir + 4;
+    while (*rest == '/')
+        rest++;
+    for (slot = 0; slot < 2; slot++) {
+        if (gBootElfName[0] != '\0') {
+            snprintf(probe, sizeof(probe), "mc%d:/%s%s%s", slot, rest, rest[0] != '\0' ? "/" : "", gBootElfName);
+            fd = open(probe, O_RDONLY);
+            if (fd < 0)
+                continue;
+            close(fd);
+        } else {
+            snprintf(probe, sizeof(probe), "mc%d:/%s", slot, rest);
+            dir = opendir(probe);
+            if (dir == NULL)
+                continue;
+            closedir(dir);
+        }
+        gBootDir[2] = (char)('0' + slot);
+        return;
+    }
+}
+
 // Memory-card roots require an explicit slash for file creation (mc1:/FILE, not mc1:FILE).
 // Some launchers provide an equivalent compact path such as mc1:APPS/OPL.ELF or leave getcwd()
 // at mc1:. Normalize the generic device representation once, without any launcher-specific branch.
 static void normalizeMcBootDir(void)
 {
-    if (strncmp(gBootDir, "mc", 2) || (gBootDir[2] != '0' && gBootDir[2] != '1') ||
-        gBootDir[3] != ':' || gBootDir[4] == '/')
-        return;
-
-    size_t len = strlen(gBootDir);
-    if (len + 1 >= sizeof(gBootDir))
-        return;
-
-    memmove(&gBootDir[5], &gBootDir[4], len - 3);
-    gBootDir[4] = '/';
+    resolveMcWildcardBootDir();
+    normalizeMcPath(gBootDir, sizeof(gBootDir));
 }
 
 static void setBootDir(const char *bootPath)

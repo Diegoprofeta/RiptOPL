@@ -22,6 +22,7 @@ void _loadConfig();
 void resolveBootDirToMass(void);
 int tryAlternateDevice(int types);
 void configReadNeutrinoGlobals(config_set_t *configOPL);
+void normalizeMcPath(char *path, size_t size); // "mc1:" / "mc1:X" -> "mc1:/" / "mc1:/X"
 extern char gBootElfName[64];
 extern const char *gBootHomeWhy; // why the boot home was chosen (diagnostics)
 

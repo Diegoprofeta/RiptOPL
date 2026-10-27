@@ -24,7 +24,7 @@ struct bdma_pair_sig_t {int usbdSize,hdfsdSize;};
 static const char *vcdBdmaModule[]={"usbd.irx","usbhdfsd.irx"};
 static int pairSize[2], markerMode, opens, closes;
 static bool markerExists, cardExists=true;
-static int vcdResolvePopstarterMc(char *out,int n) {snprintf(out,n,"mc0:/POPSTARTER");return cardExists;}
+static int vcdFindPopstarterMc(char *out,int n) {snprintf(out,n,"mc0:/POPSTARTER");return cardExists;}
 static int vcdReadBdmaMode() {return markerMode;}
 static int vcdGetFileSize(const char *p) {return pairSize[strstr(p,"usbhdfsd")?1:0];}
 static int open(const char *,int flags) {assert(flags==O_RDONLY);if(markerExists){++opens;return 7;}return -1;}
@@ -57,7 +57,8 @@ int main() {
     assert(!vcdBdmaPairMatches(-1,48500,27145)&&!vcdBdmaPairMatches(7,48500,27145));
     pairSize[0]=pairSize[1]=-1;assert(vcdBdmaEnvironmentValid(0));
     pairSize[0]=48500;assert(!vcdBdmaEnvironmentValid(0));
-    cardExists=false;assert(!vcdBdmaEnvironmentValid(1)&&!vcdBdmaManualPairMatches(1));
+    /* No POPSTARTER folder: no external pair, which is exactly the FAT32 environment (and reading never makes one). */
+    cardExists=false;assert(!vcdBdmaEnvironmentValid(1)&&!vcdBdmaManualPairMatches(1)&&vcdBdmaEnvironmentValid(0));
     assert(!vcdBdmaEnvironmentValid(-1)&&!vcdBdmaEnvironmentValid(7));
     assert(!vcdBdmaManualPairMatches(0)&&!vcdBdmaManualPairMatches(7));
     puts("PASS: all six shipped BDMA pairs accepted by actual validators; stale iLink, family/marker/missing/truncated pairs refused");
