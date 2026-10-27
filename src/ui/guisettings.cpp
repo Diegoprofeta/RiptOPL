@@ -1222,7 +1222,7 @@ int guiShowEmberDiscList(const char *folder, const cue_disc_list_t *list)
 static void guiSetBdmaSettings(struct UIItem *ui)
 {
     static const char *bdmaSourceStrs[] = {NULL, NULL, NULL, NULL, NULL, NULL};
-    static const char *bdmaModeStrs[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    static const char *bdmaModeStrs[VCD_BDMA_MODE_COUNT + 1];
     // Order matches enum VCD_USB_BDMA_MODE: Ask / exFAT / fat32. The two driver labels are the ones the
     // per-launch prompt already uses, so the row and the dialog it replaces read identically.
     static const char *vcdUsbBdmaStrs[] = {NULL, NULL, NULL, NULL};
@@ -1240,7 +1240,7 @@ static void guiSetBdmaSettings(struct UIItem *ui)
     bdmaModeStrs[3] = _l(_STR_BDMA_MODE_MMCE);
     bdmaModeStrs[4] = _l(_STR_BDMA_MODE_ATA);
     bdmaModeStrs[5] = _l(_STR_BDMA_MODE_ILINK);
-    bdmaModeStrs[6] = "UDPFS";
+    bdmaModeStrs[VCD_BDMA_UDPFS] = "UDPFS";
     vcdUsbBdmaStrs[0] = _l(_STR_VCD_USB_BDMA_ASK);
     vcdUsbBdmaStrs[1] = _l(_STR_VCD_USB_MODE_EXFAT);
     vcdUsbBdmaStrs[2] = _l(_STR_VCD_USB_MODE_FAT32);
@@ -1509,7 +1509,7 @@ static void guiShowPopsUdpfsConfig(void)
         suffix = _l(_STR_POPS_UDPFS_INVALID_SUFFIX);
     else if (!original.ipExists || !original.serverExists)
         suffix = _l(_STR_POPS_UDPFS_INCOMPLETE_SUFFIX);
-    snprintf(notice, sizeof(notice), "%s%s", _l(_STR_POPS_UDPFS_ALL_USB_FOLDERS), suffix);
+    snprintf(notice, sizeof(notice), "%s%s", original.home, suffix);
     diaSetLabel(diaPopsUdpfsConfig, NETCFG_POPS_NOTICE, notice);
     for (int i = 0; i < 4; i++) {
         diaSetInt(diaPopsUdpfsConfig, NETCFG_POPS_IP_0 + i, original.ps2Ip[i]);

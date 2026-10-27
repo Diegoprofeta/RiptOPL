@@ -258,7 +258,10 @@ int SoundEffects::soundDuration(int id)
 // is a SYNCHRONOUS SIF RPC on the GUI thread (one per nav press); under IOP contention it stalls
 // the menu mid-navigation. Always measured (two tick reads), rendered only when Settings ->
 // Debug Colors is on (gui.c / dia.c).
-constexpr int SFX_CLOCKS_PER_MS = 147456;  // EE cpu_ticks() rate
+// Same deliberate half-rate as pad.cpp's CLOCKS_PER_MILISEC (the real cpu_ticks() rate is 294,912
+// per ms): the SFX coalesce/one-shot windows were tuned on hardware in these units (#504 sound cut),
+// so changing this alone would double them.
+constexpr int SFX_CLOCKS_PER_MS = 147456;
 
 /* MENU RUMBLE TIMING -- the RETROLauncher model, which is the reference for feedback that actually
    reads as feedback on hardware. Two shapes, and the split matters more than either value:

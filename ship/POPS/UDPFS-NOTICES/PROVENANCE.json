@@ -1,11 +1,11 @@
 {
-  "release": "https://github.com/Okeanos86/BDMAssault/releases/tag/Alpha",
-  "archive_url": "https://github.com/Okeanos86/BDMAssault/releases/download/Alpha/BDM-UDPFS_Assault-ALPHA.zip",
-  "archive_sha256": "532bcf85b5beff90df9ff51da02b690b0bdee82ed3372e40b4f2c36de5eaf5ce",
+  "release": "https://github.com/Okeanos86/BDMAssault/releases/tag/1.0.0",
+  "archive_url": "https://github.com/Okeanos86/BDMAssault/releases/download/1.0.0/UDPFS_Assault.zip",
+  "archive_sha256": "a22311192bbf4d5252d62aec130e57a900505bc71f8603407fc45b7c453da27e",
   "files": {
     "usbd.irx.udpfs": {
       "archive_member": "READY_TO_USE/POPSTARTER/usbd.irx",
-      "sha256": "f0a42084ff8841022228033ddfa8add8809275bb55ab29323e1c89f10f898344"
+      "sha256": "f6bda124c58f1eb770f4278d6366bb99c8c568fea94a06968c50c265d6f6cba7"
     },
     "usbhdfsd.irx.udpfs": {
       "archive_member": "READY_TO_USE/POPSTARTER/usbhdfsd.irx",
@@ -33,15 +33,15 @@
     },
     "UDPFS-NOTICES/README_CONFIG.txt": {
       "archive_member": "docs/README_CONFIG.txt",
-      "sha256": "7f2d99bf17598ea203646347c5f98c606ca373f3c12932bc0822ffc4d2470439"
+      "sha256": "e81eb32947e9a99451a57375c1befd76f022ec6fd8cfcba340d7f6bd72fdb0d4"
     },
     "UDPFS-NOTICES/THIRD_PARTY_NOTICES.md": {
       "archive_member": "docs/THIRD_PARTY_NOTICES.md",
-      "sha256": "471cae7fcdef217398a4e4beffb143bad8af1c1f5fc514bfccad1949f3061be8"
+      "sha256": "03494e22785546eac7c67e2f042fb0ceadbd751dba95bc1b69dd68fc0c6c5d4e"
     },
     "UDPFS-NOTICES/UPSTREAM-README.md": {
       "archive_member": "README.MD",
-      "sha256": "24451ab006d713470064024529055d27e3ecd972770f1319803241a71febb74a"
+      "sha256": "7dc4103798970cf663df368df4c3e83e89a9ddb0d3e18c11cc63d001ee611415"
     }
   }
 }

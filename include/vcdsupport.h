@@ -145,7 +145,7 @@ enum {
     VCD_BDMA_MMCE,      // MMCE exFAT
     VCD_BDMA_ATA,       // internal ATA HDD exFAT (BDMAssault)
     VCD_BDMA_ILINK,     // iLink / IEEE 1394 (appended so persisted mode values stay stable)
-    VCD_BDMA_UDPFS,     // read-only network VCD fallback through the POPSTARTER USB driver
+    VCD_BDMA_UDPFS,     // UDPFS serves all mass: files, including VMC writes
     VCD_BDMA_MODE_COUNT
 };
 // "BDMA SOURCE": which device holds the user-provided variant files in its POPS/ folder. The equip
@@ -173,8 +173,6 @@ int vcdEquipBdma(int source, int mode, char *diag, int diagSize);
 int vcdReadBdmaMode(void);
 // Marked or matching unmarked driver pair, required for network VCD handoff.
 int vcdBdmaLaunchReady(int mode);
-// Refuse the known USB-only RA module (or an unreadable module) on every live USB volume.
-int vcdPopsUdpfsCleanModules(void);
 // Auto-equip the BDMA variant matching the game's device (source/mode) before a VCD launch.
 // Local launches keep best-effort preparation; UDPFS callers require vcdBdmaLaunchReady before handoff.
 void vcdEnsureBdmaForLaunch(int source, int mode);
@@ -258,8 +256,7 @@ int vcdWritePopstarterNetFiles(const vcd_popsnet_t *cfg, int writeSmb, int write
 // release's).
 int vcdEquipBdmaFromPops(const char *popsDir, int mode, char *diag, int diagSize);
 
-// Interim BDM-UDPFS Assault configuration: the IRXs may come from any POPS source,
-// but this release reads these two DAT files only from USB mass:/POPS/ after reset.
+// UDPFS Assault reads optional DAT files from mc0:/SYS-CONF/, then mc1:/SYS-CONF/.
 typedef struct
 {
     int ps2Ip[4], mask[4], gateway[4], server[4]; // server 0.0.0.0 = broadcast discovery
@@ -269,7 +266,8 @@ typedef struct
 int vcdReadPopsUdpfsNet(vcd_pops_udpfs_t *out);
 int vcdPopsUdpfsNetValid(const vcd_pops_udpfs_t *cfg);
 int vcdWritePopsUdpfsNet(const vcd_pops_udpfs_t *cfg);
-int vcdPreparePopsUdpfsLaunch(char *usbRoot, int rootSize);
+// Copy optional game-device POPS/*.DAT only when absent from both cards.
+int vcdInstallPopsUdpfsNet(const char *popsDir);
 
 // ---- POPStarter SMB auto-provisioning (RiptOPL launch helper) ----
 // Ensures the two required network files for SMB VCD launches exist at the validated resolved

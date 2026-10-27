@@ -720,17 +720,16 @@ void UdpfsSource::rename(item_list_t *itemList, int id, char *newName)
     gUdpfsSupport.invalidateIsoScan();
 }
 
-// Shared UDPFS VCD handoff for this source page and Favorites; prepare before teardown.
+// Shared UDPFS VCD handoff for this source page and Favorites; prepare before teardown. UDPFS
+// Assault serves every mass: file from the server, so POPSTARTER, the driver pair and the optional
+// DAT files all come from the server's POPS/ folder.
 void UdpfsSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet)
 {
-    char usbRoot[64], elf[256], selector[320], vcdPath[320];
+    char elf[256], selector[320], vcdPath[320], popsDir[96], diag[160];
+    const int mode = VCD_BDMA_UDPFS;
     (void)configSet;
     if (vcdName == NULL || vcdName[0] == '\0' || !strcasecmp(vcdName, "POPSTARTER"))
         return;
-    if (!vcdPreparePopsUdpfsLaunch(usbRoot, sizeof(usbRoot))) {
-        host::ui().msgBox(_l(_STR_POPS_UDPFS_NOT_READY), 0, NULL);
-        return;
-    }
     // Linux servers are case-sensitive and this IRX only accepts uppercase .VCD.
     snprintf(vcdPath, sizeof(vcdPath), "%sPOPS/%s.VCD", udpfsPrefix, vcdName);
     int fd = open(vcdPath, O_RDONLY);
@@ -739,26 +738,38 @@ void UdpfsSource::launchVcd(item_list_t *itemList, const char *vcdName, config_s
         return;
     }
     close(fd);
-    if (!vcdResolvePopstarter(udpfsPrefix, elf, sizeof(elf)) &&
-        !vcdResolvePopstarter(usbRoot, elf, sizeof(elf))) {
-        vcdDescribePopstarterLookup(usbRoot, elf, sizeof(elf));
+    if (!vcdResolvePopstarter(udpfsPrefix, elf, sizeof(elf))) {
+        vcdDescribePopstarterLookup(udpfsPrefix, elf, sizeof(elf));
         host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), elf);
         return;
     }
     host::ui().renderTextScreen(_l(_STR_PLEASE_WAIT));
-    (void)vcdInstallPopstarterMc(usbRoot);
-    vcdEnsureBdmaForLaunch(VCD_BDMA_SRC_USB, VCD_BDMA_UDPFS);
-    if (!vcdBdmaLaunchReady(VCD_BDMA_UDPFS)) {
+    (void)vcdInstallPopstarterMc(udpfsPrefix);
+    snprintf(popsDir, sizeof(popsDir), "%s" POPS_FOLDER "/", udpfsPrefix);
+    int er = vcdInstallPopsUdpfsNet(popsDir);
+    if (er != 0) {
+        host::ui().msgBox(_l(er == -2 ? _STR_BDMA_ERR_SPACE : _STR_BDMA_ERR_IO), 0, NULL);
+        return;
+    }
+    if (gBdmaApplyOnLaunch && !vcdBdmaLaunchReady(mode)) {
+        er = vcdEquipBdmaFromPops(popsDir, mode, diag, sizeof(diag));
+        if (er != 0) {
+            host::ui().msgBox(_l(er == -5 ? _STR_BDMA_ERR_OLD : er == -4 ? _STR_BDMA_ERR_SRC :
+                                                            er == -2     ? _STR_BDMA_ERR_SPACE :
+                                                                           _STR_BDMA_ERR_IO),
+                              0, NULL);
+            return;
+        }
+    }
+    if (!vcdBdmaLaunchReady(mode)) {
         // Unlike local POPSTARTER, network VCDs require this exact driver family.
         host::ui().msgBox(_l(_STR_POPS_UDPFS_DRIVER_NOT_READY), 0, NULL);
         return;
     }
-    // POPS UDPFS has no RA integration yet. Do not leave our USB-only RA module
-    // reading a network VCD through unsupported telemetry hooks.
-    if (!vcdPopsUdpfsCleanModules()) {
-        host::ui().msgBox(_l(_STR_POPS_UDPFS_RA_MODULE), 0, NULL);
+    // POPS UDPFS has no RA integration yet: a module a tracked launch left in the server's POPS/
+    // would report telemetry for a game it does not see.
+    if (!vcdConfirmCleanLaunch(udpfsPrefix))
         return;
-    }
     vcdBuildSelector(udpfsPrefix, VCD_PREFIX_MASS, vcdName, selector, sizeof(selector));
     vcdPrepareRetroGemBarcode(vcdPath);
     host::app().deinitEx(sbLoaderDeinitException(elf), itemList->mode, host::app().pathToMode(elf));

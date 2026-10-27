@@ -175,12 +175,13 @@ run("pops_launch", r'''
 #include <cstdio>
 #include <strings.h>
 #include <vector>
-enum { _STR_POPS_UDPFS_NOT_READY, _STR_ERR_FILE_INVALID, _STR_POPSTARTER_NOT_FOUND,
-       _STR_PLEASE_WAIT, _STR_POPS_UDPFS_DRIVER_NOT_READY, _STR_POPS_UDPFS_RA_MODULE, O_RDONLY, VCD_BDMA_SRC_USB,
-       VCD_BDMA_UDPFS, VCD_PREFIX_MASS };
+#define POPS_FOLDER "POPS"
+enum { _STR_ERR_FILE_INVALID, _STR_POPSTARTER_NOT_FOUND, _STR_PLEASE_WAIT, _STR_BDMA_ERR_SPACE, _STR_BDMA_ERR_IO,
+       _STR_BDMA_ERR_OLD, _STR_BDMA_ERR_SRC, _STR_POPS_UDPFS_DRIVER_NOT_READY, O_RDONLY, VCD_PREFIX_MASS };
+constexpr int VCD_BDMA_UDPFS = 6;
 struct item_list_t { int mode; }; struct config_set_t {};
 static const char *udpfsPrefix = "udpfs:/";
-static int blocked, error, resolveCalls;
+static int ready, gBdmaApplyOnLaunch, equips, configs, missing, error, clean, equipError, configError;
 static std::vector<int> events;
 static const char *_l(int id) { return reinterpret_cast<const char*>(long(id + 1)); }
 namespace host {
@@ -196,41 +197,53 @@ struct App {
 static Ui &ui() { static Ui value; return value; }
 static App &app() { static App value; return value; }
 }
-static int vcdPreparePopsUdpfsLaunch(char *root, int size) { if(blocked == 1) return 0; snprintf(root, size, "mass3:/"); return 1; }
-static int open(const char *path, int) { assert(!strcmp(path, "udpfs:/POPS/title.VCD")); return blocked == 2 ? -1 : 4; }
+static int open(const char *path, int) { assert(!strcmp(path, "udpfs:/POPS/title.VCD")); return missing == 1 ? -1 : 4; }
 static int close(int) { return 0; }
-static int vcdResolvePopstarter(const char*, char *elf, int size) {
-    ++resolveCalls; if (blocked == 3 || resolveCalls == 1) return 0;
-    snprintf(elf, size, "mass3:/POPS/POPSTARTER.ELF"); return 1;
+static int vcdResolvePopstarter(const char *root, char *elf, int size) {
+    assert(!strcmp(root, udpfsPrefix)); if (missing == 2) return 0;
+    snprintf(elf, size, "udpfs:/POPS/POPSTARTER.ELF"); return 1;
 }
 static void vcdDescribePopstarterLookup(const char*, char *elf, int size) { snprintf(elf, size, "missing"); }
-static int vcdInstallPopstarterMc(const char*) { events.push_back(2); return 0; }
-static void vcdEnsureBdmaForLaunch(int, int mode) { assert(mode == VCD_BDMA_UDPFS); events.push_back(3); }
-static int vcdBdmaLaunchReady(int mode) { assert(mode == VCD_BDMA_UDPFS); return blocked != 4; }
-static int vcdPopsUdpfsCleanModules() { events.push_back(4); return blocked != 5; }
+static int vcdInstallPopstarterMc(const char *root) { assert(!strcmp(root, udpfsPrefix)); events.push_back(2); return 0; }
+static int vcdInstallPopsUdpfsNet(const char *pops) { assert(!strcmp(pops, "udpfs:/POPS/")); ++configs; return configError; }
+static int vcdEquipBdmaFromPops(const char *pops, int mode, char*, int) {
+    assert(!strcmp(pops, "udpfs:/POPS/")); ++equips; if (!equipError) ready = mode; return equipError;
+}
+static int vcdBdmaLaunchReady(int mode) { assert(mode == VCD_BDMA_UDPFS); return ready == mode; }
+static int vcdConfirmCleanLaunch(const char *root) { assert(!strcmp(root, udpfsPrefix)); events.push_back(4); return clean; }
 static void vcdBuildSelector(const char *source, int type, const char*, char *out, int size) {
     assert(!strcmp(source, "udpfs:/") && type == VCD_PREFIX_MASS); snprintf(out, size, "XX.title");
 }
 static void vcdPrepareRetroGemBarcode(const char*) { events.push_back(5); }
 static int sbLoaderDeinitException(const char*) { return 0; }
 static void sysLaunchPopstarter(const char *elf, const char *selector) {
-    assert(!strcmp(elf, "mass3:/POPS/POPSTARTER.ELF") && !strcmp(selector, "XX.title")); events.push_back(7);
+    assert(!strcmp(elf, "udpfs:/POPS/POPSTARTER.ELF") && !strcmp(selector, "XX.title")); events.push_back(7);
 }
 class UdpfsSource { public: void launchVcd(item_list_t*, const char*, config_set_t*); };
 ''' + function(udpfs, "void UdpfsSource::launchVcd(") + r'''
+static UdpfsSource source; static item_list_t item{11};
+static bool launch(int readyAt = 0, int apply = 1) {
+    events.clear(); ready = readyAt; gBdmaApplyOnLaunch = apply; equips = configs = 0; error = -1; clean = 1;
+    source.launchVcd(&item, "title", nullptr);
+    bool launched = !events.empty() && events.back() == 7;
+    if (!launched) for (int event : events) assert(event != 6);
+    return launched;
+}
 int main() {
-    UdpfsSource source; item_list_t item{11};
     source.launchVcd(&item, nullptr, nullptr); source.launchVcd(&item, "", nullptr);
     source.launchVcd(&item, "POPSTARTER", nullptr); assert(events.empty());
-    for (blocked = 1; blocked <= 5; ++blocked) {
-        events.clear(); resolveCalls = 0; error = -1;
-        source.launchVcd(&item, "title", nullptr);
-        for (int event : events) assert(event != 6 && event != 7);
-        if (blocked == 4) assert(error == _STR_POPS_UDPFS_DRIVER_NOT_READY);
-    }
-    blocked = 0; events.clear(); resolveCalls = 0;
-    source.launchVcd(&item, "title", nullptr);
-    assert((events == std::vector<int>{1, 2, 3, 4, 5, 6, 7}));
+    // Network only: the config pair, POPSTARTER and the driver pair all come from the server.
+    assert(launch() && equips == 1 && configs == 1 && (events == std::vector<int>{1, 2, 4, 5, 6, 7}));
+    assert(launch(VCD_BDMA_UDPFS) && equips == 0 && configs == 1);    // an equipped pair is not recopied
+    assert(launch(VCD_BDMA_UDPFS, 0) && equips == 0);                  // manual pair, auto-equip off
+    assert(!launch(0, 0) && error == _STR_POPS_UDPFS_DRIVER_NOT_READY);
+    equipError = -5; assert(!launch() && error == _STR_BDMA_ERR_OLD); equipError = -4;
+    assert(!launch() && error == _STR_BDMA_ERR_SRC); equipError = 0;
+    configError = -2; assert(!launch(VCD_BDMA_UDPFS) && error == _STR_BDMA_ERR_SPACE && !equips);
+    configError = -3; assert(!launch(VCD_BDMA_UDPFS) && error == _STR_BDMA_ERR_IO); configError = 0;
+    events.clear(); ready = VCD_BDMA_UDPFS; clean = 0; source.launchVcd(&item, "title", nullptr);
+    assert(!events.empty() && events.back() == 4);                     // RA module refused: no teardown
+    for (missing = 1; missing <= 2; ++missing) assert(!launch(VCD_BDMA_UDPFS));
 }
 ''')
 
@@ -241,7 +254,7 @@ assert "gUdpfsSupport.invalidateIsoScan();" in function(udpfs, "void UdpfsSource
 assert "gUdpfsSupport.invalidateIsoScan();" in function(udpfs, "void UdpfsSource::rename(")
 
 provenance = json.loads(read("ship/POPS/UDPFS-NOTICES/PROVENANCE.json"))
-assert provenance["archive_sha256"] == "532bcf85b5beff90df9ff51da02b690b0bdee82ed3372e40b4f2c36de5eaf5ce"
+assert provenance["archive_sha256"] == "a22311192bbf4d5252d62aec130e57a900505bc71f8603407fc45b7c453da27e"
 for filename, expected in provenance["files"].items():
     assert hashlib.sha256((ROOT / "ship/POPS" / filename).read_bytes()).hexdigest() == expected["sha256"], filename
 print("UDPFS: ISO-only/cache preservation, partial PS1 recovery, launch gates and pinned payloads passed")
