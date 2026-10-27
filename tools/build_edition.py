@@ -14,6 +14,7 @@ import yaml
 
 from build import build
 from build_configuration import CONFIGURATIONS, apply_configuration
+from install_ports import LIBRARIES
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITIONS = {
@@ -132,12 +133,16 @@ def main():
     sdk = Path(os.environ.get("PS2BUILD_HOME", shutil.which("ps2build") or "")).resolve()
     if sdk.is_file():
         sdk = sdk.parent
+    world = sdk / ("packages-llvm" if args.toolchain == "llvm" else "packages") / "world"
     manifest = {
         "repository": "NathanNeurotic/RiptOPL", "source_commit": source, "dirty": dirty,
         "edition": args.edition, **options, "sdk": "ps2build", "compiler": args.toolchain,
         "configuration": args.configuration,
         "ps2build_version": subprocess.check_output(["ps2build", "--version"], text=True).strip(),
         "components": yaml.safe_load((sdk / "versions.yaml").read_text()) if (sdk / "versions.yaml").exists() else {},
+        # install_ports.py may keep a cached ogg/vorbis through a host outage; record which one was linked.
+        "ports": {package: hashlib.sha256(b"".join((world / package / "lib" / lib).read_bytes() for lib in libraries)).hexdigest()
+                  for package, libraries in LIBRARIES.items() if (world / package).is_dir()},
         "definition_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "elf_sha256": hashlib.sha256(elf.read_bytes()).hexdigest(),
         "ilink_bd_sha256": hashlib.sha256((stage / "IEEE1394_bd_mini.irx").read_bytes()).hexdigest(),

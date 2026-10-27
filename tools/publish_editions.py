@@ -31,12 +31,13 @@ BUNDLE_README = ("RiptOPL {title} configuration builds. Each folder holds one {e
                  "changes: https://github.com/NathanNeurotic/RiptOPL/blob/rebuild/main/docs/BUILD-CONFIGURATIONS.md\n")
 
 
-# GitHub's release API intermittently answers 5xx; every call below is safe to repeat.
+# GitHub's release API intermittently answers 5xx. Calls are retried unless retry=False: a create that
+# failed part-way has already made the release, so repeating it can only fail.
 RETRY_DELAYS = (5, 15)
 
 
-def gh(*args):
-    for delay in (*RETRY_DELAYS, None):
+def gh(*args, retry=True):
+    for delay in (*(RETRY_DELAYS if retry else ()), None):
         try:
             return subprocess.check_output(["gh", *args], text=True).strip()
         except subprocess.CalledProcessError:
@@ -67,6 +68,13 @@ def update_tag(repo, tag, sha):
         raise RuntimeError(f"cannot inspect release tag {tag}: {result.stderr.strip()}")
 
 
+def add_sum(path, name, digest):
+    """List name in path/SHA256SUMS.txt once, so a second run over the same folder stays valid."""
+    sums = path / "SHA256SUMS.txt"
+    lines = [line for line in sums.read_text(encoding="utf-8").splitlines() if line.split("  ", 1)[-1] != name]
+    sums.write_text("".join(f"{line}\n" for line in [*lines, f"{digest}  {name}"]), encoding="utf-8")
+
+
 def bundle_configurations(root, expected_sha):
     """Pack the configuration builds into their edition's release and add them to its checksums."""
     for name, (edition, configurations, _) in BUNDLES.items():
@@ -82,14 +90,13 @@ def bundle_configurations(root, expected_sha):
                 if (manifest["source_commit"] != expected_sha or manifest["dirty"] or manifest["edition"] != edition
                         or manifest["compiler"] != "gcc" or manifest["configuration"] != configuration
                         or manifest["ps2build_version"] != kit["ps2build_version"]
-                        or manifest["components"] != kit["components"]
+                        or manifest["components"] != kit["components"] or manifest["ports"] != kit["ports"]
                         or manifest["elf_sha256"] != hashlib.sha256(elf).hexdigest()):
                     raise ValueError(f"invalid configuration build: {edition}/{configuration}")
                 bundle.writestr(f"{configuration}/{elf_name}", elf)
                 bundle.writestr(f"{configuration}/BUILD-MANIFEST.json", json.dumps(manifest, indent=2) + "\n")
             bundle.writestr("README.txt", BUNDLE_README.format(title=EDITIONS[edition]["title"], elf=elf_name))
-        with (path / "SHA256SUMS.txt").open("a", encoding="utf-8") as sums:
-            sums.write(f"{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}\n")
+        add_sum(path, archive.name, hashlib.sha256(archive.read_bytes()).hexdigest())
 
 
 def verify(root, expected_sha):
@@ -103,7 +110,7 @@ def verify(root, expected_sha):
                 or manifest["sdk"] != "ps2build" or manifest["ra"] != options["ra"]
                 or manifest.get("configuration", "standard") != "standard"):
             raise ValueError(f"invalid source/edition manifest for {edition}")
-        suites.append((manifest["ps2build_version"], manifest["components"]))
+        suites.append((manifest["ps2build_version"], manifest["components"], manifest["ports"]))
         sums = {}
         for line in (path / "SHA256SUMS.txt").read_text(encoding="utf-8").splitlines():
             digest, name = line.split("  ", 1)
@@ -153,12 +160,11 @@ def fold_companions(candidates):
         if "into" not in options:
             continue
         parent = parents[options["into"]]
-        with (parent / "SHA256SUMS.txt").open("a", encoding="utf-8") as listing:
-            for source, target in companion_assets(options).items():
-                if (parent / target).exists():
-                    raise ValueError(f"companion asset collides with its channel: {target}")
-                shutil.copyfile(path / source, parent / target)
-                listing.write(f"{sums[source]}  {target}\n")
+        for source, target in companion_assets(options).items():
+            if (parent / target).exists() and hashlib.sha256((parent / target).read_bytes()).hexdigest() != sums[source]:
+                raise ValueError(f"companion asset collides with its channel: {target}")
+            shutil.copyfile(path / source, parent / target)
+            add_sum(parent, target, sums[source])
     return [candidate for candidate in candidates if "into" not in candidate[1]]
 
 
@@ -199,19 +205,22 @@ def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
 
 def upload_verified(repo, tag, sha, title, notes_path, assets, exists):
     """Upload a channel's assets and confirm GitHub kept them. A published channel that fails part-way
-    gets every clobbered file back, so its downloads never mix two builds under the old tag."""
+    gets every clobbered file back and loses the files it added, so its downloads never mix two builds
+    under the old tag."""
     with tempfile.TemporaryDirectory() as backup:
-        replaced = []
+        replaced, added = [], []
         if exists:
-            current = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "assets"))["assets"]
-            replaced = sorted({a["name"] for a in current} & {Path(a).name for a in assets})
+            current = {a["name"] for a in json.loads(gh("release", "view", tag, "--repo", repo, "--json", "assets"))["assets"]}
+            replaced = sorted(current & {Path(a).name for a in assets})
+            added = sorted({Path(a).name for a in assets} - current)
             for name in replaced:
-                gh("release", "download", tag, "--repo", repo, "--pattern", name, "--dir", backup)
+                gh("release", "download", tag, "--repo", repo, "--pattern", name, "--dir", backup, "--clobber")
         try:
             if exists:
                 gh("release", "upload", tag, "--repo", repo, "--clobber", *assets)
             else:
-                gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", title, "--notes-file", str(notes_path), *assets)
+                gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", title,
+                   "--notes-file", str(notes_path), *assets, retry=False)
             release = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "id,assets"))
             remote = {a["name"]: a for a in release["assets"]}
             for asset in assets:
@@ -223,6 +232,11 @@ def upload_verified(repo, tag, sha, title, notes_path, assets, exists):
         except (subprocess.CalledProcessError, ValueError):
             if replaced:
                 gh("release", "upload", tag, "--repo", repo, "--clobber", *(str(Path(backup) / n) for n in replaced))
+            for name in added:  # new to this channel: not part of the build it still serves
+                try:
+                    gh("release", "delete-asset", tag, name, "--repo", repo, "--yes")
+                except subprocess.CalledProcessError:
+                    pass  # best effort: the original failure is the one to report
             raise
 
 

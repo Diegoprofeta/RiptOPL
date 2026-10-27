@@ -10,10 +10,10 @@ import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
-import urllib.request
 import zipfile
 
 from build_edition import EDITIONS, ROOT, git
+from install_ports import download
 
 spec = importlib.util.spec_from_file_location("app_packager", ROOT / ".github/scripts/package_release_app.py")
 app = importlib.util.module_from_spec(spec)
@@ -135,8 +135,7 @@ def package(edition, neutrino_archive, orbit_archive=None):
             if orbit_archive is None:
                 orbit_archive = kit.parent / pin["asset"]
                 url = f"https://github.com/{pin['repository']}/releases/download/{pin['tag']}/{pin['asset']}"
-                with urllib.request.urlopen(url, timeout=60) as response:
-                    orbit_archive.write_bytes(response.read())
+                orbit_archive.write_bytes(download(url))  # retries 5xx/timeouts; the pin checks the bytes
             stage_orbit(orbit_archive, kit / "neutrino", pin)
             neutrino_archive = orbit_archive
         else:

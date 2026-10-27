@@ -82,7 +82,7 @@ language exists upstream as `lng_src/<Language>.yml`; to ship it, add its name t
 - **Serbian** has no font upstream, and the built-in font has no `č`, `ć` or `đ`. Serbian Latin uses
   exactly Croatian's letters, so `lng_pack.sh` ships `font_Croatian.ttf` as `font_Serbian.ttf`.
   Check a new language's characters against the built-in font before assuming it needs no font.
-- **Fork strings.** A language with no `lng/fork/<Language>.yml` (Galician and Serbian today) shows
+- **Fork strings.** A language with no `lng/fork/<Language>.yml` shows
   the fork's own strings in English until someone adds that file.
 
 ## Building just the languages

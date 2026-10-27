@@ -48,7 +48,7 @@ Review the LICENSE file for further details.<br><br>
 [![Discord](https://img.shields.io/discord/1275875800318476381?style=flat&logo=Discord)](https://tinyurl.com/PS2SPACE)
 [![Documentation](https://img.shields.io/badge/Documentation-RiptOPL-skyblue?style=flat&logo=githubpages&logoColor=white&labelColor=navy)](https://nathanneurotic.github.io/RiptOPL/)
 
-> **What is RiptOPL?** A downstream fork of Open PS2 Loader with a built-in cover-art **Coverflow** theme (optional), a **Favorites** tab, per-game **Neutrino** external-core launching, a reorganized category **settings layout**, DualSense support, and ready-to-use opinionated defaults. Fresh configurations use **`<OPL>`**, **16:9**, and **Auto** menu video; see [Fresh-start defaults](docs/DEFAULTS.md). Its settings live in their own **`settings_riptopl.cfg`** to keep its master settings separate from official OPL and wOPL. Other files, including network and per-game settings, can still be shared. Favorites import from uOPL/wOPL is **one-way**: the next save writes RiptOPL’s own format to `favourites.bin`. See [Where your files live](#where-your-files-live). See **[This Fork's Additions](#this-forks-additions)**. For the canonical project, use [ps2homebrew/Open-PS2-Loader](https://github.com/ps2homebrew/Open-PS2-Loader).
+> **What is RiptOPL?** A downstream fork of Open PS2 Loader with a built-in cover-art **Coverflow** theme (optional), a **Favorites** tab, per-game **Neutrino** external-core launching, a reorganized category **settings layout**, DualSense support, and ready-to-use opinionated defaults. Fresh configurations use **`<OPL>`**, **4:3**, and **Auto** menu video; see [Fresh-start defaults](docs/DEFAULTS.md). Its settings live in their own **`settings_riptopl.cfg`** to keep its master settings separate from official OPL and wOPL. Other files, including network and per-game settings, can still be shared. Favorites import from uOPL/wOPL is **one-way**: the next save writes RiptOPL’s own format to `favourites.bin`. See [Where your files live](#where-your-files-live). See **[This Fork's Additions](#this-forks-additions)**. For the canonical project, use [ps2homebrew/Open-PS2-Loader](https://github.com/ps2homebrew/Open-PS2-Loader).
 
 > 📖 **Full documentation & guides:** **<https://nathanneurotic.github.io/RiptOPL/>** — searchable setup and reference guides covering storage backends, the Neutrino core, PS1/VCD, the Theme Engine (with worked examples and an annotated sample theme), a full settings reference, and troubleshooting.
 
@@ -390,12 +390,13 @@ This build layers several features on top of upstream OPL:
   **Audio Settings** — each with chained sub-pages, plus a **Save Changes** entry at the foot of the
   index. Leaving the start/settings menu returns to the page you paused on when it is still visible;
   it no longer falls back to the first USB page.
-- **DualSense / DualShock 5 (USB):** optional controller support — available in the prebuilt
-  `RIPTOPL-VARIANTS-*.zip` release bundle (one ELF per SDK flavour), or build with `make DUALSENSE=1`.
+- **DualSense / DualShock 5 (USB):** optional controller support — available as `ds5/RIPTOPL.ELF` (and `extras_ds5/`) in the
+  Korium release's `RIPTOPL-VARIANTS.zip`, or build with
+  `python tools/build_edition.py korium --configuration ds5`.
 - **1080p GSM video mode:** forced progressive 1080p (1920×1080) GSM mode is built directly into all standard builds (`make GSM1080P=1`). Full GSM documentation: **[docs/GSM.md](docs/GSM.md)**. Selecting 1080p in the per-game GSM picker is guarded by a **three-step confirmation**; if a game loses the picture, disable/change its GSM override before relaunching. **Triangle + Cross** at boot affects only the OPL menu and requires a 480p-capable display/connection; **Triangle + Circle** forces the interlaced Auto mode instead.
 - **Ready-to-use defaults:** a fresh install boots with sensible options already enabled —
-  widescreen, cover art, notifications, sound effects + boot sound, delete/rename, and
-  the PS2 logo. Video mode stays **Auto**. Every storage device ships **off**, so the first boot
+  cover art, notifications and the PS2 logo; widescreen, sound effects and boot sound start
+  off (see [Fresh-start defaults](docs/DEFAULTS.md)). Video mode stays **Auto**. Every storage device ships **off**, so the first boot
   lands on the start menu with no tabs — enable exactly the devices your console has under
   **Game Sources**. Change any of it under Settings.
 - **Private master settings, shared support files:** `settings_riptopl.cfg` is separate from stock OPL's master file. Other configuration and data can still be shared; favorites migration from uOPL/wOPL is one-way. See [Where your files live](#where-your-files-live).
@@ -415,7 +416,7 @@ and then, still holding them, press the second half:
 | ---- | ---------- | ------ |
 | L1 + L2 + R1 + R2 | **Start + Select** | Reset - quit the game to the PS2 browser, or to the **IGR Path** ELF |
 | L1 + L2 + R1 + R2 | **L3 + R3** | Power off the console |
-| L1 + L2 + R1 + R2 | **Up** | In-game screenshot (needs GSM on **and** an `IGS=1` build: off in the main release loader, on in the `-extra1` loaders in `RIPTOPL-VARIANTS-*.zip` — see [docs/IGR.md](docs/IGR.md#in-game-screenshots-igs)) |
+| L1 + L2 + R1 + R2 | **Up** | In-game screenshot (needs GSM on **and** an `IGS=1` build: off in the main release loader, on in the `extras/` and `extras_ds5/` loaders in `RIPTOPL-VARIANTS.zip` — see [docs/IGR.md](docs/IGR.md#in-game-screenshots-igs)) |
 
 The console's own power button works too: **one press** powers off, **two presses** reset.
 

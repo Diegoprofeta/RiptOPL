@@ -126,7 +126,7 @@ class PublicationTests(unittest.TestCase):
             assets = self.release(folder, ["RIPTOPL-RA.ELF", "APP_RIPTOPL-RA.psu", "RIPTOPL-RA.zip"])
             calls = []
 
-            def fake(*args):
+            def fake(*args, retry=True):
                 calls.append(args)
                 if args[:2] == ("release", "view"):
                     return json.dumps(dict(assets=[{"name": "RIPTOPL-RA.ELF"}, {"name": "RIPTOPL-RA.zip"}, {"name": "old.txt"}]))
@@ -138,9 +138,11 @@ class PublicationTests(unittest.TestCase):
 
             with patch.object(publisher, "gh", side_effect=fake), self.assertRaises(subprocess.CalledProcessError):
                 publisher.upload_verified("owner/repo", "rolling-ra", "a" * 40, "RA", Path("notes"), assets, True)
-            restore = calls[-1]
+            restore, delete = calls[-2:]
             self.assertEqual(restore[:5], ("release", "upload", "rolling-ra", "--repo", "owner/repo"))
             self.assertEqual(sorted(Path(name).name for name in restore[6:]), ["RIPTOPL-RA.ELF", "RIPTOPL-RA.zip"])
+            # An asset the channel did not have before is removed again, not left beside the old build.
+            self.assertEqual(delete, ("release", "delete-asset", "rolling-ra", "APP_RIPTOPL-RA.psu", "--repo", "owner/repo", "--yes"))
             self.assertFalse(any(call[:2] in (("release", "edit"), ("release", "create")) for call in calls))
 
     def test_unretained_asset_restores_and_new_drafts_need_no_restore(self):
@@ -153,7 +155,7 @@ class PublicationTests(unittest.TestCase):
                                              (dict(good, digest="sha256:0"), False, False)):
                 calls = []
 
-                def fake(*args):
+                def fake(*args, retry=True):
                     calls.append(args)
                     if args[:2] == ("release", "view"):
                         return json.dumps(dict(id=1, assets=[remote]))

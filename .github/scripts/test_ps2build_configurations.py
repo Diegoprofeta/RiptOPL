@@ -183,7 +183,7 @@ class PublisherTests(unittest.TestCase):
             manifest = {"repository": "NathanNeurotic/RiptOPL", "source_commit": source or self.sha,
                         "dirty": dirty, "edition": edition, "compiler": "gcc", "sdk": "ps2build",
                         "ra": options["ra"], "configuration": configuration,
-                        "ps2build_version": "test", "components": {},
+                        "ps2build_version": "test", "components": {}, "ports": {},
                         "elf_sha256": hashlib.sha256(payload).hexdigest()}
             (path / elf).write_bytes(payload)
             (path / psu).write_bytes(b"synthetic-psu")
@@ -210,7 +210,7 @@ class PublisherTests(unittest.TestCase):
                 stage.mkdir()
                 payload = b"\x7fELF" + configuration.encode()
                 manifest = {"source_commit": self.sha, "dirty": False, "edition": edition, "compiler": "gcc",
-                            "configuration": configuration, "ps2build_version": "test", "components": {},
+                            "configuration": configuration, "ps2build_version": "test", "components": {}, "ports": {},
                             "elf_sha256": hashlib.sha256(payload).hexdigest(), **changes.get(configuration, {})}
                 (stage / "RIPTOPL.ELF").write_bytes(payload)
                 (stage / "BUILD-MANIFEST.json").write_text(json.dumps(manifest))
@@ -258,7 +258,8 @@ class PublisherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
             root = Path(directory)
             self.kit(root)
-            channels = publish_editions.fold_companions(publish_editions.verify(root, self.sha))
+            candidates = publish_editions.verify(root, self.sha)
+            channels = publish_editions.fold_companions(candidates)
             self.assertEqual([c[0] for c in channels], ["korium", "ra", "incebtion"])
             ra = root / "release-ra"
             folded = ["RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu"]
@@ -266,9 +267,13 @@ class PublisherTests(unittest.TestCase):
             for name in folded:
                 self.assertEqual(sums[name], hashlib.sha256((ra / name).read_bytes()).hexdigest())
             self.assertEqual(set(sums) | {"SHA256SUMS.txt"}, {p.name for p in ra.iterdir()})
-            # Folding twice would overwrite the channel's own copy: refused.
+            # A rerun after a partial publish folds the same files again without duplicating a sum.
+            publish_editions.fold_companions(candidates)
+            self.assertEqual(sums, dict(reversed(line.split("  ", 1)) for line in (ra / "SHA256SUMS.txt").read_text().splitlines()))
+            # A different file already in the channel is never overwritten.
+            (ra / "RIPTOPL-RA-IncebtIon.ELF").write_bytes(b"channel's own")
             with self.assertRaisesRegex(ValueError, "collides"):
-                publish_editions.fold_companions([(e, o, root / ("release-" + e), {}) for e, o in editions.EDITIONS.items()])
+                publish_editions.fold_companions(candidates)
 
 
 if __name__ == "__main__":
