@@ -182,8 +182,8 @@ a sharing violation, so "check game support" could only report that it could not
 while the game still *booted* off it, because the in-play open uses the older command, which the same
 server grants in compatibility mode.
 
-This flavour now carries its own `smbman` (`modules/network/smbman-ra`) that tries NT create first
-and falls back to the legacy open **only** when the server says the file is held, and **only for a
+RiptOPL now carries its own `smbman` (`modules/network/smbman-ra`, first in this flavour and now in every
+edition) that tries NT create first and falls back to the legacy open **only** when the server says the file is held, and **only for a
 read** — reaching past another handle to write is not something worth asking for. If both are
 refused, the hash log names the image as held instead of saying nothing. hacan359 confirmed this on
 hardware on 2026-09-10: two images held open by earlier runs hashed anyway, and the hashes matched
@@ -391,7 +391,7 @@ and both are selected by `USBD_MINI_IRX` / `SMBMAN_IRX` at the top of the Makefi
 
 | Module | Why | Diff from ps2sdk |
 |---|---|---|
-| `modules/network/smbman-ra` | the held-image fix above | `smb.c` (35 lines) and `smb.h` (4); every other file byte-identical to ps2sdk master |
+| `modules/network/smbman-ra` (every edition) | the held-image fix above; also a write now counts only the bytes the server's WRITE_ANDX Count says it stored, where ps2sdk's smbman takes any success status as the whole write. That matters on a server that answers a full disk, or a partial write, with success and a short or zero Count, which MS-CIFS allows; Samba, Windows (per MS-CIFS) and PS2-Servers answer a full disk with an error status, which both copies already fail | `smb.c` (+48/−5: both fixes), `smb.h` (+4) and `auth.c` (+6/−1: an unmarked password-buffer bound); every other source file byte-identical to ps2sdk master, checked 2026-10-27 by the original's #1064; only the build file is ours |
 | `modules/usb/usbd-ra` | see below | **nothing** — byte-identical to ps2sdk `iop/usb/usbd` at `314d87e7` (2024-04-01); only the Makefile is ours |
 
 **The usbd swap is not a RetroAchievements feature.** ps2sdk rewrote its USB host driver on

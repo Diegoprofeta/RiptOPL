@@ -62,7 +62,6 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         add(main, "sources", "src/platform/ratls.c", "src/sources/ratls_ps2.cpp")
         add(main, "include_dirs", *tls)
         add(main, "libs", "mbedtls")
-        main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
         add(main, "embed_irx", "raudp")
         add(targets["SMSTCPIP"], "defines", "INGAME_UDP")
         # raudp imports the in-game SMAP driver's transmit and notice exports, and the

@@ -131,8 +131,8 @@ static int bioSend(void *ctx, const unsigned char *buf, size_t len)
     return n < 0 ? MBEDTLS_ERR_NET_SEND_FAILED : n;
 }
 
-/* Reads through a 64-byte-aligned bounce buffer with raNetTcpRecv (whole 64-byte blocks, or at
-   most 64 bytes, so ps2ips never drops a tail), polling until data, close or the deadline. */
+/* Reads through a 64-byte-aligned bounce buffer with raNetTcpRecv (sized so ps2ips never drops an
+   unaligned tail), polling until data, close or the deadline. */
 static int bioRecv(void *ctx, unsigned char *buf, size_t len)
 {
     static unsigned char chunk[960] __attribute__((aligned(64)));
