@@ -185,7 +185,9 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/site-sync"
           "$RUNNER_TEMP/site-sync/bin/pip" install --quiet beautifulsoup4==4.15.0 markdown-it-py==4.0.0
           "$RUNNER_TEMP/site-sync/bin/python" .github/scripts/site_sync.py \
-            --site ../gh-pages --md-page docs/PS2SDK-NOTES.md=ps2sdk-notes.html | tee "$RUNNER_TEMP/site-sync.log"
+            --site ../gh-pages --md-page docs/PS2SDK-NOTES.md=ps2sdk-notes.html \
+            --md-page docs/GAME-FORMATS.md=game-formats.html \
+            --md-page docs/LAUNCH-DIAGNOSTICS.md=launch-diagnostics.html | tee "$RUNNER_TEMP/site-sync.log"
 
       - name: Commit regenerated site files
         shell: bash
@@ -197,7 +199,9 @@ jobs:
           git add retroachievements.html data/search-index.json
           # site_sync.py skips an --md-page whose page is not on gh-pages yet; `git add` of a missing
           # file would fail the step instead.
-          if [ -e ps2sdk-notes.html ]; then git add ps2sdk-notes.html; fi
+          for page in ps2sdk-notes.html game-formats.html launch-diagnostics.html; do
+            if [ -e "$page" ]; then git add "$page"; fi
+          done
           if git diff --cached --quiet; then
             echo "Search index and Markdown-built pages already up to date."
             exit 0
