@@ -132,6 +132,27 @@ class InstallPortsTests(unittest.TestCase):
             self.assertEqual((sdk / "packages-llvm/world/ogg/LICENSE").read_text(), "upstream license")
             self.assertEqual((sdk / "packages-llvm/world/ogg/lib/libogg.a").read_bytes(), b"new archive")
 
+    def test_host_outage_keeps_a_complete_cached_package_only(self):
+        outage = ports.urllib.error.HTTPError("https://example.com/release", 521, "origin down", None, None)
+        with tempfile.TemporaryDirectory() as directory:
+            sdk = Path(directory)
+            cached = sdk / "packages/world/ogg"
+            with patch.object(ports, "download", side_effect=outage):
+                with self.assertRaises(ports.urllib.error.HTTPError):
+                    ports.install(sdk, "ogg", "gcc")  # nothing cached
+                (cached / "lib").mkdir(parents=True)
+                (cached / "package.yaml").write_text("name: ogg\n")
+                with self.assertRaises(ports.urllib.error.HTTPError):
+                    ports.install(sdk, "ogg", "gcc")  # cached package lacks its library
+                (cached / "lib/libogg.a").write_bytes(b"cached")
+                ports.install(sdk, "ogg", "gcc")
+                self.assertEqual((cached / "lib/libogg.a").read_bytes(), b"cached")
+                with patch.dict(ports.os.environ, {"OGG_VERSION": "v2"}), self.assertRaises(ports.urllib.error.HTTPError):
+                    ports.install(sdk, "ogg", "gcc")  # a pinned version is never substituted
+                missing = ports.urllib.error.HTTPError("https://example.com/release", 404, "missing", None, None)
+                with patch.object(ports, "download", side_effect=missing), self.assertRaises(ports.urllib.error.HTTPError):
+                    ports.install(sdk, "ogg", "gcc")  # a missing release is an error, not an outage
+
     def test_failed_replacement_restores_previous_package(self):
         with tempfile.TemporaryDirectory() as directory:
             sdk = Path(directory)
