@@ -9,11 +9,11 @@ PS2-Servers servers answer a full disk with an error status instead, which was a
 This compiles the real smb_WriteAndX() and smb_WriteFile() from smb.c, and the real smb_write() from
 smb_fio.c, against scripted server replies, and checks: smb_WriteAndX() builds the WRITE_ANDX request
 it should and returns the server's Count; smb_WriteFile() sends the rest of the data from the right place
-in the buffer and at the right 64-bit offset after a short Count, and returns 0 on a zero one (bytes an
-earlier chunk of the same call stored are then not reported, as in cdvdman's copy); a reply shorter than
-the six-word response, a WordCount under 6 or a Count over the request fails, while a 45-byte reply with
-six words is enough; and smb_write() hands the EE 0 or -EIO for a failed write with the file position and
-size untouched, and otherwise advances them by the bytes written.
+in the buffer and at the right 64-bit offset after a short Count, and on a zero Count or a failure returns
+the bytes earlier chunks of the same call stored (0 or the error when there were none); a reply shorter
+than the six-word response, a WordCount under 6 or a Count over the request fails, while a 45-byte reply
+with six words is enough; and smb_write() hands the EE 0 or -EIO for a failed write with the file position
+and size untouched, and otherwise advances them by the bytes written.
 This is a host regression check, not a console test.
 """
 from pathlib import Path
@@ -60,7 +60,8 @@ fio = text(FIO)
 
 wire = (''.join(define(smb_h, name, SMB_H) for name in
                 ('SMB_MAGIC', 'SMB_FLAGS2_32BIT_STATUS', 'SMB_COM_WRITE_ANDX', 'SMB_COM_NONE', 'STATUS_SUCCESS'))
-        + ''.join(define(smb, name, SMB) for name in ('ZERO_PKT_ALIGNED', 'CLIENT_MAX_XFER_SIZE'))
+        + ''.join(define(smb, name, SMB) for name in ('ZERO_PKT_ALIGNED', 'CLIENT_MAX_XFER_SIZE',
+                                                      'CLIENT_MAX_WRITE_SIZE'))
         + ''.join(struct(smb_h, name, SMB_H, '__attribute__((packed)) ') for name in
                   ('SMBHeader_t', 'WriteAndXRequest_t', 'WriteAndXResponse_t'))
         + define(fio, 'SMB_NAME_MAX', FIO) + struct(fio, 'FHANDLE', FIO, ''))
@@ -148,13 +149,13 @@ static int GetSMBServerReply(int shdrlen, void *spayload, int rhdrlen)
     int asked = WR->DataLengthLow | (WR->DataLengthHigh << 16);
 
     /* The request itself: one padding byte after the parameter block, data right behind it, write-through,
-       and ByteCount covering padding and data whenever that fits its 16 bits. */
+       and ByteCount covering padding and data, which needs at most 65534 bytes of data. */
     if (shdrlen != (int)sizeof(WriteAndXRequest_t) + 1 || rhdrlen != 0 || spayload == NULL ||
         session_length != (u32)(shdrlen + asked) || WR->smbH.Magic != SMB_MAGIC ||
         !(WR->smbH.Flags2 & SMB_FLAGS2_32BIT_STATUS) || WR->smbH.Cmd != SMB_COM_WRITE_ANDX ||
         WR->smbWordcount != 14 || WR->smbAndxCmd != SMB_COM_NONE || WR->smbH.UID != UID || WR->smbH.TID != TID ||
         WR->FID != fid || WR->WriteMode != 0x0001 || WR->DataOffset != sizeof(WriteAndXRequest_t) + 1 ||
-        (asked + 1 <= 0xFFFF && WR->ByteCount != asked + 1))
+        asked + 1 > 0xFFFF || WR->ByteCount != asked + 1)
         bad_request++;
     if (calls < 4) {
         call_off[calls] = (s64)WR->OffsetLow | ((s64)WR->OffsetHigh << 32);
@@ -227,6 +228,8 @@ int main(void)
     static const reply_t zero[] = {{REPLY_LEN, STATUS_SUCCESS, 6, 0, 0}};
     static const reply_t half_rest[] = {{REPLY_LEN, STATUS_SUCCESS, 6, 256, 0}, {REPLY_LEN, STATUS_SUCCESS, 6, ASKED, 0}};
     static const reply_t half_zero[] = {{REPLY_LEN, STATUS_SUCCESS, 6, 256, 0}, {REPLY_LEN, STATUS_SUCCESS, 6, 0, 0}};
+    static const reply_t some_zero[] = {{REPLY_LEN, STATUS_SUCCESS, 6, 100, 0}, {REPLY_LEN, STATUS_SUCCESS, 6, 0, 0}};
+    static const reply_t half_full[] = {{REPLY_LEN, STATUS_SUCCESS, 6, 256, 0}, {35, 0xC000007F, 0, 0, 0}};
     static const reply_t over[] = {{REPLY_LEN, STATUS_SUCCESS, 6, 600, 0}};
     static const reply_t high[] = {{REPLY_LEN, STATUS_SUCCESS, 6, ASKED, 1}};
     static const reply_t disk_full[] = {{35, 0xC000007F, 0, 0, 0}};
@@ -251,6 +254,10 @@ int main(void)
     report_at("count-half-past-4g-at");
     reset(2, half_zero);
     report("count-half-then-zero", smb_WriteFile(UID, TID, 0x10, 1000, buf, 512));
+    reset(2, some_zero); /* not half, so the bytes stored differ from the bytes left */
+    report("count-100-then-zero", smb_WriteFile(UID, TID, 0x10, 1000, buf, 512));
+    reset(2, half_full);
+    report("count-half-then-disk-full", smb_WriteFile(UID, TID, 0x10, 1000, buf, 512));
     reset(1, over);
     report("count-over-asked", smb_WriteFile(UID, TID, 0x10, 1000, buf, 512));
     reset(1, high);
@@ -288,6 +295,8 @@ int main(void)
     report_file("write-full-share", smb_write(&file, buf, 512));
     reset(2, half_zero);
     report_file("write-half-then-full-share", smb_write(&file, buf, 512));
+    reset(2, half_full);
+    report_file("write-half-then-disk-full", smb_write(&file, buf, 512));
     reset(2, half_rest);
     report_file("write-half-then-rest", smb_write(&file, buf, 512));
     report_at("write-half-then-rest-at");
@@ -311,7 +320,9 @@ WANT = [
     'count-half-then-rest-at 512@1000 from 0, 256@1256 from 256',
     'count-half-past-4g ret=512 calls=2',
     'count-half-past-4g-at 512@4294967040 from 0, 256@4294967296 from 256',
-    'count-half-then-zero ret=0 calls=2',
+    'count-half-then-zero ret=256 calls=2',
+    'count-100-then-zero ret=100 calls=2',
+    'count-half-then-disk-full ret=256 calls=2',
     'count-over-asked ret=-5 calls=1',
     'count-high-ignored ret=512 calls=1',
     'count-high-ignored-andx ret=512',
@@ -325,10 +336,11 @@ WANT = [
     'reply-45-bytes ret=512 calls=1',
     'transport-error ret=-5 calls=1',
     'chunks ret=70000 calls=2',
-    'chunks-at 65535@0 from 0, 4465@65535 from 65535',
+    'chunks-at 65534@0 from 0, 4466@65534 from 65534',
     'write-saved ret=512 calls=1 position=1512 filesize=1512 locks=1/1',
     'write-full-share ret=0 calls=1 position=1000 filesize=1000 locks=1/1',
-    'write-half-then-full-share ret=0 calls=2 position=1000 filesize=1000 locks=1/1',
+    'write-half-then-full-share ret=256 calls=2 position=1256 filesize=1256 locks=1/1',
+    'write-half-then-disk-full ret=256 calls=2 position=1256 filesize=1256 locks=1/1',
     'write-half-then-rest ret=512 calls=2 position=1512 filesize=1512 locks=1/1',
     'write-half-then-rest-at 512@1000 from 0, 256@1256 from 256',
     'write-inside-file ret=512 calls=2 position=512 filesize=1000 locks=1/1',
@@ -366,4 +378,4 @@ if 'smbman_ra:smbman' not in text('ps2.yaml') or 'smbman' in text('tools/build_e
 if failures:
     print('\n'.join(failures))
     sys.exit(1)
-print('smbman-ra: WRITE_ANDX trusts only the server Count; a short Count is resent, a zero one fails the write')
+print('smbman-ra: WRITE_ANDX trusts only the server Count; a short Count is resent, a zero one ends the write')

@@ -10,8 +10,9 @@ host over a temporary folder, with fwrite, fclose and rename failures injected, 
 
 - a rebuild writes the list through ul.cfg.new and leaves no staged file behind;
 - a failed write or close leaves ul.cfg byte for byte as it was, and no ul.cfg.new;
-- a driver that refuses to rename onto an existing file still gets the new list, and if the old
-  list is gone but the last rename fails, the parts keep the name ul.cfg.new lists;
+- a driver that refuses to rename onto an existing file still gets the new list; one whose renames
+  all fail gets ul.cfg written directly, and only if that fails too do the parts keep the name
+  ul.cfg.new lists; a ul.cfg that can be neither replaced nor removed keeps the old list;
 - a rename whose second part fails puts the first part back and keeps the old name and ul.cfg;
 - a rename whose ul.cfg rewrite fails puts every part back and keeps the old name.
 """
@@ -24,7 +25,7 @@ import tempfile
 root = Path(__file__).resolve().parents[2]
 source = (root / 'src/sources/supportbase.cpp').read_text(encoding='utf-8')
 header = (root / 'include/supportbase.h').read_text(encoding='utf-8')
-start = source.index('static int sbRebuildULCfg(')
+start = source.index('static int sbWriteULCfg(')
 start = source.rindex('\n\n', 0, start)
 end = source.index('\n}\n', source.index('void sbRename(')) + 3
 span = source[start:end]
@@ -43,7 +44,8 @@ typedef unsigned int u32;
 static char sbBrowseSub[FOLDER_SUB_MAX + 1];
 static u32 USBA_crc32(const char *s) { u32 h = 0; while (*s) h = h * 31 + (u8)*s++; return h; }
 @TYPES@
-static int failWrite, failClose, refuseOverwrite, failRenameAt = -1, failRenameAlso = -1, renames;
+#define LOG(...) ((void)0)
+static int failWrite, failClose, refuseOverwrite, failUnlink, failRenameAt = -1, failRenameAlso = -1, renames;
 static size_t fakeFwrite(const void *p, size_t s, size_t n, FILE *f) { return failWrite && --failWrite == 0 ? 0 : fwrite(p, s, n, f); }
 static int fakeFclose(FILE *f) { int r = fclose(f); return failClose ? -1 : r; }
 static int fakeRename(const char *a, const char *b)
@@ -54,10 +56,13 @@ static int fakeRename(const char *a, const char *b)
         return -1;
     return rename(a, b);
 }
+static int fakeUnlink(const char *a) { size_t n = strlen(a); return failUnlink && n >= 6 && !strcmp(a + n - 6, "ul.cfg") ? -1 : unlink(a); }
 #define fwrite fakeFwrite
 #define fclose fakeFclose
 #define rename fakeRename
+#define unlink fakeUnlink
 @SPAN@
+#undef unlink
 #undef rename
 #undef fclose
 #undef fwrite
@@ -110,8 +115,21 @@ int main(int argc, char **argv)
     sbRename(&list, dir, "/", 3, 0, (char *)"Delta");
     failRenameAt = failRenameAlso = -1;
     partName(path, &games[0], "Delta", 1);
-    CHECK(strcmp(games[0].name, "Delta") == 0 && fileSize(path) == 1 && fileSize("ul.cfg.new") == 3 * entry,
-          "with ul.cfg gone, the parts keep the name ul.cfg.new lists");
+    CHECK(strcmp(games[0].name, "Delta") == 0 && fileSize(path) == 1 && fileSize("ul.cfg") == 3 * entry && fileSize("ul.cfg.new") < 0,
+          "a driver with no working rename gets ul.cfg written directly");
+    renames = 0; failRenameAt = 2; failRenameAlso = 3; failWrite = 4; // and the direct write fails too
+    sbRename(&list, dir, "/", 3, 0, (char *)"Sigma");
+    failRenameAt = failRenameAlso = -1; failWrite = 0;
+    partName(path, &games[0], "Sigma", 1);
+    CHECK(strcmp(games[0].name, "Sigma") == 0 && fileSize(path) == 1 && fileSize("ul.cfg.new") == 3 * entry,
+          "with ul.cfg gone and unwritable, the parts keep the name ul.cfg.new lists");
+    sbRebuildULCfg(&list, dir, 3, -1);
+    renames = 0; refuseOverwrite = 1; failUnlink = 1; // a read-only ul.cfg: no rename onto it, no unlink
+    sbRename(&list, dir, "/", 3, 0, (char *)"Kappa");
+    refuseOverwrite = failUnlink = 0;
+    partName(path, &games[0], "Sigma", 1); partName(other, &games[0], "Kappa", 1);
+    CHECK(strcmp(games[0].name, "Sigma") == 0 && fileSize(path) == 1 && fileSize(other) < 0 && fileSize("ul.cfg") == 3 * entry && fileSize("ul.cfg.new") < 0,
+          "a ul.cfg that cannot be removed keeps the old list, and the parts go back");
     return failures != 0;
 }
 '''

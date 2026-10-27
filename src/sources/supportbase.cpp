@@ -1068,55 +1068,77 @@ void sbUnprepare(void *pCommon)
     memcpy(pCommon, &cdvdman_settings_common_sample, sizeof(struct cdvdman_settings_common));
 }
 
-// ul.cfg lists every USBLD game on the device, so it is never truncated in place: the new list is
-// written to ul.cfg.new and replaces the old one only after every record and the close succeeded.
-// A failed write (full device, removed media) leaves ul.cfg as it was: -1. Drivers that refuse to
-// rename onto an existing file get the old list removed first; if that rename then fails, the new
-// list exists only as ul.cfg.new (rename it on a PC): 1. 0 = ul.cfg holds the new list.
+// Writes the USBLD games of list, except excludeID, to path. 0 only when every entry was written and the
+// file closed cleanly: a buffered write can first fail at fclose.
+static int sbWriteULCfg(const char *path, base_game_info_t **list, int gamecount, int excludeID)
+{
+    USBExtreme_game_entry_t GameEntry;
+    int i, ok = 1;
+
+    FILE *file = fopen(path, "wb");
+    if (file == NULL)
+        return -1;
+
+    memset(&GameEntry, 0, sizeof(GameEntry));
+    GameEntry.Byte08 = 0x08; // just to be compatible with original ul.cfg
+    memcpy(GameEntry.magic, "ul.", 3);
+
+    for (i = 0; ok && i < gamecount; i++) {
+        base_game_info_t *game = &(*list)[i];
+
+        if (game->format == GAME_FORMAT_USBLD && (i != excludeID)) {
+            memcpy(GameEntry.startup, game->startup, GAME_STARTUP_MAX);
+            memcpy(GameEntry.name, game->name, UL_GAME_NAME_MAX);
+            // don't fill last symbol with zero, cause trailing symbol can be useful character
+            GameEntry.parts = game->parts;
+            GameEntry.media = game->media;
+
+            ok = fwrite(&GameEntry, sizeof(GameEntry), 1, file) == 1;
+        }
+    }
+
+    if (fclose(file) != 0)
+        ok = 0;
+    return ok ? 0 : -1;
+}
+
+// ul.cfg lists every USBLD game on the device, so it is never truncated in place (#1068): the new list
+// goes to ul.cfg.new and replaces ul.cfg only after every entry and the close succeeded. A failed write
+// (a full device, a drive or share dropping out) leaves ul.cfg as it was: -1. A driver that refuses to
+// rename onto an existing file gets the old list removed first. If the old list cannot be removed (a
+// read-only ul.cfg), it still stands: -1. If the second rename fails too, ul.cfg is written directly, as
+// before. 0 = ul.cfg holds the new list; 1 = only ul.cfg.new does (rename it on a PC before the next UL
+// delete or rename, which rewrites ul.cfg.new). The menu shows no error; failures are logged.
 static int sbRebuildULCfg(base_game_info_t **list, const char *prefix, int gamecount, int excludeID)
 {
     char path[256], staged[264];
-    USBExtreme_game_entry_t GameEntry;
     snprintf(path, sizeof(path), "%sul.cfg", prefix);
     snprintf(staged, sizeof(staged), "%s.new", path);
 
-    int ok = 0;
-    FILE *file = fopen(staged, "wb");
-    if (file != NULL) {
-        ok = 1;
-        int i;
-        base_game_info_t *game;
-
-        memset(&GameEntry, 0, sizeof(GameEntry));
-        GameEntry.Byte08 = 0x08; // just to be compatible with original ul.cfg
-        memcpy(GameEntry.magic, "ul.", 3);
-
-        for (i = 0; i < gamecount; i++) {
-            game = &(*list)[i];
-
-            if (game->format == GAME_FORMAT_USBLD && (i != excludeID)) {
-                memcpy(GameEntry.startup, game->startup, GAME_STARTUP_MAX);
-                memcpy(GameEntry.name, game->name, UL_GAME_NAME_MAX);
-                // don't fill last symbol with zero, cause trailing symbol can be useful character
-                GameEntry.parts = game->parts;
-                GameEntry.media = game->media;
-
-                if (fwrite(&GameEntry, sizeof(GameEntry), 1, file) != 1)
-                    ok = 0;
-            }
-        }
-
-        if (fclose(file) != 0)
-            ok = 0;
-    }
-    if (!ok) {
+    if (sbWriteULCfg(staged, list, gamecount, excludeID) != 0) {
         unlink(staged);
+        LOG("sbRebuildULCfg: writing %s failed; %s left as it was\n", staged, path);
         return -1;
     }
     if (rename(staged, path) == 0)
         return 0;
-    unlink(path);
-    return rename(staged, path) == 0 ? 0 : 1;
+    if (unlink(path) != 0) {
+        FILE *old = fopen(path, "rb");
+        if (old != NULL) {
+            fclose(old);
+            unlink(staged);
+            LOG("sbRebuildULCfg: %s cannot be replaced or removed; left as it was\n", path);
+            return -1;
+        }
+    }
+    if (rename(staged, path) == 0)
+        return 0;
+    if (sbWriteULCfg(path, list, gamecount, excludeID) == 0) {
+        unlink(staged);
+        return 0;
+    }
+    LOG("sbRebuildULCfg: replacing %s failed; the new list is in %s\n", path, staged);
+    return 1;
 }
 
 static void sbCreatePath_name(const base_game_info_t *game, char *path, const char *prefix, const char *sep, int part, const char *game_name)
