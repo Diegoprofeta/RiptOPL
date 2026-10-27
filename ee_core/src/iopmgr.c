@@ -47,7 +47,8 @@ unsigned int ra_snap_iop = 0;
    watch loads exactly what the default build loads. */
 static int RA_TelemetryWanted(struct EECoreConfig_t *config)
 {
-    return config->raWatchList != NULL && config->raWatchCount > 0 && config->raSnapBytes > 0;
+    (void)config;
+    return RA_SnapBytes() > 0; /* RA_SetupWatchList ran in eecoreInit, before any reset */
 }
 
 /* Eight hex digits; there is no sprintf in ee_core. The buffer addresses travel
@@ -274,49 +275,56 @@ static int ResetIopSpecial(const char *args, unsigned int arglen)
     /* RetroAchievements telemetry, loaded LAST because it imports
        SMAPSendPacket from the SMAP driver above. The snapshot buffer is
        allocated here, while the IOP heap is up and the game has not started,
-       and its address handed to the module as a load argument -- RA_SNAP_TOTAL
-       covers the header plus the values of the largest supported watch list. */
+       and its address handed to the module as a load argument. Sized to
+       this game's snapshot, not the largest supported one. */
+    ra_snap_iop = 0;
     if (RA_TelemetryWanted(config) && RA_PROBE != 1 && RA_PROBE != 2 && RA_PROBE != 3) {
-        void *snap = SifAllocIopHeap(RA_SNAP_TOTAL);
+        void *snap = SifAllocIopHeap(RA_SNAP_TOTAL_FOR(RA_SnapBytes()));
 
         if (snap != NULL) {
-            /* argv[1]: the IOP snapshot, EE event and EE badge buffer
-               addresses, eight hex digits each; then whether raudp may read
-               from the network in play, then the game's serial.
-               argv[2]: SMAP's ipconfig strings -- raudp finds the PC itself. */
-            char args[45 + IPCONFIG_MAX_LEN];
+            /* argv[1] by the RA_ARG_* offsets in ra_snap.h; argv[2..4]:
+               SMAP's ipconfig strings, for raudp's own address and next hop. */
+            char args[RA_ARG_MAX + 1 + IPCONFIG_MAX_LEN];
             int k, n;
 
             ra_snap_iop = (unsigned int)snap;
-            RA_Hex32(ra_snap_iop, &args[0]);
-            args[8] = ',';
-            RA_Hex32((unsigned int)RA_OverlayEventBuffer(), &args[9]);
-            args[17] = ',';
-            RA_Hex32((unsigned int)RA_OverlayBadgeBuffer(), &args[18]);
+            RA_Hex32(ra_snap_iop, &args[RA_ARG_SNAP]);
+            args[RA_ARG_EVENT - 1] = ',';
+            RA_Hex32((unsigned int)RA_OverlayEventBuffer(), &args[RA_ARG_EVENT]);
 
-            /* Both roads raudp takes to the PC cost the game something when it
-               streams its own disc over this NIC: the raw one frees the SMAP
-               receive descriptors that stream arrives in, the lwIP one queues
-               on the mailbox the SMB or HTTP client waits on. A game from a
-               share loads for ever with either, so tell raudp to stop looking.
-               Sending is unaffected and stays on. HTTP_MODE is ours -- upstream
-               has no HTTP protocol -- but it streams down the same path and
-               carries the same defect. */
-            args[26] = ',';
-            args[27] = (config->GameMode == ETH_MODE || config->GameMode == HTTP_MODE) ? '0' : '1';
+            /* Bit 0: may raudp read from the network in play? Both roads it
+               takes to the PC cost a game that streams its own disc over this
+               NIC: the raw one frees the SMAP receive descriptors that stream
+               arrives in, the lwIP one queues on the mailbox the SMB or HTTP
+               client waits on. There it listens passively instead (the SMAP
+               driver sets RA datagrams aside). Bits 1 and 2: Caduceus, and a
+               configured companion that discovery may not look past. */
+            args[RA_ARG_RX - 1] = ',';
+            args[RA_ARG_RX] = '0' + ((config->GameMode == ETH_MODE || config->GameMode == HTTP_MODE) ? 0 : 1) +
+                              (config->raClientMode == 1 ? 2 : 0) + (config->raHostPinned ? 4 : 0);
 
             /* The serial seeds the packet header, so the PC has it before the
                first snapshot is written. */
-            args[28] = ',';
-            for (n = 0; n < 15 && config->GameID[n] != '\0'; n++)
-                args[29 + n] = config->GameID[n];
-            args[29 + n] = '\0';
-            n += 30;
+            args[RA_ARG_ID - 1] = ',';
+            for (n = 0; n < RA_ARG_ID_MAX && config->GameID[n] != '\0'; n++)
+                args[RA_ARG_ID + n] = config->GameID[n];
+            for (; n < RA_ARG_ID_MAX; n++)
+                args[RA_ARG_ID + n] = ' ';
+            args[RA_ARG_HOST - 1] = ',';
+            for (n = 0; n < 15 && config->raHost[n] != '\0'; n++)
+                args[RA_ARG_HOST + n] = config->raHost[n];
+            args[RA_ARG_HOST + n] = '\0';
+            n += RA_ARG_HOST + 1;
 
             for (k = 0; k < g_ipconfig_len && k < IPCONFIG_MAX_LEN; k++)
                 args[n + k] = g_ipconfig[k];
 
-            LoadOPLModule(OPL_MODULE_ID_RAUDP, 0, n + k, args);
+            if (LoadOPLModule(OPL_MODULE_ID_RAUDP, 0, n + k, args) < 1) {
+                /* Telemetry is optional: give the buffer back and leave the
+                   game's own modules alone. */
+                ra_snap_iop = 0;
+                SifFreeIopHeap(snap);
+            }
         } else {
             /* No buffer, so nothing can be sent. Leaving ra_snap_iop at zero
                makes ra.c's per-frame path a no-op, and there is no reason to

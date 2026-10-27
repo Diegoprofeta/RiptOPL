@@ -13,6 +13,7 @@
 #ifdef RETROACHIEVEMENTS
 #include "include/rawatch.h"
 #include "include/discsupport.h"
+#include "include/ranet.h"
 #include "modules/network/common/ra_snap.h"
 #endif
 
@@ -140,6 +141,19 @@ public:
         config->raNodeCount = GetNodeCount();
         config->raWorkArea = raWorkArea;
         config->raWorkBytes = raWorkBytes;
+
+        // raudp's companion: the peer the menu verified, else the configured PC, else the
+        // share the game streams from (where a passive listener's notices come from).
+        config->raClientMode = gRAMode;
+        config->raHostPinned = (gRAHostIp[0] | gRAHostIp[1] | gRAHostIp[2] | gRAHostIp[3]) != 0;
+        if (unsigned int peer = raNetPeerIP()) {
+            const u8 *ip = (const u8 *)&peer;
+            snprintf(config->raHost, sizeof(config->raHost), "%u.%u.%u.%u", ip[0], ip[1], ip[2], ip[3]);
+        } else {
+            const int *ip = config->raHostPinned ? gRAHostIp : !strcmp(config->GameModeDesc, "HTTP_MODE") ? gHttpServerIp :
+                                                                                                            pc_ip;
+            snprintf(config->raHost, sizeof(config->raHost), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+        }
 
         // The last point where the list is still ours: from here it goes into ee_core
         // with no feedback. A zero shows up in the launch log directly, rather than as

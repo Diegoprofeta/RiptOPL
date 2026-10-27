@@ -64,6 +64,7 @@ install = function_text('void Install_IGR(')
 mode6 = ''.join(function_text(sig) for sig in (
     'static int RA_Intc_Handler(',
     'void Install_RA_Vblank(',
+    'void IGR_RequestReset(',
 ))
 
 
@@ -671,6 +672,17 @@ MODE6_CHECKS = r'''
     RA_Intc_Handler(0);
     CHECK(nRA == 1 && IGR_Thread_ID == -1 && Pad_Data.combo_type == 0,
           "Mode 6 handler takes a snapshot without invoking IGR input or shutdown");
+    IGR_RequestReset();
+    CHECK(Pad_Data.combo_type == 0,
+          "client reset cannot arm an absent IGR worker in Mode 6");
+    IGR_Thread_ID = 5;
+    IGR_RequestReset();
+    CHECK(Pad_Data.combo_type == IGR_COMBO_START_SELECT,
+          "normal IGR worker still accepts client reset");
+    Pad_Data.combo_type = 0xF9; /* R3 + L3: power off */
+    IGR_RequestReset();
+    CHECK(Pad_Data.combo_type == 0xF9,
+          "client reset does not replace a power-off already requested");
 '''
 
 def build_and_run(name, defines, code, checks, harness=HARNESS):

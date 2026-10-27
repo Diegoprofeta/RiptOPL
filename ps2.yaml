@@ -149,7 +149,6 @@ targets:
     include_dirs: [modules/network/smap-ingame/, modules/iopcore/common, modules/network/common]
     headers: *iop_headers
     imports_lst: modules/network/smap-ingame/imports.lst
-    exports_tab: modules/network/smap-ingame/exports.tab
 
   - name: SMSTCPIP
     type: iop

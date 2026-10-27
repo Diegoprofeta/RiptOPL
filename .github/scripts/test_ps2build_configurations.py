@@ -50,6 +50,9 @@ class ConfigurationTests(unittest.TestCase):
                     self.assertNotIn("ps2sdk_socket_compat", loader["libs"])
                     self.assertNotIn("ps2sdk_socket_compat", targets)
                     self.assertEqual("INGAME_UDP" in targets["SMSTCPIP"]["defines"], edition == "ra")
+                    smap = targets["smap_ingame"]
+                    self.assertEqual("RETROACHIEVEMENTS" in smap.get("defines", []), edition == "ra")
+                    self.assertEqual("exports_tab" in smap, edition == "ra")
                     for target in targets.values():
                         for field in ("sources", "defines", "embed_irx", "libs"):
                             values = target.get(field, [])

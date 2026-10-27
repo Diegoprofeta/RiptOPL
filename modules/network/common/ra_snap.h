@@ -27,7 +27,7 @@
 
 #include "ra_watch.h"
 
-/* Snapshot header, 48 bytes, a multiple of 16 as SIF DMA requires. The
+/* Snapshot header, 64 bytes, a multiple of 16 as SIF DMA requires. The
    values follow, packed back to back in watch list order. Addresses are
    not sent: the PC client generated the watch list and knows the order.
 
@@ -46,6 +46,13 @@ struct ra_snap
        uses it to pick the watch list and the image hash to report to
        RetroAchievements, so the user never names the game by hand. */
     char game_id[16];
+    /* What the reads cost on the EE: COP0 Count ticks spent reading the
+       values and resolving chains for this snapshot, and ticks between
+       the last two VBLANKs, so the PC can turn the first into a share
+       of the frame without knowing the clock. */
+    unsigned int read_cycles;
+    unsigned int frame_cycles;
+    unsigned int pad[2];
     /* followed by bytes bytes of values, then the trailer word */
 };
 
@@ -59,7 +66,8 @@ struct ra_snap
 
 /* Buffer size on both sides: the largest transfer, rounded up to a
    64-byte cache line so the EE buffer shares no line with other data */
-#define RA_SNAP_TOTAL ((RA_SNAP_DMA_SIZE(RA_SNAP_MAX_BYTES) + 63) & ~63)
+#define RA_SNAP_TOTAL_FOR(bytes) ((RA_SNAP_DMA_SIZE(bytes) + 63) & ~63)
+#define RA_SNAP_TOTAL            RA_SNAP_TOTAL_FOR(RA_SNAP_MAX_BYTES)
 
 /* ee_core's RetroAchievements work area: the snapshot buffer (RA_SNAP_TOTAL,
    first, so it keeps the 64-byte alignment SIF DMA needs) followed by the
@@ -72,12 +80,17 @@ struct ra_snap
 #define RA_SNAP_SEND_EVERY(bytes) \
     ((((bytes) + RA_SNAP_CHUNK_BYTES - 1) / RA_SNAP_CHUNK_BYTES + RA_SNAP_PARTS_PER_FRAME - 1) / RA_SNAP_PARTS_PER_FRAME)
 
-/* PC -> game side: raudp DMAs this 16-byte record into an ee_core buffer
+/* PC -> game side: raudp DMAs this 128-byte record into an ee_core buffer
    whose address came as a load argument; the VBLANK handler treats a new
-   seq as a new event. */
-#define RA_EVENT_MAGIC 0x52414531 /* "RAE1" */
-
-#define RA_EVENT_UNLOCK 1 /* an achievement unlocked; arg is its id */
+   seq as a new event, once the commit word (the last one DMA'd) matches. */
+#define RA_EVENT_MAGIC               0x52414531 /* "RAE1" */
+#define RA_EVENT_UNLOCK              1          /* an achievement unlocked; arg is its id */
+#define RA_EVENT_RESET               2          /* leave the game for the loader, as the IGR combo does */
+/* The low byte of kind is RA_EVENT_*; unlock points travel in the upper
+   24 bits. Senders that leave them zero stay valid. */
+#define RA_EVENT_KIND_MASK           0xFFu
+#define RA_EVENT_POINTS(k)           ((unsigned int)(k) >> 8)
+#define RA_EVENT_MAKE_UNLOCK(points) (RA_EVENT_UNLOCK | ((unsigned int)(points) << 8))
 
 struct ra_event
 {
@@ -85,23 +98,27 @@ struct ra_event
     unsigned int seq;   /* increments per event; 0 means none yet */
     unsigned int kind;  /* RA_EVENT_* */
     unsigned int arg;
+    char title[64]; /* printable ASCII, NUL-terminated; may be empty */
+    unsigned int reserved[11];
+    unsigned int commit; /* last DMA word: must match seq */
 };
 
-/* The badge: 64x64 PSMCT16 pixels pushed as "RAB1 <idx> <total> " + 512 raw
-   bytes per datagram; raudp DMAs the completed struct into a second ee_core
-   buffer. Experimental. */
-#define RA_BADGE_MAGIC  0x52414231 /* "RAB1" */
-#define RA_BADGE_BYTES  8192
-#define RA_BADGE_CHUNK  512
-#define RA_BADGE_CHUNKS (RA_BADGE_BYTES / RA_BADGE_CHUNK)
-
-struct ra_badge
-{
-    unsigned int magic; /* RA_BADGE_MAGIC, written last */
-    unsigned int len;   /* RA_BADGE_BYTES */
-    unsigned int seq;   /* increments per completed badge */
-    unsigned int pad;
-    unsigned char px[RA_BADGE_BYTES];
-};
+/* The load argument ee_core hands raudp as argv[1], comma separated:
+     RA_ARG_SNAP   eight hex digits, the snapshot buffer in IOP RAM
+     RA_ARG_EVENT  eight hex digits, the event buffer in EE RAM
+     RA_ARG_RX     ASCII flags 0..7: bit 0 permits network reads while
+                   the game runs; bit 1 selects the Caduceus bridge;
+                   bit 2 pins discovery to the configured host
+     RA_ARG_ID     the game's serial, space-padded to RA_ARG_ID_MAX
+     RA_ARG_HOST   the companion's IPv4 in dotted form
+   argv[2..4] are SMAP's IP, netmask and gateway. Both sides build and
+   parse the argument by these offsets. */
+#define RA_ARG_SNAP   0
+#define RA_ARG_EVENT  9
+#define RA_ARG_RX     18
+#define RA_ARG_ID     20
+#define RA_ARG_ID_MAX 15
+#define RA_ARG_HOST   (RA_ARG_ID + RA_ARG_ID_MAX + 1)
+#define RA_ARG_MAX    (RA_ARG_HOST + 15) /* characters before the terminator */
 
 #endif /* __RA_SNAP_H__ */

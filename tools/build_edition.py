@@ -45,6 +45,10 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
         add(main, "embed_irx", "raudp")
         add(targets["SMSTCPIP"], "defines", "INGAME_UDP")
+        # raudp imports the in-game SMAP driver's transmit and notice exports, and the
+        # transmit mutex. Only RA carries the table: it changes the module's link layout.
+        add(targets["smap_ingame"], "defines", "RETROACHIEVEMENTS")
+        targets["smap_ingame"]["exports_tab"] = "modules/network/smap-ingame/exports.tab"
         # sdk-core v2026.10.13 supplies POSIX sockets through libc's fdman.
         # Keep descriptor ownership/non-blocking callbacks in the SDK, not a second archive.
         for name in ("bdm_cdvdman", "mmce_cdvdman"):

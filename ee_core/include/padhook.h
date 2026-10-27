@@ -98,6 +98,8 @@ typedef struct
 #ifdef RETROACHIEVEMENTS
 /* Mode 6 retains snapshots without installing IGR hooks. */
 void Install_RA_Vblank(void);
+/* The PC's reset request (RAR1): leave the game as the IGR combo does. */
+void IGR_RequestReset(void);
 #endif
 
 #endif

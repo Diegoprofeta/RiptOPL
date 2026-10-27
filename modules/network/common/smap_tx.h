@@ -2,7 +2,7 @@
   RA: the low-level transmit export of the smap-ingame driver.
 
   Index 4 in the driver's export table (modules/network/smap-ingame/exports.tab):
-  0 = _start, 1..3 = _retonly, 4 = SMAPSendPacket.
+  0 = _start, 1..3 = _retonly, 4 = SMAPSendPacket, 5 = SMAPReadNotice.
 
   Takes a complete Ethernet frame, header included, and its length. A
   mutex inside the driver serializes it with the stack's own sends, so
@@ -17,5 +17,10 @@
 
 int SMAPSendPacket(const void *data, unsigned int length);
 #define I_SMAPSendPacket DECLARE_IMPORT(4, SMAPSendPacket)
+/* While the game streams its disc over SMB or HTTP the driver owns RX:
+   it copies one waiting RA datagram (UDP to port 18195) aside, and this
+   hands it out once. Returns its length, or 0. */
+int SMAPReadNotice(void *out, unsigned int capacity);
+#define I_SMAPReadNotice DECLARE_IMPORT(5, SMAPReadNotice)
 
 #endif /* __SMAP_TX_H__ */

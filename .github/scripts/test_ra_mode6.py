@@ -10,14 +10,15 @@ handlers = pad[start:pad.index("// Hook function for libpad", start)]
 assert "#ifdef RETROACHIEVEMENTS\nstatic int RA_Intc_ID = -1;\n#endif" in pad
 hooks = (ROOT / "ee_core/src/syshook.c").read_text(encoding="utf-8")
 assert "if ((g_compat_mask & COMPAT_MODE_6) && ra_snap_iop != 0)" in hooks
-# Client-triggered IGR is not implemented in this older private RA runtime.
-# This port only adds snapshots; the broader RA migration remains in the parity ledger.
 program = r'''
 #include <assert.h>
 #include <stdio.h>
 #define kINTC_VBLANK_END 3
 #ifdef RETROACHIEVEMENTS
 static int RA_Intc_ID = -1;
+static int IGR_Thread_ID = -1;
+#define IGR_COMBO_START_SELECT 0xF6
+static struct { volatile unsigned char combo_type; } Pad_Data;
 static int registrations, enabled, frames, exits, fail;
 static int (*callback)(int);
 static int AddIntcHandler(int cause, int (*fn)(int), int next) {
@@ -38,8 +39,10 @@ int main(void) {
     fail = 0; Install_RA_Vblank(); Install_RA_Vblank();
     assert(registrations == 2 && enabled == 1 && RA_Intc_ID == 7);
     assert(callback(3) == 0 && frames == 1 && exits == 1);
+    IGR_RequestReset();
+    assert(Pad_Data.combo_type == 0); /* the PC's reset cannot arm an absent IGR worker */
 #endif
-    puts("PASS: Mode 6 snapshot handler is RA-only, retryable and idempotent");
+    puts("PASS: Mode 6 snapshot handler is RA-only, retryable and idempotent; no client reset without IGR");
 }
 '''.replace("@HANDLERS@", handlers)
 with tempfile.TemporaryDirectory() as directory:

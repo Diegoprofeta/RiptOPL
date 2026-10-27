@@ -123,6 +123,12 @@ loading about a minute in from a share, so the send path disturbs the stream on 
 own documentation says the same, and names the USB stick and the original disc as the only tested ways
 to play.
 
+Since then, on SMB and HTTP launches `raudp` no longer opens or polls a socket at all. It learns the
+companion's MAC from the stack's ARP table (asking once by raw ARP if it is missing, through the
+gateway when the companion is routed), the in-game SMAP driver sets aside RA datagrams it receives for
+the game anyway, and a snapshot waits while the game has a received frame queued. **This is NOT TESTED
+on hardware** and does not make a share a supported way to play yet.
+
 That defect is upstream's and ours alike; we have not reproduced or ruled it out on our own hardware.
 The hardware testing so far (#702–#705) launched from MMCE and USB, never from a share. Until a share
 is tested, **keep the images you play with achievements on a local device.** The same reasoning
@@ -169,8 +175,26 @@ come up -- no cable, no adapter, no usable IP address or DHCP lease -- the game 
 achievements and the menu shows a notice. With the adapter powered and no link, the in-game
 network driver would otherwise wait for a cable for ever and the game would never start.
 
-The PC client is found automatically: the console broadcasts a query on UDP port 18194 and the client
-answers. Nothing is stored between runs.
+### RA Mode and the companion PC
+
+**Settings → Network → RA Mode** picks the PC service: **Xerabora** (the default; configurations
+without `ra_mode` keep it) or **Caduceus**. It does not switch telemetry on by itself; **RA Telemetry**
+still does. **RA companion IP** names the PC that runs the service; **0.0.0.0** keeps the fallback.
+
+| | Xerabora | Caduceus |
+| --- | --- | --- |
+| Finding the PC | broadcast on UDP 18194, or unicast to the companion IP when one is set | the companion IP, else the SMB server; never a broadcast |
+| Before a tracked launch | the menu's link check | a session check on the bridge, UDP 18197 (`CADQ2`/`CADR2`); offline or signed out launches untracked |
+| In the game | `raudp` asks the PC again, pinned to the companion IP when one is set | `raudp` re-probes the bridge on that host only, then talks to the engine on UDP 18194 |
+
+Replies are accepted only from the host asked, and only as `RAO1 OK`. UDP **18195** is the console's
+telemetry and notice port and **18196** its menu reply port; allow them through the PC's firewall.
+RiptOPL never stores a RetroAchievements password or key. Caduceus here covers the session check,
+watch lists and telemetry; its achievement browser and title cards are not ported yet. **Caduceus
+end-to-end console tracking is NOT TESTED on hardware.**
+
+The PC can also send **RAR1**, which leaves the game for the menu exactly as the IGR combo does.
+Under Compatibility Mode 6, which has no IGR, the request is ignored.
 
 The console integration follows **xeRAbora v0.1.0-alpha.10** (`ebd18ed6`, paired with console commit `0c5f61a3` / `6c7e9a79` and CodeRabbit hardening `136f2620`). This release brings significant stability improvements between OPL and RA:
 

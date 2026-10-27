@@ -620,6 +620,14 @@ static int RA_Intc_Handler(int cause)
     return 0;
 }
 
+void IGR_RequestReset(void)
+{
+    /* The VBLANK handler acts on combo_type right after RA_OnVblank returns.
+       Mode 6 has no IGR thread to wake, and a reset already asked for stays. */
+    if (IGR_Thread_ID >= 0 && Pad_Data.combo_type == 0x00)
+        Pad_Data.combo_type = IGR_COMBO_START_SELECT;
+}
+
 void Install_RA_Vblank(void)
 {
     int handler;

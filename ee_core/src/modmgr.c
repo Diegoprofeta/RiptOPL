@@ -165,13 +165,21 @@ int LoadOPLModule(int id, int mode, int arg_len, const char *args)
                 while (1)
                     ;
             }
+#ifdef RETROACHIEVEMENTS
+            // raudp declines to stay resident when it cannot run; its caller frees the snapshot then.
+            if (id == OPL_MODULE_ID_RAUDP && result > 0 && moduleStartResult != 0)
+                result = -1;
+#endif
             if (result < 1) { // El_isra: only check for MODLOAD errors for simplicity
                 if (EnableDebug) {
                     DBGCOL(0x00FFDC, MODMGR, "IRX loading error (from MODLOAD)");
                     delay(3);
                 }
-                // The freeze report writer is optional: it must never trap IGR in the OOM loop.
+                // The freeze report writer and raudp are optional: they must never trap the game in the OOM loop.
                 if (result == -400
+#ifdef RETROACHIEVEMENTS
+                    && id != OPL_MODULE_ID_RAUDP
+#endif
 #ifdef INGAMEDIAG
                     && id != OPL_MODULE_ID_FREEZEDIAG
 #endif

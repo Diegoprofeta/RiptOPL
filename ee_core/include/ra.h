@@ -14,6 +14,10 @@
    overwrites loader memory. Call once during ee_core init. */
 void RA_SetupWatchList(void);
 
+/* Bytes of values one snapshot carries, chains included; 0 when the list
+   was absent or rejected, so nothing is worth starting the network for. */
+int RA_SnapBytes(void);
+
 /* Per-frame hook, called from the VBLANK_END interrupt handler. */
 void RA_OnVblank(void);
 

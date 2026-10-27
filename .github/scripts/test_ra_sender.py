@@ -33,7 +33,7 @@ typedef uint16_t u16;
 typedef uint32_t u32;
 typedef unsigned iop_sys_clock_t;
 #define USE_SMAP_REGS
-#define SMAP_REG8(x) 0
+#define SMAP_REG8(x) rx_backlog
 #define RA_PAYLOAD 1472
 #define RA_HDR_LEN 42
 #define RA_FRAME_LEN (RA_HDR_LEN + RA_PAYLOAD)
@@ -45,10 +45,28 @@ static volatile struct ra_snap *ra_snap = (void *)storage;
 static char ra_game_id[16] = "SLUS_210.65";
 static u32 ra_seq, ra_fail, ra_us, ra_us_max, ra_rxq, ra_skip, ra_snap_bad, ra_sent_sq;
 static int ra_err, ra_sent_any, ra_rx_in_game = 1;
+static unsigned rx_backlog;
 static u32 ra_disc_us;
 static unsigned packets, failed_packet, advance_packet, busy, drains, polls, heartbeats, sentBytes;
-static unsigned tick, limit, produce, quiet;
+static u32 ra_hb_rx, ra_hb_rau, ra_ee_event = 1;
+static struct ra_event ra_event;
+typedef struct { void *src, *dest; int size, attr; } SifDmaTransfer_t;
+static unsigned events, control_acks;
+static int event_dma_busy;
+static int sceSifDmaStat(int id) { (void)id; return event_dma_busy ? 0 : -1; }
+static int SMAPReadNotice(void *out, unsigned capacity) { (void)out; (void)capacity; return 0; }
+static void SysClock2USec(iop_sys_clock_t *t, u32 *sec, u32 *us) {
+    (void)t; *sec = 10; *us = 0;
+}
+static int sceSifSetDma(SifDmaTransfer_t *dma, int n) {
+    assert(n == 1 && dma->size == sizeof(ra_event)); events++; return events;
+}
+static void ra_ctl_send(const char *p, int n) {
+    assert(n > 5 && !memcmp(p, "RAK1 ", 5)); control_acks++;
+}
+static unsigned tick, limit, produce;
 static jmp_buf finished;
+static void ra_handle_pc(char *, int);
 static void ra_fmt(u8 *, u32, int);
 static void ra_fmt_err(u8 *, int);
 static void snapshot(u32 seq, u32 bytes) {
@@ -66,7 +84,8 @@ static int ra_tx_busy(void) { return busy; }
 static void GetSystemTime(iop_sys_clock_t *t) { *t = 0; }
 static u32 ra_usec_delta(iop_sys_clock_t *a, iop_sys_clock_t *b) { (void)a; (void)b; return 1; }
 static int SMAPSendPacket(const void *, unsigned);
-static int ra_discover(void) { return 1; }
+static unsigned quiet;
+static int ra_discover(void) { assert(quiet == 1); return 1; }
 static void ra_frame_init(void);
 static void ra_drain_rx(void) { drains++; }
 static void ra_poll_pc(void) { polls++; }
@@ -93,7 +112,7 @@ static int SMAPSendPacket(const void *p, unsigned len) {
 static void ra_frame_init(void) { ra_head_build(); }
 static void DelayThread(unsigned us) {
     if (us != RA_POLL_US) {
-        assert(us == RA_QUIET_US - ra_disc_us);
+        assert(us == RA_QUIET_US);
         quiet++;
         return;
     }
@@ -104,8 +123,9 @@ static void reset(void) {
     ra_seq = ra_fail = ra_us = ra_us_max = ra_rxq = ra_skip = ra_snap_bad = ra_sent_sq = 0;
     ra_err = ra_sent_any = 0;
     packets = failed_packet = advance_packet = busy = drains = polls = heartbeats = 0;
-    sentBytes = 0;
     tick = limit = produce = quiet = 0;
+    sentBytes = 0;
+    rx_backlog = 0;
     ra_disc_us = RA_QUIET_US;
     ra_rx_in_game = 1;
     snapshot(1, 8);
@@ -138,8 +158,10 @@ int main(void) {
     ra_send_one();
     assert(!packets && !ra_seq && ra_snap_pending() == 1 && ra_snap_bad == 1);
     *(u32 *)(storage + RA_SNAP_TRAILER_OFF(8)) = 1;
+    ra_snap->read_cycles = 12345; ra_snap->frame_cycles = 10000000;
     ra_send_one();
     assert(packets == 1 && ra_sent_sq == 1 && ra_snap_pending() == 0);
+    assert(field(RA_F_RC) == 12345 && field(RA_F_FC) == 9999999);
     puts("PASS: busy and torn snapshots remain pending, then send successfully");
     reset(); snapshot(41, RA_SNAP_MAX_BYTES); ra_send_one();
     assert(packets == 9 && sentBytes == RA_SNAP_MAX_BYTES && field(RA_F_PT) == 8 && field(RA_F_NP) == 9);
@@ -164,25 +186,53 @@ int main(void) {
     puts("PASS: DMA advancement during multipart send and sequence wraparound");
     reset(); produce = 1; loop(2500);
     assert(packets == 625 && drains == 625 && polls == 625 && heartbeats == 1);
-    reset(); ra_disc_us = 0; ra_rx_in_game = 0; loop(501);
+    reset(); ra_rx_in_game = 0; loop(501);
     assert(packets == 3 && !drains && !polls && quiet == 1);
+    reset(); ra_rx_in_game = 0; rx_backlog = 2;
+    ra_send_one();
+    assert(!packets && ra_skip == 1 && ra_snap_pending() == 1);
+    rx_backlog = 0;
+    ra_send_one();
+    assert(packets == 1 && ra_snap_pending() == 0);
+    reset(); ra_rx_in_game = 1; rx_backlog = 2;
+    ra_send_one(); /* Local games may consume SMAP receive directly. */
+    assert(packets == 1);
     reset(); ra_snap = NULL; loop(16);
     assert(packets == 4 && !ra_sent_any);
     reset(); busy = 1; loop(20);
     assert(!packets && ra_skip == 20);
-    puts("PASS: new-only sending, idle keepalive, RX guard, quiet period and header-only cadence");
+    puts("PASS: passive SMB/HTTP RX backpressure, local game sampling, idle keepalive and quiet period");
+    ra_handle_pc("RAR1 ", 5);
+    assert(events == 1 && control_acks == 1 && ra_event.kind == RA_EVENT_RESET);
+    ra_handle_pc("RAU1 1234567890", 15);
+    assert(events == 2 && ra_event.kind == RA_EVENT_UNLOCK);
+    ra_handle_pc("RAU1 1234567890", 15);
+    assert(events == 2); /* duplicate unlock is one event */
+    ra_handle_pc("RAX1 ", 5); assert(events == 2);
+    ra_handle_pc("RAU1 1234567890 25 First title", 30);
+    assert(events == 3 && !strcmp(ra_event.title,"First title") && RA_EVENT_POINTS(ra_event.kind)==25 && ra_event.commit==ra_event.seq);
+    ra_handle_pc("RAU1 1234567890 25 First title", 30);assert(events==3);
+    event_dma_busy=1;ra_handle_pc("RAU1 50 1 Next",14);assert(events==3);event_dma_busy=0;
+    ra_handle_pc("RAU1 50 1 Next",14);assert(events==4 && !strcmp(ra_event.title,"Next"));
+    char padded[128]="RAU1 51 10";
+    ra_handle_pc(padded,128);assert(events==5 && !ra_event.title[0] && RA_EVENT_POINTS(ra_event.kind)==10);
+    ra_handle_pc("RAU1 4294967296 5 Bad",21);assert(events==5);
+    ra_handle_pc("RAU1 ",5);assert(events==5);
+    puts("PASS: title/points, richer duplicate upgrade, padded legacy notices, DMA ownership and overflowing IDs");
+    puts("PASS: read-cost fields, PC reset event, unlock deduplication and unknown-event rejection");
 }
 '''
 program = (prefix + constants + '\n' + fields + '\n' +
            '\n'.join(function(n) for n in ('ra_fmt', 'ra_fmt_err', 'ra_copy',
-                                         'ra_send_one', 'ra_snap_pending', 'ra_thread')) + stubs)
+                                         'ra_send_one', 'ra_snap_pending', 'ra_thread',
+                                         'ra_dec_at', 'ra_fmt_hex8', 'ra_handle_pc')) + stubs)
 with tempfile.TemporaryDirectory(prefix='ra-sender-') as work:
     path = Path(work) / 'sender.c'
     exe = Path(work) / 'sender'
-    path.write_text(program)
+    path.write_text(program, encoding='utf-8')
     # IOP pointers are 32-bit; on a 64-bit host the copy helper only examines
     # their low alignment bits. Suppress that one target-size warning.
     subprocess.run(['gcc', '-std=gnu99', '-O2', '-fno-strict-aliasing', '-Wall', '-Wextra',
-                    '-Werror', '-Wno-pointer-to-int-cast', '-I', str(root),
+                    '-Werror', '-Wno-pointer-to-int-cast', '-Wno-int-to-pointer-cast', '-I', str(root),
                     str(path), '-o', str(exe)], check=True)
     subprocess.run([str(exe)], check=True)

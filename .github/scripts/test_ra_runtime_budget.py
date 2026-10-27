@@ -43,6 +43,8 @@ typedef uint64_t u64;
 '''
 state = core[core.index('static u8 *ra_snap_buf'):core.index('#define RA_RAM_HIGH')]
 state += '#define RA_RAM_HIGH 0x02000000\n'
+# COP0 Count has no host equivalent: each read advances a fake clock by 7.
+state = state.replace(function(state, 'static inline u32 ra_ticks'), 'static u32 ticks;\nstatic u32 ra_ticks(void) { return ticks += 7; }')
 run('ee_ra_budget', prefix + r'''
 #include "ee_core/include/coreconfig.h"
 struct EECoreConfig_t g_ee_core_config;
@@ -64,7 +66,7 @@ static int isceSifSetDma(SifDmaTransfer_t *dma,int count) {
 }
 static void RA_OverlayOnVblank(unsigned) {overlays++;}
 ''' + state + '\n' + '\n'.join(function(core_functions,s) for s in
-    ('void RA_SetupWatchList(', 'static void ra_snap_send(', 'void RA_OnVblank(')) + r'''
+    ('int RA_SnapBytes(', 'void RA_SetupWatchList(', 'static void ra_snap_send(', 'void RA_OnVblank(')) + r'''
 static u8 work[RA_EE_WORK_BYTES(RA_WATCH_MAX,RA_NODE_MAX)+128] __attribute__((aligned(64)));
 static u32 entries[RA_WATCH_MAX];
 static ra_node nodes[RA_NODE_MAX];
@@ -85,7 +87,7 @@ int main() {
         int bytes=((parts-1)*RA_SNAP_CHUNK_BYTES/4+1)*4;
         int count=bytes/4;
         for(int i=0;i<count;i++)entries[i]=RA_WATCH_PACK(0x80000+4*i,4);
-        setup(count,bytes);assert(ra_watch_count==count && ra_snap_bytes==bytes);
+        setup(count,bytes);assert(ra_watch_count==count && ra_snap_bytes==bytes && RA_SnapBytes()==bytes);
         assert(ra_snap_every==(unsigned)(parts+2)/3);
         for(int frame=0;frame<1200;frame++)RA_OnVblank();
         assert(overlays==1200 && transfers==600/(int)ra_snap_every);
@@ -102,7 +104,10 @@ int main() {
     for(int i=0;i<RA_NODE_MAX;i++){u32 v=0x12340000+i;memcpy(gameRam+base+i*4,&v,4);}
     setup(RA_WATCH_MAX,bytes,RA_NODE_MAX);
     assert(ra_watch_count==4096 && ra_node_count==128 && ra_snap_bytes==RA_SNAP_MAX_BYTES && ra_snap_every==3);
-    ra_snap_send();assert(transfers==1);
+    ra_snap_send();assert(transfers==1 && RA_SnapBytes()==RA_SNAP_MAX_BYTES);
+    // The read cost is two clock reads apart; the frame is the gap between two VBLANKs.
+    RA_OnVblank();RA_OnVblank();ra_snap_dma_id=0;ra_snap_send();
+    assert(((const ra_snap*)work)->read_cycles==7 && ((const ra_snap*)work)->frame_cycles==7);
     const u8 *vals=work+RA_SNAP_HDR;
     for(int i=0;i<RA_NODE_MAX;i++) {
         u32 address,value;memcpy(&address,vals+bytes+i*8,4);memcpy(&value,vals+bytes+i*8+4,4);
@@ -111,7 +116,7 @@ int main() {
     tailUnchanged(g_ee_core_config.raWorkBytes);
     // Undersized or unaligned reservations refuse without writing into them.
     setup(1,4);g_ee_core_config.raWorkBytes--;memset(work,0xCC,sizeof(work));RA_SetupWatchList();
-    assert(!ra_watch_count);tailUnchanged(0);
+    assert(!ra_watch_count && !RA_SnapBytes());tailUnchanged(0);
     setup(1,4);g_ee_core_config.raWorkArea=work+1;memset(work,0xCC,sizeof(work));RA_SetupWatchList();
     assert(!ra_watch_count);tailUnchanged(0);
     setup(1,4);g_ee_core_config.raSnapBytes=3;memset(work,0xCC,sizeof(work));RA_SetupWatchList();
