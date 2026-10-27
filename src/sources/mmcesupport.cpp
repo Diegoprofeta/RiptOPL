@@ -937,7 +937,8 @@ void MmceSource::launchVcd(item_list_t *itemList, const char *vcdName, config_se
     gMmceSupport.getDeviceRoot(ps1Root, sizeof(ps1Root));
 
     if (!vcdResolvePopstarter(ps1Root, vcdElf, sizeof(vcdElf))) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        vcdDescribePopstarterLookup(ps1Root, vcdElf, sizeof(vcdElf));
+        host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
     vcdBuildSelector(ps1Root, VCD_PREFIX_MASS, vcdName, vcdSelector, sizeof(vcdSelector));

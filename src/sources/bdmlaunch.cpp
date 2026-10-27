@@ -140,7 +140,8 @@ void BdmLauncher::launchVcd(item_list_t *itemList, const char *vcdName, config_s
     }
     bdmBuildPs1Prefix(vcdPrefix, sizeof(vcdPrefix), itemList->mode); // device root, NOT gBDMPrefix -- POPSTARTER reads <root>/POPS only
     if (!vcdResolvePopstarter(vcdPrefix, vcdElf, sizeof(vcdElf))) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        vcdDescribePopstarterLookup(vcdPrefix, vcdElf, sizeof(vcdElf));
+        host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
     // vcdBuildSelector emits the BARE POPSTARTER label ("mass:/POPS/XX.<name>.ELF"), NOT this live

@@ -1830,6 +1830,17 @@ static void hddInstallPopstarterMcFromCommon(void)
 //   the IOP -- harmless before an IOP reset, fatal before a handoff that does not reset.
 #define HDD_PFS_MT_WRITETHROUGH 0x02 // ps2sdk libpfs PFS_FIO_ATTR_WRITEABLE: commit on every write/close
 
+// A missing Ember file is named by its partition, not by pfs0: -- an internal mount point the user
+// never sees: "hdd0:__.EMBER/EMBER/ember.elf". pfsPath is what the resolver tried ("pfs0:/EMBER/...").
+static void hddShowEmberMissing(int msgId, const char *mountSrc, const char *pfsPath)
+{
+    char shown[APA_IDMAX + 6 + 288];
+    const char *rest = strchr(pfsPath, ':');
+
+    snprintf(shown, sizeof(shown), "%s%s", mountSrc, rest != NULL ? rest + 1 : pfsPath);
+    host::ui().missingFile(_l(msgId), shown);
+}
+
 static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char *part, config_set_t *configSet)
 {
     char emberElf[256], biosPath[288], mountSrc[APA_IDMAX + 6];
@@ -1860,7 +1871,9 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     if (fileXioMount(hddPrefix, mountSrc, FIO_MT_RDWR | HDD_PFS_MT_WRITETHROUGH) < 0) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
+        // The partition itself would not mount: nothing was looked up inside it yet, so this is not
+        // "Missing ember.elf". Say the item could not be run, and name the partition.
+        host::ui().missingFile(_l(_STR_ERR_FILE_INVALID), mountSrc);
         return;
     }
 
@@ -1869,13 +1882,13 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     if (!cueResolveEmber("pfs0:/", emberElf, sizeof(emberElf))) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
+        hddShowEmberMissing(_STR_EMBER_NOT_FOUND, mountSrc, emberElf);
         return;
     }
     if (!cueResolveEmberBios("pfs0:/", biosPath, sizeof(biosPath))) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
+        hddShowEmberMissing(_STR_EMBER_BIOS_MISSING, mountSrc, biosPath);
         return;
     }
     if (!cuePrepareLaunch("pfs0:/", name, emberElf, launchName, sizeof(launchName))) {
@@ -1949,7 +1962,10 @@ static void hddDoLaunchVcd(item_list_t *itemList, const char *name, const char *
             // or queue BDM work during teardown preparation.
             if (!vcdResolvePopstarterMcElf(vcdElf, sizeof(vcdElf))) {
                 ioBlockOps(0);
-                host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+                // Name what the user can fix: their own path when set, else the APA home of
+                // POPSTARTER (hdd0:__common/POPS/POPSTARTER.ELF), not the internal pfs0: mount.
+                vcdDescribePopstarterLookup("hdd0:__common/", vcdElf, sizeof(vcdElf));
+                host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
                 return;
             }
         }
@@ -1999,7 +2015,9 @@ void HddSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
     }
     ioBlockOps(0); // resolvedName/resolvedPart are now independent of the mutable backing arrays
     if (idx < 0) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        // The game itself is not on any PS1 partition (a favourite of a removed or renamed title),
+        // which is not a missing POPSTARTER.ELF -- and is wrong outright for an Ember title.
+        host::ui().msgBox(_l(_STR_ERR_FILE_INVALID), 0, NULL);
         return;
     }
     if (isEmber) {
