@@ -32,6 +32,9 @@
 #include "ra.h"
 #endif
 #include "gsm_api.h"
+#ifdef RETROACHIEVEMENTS
+#include "../../include/ra_features.h"
+#endif
 #ifdef IGS
 #include "igs_api.h"
 #endif
@@ -382,6 +385,10 @@ static void IGR_Thread(void *arg)
             DPRINTF("Stopping GSM...\n");
             DisableGSM();
         }
+#if defined(RETROACHIEVEMENTS) && RA_EXPERIMENTAL_CARD_DMA
+        else if (config->raOverlayBuf)
+            DisableGSTracker();
+#endif
 
         if (config->gCheatList) {
             if (EnableDebug)

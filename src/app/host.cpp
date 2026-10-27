@@ -15,6 +15,7 @@
 #include "include/discsupport.h"
 #include "include/ranet.h"
 #include "modules/network/common/ra_snap.h"
+#include "include/ra_features.h"
 #endif
 
 namespace
@@ -106,14 +107,37 @@ public:
 class OplLaunch final: public LaunchServices
 {
 public:
-    unsigned int raWorkBytes() override
-    {
 #ifdef RETROACHIEVEMENTS
+    // Snapshot, watch words and chain scratch; 0 when there is nothing valid to watch.
+    static unsigned int raListBytes()
+    {
         const int count = GetWatchCount(), nodes = GetNodeCount();
         if (!gRATelemetry || !raWatchEntriesValid(GetWatchList(), count, GetWatchBytes()) || nodes < 0 || nodes > RA_NODE_MAX)
             return 0;
         return RA_EE_WORK_BYTES(count, nodes);
+    }
+
+    // Where the card packet starts, cache-line aligned behind the list.
+    static unsigned int raCardOffset(unsigned int listBytes) { return (listBytes + 63) & ~63u; }
+#endif
+
+    unsigned int raWorkBytes(const void *at) override
+    {
+#ifdef RETROACHIEVEMENTS
+        const unsigned int list = raListBytes();
+        if (list == 0 || !RA_EXPERIMENTAL_CARD_DMA || gRAMode != RA_MODE_CADUCEUS || gRAExperimentalCards != 1)
+            return list;
+        // The kernel keeps module storage from the game. Below 1 MB it must stay below 1 MB, where
+        // games load; without room the cards fall back to the pulse.
+        const unsigned int start = (unsigned int)(uintptr_t)at, limit = start < 0x00100000 ? 0x00100000 : 0x02000000;
+        const unsigned int total = raCardOffset(list) + RA_CARD_PACKET_BYTES;
+        if (start > limit || total > limit - start) {
+            raLaunchNote("overlay-no-room", RA_CARD_PACKET_BYTES, (int)start);
+            return list;
+        }
+        return total;
 #else
+        (void)at;
         return 0;
 #endif
     }
@@ -141,6 +165,9 @@ public:
         config->raNodeCount = GetNodeCount();
         config->raWorkArea = raWorkArea;
         config->raWorkBytes = raWorkBytes;
+        // Only a reservation that grew past the list holds a card packet.
+        const unsigned int list = raListBytes();
+        config->raOverlayBuf = raWorkBytes >= raCardOffset(list) + RA_CARD_PACKET_BYTES ? (u8 *)raWorkArea + raCardOffset(list) : NULL;
 
         // raudp's companion: the peer the menu verified, else the configured PC, else the
         // share the game streams from (where a passive listener's notices come from).

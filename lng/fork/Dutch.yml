@@ -625,3 +625,5 @@ translations:
   CAD_UNTRACKED: Caduceus is niet klaar. Deze keer starten zonder prestaties.
   RA_CADUCEUS_OFFLINE: De RA-sessie van Caduceus is offline.
   RA_CADUCEUS_SIGN_IN: Meld je in Caduceus aan bij RetroAchievements en probeer het opnieuw.
+  RA_EXPERIMENTAL_CARDS: Experimentele Caduceus-kaarten
+  HINT_RA_EXPERIMENTAL_CARDS: Experimentele prestatiekaarten in PS2-games. Kunnen flikkeren of games laten vastlopen. Alleen Caduceus; Uit gebruikt de gouden puls. Werkt vanaf de volgende gamestart.

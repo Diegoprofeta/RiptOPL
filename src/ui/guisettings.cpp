@@ -788,6 +788,13 @@ static int netConfigUpdater(int modified)
             diaSetEnabled(diaNetConfig, NETCFG_PS2_IP_ADDR_TYPE, 1);
         }
         netConfigLastProtocol = netProto;
+#ifdef RETROACHIEVEMENTS
+        // Cards are a Caduceus feature and need telemetry; the saved choice survives a switch away.
+        int raMode, raTelemetry;
+        diaGetInt(diaNetConfig, NETCFG_RA_MODE, &raMode);
+        diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &raTelemetry);
+        diaSetEnabled(diaNetConfig, NETCFG_RA_EXPERIMENTAL_CARDS, raMode == RA_MODE_CADUCEUS && raTelemetry);
+#endif
 
         diaSetVisible(diaNetConfig, NETCFG_SHARE_NB_ADDR, isNetBIOS);
 
@@ -964,6 +971,7 @@ int guiShowNetConfig(void)
     const char *raBadgePos[] = {_l(_STR_RA_BADGE_PREFIX), _l(_STR_RA_BADGE_SUFFIX), NULL};
     diaSetEnum(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, raBadgePos);
     diaSetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, gRABadgeSuffix);
+    diaSetInt(diaNetConfig, NETCFG_RA_EXPERIMENTAL_CARDS, gRAExperimentalCards);
 #endif
 
     // Protocol rows, seeded from the authoritative gNetworkProtocol.
@@ -1056,6 +1064,7 @@ reshow_network:
         diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &gRATelemetry);
         diaGetInt(diaNetConfig, NETCFG_RA_BADGES, &gRABadges);
         diaGetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, &gRABadgeSuffix);
+        diaGetInt(diaNetConfig, NETCFG_RA_EXPERIMENTAL_CARDS, &gRAExperimentalCards);
         gRABadgeSuffix = (gRABadgeSuffix == 1);
         // Badges are resolved on the I/O thread when rows are built: rebuild every list (HTTP and
         // Favorites too) when visibility or placement changes, not on the next unrelated rescan.

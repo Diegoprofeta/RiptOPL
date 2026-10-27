@@ -1,9 +1,8 @@
-"""Compile the production in-game RA event road on the host.
+"""Compile the production SMAP notice tap on the host.
 
-smap-ingame sets one RA datagram aside while the game owns SMAP RX
-(ra_tap_notice / SMAPReadNotice), and ee_core's VBLANK handler acts on the
-128-byte event raudp DMAs over: a pulse for an unlock, the IGR road for a
-reset, nothing for a torn or repeated event.
+While a game streams from SMB or HTTP, smap-ingame owns SMAP RX; it sets one
+RA datagram for port 18195 aside (ra_tap_notice) for raudp to collect once
+(SMAPReadNotice). The VBLANK side is in test_caduceus_overlay.py.
 """
 from pathlib import Path
 import subprocess
@@ -11,10 +10,8 @@ import tempfile
 
 root = Path(__file__).resolve().parents[2]
 xfer = (root / 'modules/network/smap-ingame/xfer.c').read_text(encoding='utf-8')
-overlay = (root / 'ee_core/src/ra_overlay.c').read_text(encoding='utf-8')
 
 tap = xfer[xfer.index('/* Copy only achievement'):xfer.index('#endif', xfer.index('static void ra_tap_notice('))]
-pulse = overlay[overlay.index('/* GS privileged registers'):overlay.rindex('#endif')]
 
 program = r'''
 #include <assert.h>
@@ -23,17 +20,10 @@ program = r'''
 #include <stdint.h>
 typedef uint64_t u64;
 #include "modules/network/common/ra_snap.h"
-static int intr_depth, resets;
+static int intr_depth;
 static void CpuSuspendIntr(int *state) { *state = intr_depth++; }
 static void CpuResumeIntr(int state) { intr_depth = state; }
-static u64 pmode_reg;
-static unsigned bgcolor;
-#define UNCACHED_SEG(x) (x)
-#define BGCOLND(c) (bgcolor = (c))
-static void IGR_RequestReset(void) { resets++; }
-''' + tap.replace('(*(volatile u64 *)0x12000000)', 'pmode_reg') + pulse.replace(
-    '#define GS_PMODE (*(volatile u64 *)0x12000000)', '#define GS_PMODE pmode_reg') + r'''
-
+''' + tap + r'''
 /* An Ethernet/IPv4/UDP frame to port 18195 carrying text. */
 static unsigned frame(unsigned char *p, const char *text, unsigned port) {
     unsigned n = strlen(text), udp = 8 + n;
@@ -43,14 +33,6 @@ static unsigned frame(unsigned char *p, const char *text, unsigned port) {
     p[38] = udp >> 8; p[39] = udp & 255;
     memcpy(p + 42, text, n);
     return 42 + n < 60 ? 60 : 42 + n;
-}
-
-static struct ra_event *ev;
-static void post(unsigned kind, int torn) {
-    ev->magic = RA_EVENT_MAGIC;
-    ev->seq++;
-    ev->kind = kind;
-    ev->commit = torn ? ev->seq - 1 : ev->seq;
 }
 
 int main(void) {
@@ -80,42 +62,6 @@ int main(void) {
     }
     puts("PASS: SMAP sets aside one whole RA datagram for port 18195, hands it out once, refuses the rest");
 
-    ev = (struct ra_event *)RA_OverlayEventBuffer();
-    RA_OverlayOnVblank(1);
-    assert(!ra_ovl_running && !resets);
-    post(RA_EVENT_MAKE_UNLOCK(25), 1);
-    RA_OverlayOnVblank(2);
-    assert(!ra_ovl_running);                                   /* commit not landed yet */
-    ev->commit = ev->seq;
-    RA_OverlayOnVblank(3);
-    assert(ra_ovl_running && ra_ovl_start == 3);
-    RA_OverlayOnVblank(4);
-    assert(ra_ovl_start == 3);                                 /* the same event is one pulse */
-    post(RA_EVENT_MAKE_UNLOCK(5), 1);
-    RA_OverlayOnVblank(5);
-    assert(ra_ovl_running && ra_ovl_start == 3 && pmode_reg != 0); /* a torn event does not stall the flash */
-    ev->commit = ev->seq;
-    RA_OverlayOnVblank(6);
-    assert(ra_ovl_start == 6);
-    for (unsigned f = 7; f < 6 + RA_OVL_DOWN + RA_OVL_UP + 1; f++)
-        RA_OverlayOnVblank(f);
-    assert(!ra_ovl_running && bgcolor == 0);
-    post(RA_EVENT_RESET | 0x100, 0);                          /* kind's upper bits never hide a reset */
-    RA_OverlayOnVblank(100);
-    RA_OverlayOnVblank(101);
-    assert(resets == 1 && !ra_ovl_running);
-    post(7, 0);
-    RA_OverlayOnVblank(102);
-    assert(resets == 1 && !ra_ovl_running);
-    ev = (struct ra_event *)RA_OverlayEventBuffer();           /* a new game starts from seq 0 again */
-    post(RA_EVENT_UNLOCK, 0);
-    RA_OverlayOnVblank(200);
-    assert(ra_ovl_running && ra_ovl_start == 200);
-    ev = (struct ra_event *)RA_OverlayEventBuffer();           /* and again: seq 1 is new for the next game */
-    post(RA_EVENT_UNLOCK, 0);
-    RA_OverlayOnVblank(300);
-    assert(ra_ovl_start == 300);
-    puts("PASS: VBLANK acts once per committed event: unlock pulses, reset to IGR, torn or unknown ignored");
     return 0;
 }
 '''

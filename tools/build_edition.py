@@ -41,7 +41,7 @@ def definition(edition, configuration="standard", toolchain="gcc"):
             add(target, "defines", "RETROACHIEVEMENTS")
         add(main, "sources", "src/platform/md5.c", *[
             f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport")])
-        add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c")
+        add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c", "ee_core/src/ra_pulse.c")
         main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
         add(main, "embed_irx", "raudp")
         add(targets["SMSTCPIP"], "defines", "INGAME_UDP")

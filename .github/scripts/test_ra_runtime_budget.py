@@ -179,32 +179,61 @@ int main() {
 ''')
 
 app=(root/'src/app/host.cpp').read_text(encoding='utf-8')
-first=app.index('unsigned int raWorkBytes() override')
-method=app[first:app.index('\n    }',first)+6]
+first=app.index('#ifdef RETROACHIEVEMENTS\n    // Snapshot, watch words')
+last=app.index('unsigned int raWorkBytes(const void *at) override')
+method=app[first:app.index('\n    }',last)+6]
+overlay=app.index('        const unsigned int list = raListBytes();',app.index('void fillCoreConfig'))
+overlay=app[overlay:app.index(': NULL;',overlay)+7]
 run('launch_ra_capacity', prefix + r'''
 static unsigned int entries[RA_WATCH_MAX];
-static int count,bytes,nodes,gRATelemetry=1;
+static int count,bytes,nodes,gRATelemetry=1,gRAMode,gRAExperimentalCards,notes;
+#define RA_MODE_CADUCEUS 1
+#include "include/ra_features.h"
+static void raLaunchNote(const char *,int,int) {notes++;}
 unsigned int *GetWatchList() {return entries;}
 int GetWatchCount() {return count;}
 int GetWatchBytes() {return bytes;}
 int GetNodeCount() {return nodes;}
-struct LaunchServices {virtual unsigned int raWorkBytes()=0;};
+struct LaunchServices {virtual unsigned int raWorkBytes(const void *at)=0;};
+struct Config {void *raOverlayBuf;};
 class OplLaunch final:public LaunchServices {public:
 ''' + method + r'''
+    void *overlayFor(void *raWorkArea, unsigned int raWorkBytes) {
+        Config c, *config=&c;
+''' + overlay + r'''
+        return c.raOverlayBuf;
+    }
 };
 int main() {
     for(int i=0;i<RA_WATCH_MAX;i++)entries[i]=RA_WATCH_PACK(0x80000+i,1);
     OplLaunch launch;
     for(int n : {0,1,1024,4096,4097}) {
         count=bytes=n;nodes=0;
-        assert(launch.raWorkBytes()==(n>0 && n<=4096 ? (unsigned)RA_EE_WORK_BYTES(n,0) : 0));
+        assert(launch.raWorkBytes(nullptr)==(n>0 && n<=4096 ? (unsigned)RA_EE_WORK_BYTES(n,0) : 0));
     }
     count=bytes=4096;nodes=128;
-    assert(launch.raWorkBytes()==RA_EE_WORK_BYTES(4096,128));
-    nodes=-1;assert(!launch.raWorkBytes());nodes=129;assert(!launch.raWorkBytes());
-    nodes=0;bytes--;assert(!launch.raWorkBytes());bytes++;
-    entries[0]=RA_WATCH_PACK(0x80000,3);assert(!launch.raWorkBytes());
-    entries[0]=RA_WATCH_PACK(0x80000,1);gRATelemetry=0;assert(!launch.raWorkBytes());
+    assert(launch.raWorkBytes(nullptr)==RA_EE_WORK_BYTES(4096,128));
+    nodes=-1;assert(!launch.raWorkBytes(nullptr));nodes=129;assert(!launch.raWorkBytes(nullptr));
+    nodes=0;bytes--;assert(!launch.raWorkBytes(nullptr));bytes++;
+    entries[0]=RA_WATCH_PACK(0x80000,3);assert(!launch.raWorkBytes(nullptr));
+    entries[0]=RA_WATCH_PACK(0x80000,1);gRATelemetry=0;assert(!launch.raWorkBytes(nullptr));
     puts("PASS: actual C++ launch service reserves only validated set-sized module storage");
+    // Cards: Caduceus and an explicit opt-in add a cache-aligned packet behind the list,
+    // never past 1 MB when the block starts below it; the ee_core pointer follows the size.
+    static u8 area[1];
+    const void *low=(const void *)0x000C0000, *high=(const void *)0x00200000;
+    entries[0]=RA_WATCH_PACK(0x80000,1);gRATelemetry=1;count=bytes=3;nodes=0;
+    const unsigned list=RA_EE_WORK_BYTES(3,0), cards=((list+63)&~63u)+RA_CARD_PACKET_BYTES;
+    assert(list%64 && launch.raWorkBytes(low)==list && !launch.overlayFor(area,list));
+    gRAMode=1;assert(launch.raWorkBytes(low)==list);
+    gRAExperimentalCards=1;assert(launch.raWorkBytes(low)==cards);
+    assert(launch.overlayFor(area,cards)==area+((list+63)&~63u) && !launch.overlayFor(area,cards-1));
+    gRAMode=0;assert(launch.raWorkBytes(low)==list);gRAMode=1;
+    assert(!notes && launch.raWorkBytes((const void *)(0x00100000-cards))==cards);
+    assert(launch.raWorkBytes((const void *)(0x00100000-cards+64))==list && notes==1);
+    assert(launch.raWorkBytes(high)==cards && launch.raWorkBytes((const void *)(0x02000000-cards+64))==list);
+    assert(launch.raWorkBytes((const void *)0x02000040)==list && notes==3);
+    count=0;assert(!launch.raWorkBytes(low) && !launch.overlayFor(area,0));
+    puts("PASS: card packet only for Caduceus opt-in, cache-aligned, below the 1 MB/32 MB limit, else the pulse");
 }
 ''')

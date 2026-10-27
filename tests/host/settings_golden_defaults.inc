@@ -13,6 +13,7 @@ CHECK(gRATelemetry == (0));
 CHECK(gRABadges == (1));
 CHECK(gRABadgeSuffix == (0));
 CHECK(gRAMode == (RA_MODE_XERABORA));
+CHECK(gRAExperimentalCards == (0));
 #endif
 CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));

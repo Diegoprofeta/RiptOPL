@@ -16,6 +16,8 @@
 #include "coreconfig.h"
 #ifdef RETROACHIEVEMENTS
 #include "ra.h"
+#include "ra_overlay.h"
+#include "../../include/ra_features.h"
 #endif
 
 int isInit = 0;
@@ -112,6 +114,7 @@ static int eecoreInit(int argc, char **argv)
     /* RetroAchievements: copy the watch list while loader memory is
        still intact; the game overwrites it. Same trick as the cheats. */
     RA_SetupWatchList();
+    RA_OverlaySetPacketBuffer(config->raOverlayBuf);
     DPRINTF("RA watchlist = %d entries, %d bytes\n", config->raWatchCount, config->raSnapBytes);
 #endif
 
@@ -130,6 +133,11 @@ static int eecoreInit(int argc, char **argv)
             config->GsmConfig.FIELD_fix);
         EnableGSM();
     }
+#if defined(RETROACHIEVEMENTS) && RA_EXPERIMENTAL_CARD_DMA
+    // Cards place themselves by the framebuffer the game last set; GSM records it either way.
+    else if (config->raOverlayBuf)
+        EnableGSTracker();
+#endif
 
     set_ipconfig();
 

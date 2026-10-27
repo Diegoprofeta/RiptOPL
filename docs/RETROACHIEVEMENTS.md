@@ -190,8 +190,20 @@ still does. **RA companion IP** names the PC that runs the service; **0.0.0.0** 
 Replies are accepted only from the host asked, and only as `RAO1 OK`. UDP **18195** is the console's
 telemetry and notice port and **18196** its menu reply port; allow them through the PC's firewall.
 RiptOPL never stores a RetroAchievements password or key. Caduceus here covers the session check,
-watch lists and telemetry; its achievement browser and title cards are not ported yet. **Caduceus
+watch lists, telemetry and in-game notices; its achievement browser is not ported yet. **Caduceus
 end-to-end console tracking is NOT TESTED on hardware.**
+
+In the game an unlock shows as a gold pulse (Xerabora always, Caduceus by default). **Settings →
+Network → Caduceus experimental cards** (Off by default, saved as `ra_experimental_cards=1`; any other
+value reads as Off) instead draws a small card with the achievement's title and points in the upper
+right. The row is available only with RA Mode Caduceus and telemetry on, and a switch away keeps the
+saved choice. With cards Off a launch reserves nothing extra and installs no GS tracker. With cards on,
+a tracked launch reserves about 30 KiB more in module storage, kept below 1 MB when the storage starts
+there; without room, or for a display the renderer cannot draw on, the pulse is used instead. The
+renderer is the original's (adapted from [Rian6's caduceus-opl](https://github.com/Rian6/caduceus-opl/tree/2a98a9d7361f8e33f421244bc88c318eab3bdf2f),
+AFL-3.0): it checks the GIF and display state before it draws, which does not prove a game's graphics
+are safe. **Cards may flicker or freeze a game; if one does, turn the setting off. NOT TESTED on
+hardware.** POPStarter PS1 unlocks stay on the companion.
 
 The PC can also send **RAR1**, which leaves the game for the menu exactly as the IGR combo does.
 Under Compatibility Mode 6, which has no IGR, the request is ignored.

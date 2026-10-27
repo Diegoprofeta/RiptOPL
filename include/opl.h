@@ -352,6 +352,8 @@ extern int gRABadgeSuffix;
 extern int gRAMode;
 // Optional dedicated companion PC (IPv4). 0.0.0.0 keeps the SMB-host / broadcast fallback.
 extern int gRAHostIp[4];
+// Caduceus title/points cards drawn over the game by GIF DMA. Experimental, default Off: may flicker or freeze games.
+extern int gRAExperimentalCards;
 #endif
 extern int gEnableArt;
 extern int gEnableDiscArt; // ItemIcon/ICO disc artwork; independent of cover art

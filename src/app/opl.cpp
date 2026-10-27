@@ -240,6 +240,7 @@ int gRABadges;
 int gRABadgeSuffix;
 int gRAMode;
 int gRAHostIp[4];
+int gRAExperimentalCards;
 #endif
 int gEnableArt;
 int gEnableDiscArt;

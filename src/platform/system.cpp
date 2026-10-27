@@ -1150,7 +1150,7 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
        64-byte aligned, so the area is too. Same gate as the network modules:
        an untracked game reserves nothing. */
     void *raWorkArea = NULL;
-    unsigned int raWorkBytes = cfMode ? 0 : host::launch().raWorkBytes();
+    unsigned int raWorkBytes = cfMode ? 0 : host::launch().raWorkBytes((u8 *)ModuleStorage + ModuleStorageSize);
     if (raWorkBytes > 0) {
         raWorkArea = (u8 *)ModuleStorage + ModuleStorageSize;
         ModuleStorageSize += (raWorkBytes + 0x3F) & ~0x3F;
@@ -1224,6 +1224,7 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
         config->raSnapBytes = 0;
         config->raNodeList = NULL;
         config->raNodeCount = 0;
+        config->raOverlayBuf = NULL;
     }
 #else
     host::launch().fillCoreConfig(config, discMode, NULL, 0);

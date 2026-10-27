@@ -47,7 +47,7 @@ launch = read('src/sources/bdmlaunch.cpp')
 assert 'FAKE_MODULE_FLAG_DEV9 | FAKE_MODULE_FLAG_ATAD;\n        sysLaunchLoaderElf(filename, "BDM_CF_MODE"' in launch
 assert 'BDM_TYPE_PCCF)\n        return 0;' in function(launch, 'int NeutrinoLauncher::tryLaunch(')
 assert '!discMode && !cfMode && size_mcemu_irx > 0' in system
-assert 'cfMode ? 0 : host::launch().raWorkBytes()' in system
+assert 'cfMode ? 0 : host::launch().raWorkBytes(' in system
 assert 'strcmp(mode_str, "BDM_CF_MODE") && gRATelemetry' in system
 probe = function(bdm, 'static void bdmLoadPccfModule(')
 request = function(bdm, 'void bdmRequestPccfProbe(')

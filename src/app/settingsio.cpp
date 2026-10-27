@@ -1532,6 +1532,7 @@ void _loadConfig()
             gRABadgeSuffix = (gRABadgeSuffix == 1); // any stored value but 1 is Prefix
             if (gRAMode != RA_MODE_CADUCEUS)
                 gRAMode = RA_MODE_XERABORA;
+            gRAExperimentalCards = (gRAExperimentalCards == 1); // anything but an explicit 1 is Off
             int a, b, c, d;
             char extra;
             if (configGetStr(configOPL, CONFIG_OPL_RA_HOST_IP, &temp) &&

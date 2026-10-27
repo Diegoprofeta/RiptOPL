@@ -105,7 +105,8 @@ public:
     // Fill the feature-derived fields of the ee_core config: cheat list, PS2RD image, RetroAchievements watch
     // list/buffers, GSM. discMode launches carry none of cheats/image/GSM.
     virtual void fillCoreConfig(struct EECoreConfig_t *config, bool discMode, void *raWorkArea, unsigned int raWorkBytes) = 0;
-    virtual unsigned int raWorkBytes() = 0;
+    // ee_core's RA work area for the list loaded now, placed at 'at' in module storage.
+    virtual unsigned int raWorkBytes(const void *at) = 0;
     // Entries in the loaded RetroAchievements watch list (0 outside that flavour or for an untracked game).
     virtual int raWatchCount() = 0;
     virtual bool discCheckBusy() = 0;
