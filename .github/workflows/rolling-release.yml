@@ -74,11 +74,23 @@ jobs:
         uses: techwritescode/setup-sdk@master
         with:
           ps2dev: ${{ github.workspace }}/.ps2dev
+      # git.techwritescode.dev has multi-minute HTTP 521 outages; one retry 45 s later was not enough
+      # (rebuild/main 894dca3). Same three attempts as flavours.yml and ps2build.yml.
       - name: Retry SDK setup after a transient download failure
         if: steps.sdk1.outcome == 'failure'
         run: sleep 45
-      - name: Install ps2build (retry)
+      - name: Install ps2build (retry 1)
+        id: sdk2
         if: steps.sdk1.outcome == 'failure'
+        continue-on-error: true
+        uses: techwritescode/setup-sdk@master
+        with:
+          ps2dev: ${{ github.workspace }}/.ps2dev
+      - name: Wait before retrying the SDK setup again
+        if: steps.sdk1.outcome == 'failure' && steps.sdk2.outcome == 'failure'
+        run: sleep 90
+      - name: Install ps2build (retry 2)
+        if: steps.sdk1.outcome == 'failure' && steps.sdk2.outcome == 'failure'
         uses: techwritescode/setup-sdk@master
         with:
           ps2dev: ${{ github.workspace }}/.ps2dev
