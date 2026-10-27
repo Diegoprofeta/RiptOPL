@@ -10,10 +10,13 @@
   The bypass and hand-built frames belong to the in-game side; nothing
   of that kind is needed here.
 
-  The request is a broadcast: no PC address is stored anywhere, and
-  whoever listens answers.
+  In Xerabora mode the request is a broadcast unless an RA companion IP
+  is set; Caduceus first asks its session bridge (CADQ2, UDP 18197) on the
+  companion or SMB host, then the engine on that same PC. While a UDPFS
+  chain owns the NIC the same exchange runs through the ministack's
+  mstack: device instead of a socket.
 
-  Protocol (xeRAbora v0.1.0-alpha.10 protocol v1 with pointer chain extension):
+  Protocol (xeRAbora v0.1.0-alpha.15 protocol v1 with pointer chain extension):
     console -> "RAP1 <own-ip> <own-port>"                    (discovery)
     PC      -> "RAO1 OK <client>/<version>"
     console -> "RAQ1 <hash32> <serial> <own-ip> <own-port>"
@@ -98,6 +101,10 @@
 #include <string.h>
 #include <time.h> /* clock(): round trip of the link test */
 
+#include "modules/network/common/ra_client.h"
+#define NEWLIB_PORT_AWARE
+#include <fileXio_rpc.h> /* fileXioDevctl: the mstack: link */
+
 constexpr int RA_PORT = 18194;
 constexpr int RA_MY_PORT = 18196; /* own port: the PC replies here directly, past NAT */
 constexpr int RA_CHUNK = 896;     /* agreed with the PC; rule 3 in the header */
@@ -106,10 +113,13 @@ constexpr int RA_TRY = 12;        /* attempts per request */
 constexpr int RA_POLL_MS = 25;    /* pause between polls for a reply */
 /* How many times to ask again while the PC answers WAIT. Identifying
    the image is a live request to the RetroAchievements server and
-   takes seconds. We wait only while the PC keeps answering: if it goes
-   silent, ask() gives up within its own three seconds, so "client not
-   running" stays a fast failure. */
-constexpr int RA_WAIT_ROUNDS = 8;
+   takes seconds. WAIT replies can be immediate, so pause between up to 20
+   rounds rather than exhausting them before a large set is ready.
+   We wait only while the PC keeps answering: if it goes silent, ask()
+   gives up within its own three seconds, so "client not running" stays
+   a fast failure. */
+constexpr int RA_WAIT_ROUNDS = 20;
+constexpr int RA_WAIT_PAUSE_MS = 500;
 
 /* Per-call non-blocking receive. The socket is also set non-blocking via
    fcntl (see Ranet::openPcSocket), but on the menu's netman lwIP stack that
@@ -125,6 +135,13 @@ constexpr int RA_WAIT_ROUNDS = 8;
    as an unknown flag and block. (The in-game SMSTCPIP stack defines 0x40;
    it serves ee_core's raudp, not this menu path.) */
 constexpr int RA_MSG_DONTWAIT = 0x08;
+
+/* The link to the PC is a socket, or -- while a UDPFS chain owns the NIC
+   and the menu's lwIP stack cannot run -- the ministack's mstack: device,
+   marked by this sentinel. It is >= 0 so every "sock < 0" check still means
+   "no link", and no EE socket descriptor gets anywhere near it. */
+constexpr int RA_LINK_MSTACK = 0x10000;
+constexpr int RA_LINK_BUSY = -8; /* NIC reserved and no mstack: (UDPBD, or UDPFS not loaded yet) */
 
 Ranet gRanet;
 
@@ -144,6 +161,31 @@ int raNetTestLink(char *line1, int sz1, char *line2, int sz2)
     return gRanet.netTestLink(line1, sz1, line2, sz2);
 }
 
+int raNetNicBusy(void)
+{
+    return Ranet::nicBusy();
+}
+
+int raNetNicReserved(void)
+{
+    return Ranet::nicReserved();
+}
+
+int raNetUdpfsNotLoaded(void)
+{
+    return Ranet::udpfsNotLoaded();
+}
+
+unsigned int raNetPeerIP(void)
+{
+    return gRanet.peerIP();
+}
+
+void raNetForgetPeer(void)
+{
+    gRanet.forgetPeer();
+}
+
 /* The NIC settlement (design doc, decided 2026-09-03): RA's menu check is a
    fourth claimant on the one SMAP NIC. When a UDP transport (UDPBD, or the
    UDPFS filesystem chain) owns it, RA must NOT raise the SMB stack on top --
@@ -155,15 +197,93 @@ int Ranet::nicBusy()
     return bdmIsUDPBDLoaded() || udpfsGetModulesLoaded();
 }
 
+/* The menu-side form. gNetworkProtocol is the user's intent: a UDP transport
+   that simply has not loaded yet (its page not visited this boot) still owns
+   the NIC. Raising SMB for an RA menu action first would claim it, and the
+   UDP loader refuses on top of SMB until the next boot. The launch path keeps
+   nicBusy: the game's IOP reset frees the NIC either way. */
 int Ranet::nicReserved()
 {
     return nicBusy() || gNetworkProtocol == NET_PROTO_UDPFS || gNetworkProtocol == NET_PROTO_UDPFSBD ||
            gNetworkProtocol == NET_PROTO_UDPBD;
 }
 
+/* A UDPFS transport is selected but its chain has not loaded yet (its page not
+   opened this boot), so there is no mstack: link to ask through. */
+int Ranet::udpfsNotLoaded()
+{
+    return (gNetworkProtocol == NET_PROTO_UDPFS || gNetworkProtocol == NET_PROTO_UDPFSBD) && !nicBusy();
+}
+
+int Ranet::hostIsExplicit()
+{
+    return (gRAHostIp[0] | gRAHostIp[1] | gRAHostIp[2] | gRAHostIp[3]) != 0;
+}
+
+/* The last UDP responder (replyIP_) is transient and may not have passed
+   protocol validation. Only a completed watch-list exchange or a verified
+   link check selects a passive game's RA destination, and only for the RA
+   mode and hosts it was verified under. */
+void Ranet::forgetPeer()
+{
+    verifiedIP_ = 0;
+    verifiedMode_ = -1;
+}
+
+void Ranet::rememberPeer(unsigned int ip)
+{
+    if (ip == 0 || ip == htonl(INADDR_BROADCAST))
+        return;
+    verifiedIP_ = ip;
+    verifiedMode_ = gRAMode;
+    memcpy(verifiedSMBHost_, pc_ip, sizeof(verifiedSMBHost_));
+    memcpy(verifiedCompanionHost_, gRAHostIp, sizeof(verifiedCompanionHost_));
+}
+
+unsigned int Ranet::peerIP() const
+{
+    if (verifiedMode_ != gRAMode || memcmp(verifiedSMBHost_, pc_ip, sizeof(verifiedSMBHost_)) != 0 ||
+        memcmp(verifiedCompanionHost_, gRAHostIp, sizeof(verifiedCompanionHost_)) != 0)
+        return 0;
+    return verifiedIP_;
+}
+
+/* ask() over mstack:. One devctl per attempt sends the request and waits up
+   to the same 10 polls the socket path waits; the retries, the reply-source
+   check and replyIP_ are the socket path's. */
+int Ranet::askMstack(struct sockaddr_in *to, const char *req, char *out, int asklen)
+{
+    int len = strlen(req);
+
+    if (len <= 0 || len > MSTACK_XCHG_REQ_MAX)
+        return -1;
+    xreq_.dst_ip = to->sin_addr.s_addr;
+    xreq_.dst_port = ntohs(to->sin_port);
+    xreq_.timeout_ms = 10 * RA_POLL_MS;
+    xreq_.len = len;
+    memcpy(xreq_.data, req, len);
+
+    for (int t = 0; t < RA_TRY; t++) {
+        int got = fileXioDevctl(MSTACK_XCHG_DEVICE, MSTACK_DEVCTL_UDP_XCHG, &xreq_, MSTACK_XCHG_REQ_HDR + len,
+                                &xreply_, sizeof(xreply_));
+        if (got <= 0)
+            continue;
+        if (to->sin_addr.s_addr != htonl(INADDR_BROADCAST) && xreply_.src_ip != to->sin_addr.s_addr)
+            continue;
+        if (got > asklen)
+            got = asklen;
+        memcpy(out, xreply_.data, got);
+        out[got] = '\0';
+        replyIP_ = xreply_.src_ip;
+        return got;
+    }
+
+    return -1;
+}
+
 /* Waits for a reply, resending the request. Returns the length or -1.
    The socket is non-blocking; SO_RCVTIMEO is not to be trusted on this
-   stack. */
+   stack. A unicast request accepts its reply only from that host. */
 int Ranet::ask(int sock, struct sockaddr_in *to, const char *req, char *out, int outmax)
 {
     int t;
@@ -173,6 +293,9 @@ int Ranet::ask(int sock, struct sockaddr_in *to, const char *req, char *out, int
     /* Never let the IOP side read past its own buffer: rule 3. */
     if (asklen > RA_RECV_MAX)
         asklen = RA_RECV_MAX;
+
+    if (sock == RA_LINK_MSTACK)
+        return askMstack(to, req, out, asklen);
 
     for (t = 0; t < RA_TRY; t++) {
         struct sockaddr_in from;
@@ -192,7 +315,10 @@ int Ranet::ask(int sock, struct sockaddr_in *to, const char *req, char *out, int
             got = recvfrom(sock, out, asklen, RA_MSG_DONTWAIT, (struct sockaddr *)&from, &fromlen);
 
             if (got > 0) {
+                if (to->sin_addr.s_addr != htonl(INADDR_BROADCAST) && from.sin_addr.s_addr != to->sin_addr.s_addr)
+                    continue;
                 out[got] = '\0';
+                replyIP_ = from.sin_addr.s_addr;
                 return got;
             }
 
@@ -213,7 +339,7 @@ int Ranet::ask(int sock, struct sockaddr_in *to, const char *req, char *out, int
    ETH device is enabled, and one can play from USB alone. Bringing it
    up here is allowed because this runs on the I/O thread, like the
    network settings dialog -- and only when no UDP transport owns the
-   NIC (Ranet::nicBusy; ethLoadModules() is the runtime backstop).
+   NIC (Ranet::openPcLink; ethLoadModules() is the runtime backstop).
    Non-blocking is mandatory: the first unanswered recvfrom would
    otherwise hang the thread for good. The fixed own port is the return
    path past Docker NAT (see the header). */
@@ -275,13 +401,43 @@ int Ranet::openPcSocket(char *myaddr, int sz, unsigned char ip[4])
     if (bind(sock, (struct sockaddr *)&me, sizeof(me)) < 0) {
         LOG("RA: bind failed\n");
         raHashStep("6x-bind-failed");
+        disconnect(sock);
+        return -1; /* Replies must reach the fixed RA_MY_PORT, not an ephemeral port. */
     }
 
-    ethGetNetConfig(ip, mask, gw);
-    if (ip[0] | ip[1] | ip[2] | ip[3])
+    memset(ip, 0, 4);
+    if (ethGetNetConfig(ip, mask, gw) >= 0 && (ip[0] | ip[1] | ip[2] | ip[3]))
         snprintf(myaddr, sz, " %d.%d.%d.%d %d", ip[0], ip[1], ip[2], ip[3], RA_MY_PORT);
 
     return sock;
+}
+
+/* The menu-side link: a socket while the NIC is free; the mstack: device
+   while a UDPFS chain owns it (own address = the ministack's static IP);
+   RA_LINK_BUSY when the NIC is reserved and there is no mstack: (UDPBD, or a
+   UDPFS chain not loaded yet). */
+int Ranet::openPcLink(char *myaddr, int sz, unsigned char ip[4])
+{
+    static u8 own[64] __attribute__((aligned(64)));
+
+    if (!nicReserved())
+        return openPcSocket(myaddr, sz, ip);
+
+    myaddr[0] = '\0';
+    if (fileXioDevctl(MSTACK_XCHG_DEVICE, MSTACK_DEVCTL_VERSION, NULL, 0, NULL, 0) != MSTACK_XCHG_VERSION)
+        return RA_LINK_BUSY;
+    /* The address the ministack was loaded with: the chain loads once per boot, so a PS2 IP
+       edited since then is not the one the PC must reply to. An older driver falls back. */
+    for (int i = 0; i < 4; i++)
+        ip[i] = fileXioDevctl(MSTACK_XCHG_DEVICE, MSTACK_DEVCTL_GET_IP, NULL, 0, own, 4) == 4 ? own[i] : (u8)ps2_ip[i];
+    snprintf(myaddr, sz, " %d.%d.%d.%d %d", ip[0], ip[1], ip[2], ip[3], RA_MY_PORT);
+    return RA_LINK_MSTACK;
+}
+
+void Ranet::closePcLink(int sock)
+{
+    if (sock != RA_LINK_MSTACK)
+        disconnect(sock);
 }
 
 void Ranet::broadcastTarget(struct sockaddr_in *to)
@@ -290,6 +446,70 @@ void Ranet::broadcastTarget(struct sockaddr_in *to)
     to->sin_family = AF_INET;
     to->sin_port = htons(RA_PORT);
     to->sin_addr.s_addr = htonl(INADDR_BROADCAST);
+}
+
+/* A dedicated RA host is optional. Without it, retain the Caduceus-to-SMB
+   host binding and Xerabora's broadcast discovery. An override is a unicast
+   destination for either mode and never changes the SMB/HTTP game server or
+   allows an arbitrary responder to replace it. */
+int Ranet::configuredTarget(struct sockaddr_in *to, int port)
+{
+    const int *host = hostIsExplicit() ? gRAHostIp : pc_ip;
+
+    if (!(host[0] | host[1] | host[2] | host[3]) ||
+        (host[0] == 255 && host[1] == 255 && host[2] == 255 && host[3] == 255))
+        return 0;
+    for (int i = 0; i < 4; i++)
+        if (host[i] < 0 || host[i] > 255)
+            return 0;
+
+    memset(to, 0, sizeof(*to));
+    to->sin_family = AF_INET;
+    to->sin_port = htons(port);
+    to->sin_addr.s_addr = ((u32)host[0]) | ((u32)host[1] << 8) | ((u32)host[2] << 16) | ((u32)host[3] << 24);
+    return 1;
+}
+
+/* Caduceus: the bridge at the configured host must report a ready session
+   before the engine on that same PC is asked anything. On success the target
+   moves to the bridge's engine port (ask() accepted the reply only from that
+   host). 0, -9 (offline) or another negative. */
+int Ranet::caduceusSession(int sock, struct sockaddr_in *to, const char *hash, char *rx, int rxsize)
+{
+    char req[48];
+
+    if (!configuredTarget(to, RA_CADUCEUS_PORT))
+        return -2;
+    snprintf(req, sizeof(req), "CADQ2 %s", hash);
+    int got = ask(sock, to, req, rx, rxsize);
+    int session = got > 0 ? raCaduceusSessionReply(rx, hash) : -2;
+    if (session == 0)
+        to->sin_port = htons(RA_PORT);
+    return session;
+}
+
+/* Xerabora broadcasts unless an explicit companion IP is set; Caduceus goes
+   through its session bridge. 0 when `to` is ready, else the askPc result. */
+int Ranet::pcTarget(int sock, struct sockaddr_in *to, const char *hash, char *rx, int rxsize)
+{
+    broadcastTarget(to);
+    if (gRAMode == RA_MODE_CADUCEUS)
+        return caduceusSession(sock, to, hash, rx, rxsize);
+    if (hostIsExplicit() && !configuredTarget(to, RA_PORT))
+        return -2;
+    return 0;
+}
+
+// The payload is binary: consume exactly the protocol's one separator, never scanf whitespace.
+static int raParseChunkHeader(const char *reply, int got, int *idx, int *len, int *hdr)
+{
+    int end = 0;
+
+    *hdr = 0;
+    if (sscanf(reply, "RAC1 %d %d%n", idx, len, &end) != 2 || end <= 0 || end >= got || reply[end] != ' ')
+        return 0;
+    *hdr = end + 1;
+    return 1;
 }
 
 // The protocol uses fixed offsets, so a matching byte sum alone cannot prove
@@ -313,22 +533,29 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
     int sock, got;
     int total = 0, chunks = 0, received = 0, i;
 
+    /* A failed or mismatched new check must not reuse an old peer. */
+    forgetPeer();
     if (info != NULL && infosz > 0)
         info[0] = '\0';
     if (info2 != NULL && info2sz > 0)
         info2[0] = '\0';
 
-    if (nicReserved()) {
-        LOG("RA: NIC is owned by a UDP transport, not asking the PC\n");
+    sock = openPcLink(myaddr, sizeof(myaddr), ip);
+    if (sock == RA_LINK_BUSY) {
+        LOG("RA: NIC is owned by a UDP transport without mstack:, not asking the PC\n");
         raHashStep("6-nic-busy-udp-transport");
         return -8;
     }
-
-    sock = openPcSocket(myaddr, sizeof(myaddr), ip);
     if (sock < 0)
         return -1;
+    if (sock == RA_LINK_MSTACK)
+        raHashStep("6-mstack-link");
 
-    broadcastTarget(&to);
+    got = pcTarget(sock, &to, hash, rx_, sizeof(rx_));
+    if (got != 0) {
+        closePcLink(sock);
+        return got;
+    }
 
     snprintf(req, sizeof(req), "RAQ1 %s %s%s", hash, serial, myaddr);
     LOG("RA: asking the PC about %s\n", hash);
@@ -336,7 +563,7 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
     got = ask(sock, &to, req, rx_, sizeof(rx_));
     if (got <= 0) {
         LOG("RA: no reply from the PC\n");
-        disconnect(sock);
+        closePcLink(sock);
         return -2;
     }
 
@@ -348,10 +575,11 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
         for (w = 0; w < RA_WAIT_ROUNDS && strncmp(rx_, "RAA1 WAIT", 9) == 0; w++) {
             LOG("RA: PC is asking the server, waiting (%d)\n", w + 1);
 
+            DelayThread(RA_WAIT_PAUSE_MS * 1000);
             got = ask(sock, &to, req, rx_, sizeof(rx_));
             if (got <= 0) {
                 LOG("RA: PC went silent while identifying the image\n");
-                disconnect(sock);
+                closePcLink(sock);
                 return -2;
             }
         }
@@ -359,13 +587,27 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
 
     if (strncmp(rx_, "RAA1 WAIT", 9) == 0) {
         LOG("RA: PC is still identifying the image\n");
-        disconnect(sock);
+        closePcLink(sock);
         return -7;
     }
 
     if (strncmp(rx_, "RAA1 OK ", 8) != 0) {
         LOG("RA: PC does not know this image: %s\n", rx_);
-        disconnect(sock);
+        /* "RAA1 NO <reason>": a newer PC says why (unknown game, set too
+           big, server down). The sentence goes to the screen in place of
+           the console's own guess. An older PC sends bare NO. */
+        if (strncmp(rx_, "RAA1 NO ", 8) == 0 && info != NULL && infosz > 0) {
+            char *why = rx_ + 8;
+
+            while (*why == ' ')
+                why++;
+            int len = (int)strlen(why);
+            while (len > 0 && why[len - 1] == ' ')
+                why[--len] = '\0';
+            if (len > 0)
+                snprintf(info, infosz, "%s", why);
+        }
+        closePcLink(sock);
         return 1; /* not an error: the game is unsupported */
     }
 
@@ -409,39 +651,28 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
     if (sscanf(rx_ + 8, "%d %d", &total, &chunks) != 2 ||
         raExpectedChunkLength(total, chunks, 0) < 0) {
         LOG("RA: malformed reply: %s\n", rx_);
-        disconnect(sock);
+        closePcLink(sock);
         return -3;
     }
 
     LOG("RA: list is %d bytes in %d chunks\n", total, chunks);
 
     for (i = 0; i < chunks; i++) {
-        int idx, len, hdr = 0;
-
-        int attempt;
+        int idx = -1, len = -1, hdr = 0;
         bool matched = false;
 
         snprintf(req, sizeof(req), "RAG1 %s %d%s", hash, i, myaddr);
 
         /* A reply carrying another chunk's index is a leftover from an
            earlier request: ask again rather than fail. */
-        for (attempt = 0; attempt < 3; attempt++) {
+        for (int attempt = 0; attempt < 3; attempt++) {
             got = ask(sock, &to, req, rx_, sizeof(rx_));
             if (got <= 0) {
                 LOG("RA: chunk %d did not arrive\n", i);
-                disconnect(sock);
+                closePcLink(sock);
                 return -4;
             }
-            idx = -1;
-            len = -1; /* a reply that parsed only idx must not leave len holding stack junk:
-                         if idx happens to equal i the guard below passes, and the length
-                         check that follows evaluates `len < 0` BEFORE it reaches `hdr == 0`. */
-            hdr = 0;
-            // Consume exactly the protocol's one separator. Whitespace in the
-            // binary payload (space, tab, newline, etc.) belongs to the list.
-            if (sscanf(rx_, "RAC1 %d %d%n", &idx, &len, &hdr) == 2 && idx == i &&
-                hdr > 0 && hdr < got && rx_[hdr] == ' ') {
-                hdr++;
+            if (raParseChunkHeader(rx_, got, &idx, &len, &hdr) && idx == i) {
                 matched = true;
                 break;
             }
@@ -449,13 +680,13 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
 
         if (!matched) {
             LOG("RA: chunk %d is malformed\n", i);
-            disconnect(sock);
+            closePcLink(sock);
             return -5;
         }
 
         if (len != raExpectedChunkLength(total, chunks, i) || len > got - hdr) {
             LOG("RA: chunk %d does not fit\n", i);
-            disconnect(sock);
+            closePcLink(sock);
             return -6;
         }
 
@@ -463,7 +694,7 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
         received += len;
     }
 
-    disconnect(sock);
+    closePcLink(sock);
 
     if (received != total) {
         LOG("RA: chunks add up to %d bytes, expected %d\n", received, total);
@@ -478,6 +709,7 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
         raHashStep("8x-list-not-parsed");
         return -6; // Never persist or confirm a list the real parser refused.
     }
+    rememberPeer(replyIP_);
     raHashStep("8-list-in-memory");
 
     /* And as a file, for future launches and so the game gets its badge
@@ -508,15 +740,25 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
                 continue;
             }
 
-            fwrite(wl_, 1, (size_t)total, f);
-            fclose(f);
+            size_t written = fwrite(wl_, 1, (size_t)total, f);
+            if (fclose(f) != 0 || written != (size_t)total) {
+                LOG("RA: short/failed watch-list write: %s\n", file);
+                unlink(file); // a truncated list must never pass for a confirmed one
+                continue;
+            }
             saved++;
 
             LOG("RA: list saved: %s (%d bytes)\n", file, total);
         }
 
-        if (saved == 0)
+        /* A launch reads the file, not this session's memory: say so instead
+           of "start the game to track it" (a read-only UDPFS share, a full
+           card). The result stays 0 -- the PC did confirm the game. */
+        if (saved == 0) {
             raHashStep("9x-file-not-written");
+            if (info2 != NULL && info2sz > 0)
+                snprintf(info2, info2sz, "%s", _l(_STR_RA_WL_NOT_SAVED));
+        }
     }
 
     return 0;
@@ -546,9 +788,14 @@ void Ranet::launchNetworkUp()
     if (!gRATelemetry || GetWatchCount() <= 0)
         return;
 
-    /* UDPBD/UDPFS own the NIC and are not telemetry launch paths. */
-    if (nicBusy())
+    /* UDPBD/UDPFS own the NIC. A saved watch list may already be loaded,
+       but leaving it armed would embed RA telemetry in a network-backed
+       launch despite refusing the menu network handoff. Fail open instead. */
+    if (nicBusy()) {
+        forgetPeer();
+        ClearWatchList();
         return;
+    }
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock >= 0) {
@@ -568,19 +815,41 @@ void Ranet::launchNetworkUp()
                  (!ps2_ip_use_dhcp || ethGetDHCPStatus() > 0);
 
     if (!linkUp) {
+        forgetPeer();
         LOG("RA: network unavailable, launching without telemetry\n");
         ClearWatchList();
         host::ui().warning(_l(_STR_RA_NO_LINK_UNTRACKED), 6);
+        return;
+    }
+
+    /* Every tracked Caduceus launch rechecks its session: a bridge that is
+       offline or gone means an ordinary launch without telemetry. */
+    if (gRAMode == RA_MODE_CADUCEUS) {
+        struct sockaddr_in to;
+        char address[32];
+        int session = -1;
+
+        sock = openPcSocket(address, sizeof(address), ip);
+        if (sock >= 0) {
+            session = caduceusSession(sock, &to, RA_PROBE_HASH, rx_, sizeof(rx_));
+            disconnect(sock);
+        }
+        if (session != 0) {
+            forgetPeer();
+            ClearWatchList();
+            host::ui().warning(_l(_STR_CAD_UNTRACKED), 6);
+            return;
+        }
+        rememberPeer(replyIP_);
     }
 }
 
-/* Link test for the menu: broadcasts every 250 ms for up to three seconds.
-   The reply's source address and the version in its text tell what
-   answered; the round trip is measured with clock(). */
+/* Link test for the menu: asks for up to three seconds. The reply's source
+   address and the version in its text tell what answered; the round trip is
+   measured with clock(). */
 int Ranet::netTestLink(char *line1, int sz1, char *line2, int sz2)
 {
-    struct sockaddr_in to, from;
-    socklen_t fromlen;
+    struct sockaddr_in to;
     char myaddr[32], req[64];
     /* Rules 1 and 3 from the file header apply here too: a 64-byte
        aligned buffer received in a length that is a multiple of 64, so
@@ -592,13 +861,13 @@ int Ranet::netTestLink(char *line1, int sz1, char *line2, int sz2)
     clock_t t0, deadline;
     unsigned int ms;
 
-    if (nicReserved()) {
+    forgetPeer();
+    sock = openPcLink(myaddr, sizeof(myaddr), ip);
+    if (sock == RA_LINK_BUSY) {
         snprintf(line1, sz1, "%s", _l(_STR_RA_NET_BUSY));
-        snprintf(line2, sz2, "%s", _l(_STR_RA_NET_BUSY2));
+        snprintf(line2, sz2, "%s", _l(udpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY2));
         return 0;
     }
-
-    sock = openPcSocket(myaddr, sizeof(myaddr), ip);
     if (sock < 0) {
         /* Either the network is really down or the IOP refused a socket
            (pool exhausted). Name both, rather than blaming the cable. */
@@ -608,38 +877,41 @@ int Ranet::netTestLink(char *line1, int sz1, char *line2, int sz2)
     }
 
     if (myaddr[0] == '\0') {
-        disconnect(sock);
+        closePcLink(sock);
         snprintf(line1, sz1, "%s", _l(_STR_RA_NO_IP));
         snprintf(line2, sz2, "%s", _l(_STR_RA_NO_IP2));
         return 0;
     }
 
-    broadcastTarget(&to);
+    int session = pcTarget(sock, &to, RA_PROBE_HASH, rx, sizeof(rx));
+    if (session != 0) {
+        closePcLink(sock);
+        snprintf(line1, sz1, "%s", _l(session == -9 ? _STR_RA_CADUCEUS_OFFLINE : _STR_RA_TEST_NO_ANSWER));
+        if (gRAMode == RA_MODE_CADUCEUS)
+            snprintf(line2, sz2, "%s", _l(_STR_RA_CADUCEUS_SIGN_IN));
+        else
+            snprintf(line2, sz2, _l(_STR_RA_TEST_NO_ANSWER2), myaddr);
+        return 0;
+    }
     snprintf(req, sizeof(req), "RAP1%s", myaddr);
 
     t0 = clock();
     deadline = t0 + 3 * CLOCKS_PER_SEC;
 
+    /* ask() resends and filters the source on either link; a reply that is
+       not "RAO1 OK" (another service on the port) asks again until the
+       deadline. 193: ask() reads at most 192 bytes, a multiple of 64
+       (rule 3). */
     while (!found && clock() < deadline) {
-        int w;
-
-        sendto(sock, req, strlen(req), 0, (struct sockaddr *)&to, sizeof(to));
-
-        for (w = 0; w < 10 && !found; w++) {
-            memset(rx, 0, sizeof(rx));
-            fromlen = sizeof(from);
-            /* 192: a multiple of 64 (rule 3) that leaves room for the
-               terminating zero from the memset above. */
-            got = recvfrom(sock, rx, sizeof(rx) - 64, RA_MSG_DONTWAIT, (struct sockaddr *)&from, &fromlen);
-            if (got >= 4 && strncmp(rx, "RAO1", 4) == 0)
-                found = 1;
-            else
-                DelayThread(RA_POLL_MS * 1000);
-        }
+        got = ask(sock, &to, req, rx, 193);
+        if (got <= 0)
+            break;
+        if (got >= 8 && strncmp(rx, "RAO1 OK ", 8) == 0)
+            found = 1;
     }
 
     ms = (unsigned int)((clock() - t0) * 1000 / CLOCKS_PER_SEC);
-    disconnect(sock);
+    closePcLink(sock);
 
     if (!found) {
         snprintf(line1, sz1, "%s", _l(_STR_RA_TEST_NO_ANSWER));
@@ -647,15 +919,15 @@ int Ranet::netTestLink(char *line1, int sz1, char *line2, int sz2)
         return 0;
     }
 
+    rememberPeer(replyIP_);
     {
-        const char *ver = (got > 8 && strncmp(rx, "RAO1 OK ", 8) == 0) ? rx + 8 : "";
-        unsigned int a = ntohl(from.sin_addr.s_addr);
+        unsigned int a = ntohl(replyIP_);
         char peer[24] = "";
 
         if (a != 0)
             snprintf(peer, sizeof(peer), "%u.%u.%u.%u", (a >> 24) & 255, (a >> 16) & 255, (a >> 8) & 255, a & 255);
 
-        snprintf(line1, sz1, _l(_STR_RA_TEST_FOUND), peer[0] ? " at " : "", peer, ver);
+        snprintf(line1, sz1, _l(_STR_RA_TEST_FOUND), peer[0] ? " at " : "", peer, rx + 8);
         snprintf(line2, sz2, _l(_STR_RA_TEST_FOUND2), ms, myaddr);
     }
 

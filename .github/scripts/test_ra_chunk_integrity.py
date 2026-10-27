@@ -13,7 +13,7 @@ def function(signature):
     return source[first:source.index("\n}", first) + 2]
 
 
-helper = function("static int raExpectedChunkLength(") if "static int raExpectedChunkLength(" in source else ""
+helper = "".join(function(name) for name in ("static int raParseChunkHeader(", "static int raExpectedChunkLength(") if name in source)
 program = r'''
 #include <cassert>
 #include <cstdio>
@@ -24,8 +24,9 @@ program = r'''
 #include <climits>
 #include "include/ranet.h"
 struct sockaddr_in {int unused;};
-constexpr int RA_CHUNK=896, RA_WAIT_ROUNDS=8;
-enum {_STR_RA_SUPPORTED,_STR_RA_ACHIEVEMENTS_FULL,_STR_RA_ACHIEVEMENTS};
+constexpr int RA_CHUNK=896, RA_WAIT_ROUNDS=20, RA_WAIT_PAUSE_MS=500, RA_LINK_BUSY=-8, RA_LINK_MSTACK=0x10000;
+enum {_STR_RA_SUPPORTED,_STR_RA_ACHIEVEMENTS_FULL,_STR_RA_ACHIEVEMENTS,_STR_RA_WL_NOT_SAVED};
+static void DelayThread(int) {}
 #define LOG(...) ((void)0)
 static const char *_l(int id) {return id==_STR_RA_ACHIEVEMENTS_FULL ? "%d %d %d" : "%d achievements";}
 static void raHashStep(const char*) {}
@@ -34,14 +35,17 @@ static std::vector<unsigned char> published;
 static int cursor, parsed, files, writes, closes, disconnected, parserResult=1;
 static bool reserved;
 int Ranet::nicReserved() {return reserved;}
-int Ranet::openPcSocket(char *address,int,unsigned char ip[4]) {address[0]=0;memset(ip,0,4);return 7;}
-void Ranet::broadcastTarget(sockaddr_in*) {}
+int Ranet::openPcLink(char *address,int,unsigned char ip[4]) {address[0]=0;memset(ip,0,4);return reserved ? RA_LINK_BUSY : 7;}
+int Ranet::pcTarget(int,sockaddr_in*,const char*,char*,int) {return 0;}
+void Ranet::forgetPeer() {}
+void Ranet::rememberPeer(unsigned int) {}
 int Ranet::ask(int, sockaddr_in*, const char*, char *out, int max) {
     if(cursor==(int)replies.size())return -1;
     const auto &reply=replies[cursor++];assert(reply.size()<(unsigned)max);
     memcpy(out,reply.data(),reply.size());out[reply.size()]=0;return reply.size();
 }
-static int disconnect(int) {disconnected++;return 0;}
+void Ranet::closePcLink(int) {disconnected++;}
+static int unlink(const char*) {return 0;}
 static int SetWatchList(const void *data,int len,const char*) {
     parsed++;published.assign((const unsigned char*)data,(const unsigned char*)data+len);return parserResult;
 }

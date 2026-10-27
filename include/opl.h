@@ -346,6 +346,12 @@ extern int gRABadges;
 // RA mark placement: 0 = "RA " before the name, 1 = " [RA]" after it. Display only: rows keep
 // their source name and sort by the clean title.
 extern int gRABadgeSuffix;
+// The PC service protocol. Any stored value but Caduceus reads as Xerabora.
+#define RA_MODE_XERABORA 0
+#define RA_MODE_CADUCEUS 1
+extern int gRAMode;
+// Optional dedicated companion PC (IPv4). 0.0.0.0 keeps the SMB-host / broadcast fallback.
+extern int gRAHostIp[4];
 #endif
 extern int gEnableArt;
 extern int gEnableDiscArt; // ItemIcon/ICO disc artwork; independent of cover art

@@ -552,3 +552,12 @@ translations:
   PCCF_UNAVAILABLE: 'CF를 쓸 수 없음: PC CARD가 있는 초기 일본판 PS2, 호환되는 카드, 그리고 활성화된 DEV9/HDD/네트워크 드라이버가 없어야 합니다.'
   PCCF_UNSUPPORTED_GAME: CF는 지금은 PS2 전용 게임만 지원합니다. CF VMC, PS1 불러오기, 네트워크 업적은 쓸 수 없습니다.
   NEUTRINO_PADEMU_WARN: Neutrino에서는 패드 에뮬레이션을 쓸 수 없습니다. PS2 컨트롤러나 <OPL> 코어를 지원하는 소스를 쓰세요.
+  RA_MODE: RA 모드
+  HINT_RA_MODE: PC 클라이언트를 고릅니다. 기본값은 Xerabora이며, Caduceus는 먼저 로그인된 세션을 확인합니다.
+  RA_HOST_IP: RA 컴패니언 IP (0.0.0.0 = 자동)
+  HINT_RA_HOST_IP: 선택 사항인 RetroAchievements 전용 PC의 IPv4. 기존 SMB/HTTP 대체 방식이나 Xerabora 자동 검색에는 0.0.0.0을 쓰세요. 게임 서버 설정은 바뀌지 않습니다.
+  RA_UDPFS_LOAD_FIRST: 네트워크 모듈을 불러오도록 UDPFS 페이지를 한 번 연 뒤 다시 시도하세요.
+  RA_WL_NOT_SAVED: 추적 목록을 저장할 수 없었습니다. 게임의 장치나 공유에 쓸 수 있는지 확인한 뒤 다시 확인하세요.
+  CAD_UNTRACKED: Caduceus가 준비되지 않았습니다. 이번에는 업적 없이 실행합니다.
+  RA_CADUCEUS_OFFLINE: Caduceus RA 세션이 오프라인입니다.
+  RA_CADUCEUS_SIGN_IN: Caduceus에서 RetroAchievements에 로그인한 뒤 다시 시도하세요.

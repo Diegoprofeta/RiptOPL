@@ -39,8 +39,9 @@ def main():
             run(variant, TESTS / "test_udprdma_session.c", flags)
         run("announce", TESTS / "test_ministack_announce.c", [])
         run("conflict", TESTS / "test_ministack_conflict.c", [])
+        run("xchg", TESTS / "test_ministack_xchg.c", ["-I" + str(NETWORK / "udpfs_ministack/src")])
         run("ack_wrap", NETWORK / "udpfs_ioman/tests/test_ack_sequence.c", [])
-    print("PASS: UDPFS Files/IMG sessions, ACK wrap, discovery ARP and real IP-conflict handler")
+    print("PASS: UDPFS Files/IMG sessions, ACK wrap, discovery ARP, real IP-conflict handler and mstack: exchange")
 
 
 if __name__ == "__main__":

@@ -46,9 +46,12 @@ int main() {
     }
 }
 ''')
+# The menu link refuses (or moves to mstack:) on the reservation, before any socket is opened.
+link = function(ranet, "int Ranet::openPcLink(")
+assert link.index("if (!nicReserved())") < link.index("openPcSocket(") and "nicBusy()" not in link
 for signature in ("int Ranet::askPc(", "int Ranet::netTestLink("):
-    before_socket = function(ranet, signature).split("openPcSocket(")[0]
-    assert "if (nicReserved())" in before_socket and "if (nicBusy())" not in before_socket
+    body = function(ranet, signature)
+    assert "openPcSocket(" not in body and body.index("openPcLink(") < body.index("ask(")
 launch = function(ranet, "void Ranet::launchNetworkUp()")
 assert "if (nicBusy())" in launch and "nicReserved()" not in launch
 

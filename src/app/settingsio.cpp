@@ -1530,6 +1530,18 @@ void _loadConfig()
             gFontSize = fntValidFontSize(gFontSize);
 #ifdef RETROACHIEVEMENTS
             gRABadgeSuffix = (gRABadgeSuffix == 1); // any stored value but 1 is Prefix
+            if (gRAMode != RA_MODE_CADUCEUS)
+                gRAMode = RA_MODE_XERABORA;
+            int a, b, c, d;
+            char extra;
+            if (configGetStr(configOPL, CONFIG_OPL_RA_HOST_IP, &temp) &&
+                sscanf(temp, "%d.%d.%d.%d%c", &a, &b, &c, &d, &extra) == 4 &&
+                a >= 0 && a <= 255 && b >= 0 && b <= 255 && c >= 0 && c <= 255 && d >= 0 && d <= 255) {
+                gRAHostIp[0] = a;
+                gRAHostIp[1] = b;
+                gRAHostIp[2] = c;
+                gRAHostIp[3] = d;
+            }
 #endif
 
 
@@ -2131,6 +2143,10 @@ static void _saveConfig()
     if (lscstatus & CONFIG_OPL) {
         config_set_t *configOPL = configGetByType(CONFIG_OPL);
         settingsSave(configOPL);
+#ifdef RETROACHIEVEMENTS
+        snprintf(temp, sizeof(temp), "%d.%d.%d.%d", gRAHostIp[0], gRAHostIp[1], gRAHostIp[2], gRAHostIp[3]);
+        configSetStr(configOPL, CONFIG_OPL_RA_HOST_IP, temp);
+#endif
         configSetStr(configOPL, CONFIG_OPL_THEME, thmGetValue());
         configSetStr(configOPL, CONFIG_OPL_LANGUAGE, lngGetValue());
         configSetInt(configOPL, CONFIG_OPL_MMCE_PACING_MIGR, 1);

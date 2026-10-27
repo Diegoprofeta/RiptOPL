@@ -67,6 +67,7 @@ constexpr Setting kSettings[] = {
 #ifdef RETROACHIEVEMENTS
     intSetting(CONFIG_OPL_RA_BADGES, &gRABadges, 1),            // free once telemetry is on -- raBadgeRefresh runs on the I/O thread
     intSetting(CONFIG_OPL_RA_BADGE_SUFFIX, &gRABadgeSuffix, 0), // the shipped prefix
+    intSetting(CONFIG_OPL_RA_MODE, &gRAMode, RA_MODE_XERABORA), // old configurations keep Xerabora
 #endif
     intSetting(CONFIG_OPL_ENABLE_COVERART, &gEnableArt, 1),
     intSetting(CONFIG_OPL_ENABLE_DISCART, &gEnableDiscArt, 1), // preserve existing ItemIcon/ICO behavior unless the user disables it

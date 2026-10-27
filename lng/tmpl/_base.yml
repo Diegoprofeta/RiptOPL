@@ -1756,4 +1756,25 @@ gui_strings:
   string: "Experimental DESR DVR ISO discovery. Requires HDD source enabled; game launch needs external DVR-capable Neutrino."
 - label: NEUTRINO_PADEMU_WARN
   string: "Pad emulation is unavailable with Neutrino. Use a PS2 controller or a source that supports the <OPL> core."
+- label: RA_MODE
+  string: RA Mode
+- label: HINT_RA_MODE
+  string: Choose the PC client. Xerabora is the default; Caduceus checks its signed-in session first.
+- label: RA_HOST_IP
+  string: RA companion IP (0.0.0.0 = automatic)
+- label: HINT_RA_HOST_IP
+  string: "Optional dedicated RetroAchievements PC IPv4. Use 0.0.0.0 for legacy SMB/HTTP fallback or Xerabora discovery. Does not alter game-server settings."
+- label: RA_UDPFS_LOAD_FIRST
+  string: "Open the UDPFS page once so its network module loads, then try again."
 
+# RA Caduceus browser: UDPFS IMG has no shared folder for ART/CADUCEUS.KEY.
+- label: RA_WL_NOT_SAVED
+  string: "Could not save the watch list. Make sure the game's device or share is writable, then check again."
+
+# RA: a UDPFS protocol is selected but its network module has not loaded yet.
+- label: CAD_UNTRACKED
+  string: "Caduceus is not ready. Launching without achievements this time."
+- label: RA_CADUCEUS_OFFLINE
+  string: Caduceus RA session is offline.
+- label: RA_CADUCEUS_SIGN_IN
+  string: Sign in to RetroAchievements in Caduceus, then try again.

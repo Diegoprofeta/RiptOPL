@@ -238,6 +238,8 @@ int gEnableNotifications;
 int gRATelemetry;
 int gRABadges;
 int gRABadgeSuffix;
+int gRAMode;
+int gRAHostIp[4];
 #endif
 int gEnableArt;
 int gEnableDiscArt;
@@ -1356,6 +1358,9 @@ void setDefaultColors(void)
 static void setDefaults(void)
 {
     settingsApplyDefaults(); // plain settings: key, variable and default live in src/settings.cpp
+#ifdef RETROACHIEVEMENTS
+    memset(gRAHostIp, 0, sizeof(gRAHostIp));
+#endif
 
     for (int i = 0; i < MODE_COUNT; i++)
         clearIOModuleT(&list_support[i]);

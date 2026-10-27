@@ -622,3 +622,12 @@ translations:
   PCCF_UNAVAILABLE: 'CF ໃຊ້ບໍ່ໄດ້: ຕ້ອງການ PS2 ຍີ່ປຸ່ນ ລຸ້ນທຳອິດ ທີ່ມີ PC CARD, ກາດທີ່ເຂົ້າກັນໄດ້, ແລະ ບໍ່ມີໄດຣເວີ DEV9/HDD/ເຄືອຂ່າຍ ທີ່ເຮັດວຽກ.'
   PCCF_UNSUPPORTED_GAME: ດຽວນີ້ CF ຮອງຮັບ ເກມ PS2 ແທ້ ເທົ່ານັ້ນ. CF VMC, ການໂຫຼດ PS1 ແລະ ຄວາມສຳເລັດ ຜ່ານເຄືອຂ່າຍ ໃຊ້ບໍ່ໄດ້.
   NEUTRINO_PADEMU_WARN: ການຈຳລອງຈອຍ ໃຊ້ບໍ່ໄດ້ ກັບ Neutrino. ໃຊ້ຈອຍ PS2 ຫຼື ແຫຼ່ງທີ່ຮອງຮັບແກນ <OPL>.
+  RA_MODE: ໂໝດ RA
+  HINT_RA_MODE: ເລືອກໂປຣແກຣມ PC. Xerabora ແມ່ນຄ່າເລີ່ມຕົ້ນ; Caduceus ກວດ session ທີ່ເຂົ້າສູ່ລະບົບ ຂອງມັນ ກ່ອນ.
+  RA_HOST_IP: IP ຂອງ ຄູ່ RA (0.0.0.0 = ອັດຕະໂນມັດ)
+  HINT_RA_HOST_IP: IPv4 ສະເພາະ ຂອງ PC RetroAchievements (ທາງເລືອກ). ໃຊ້ 0.0.0.0 ສຳລັບການສຳຮອງ SMB/HTTP ແບບເກົ່າ ຫຼື ການຄົ້ນຫາ Xerabora. ບໍ່ປ່ຽນການຕັ້ງຄ່າ ເຊີບເວີເກມ.
+  RA_UDPFS_LOAD_FIRST: ເປີດໜ້າ UDPFS ໜຶ່ງເທື່ອ ເພື່ອໃຫ້ໂມດູນເຄືອຂ່າຍ ຂອງມັນໂຫຼດ, ແລ້ວລອງໃໝ່.
+  RA_WL_NOT_SAVED: ບັນທຶກລາຍການຕິດຕາມ ບໍ່ໄດ້. ກວດໃຫ້ແນ່ໃຈ ວ່າອຸປະກອນ ຫຼື ແຊ ຂອງເກມ ຂຽນໄດ້, ແລ້ວກວດອີກ.
+  CAD_UNTRACKED: Caduceus ບໍ່ພ້ອມ. ເທື່ອນີ້ ເລີ່ມໂດຍບໍ່ມີຄວາມສຳເລັດ.
+  RA_CADUCEUS_OFFLINE: session RA ຂອງ Caduceus ອອບລາຍ.
+  RA_CADUCEUS_SIGN_IN: ເຂົ້າສູ່ລະບົບ RetroAchievements ໃນ Caduceus, ແລ້ວລອງໃໝ່.

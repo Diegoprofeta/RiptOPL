@@ -127,7 +127,9 @@ void DiscSupport::checkWorker()
     else if (result == -7)
         host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
     else if (result == -8)
-        host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(_STR_RA_NET_BUSY_HASH));
+        host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(raNetUdpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY_HASH));
+    else if (result == -9)
+        host::ui().raNotice(_l(_STR_RA_CADUCEUS_OFFLINE), _l(_STR_RA_CADUCEUS_SIGN_IN));
     else
         host::ui().raNotice(_l(_STR_RA_PC_NO_ANSWER), _l(_STR_RA_PC_NO_ANSWER2));
 }

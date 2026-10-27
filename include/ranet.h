@@ -3,6 +3,7 @@
 #define __RANET_H__
 
 struct sockaddr_in;
+#include "modules/network/udpfs_ministack/include/mstack_xchg.h" /* the mstack: link */
 
 // Ceiling for the watch list one ask can bring in (src/sources/ranet.cpp).
 constexpr int RA_MAX_BYTES = (20 * 1024);
@@ -18,8 +19,9 @@ public:
        the game. Returns 0 when the list was received, 1 when RetroAchievements
        does not know the image, -7 when the PC was still identifying it after
        the waiting rounds, -8 when the NIC is owned by a UDP transport and the
-       ask was refused without touching the network, another negative value when
-       the PC did not answer or the transfer broke.
+       ask was refused without touching the network, -9 when the selected
+       Caduceus bridge answered but its RA session is offline, another negative
+       value when the PC did not answer or the transfer broke.
        info (may be NULL) receives the game title, info2 (may be NULL) the
        achievement counts as the PC reported them, e.g. info "Need for Speed:
        Underground 2" and info2 "76 achievements: 3 unlocked, 10 unsupported".
@@ -35,24 +37,48 @@ public:
        of text for the notice popup. Returns 1 when a PC client answered. */
     int netTestLink(char *line1, int sz1, char *line2, int sz2);
 
-private:
     /* 1 when a UDP transport (UDPBD, or the UDPFS filesystem chain) owns the
-       SMAP NIC. RA must not raise the SMB stack on top of it; the menu actions
-       refuse with a notice instead. */
+       SMAP NIC. RA must not raise the SMB stack on top of it; the launch drops
+       its telemetry instead. */
     static int nicBusy();
     // Selected UDP transports reserve the NIC before their modules load. Menu actions only.
     static int nicReserved();
+    // A UDPFS transport is selected but its chain (and with it mstack:) is not loaded yet.
+    static int udpfsNotLoaded();
+
+    /* The peer a completed watch-list exchange or link test verified, for the
+       RA mode, SMB host and companion IP it was verified under; else 0. */
+    unsigned int peerIP() const;
+    void forgetPeer();
+
+private:
+    static int hostIsExplicit();
+    void rememberPeer(unsigned int ip);
     /* Waits for a reply, resending the request. Returns the length or -1. */
     int ask(int sock, struct sockaddr_in *to, const char *req, char *out, int outmax);
+    int askMstack(struct sockaddr_in *to, const char *req, char *out, int asklen);
     /* Opens the UDP socket: network up if needed, broadcast allowed,
        non-blocking, bound to the fixed own port. Fills myaddr with
        " <ip> <port>" (empty when the console has no address yet). */
     int openPcSocket(char *myaddr, int sz, unsigned char ip[4]);
+    // A socket, or the mstack: device while UDPFS owns the NIC; -8 when neither can be used.
+    int openPcLink(char *myaddr, int sz, unsigned char ip[4]);
+    static void closePcLink(int sock);
     static void broadcastTarget(struct sockaddr_in *to);
+    static int configuredTarget(struct sockaddr_in *to, int port);
+    int caduceusSession(int sock, struct sockaddr_in *to, const char *hash, char *rx, int rxsize);
+    int pcTarget(int sock, struct sockaddr_in *to, const char *hash, char *rx, int rxsize);
 
     /* Alignment is mandatory: DMA delivery rule 1 in ranet.cpp. */
     char rx_[2048] __attribute__((aligned(64)));
     unsigned char wl_[RA_MAX_BYTES];
+    mstack_xchg_req_t xreq_ __attribute__((aligned(64)));
+    mstack_xchg_reply_t xreply_ __attribute__((aligned(64)));
+    unsigned int replyIP_ = 0; // last responder, network order; not yet verified
+    unsigned int verifiedIP_ = 0;
+    int verifiedMode_ = -1;
+    int verifiedSMBHost_[4] = {};
+    int verifiedCompanionHost_[4] = {};
 };
 
 extern Ranet gRanet;
@@ -62,5 +88,10 @@ int raAskPC(const char *hash, const char *serial, const char *savepath,
             char *info, int infosz, char *info2, int info2sz);
 void raLaunchNetworkUp(void);
 int raNetTestLink(char *line1, int sz1, char *line2, int sz2);
+int raNetNicBusy(void);
+int raNetNicReserved(void);
+int raNetUdpfsNotLoaded(void);
+unsigned int raNetPeerIP(void);
+void raNetForgetPeer(void);
 
 #endif

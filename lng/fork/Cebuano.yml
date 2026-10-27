@@ -581,3 +581,12 @@ translations:
   PCCF_UNAVAILABLE: 'Dili magamit ang CF: kinahanglan og sayo nga Japanese PC CARD PS2, tugma nga card, ug walay aktibo nga DEV9/HDD/network driver.'
   PCCF_UNSUPPORTED_GAME: Native nga PS2 dula ra ang suportado sa CF karon. Dili magamit ang CF VMC, pag-load sa PS1 ug network achievements.
   NEUTRINO_PADEMU_WARN: Dili magamit ang pad emulation sa Neutrino. Gamita ang PS2 controller o source nga mosuporta sa <OPL> core.
+  RA_MODE: RA mode
+  HINT_RA_MODE: Pilia ang PC client. Xerabora ang default; susihon una sa Caduceus ang naka-sign-in nga session niini.
+  RA_HOST_IP: IP sa RA companion (0.0.0.0 = awtomatiko)
+  HINT_RA_HOST_IP: Opsyonal nga gipahinungod nga IPv4 sa PC alang sa RetroAchievements. Gamita ang 0.0.0.0 alang sa daang SMB/HTTP fallback o Xerabora discovery. Dili kini mousab sa settings sa game server.
+  RA_UDPFS_LOAD_FIRST: Ablihi kausa ang UDPFS page aron mo-load ang network module niini, unya sulayi pag-usab.
+  RA_WL_NOT_SAVED: Dili ma-save ang watch list. Siguroha nga masulatan ang device o share sa dula, unya susiha pag-usab.
+  CAD_UNTRACKED: Dili pa andam ang Caduceus. Ilansad nga walay achievement karon.
+  RA_CADUCEUS_OFFLINE: Offline ang Caduceus RA session.
+  RA_CADUCEUS_SIGN_IN: Pag-sign in sa RetroAchievements sa Caduceus, unya sulayi pag-usab.

@@ -2660,6 +2660,9 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
             } else if (q == 1) {
                 raHashStep("7-pc-does-not-know-image");
                 host::ui().raNotice(_l(_STR_RA_UNKNOWN_IMAGE), hash);
+            } else if (q == -9) {
+                raHashStep("7-caduceus-session-offline");
+                host::ui().raNotice(_l(_STR_RA_CADUCEUS_OFFLINE), _l(_STR_RA_CADUCEUS_SIGN_IN));
             } else if (q == -7) {
                 raHashStep("7-pc-still-identifying");
                 host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
@@ -2668,7 +2671,7 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
                    refused without touching the network. The hash is already in
                    the log, so the PC-side path to a .wl stays open. */
                 raHashStep("7-nic-busy-udp-transport");
-                host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(_STR_RA_NET_BUSY_HASH));
+                host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(raNetUdpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY_HASH));
             } else if (q == -1) {
                 /* The console could not open a UDP socket, so nothing was
                    ever sent -- report that, not a PC that never heard us. */

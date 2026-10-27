@@ -9,6 +9,8 @@
 #include "ministack_ip.h"
 #include "udptty.h"
 
+int mstack_xchg_init(void); /* ministack_xchg.c: the mstack: UDP exchange device */
+
 IRX_ID(MODNAME, 0x1, 0x0);
 
 extern struct irx_export_table _exp_mstack;
@@ -62,6 +64,9 @@ int _start(int argc, char *argv[])
         M_DEBUG("module already loaded\n");
         return MODULE_NO_RESIDENT_END;
     }
+
+    /* Only once resident: a second load's memory is freed, and "mstack" must not point into it. */
+    mstack_xchg_init();
 
     return MODULE_RESIDENT_END;
 }

@@ -562,3 +562,12 @@ translations:
   PCCF_UNAVAILABLE: CF 無法使用：需要有 PC CARD 的早期日版 PS2、相容的卡，且沒有已啟用的 DEV9/硬碟/網路驅動程式。
   PCCF_UNSUPPORTED_GAME: CF 目前只支援原生 PS2 遊戲。CF 上的 VMC、PS1 載入與網路成就無法使用。
   NEUTRINO_PADEMU_WARN: 使用 Neutrino 時無法使用手把模擬。請使用 PS2 控制器，或支援 <OPL> 核心的來源。
+  RA_MODE: RA 模式
+  HINT_RA_MODE: 選擇電腦用戶端。預設是 Xerabora；Caduceus 會先檢查其登入工作階段。
+  RA_HOST_IP: RA 輔助程式 IP（0.0.0.0 = 自動）
+  HINT_RA_HOST_IP: 選用的專屬 RetroAchievements 電腦 IPv4。使用 0.0.0.0 表示舊的 SMB/HTTP 備援方式或 Xerabora 自動探索。不影響遊戲伺服器設定。
+  RA_UDPFS_LOAD_FIRST: 請先開啟一次 UDPFS 頁面以載入其網路模組，然後重試。
+  RA_WL_NOT_SAVED: 無法儲存追蹤清單。請確認遊戲所在裝置或共用可寫入，然後再檢查一次。
+  CAD_UNTRACKED: Caduceus 尚未就緒。這次不帶成就啟動。
+  RA_CADUCEUS_OFFLINE: Caduceus 的 RA 工作階段處於離線狀態。
+  RA_CADUCEUS_SIGN_IN: 請在 Caduceus 中登入 RetroAchievements 後重試。

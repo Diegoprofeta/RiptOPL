@@ -13,6 +13,9 @@
 #include "include/cuesupport.h"
 #include "include/guiint.h"
 #include "include/settingshell.h"
+#ifdef RETROACHIEVEMENTS
+#include "include/ranet.h" // raNetForgetPeer
+#endif
 #include "include/diag.h" // gLastDeferredTimedOut -- a bounded wait that expired means the handler never ran
 #include "include/renderman.h"
 #include "include/saveicon.h" // saveIconReset -- 3D Save Icons switched off
@@ -951,6 +954,11 @@ int guiShowNetConfig(void)
     diaSetString(diaNetConfig, NETCFG_SHARE_PASSWORD, gPCPassword);
     diaSetInt(diaNetConfig, NETCFG_ETHOPMODE, gETHOpMode);
 #ifdef RETROACHIEVEMENTS
+    static const char *raModes[] = {"Xerabora", "Caduceus", NULL};
+    diaSetEnum(diaNetConfig, NETCFG_RA_MODE, raModes);
+    diaSetInt(diaNetConfig, NETCFG_RA_MODE, gRAMode);
+    for (i = 0; i < 4; ++i)
+        diaSetInt(diaNetConfig, NETCFG_RA_HOST_IP_0 + i, gRAHostIp[i]);
     diaSetInt(diaNetConfig, NETCFG_RA_TELEMETRY, gRATelemetry);
     diaSetInt(diaNetConfig, NETCFG_RA_BADGES, gRABadges);
     const char *raBadgePos[] = {_l(_STR_RA_BADGE_PREFIX), _l(_STR_RA_BADGE_SUFFIX), NULL};
@@ -1042,6 +1050,9 @@ reshow_network:
         diaGetInt(diaNetConfig, NETCFG_ETHOPMODE, &gETHOpMode);
 #ifdef RETROACHIEVEMENTS
         int raBadgeState = gRATelemetry << 2 | gRABadges << 1 | gRABadgeSuffix;
+        diaGetInt(diaNetConfig, NETCFG_RA_MODE, &gRAMode);
+        for (i = 0; i < 4; ++i)
+            diaGetInt(diaNetConfig, NETCFG_RA_HOST_IP_0 + i, &gRAHostIp[i]);
         diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &gRATelemetry);
         diaGetInt(diaNetConfig, NETCFG_RA_BADGES, &gRABadges);
         diaGetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, &gRABadgeSuffix);
@@ -1072,6 +1083,10 @@ reshow_network:
         guiNetProtocolStore(netProtoVal2, netAccessVal2);
         guiNetProtocolApplied(netProtocolWas);
 
+#ifdef RETROACHIEVEMENTS
+        // Applied network/RA settings invalidate the peer a previous menu query verified.
+        raNetForgetPeer();
+#endif
         applyConfig(-1, -1, 0);
 
         // OK is an Apply action for the live SMB stack, not merely a RAM/config edit -- and after a

@@ -557,3 +557,12 @@ translations:
   PCCF_UNAVAILABLE: "CF indisponível: exige um PS2 japonês antigo com PC CARD, cartão compatível e nenhum driver DEV9/HDD/rede ativo."
   PCCF_UNSUPPORTED_GAME: "Atualmente o CF aceita apenas jogos nativos de PS2. VMC no CF, jogos de PS1 e conquistas em rede estão indisponíveis."
   NEUTRINO_PADEMU_WARN: A emulação de controle não está disponível com o Neutrino. Use um controle de PS2 ou uma origem que suporte o núcleo <OPL>.
+  RA_MODE: Modo RA
+  HINT_RA_MODE: Escolha o cliente do PC. Xerabora é o padrão; o Caduceus verifica antes a sessão conectada dele.
+  RA_HOST_IP: IP do companheiro RA (0.0.0.0 = automático)
+  HINT_RA_HOST_IP: IPv4 opcional de um PC dedicado ao RetroAchievements. Use 0.0.0.0 para o recurso SMB/HTTP antigo ou a descoberta do Xerabora. Não altera as configurações do servidor de jogos.
+  RA_UDPFS_LOAD_FIRST: Abra a página UDPFS uma vez para o módulo de rede dela carregar e tente de novo.
+  RA_WL_NOT_SAVED: Não foi possível salvar a lista de acompanhamento. Confira se a unidade ou o compartilhamento do jogo aceita gravação e verifique de novo.
+  CAD_UNTRACKED: O Caduceus não está pronto. Iniciando sem conquistas desta vez.
+  RA_CADUCEUS_OFFLINE: A sessão RA do Caduceus está offline.
+  RA_CADUCEUS_SIGN_IN: Entre no RetroAchievements no Caduceus e tente de novo.

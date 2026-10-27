@@ -12,6 +12,7 @@ CHECK(gRATelemetry == (0));
 #ifdef RETROACHIEVEMENTS
 CHECK(gRABadges == (1));
 CHECK(gRABadgeSuffix == (0));
+CHECK(gRAMode == (RA_MODE_XERABORA));
 #endif
 CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));

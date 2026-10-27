@@ -557,3 +557,12 @@ translations:
   PCCF_UNAVAILABLE: 'CF kullanılamıyor: erken bir Japon PC CARD PS2, uyumlu bir kart ve etkin olmayan DEV9/HDD/ağ sürücüsü gerekir.'
   PCCF_UNSUPPORTED_GAME: CF şu anda yalnızca yerel PS2 oyunlarını destekler. CF VMC, PS1 yükleme ve ağ başarımları kullanılamaz.
   NEUTRINO_PADEMU_WARN: Neutrino ile kol öykünmesi kullanılamaz. Bir PS2 denetleyicisi ya da <OPL> çekirdeğini destekleyen bir kaynak kullanın.
+  RA_MODE: RA Modu
+  HINT_RA_MODE: PC istemcisini seçin. Xerabora varsayılandır; Caduceus önce oturum açılmış oturumunu kontrol eder.
+  RA_HOST_IP: RA yardımcı IP'si (0.0.0.0 = otomatik)
+  HINT_RA_HOST_IP: İsteğe bağlı, RetroAchievements'a ayrılmış PC IPv4 adresi. Eski SMB/HTTP yedeği veya Xerabora keşfi için 0.0.0.0 kullanın. Oyun sunucusu ayarlarını değiştirmez.
+  RA_UDPFS_LOAD_FIRST: Ağ modülünün yüklenmesi için UDPFS sayfasını bir kez açın, sonra yeniden deneyin.
+  RA_WL_NOT_SAVED: İzleme listesi kaydedilemedi. Oyunun cihazının veya paylaşımının yazılabilir olduğundan emin olun, sonra yeniden kontrol edin.
+  CAD_UNTRACKED: Caduceus hazır değil. Bu sefer başarımlar olmadan başlatılıyor.
+  RA_CADUCEUS_OFFLINE: Caduceus RA oturumu çevrimdışı.
+  RA_CADUCEUS_SIGN_IN: Caduceus'ta RetroAchievements'a giriş yapıp yeniden deneyin.

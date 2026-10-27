@@ -191,7 +191,7 @@ targets:
 
   - name: udpfs_ministack
     type: iop
-    sources: [modules/network/udpfs_ministack/src/main.c, modules/network/udpfs_ministack/src/ministack_arp.c, modules/network/udpfs_ministack/src/ministack_eth.c, modules/network/udpfs_ministack/src/ministack_ip.c, modules/network/udpfs_ministack/src/ministack_udp.c, modules/network/udpfs_ministack/src/udptty.c]
+    sources: [modules/network/udpfs_ministack/src/main.c, modules/network/udpfs_ministack/src/ministack_arp.c, modules/network/udpfs_ministack/src/ministack_eth.c, modules/network/udpfs_ministack/src/ministack_ip.c, modules/network/udpfs_ministack/src/ministack_udp.c, modules/network/udpfs_ministack/src/ministack_xchg.c, modules/network/udpfs_ministack/src/udptty.c]
     include_dirs: [modules/network/udpfs_ministack/src, modules/network/udpfs_ministack/include, modules/network/udpfs_smap/include]
     headers: *iop_headers
     cflags: [-mno-check-zero-division]
