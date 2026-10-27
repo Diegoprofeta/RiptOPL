@@ -30,7 +30,8 @@ class PublicationTests(unittest.TestCase):
             psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
             self.assertIn(f"/{elf})", body)
             self.assertIn(f"/{psu})", body)
-            self.assertEqual(3, sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
+            self.assertIn(f"/releases/download/{options['tag']}/RIPTOPL-LANGS.zip)", body)
+            self.assertEqual(4, sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
             self.assertIn("Included build: v1.8.0 ", body)
             self.assertNotIn("Release compiler", body)
             self.assertNotIn("Imported production documentation", body)

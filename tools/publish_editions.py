@@ -74,7 +74,7 @@ def verify(root, expected_sha):
         actual = {p.name for p in path.iterdir() if p.is_file()}
         elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
         psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
-        required = {elf, psu, "BUILD-MANIFEST.json", "RIPTOPL-src.zip", f"RIPTOPL-{options['title']}.zip"}
+        required = {elf, psu, "BUILD-MANIFEST.json", "RIPTOPL-src.zip", "RIPTOPL-LANGS.zip", f"RIPTOPL-{options['title']}.zip"}
         if set(sums) != required or actual != required | {"SHA256SUMS.txt"}:
             raise ValueError(f"unexpected release inventory: {edition}")
         if sums[elf] != manifest["elf_sha256"]:
@@ -116,7 +116,8 @@ def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
         "## Downloads\n\n"
         f"- [Full install kit]({downloads}/RIPTOPL-{options['title']}.zip) - loader and companions.\n"
         f"- [Loader ELF]({downloads}/{elf}) - update an existing installation.\n"
-        f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n\n"
+        f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n"
+        f"- [Languages]({downloads}/RIPTOPL-LANGS.zip) - translations and their fonts.\n\n"
         f"Included build: {neutrino} -- Neutrino.\n\n"
         "[Installation and guides](https://nathanneurotic.github.io/RiptOPL/) - "
         f"[Wiki]({base}/wiki)\n"

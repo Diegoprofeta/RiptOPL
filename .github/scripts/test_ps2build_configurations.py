@@ -146,6 +146,27 @@ class ConfigurationTests(unittest.TestCase):
             self.assertFalse((root / "dist/releases").exists())
 
 
+class LanguagePackTests(unittest.TestCase):
+    def test_pack_layout_fonts_and_missing_languages(self):
+        with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
+            root = Path(directory)
+            (root / "lng_src/thirdparty").mkdir(parents=True)
+            with patch.object(package_edition, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "no lng/lang_"):
+                    package_edition.language_pack(root / "none.zip", "1.0")
+                (root / "lng").mkdir()
+                for name in ("French", "Serbian", "Greek"):
+                    (root / "lng" / f"lang_{name}.lng").write_text(name)
+                (root / "lng_src/thirdparty/font_French.otf").write_text("otf")
+                (root / "lng_src/thirdparty/font_Croatian.ttf").write_text("croatian")
+                package_edition.language_pack(root / "langs.zip", "1.0")
+            with zipfile.ZipFile(root / "langs.zip") as pack:
+                self.assertEqual(sorted(pack.namelist()), [
+                    "French-1.0/font_French.otf", "French-1.0/lang_French.lng", "Greek-1.0/lang_Greek.lng",
+                    "README.txt", "Serbian-1.0/font_Serbian.ttf", "Serbian-1.0/lang_Serbian.lng"])
+                self.assertEqual(pack.read("Serbian-1.0/font_Serbian.ttf"), b"croatian")
+
+
 class PublisherTests(unittest.TestCase):
     """Small synthetic kits exercise manifest/provenance checks, not PS2 acceptance."""
     sha = "1234567890abcdef" * 2 + "12345678"
@@ -169,6 +190,8 @@ class PublisherTests(unittest.TestCase):
             with zipfile.ZipFile(path / "RIPTOPL-src.zip", "w") as source_zip:
                 source_zip.comment = (source or self.sha).encode()
                 source_zip.writestr("README.md", "synthetic source")
+            with zipfile.ZipFile(path / "RIPTOPL-LANGS.zip", "w") as langs:
+                langs.writestr("README.txt", "synthetic")
             with zipfile.ZipFile(path / f"RIPTOPL-{options['title']}.zip", "w") as kit:
                 kit.writestr("BUILD-MANIFEST.json", json.dumps(manifest))
                 kit.writestr(f"APPS/{app}/{elf}", payload)

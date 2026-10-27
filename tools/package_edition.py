@@ -69,6 +69,35 @@ def stage_orbit(archive, destination, pin):
         "after Neutrino v1.8.0 (including Neutrino cheats) are not available here.\n", encoding="utf-8")
 
 
+LANGS_README = """RiptOPL translations
+
+The loader has English built in. To use another language, copy that language's folder contents --
+the lang_*.lng file and, when there is one, its font_*.ttf or font_*.otf -- to the folder RIPTOPL.ELF
+runs from, or to an LNG folder beside it. Do not rename the files. Then pick the language under
+Settings > Display and save your settings. Every edition reads the same files.
+"""
+
+
+def language_pack(destination, version):
+    """The .lng files and the fonts their scripts need: neither is in the ELF (original tools/lng_pack.sh)."""
+    fonts = ROOT / "lng_src/thirdparty"
+    languages = sorted((ROOT / "lng").glob("lang_*.lng"))
+    if not languages:
+        raise ValueError("no lng/lang_*.lng; run tools/assets.py fetch and lang first")
+    with zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED) as pack:
+        for lng in languages:
+            name = lng.stem[len("lang_"):]
+            folder = f"{name}-{version}/"
+            pack.write(lng, folder + lng.name)
+            # No Serbian font upstream, and Serbian Latin uses exactly Croatian's letters.
+            for font in (fonts / f"font_{name}.ttf", fonts / f"font_{name}.otf",
+                         fonts / "font_Croatian.ttf" if name == "Serbian" else None):
+                if font is not None and font.is_file():
+                    pack.write(font, f"{folder}font_{name}{font.suffix}")
+                    break
+        pack.writestr("README.txt", LANGS_README)
+
+
 def package(edition, neutrino_archive, orbit_archive=None):
     options = EDITIONS[edition]
     built = ROOT / "dist/editions" / edition
@@ -166,6 +195,7 @@ def package(edition, neutrino_archive, orbit_archive=None):
         shutil.copyfile(kit / "BUILD-MANIFEST.json", out / "BUILD-MANIFEST.json")
     shutil.copyfile(elf, out / elf_name)
     subprocess.run(["git", "archive", "--format=zip", "--output=" + str(out / "RIPTOPL-src.zip"), manifest["source_commit"]], cwd=ROOT, check=True)
+    language_pack(out / "RIPTOPL-LANGS.zip", manifest["version"].split('"')[1])
     sums = "".join(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n" for p in sorted(out.iterdir()) if p.is_file())
     (out / "SHA256SUMS.txt").write_text(sums, encoding="utf-8")
     print(f"Verified {options['title']} release assets: {out}")
