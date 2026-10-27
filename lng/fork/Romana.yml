@@ -651,3 +651,4 @@ translations:
   XERA_OPEN_NETWORK: xeRAbora nu poate fi accesat. Pornește OPEN TO THE NETWORK în setările lui, verifică IP-ul însoțitorului RA și firewallul PC-ului.
   XERA_UNKNOWN_GAME: xeRAbora nu cunoaște această imagine. Rulează întâi verificarea suportului de joc RA.
   XERA_USE_LIBRARY: Răsfoiește acest joc prin biblioteca RetroAchievements din meniul principal.
+  XERA_SET_CLOCK: Încă nu este în biblioteca ta RetroAchievements. Setează ceasul consolei în setările sistemului ca să îi vezi lista completă sau joacă-l o dată cu realizări.

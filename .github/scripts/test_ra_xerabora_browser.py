@@ -4,7 +4,8 @@ src/sources/achievements.cpp is compiled with stubbed network calls. The documen
 xeRAbora's own JSON builders (client/src/webui.c build_library / build_game):
 nested "base"/"subsets" members, an "achievements" member that is a number
 inside subsets, escaped quotes/backslashes, \\u escapes and raw UTF-8.
-Ranet::httpGet and Ranet::xeraboraIdentify are compiled separately against stubbed sockets.
+Ranet::httpGet and Ranet::xeraboraIdentify are compiled separately against stubbed sockets, and
+the HTTPS game-ID lookup (ORBIT's path to a never-played game's list) against a stubbed raHttpsGet.
 """
 import json
 import re
@@ -61,6 +62,7 @@ prefix = r"""
 #include <cstring>
 #include <strings.h>
 #include "include/achievements.h"
+#include "include/ratls.h"
 #define RETROACHIEVEMENTS 1
 #define IO_OK 0
 #define IO_CUSTOM_SIMPLEACTION 1
@@ -92,13 +94,34 @@ static int raHashIsoDirect(const char *p, const char *s, char *out)
     if (hashOverride) { strcpy(out, hashOverride); return 0; }
     memset(out, 'b', 32); out[32] = 0; return 0;
 }
+/* retroachievements.org over HTTPS: fails (no internet) unless a test scripts a document. */
+static int httpsRc = RATLS_ERR_NET, httpsCalls;
+static const char *httpsDoc;
+static char httpsPath[128];
+int raHttpsGet(const char *host, const char *path, char *buf, int max, int *length)
+{
+    static const char head[] = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n";
+    int h = (int)strlen(head), n;
+    httpsCalls++;
+    assert(!strcmp(host, "retroachievements.org"));
+    snprintf(httpsPath, sizeof(httpsPath), "%s", path);
+    if (httpsRc < 0)
+        return httpsRc;
+    n = (int)strlen(httpsDoc);
+    assert(h + n < max);
+    memcpy(buf, head, h);
+    memcpy(buf + h, httpsDoc, n + 1);
+    *length = h + n;
+    return h;
+}
 static int raCaduceusPage(const char *r, unsigned s, char *o, int n) { (void)r; (void)s; (void)o; (void)n; assert(!"no bridge in Xerabora mode"); return -1; }
 static int raNetXeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int tsz, int *count)
 {
     (void)serial;
     *host = 0x0201a8c0;
-    /* "RAA1 NO" (1) answers a hash query; the host-only query (hash NULL) never gets it. */
-    if (idRc != 0 && (hash != NULL || idRc != 1))
+    /* "RAA1 NO" (1) and "RAA1 WAIT" (-7) answer a hash query; the host-only query (hash NULL)
+       never gets them. */
+    if (idRc != 0 && (hash != NULL || (idRc != 1 && idRc != -7)))
         return idRc;
     snprintf(title, tsz, "%s", hash ? idTitle : "");
     *count = hash ? idCount : 0;
@@ -167,10 +190,70 @@ int main(void)
     idRc = -7; assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker(); achievementsSnapshot(&p);
     assert(p.state == ACH_ERROR); idRc = 0;
     achievementsForget(); httpFail = 1; p = run('G', 0, 0, "0"); assert(p.state == ACH_OFFLINE); httpFail = 0;
+    /* gameid_parse: retroachievements.org's {"Success":true,"GameID":N}. */
+    assert(achievementsParseGameId("{\"Success\":true,\"GameID\":2791}", (int)strlen("{\"Success\":true,\"GameID\":2791}")) == 2791);
+    assert(achievementsParseGameId("{\"Success\":true,\"GameID\":0}", (int)strlen("{\"Success\":true,\"GameID\":0}")) == 0);
+    assert(achievementsParseGameId("{\"Success\":false}", (int)strlen("{\"Success\":false}")) == -1);
+    assert(achievementsParseGameId("{\"GameID\":5}", (int)strlen("{\"GameID\":5}")) == -1);
+    assert(achievementsParseGameId("{\"Success\":true,\"GameID\":\"x\"}", (int)strlen("{\"Success\":true,\"GameID\":\"x\"}")) == -1);
+    assert(achievementsParseGameId("{\"Success\":tr", (int)strlen("{\"Success\":tr")) == -1);
+    assert(achievementsParseGameId("{\"Success\":true,\"GameID\":-3}", (int)strlen("{\"Success\":true,\"GameID\":-3}")) == -1);
+    assert(achievementsParseGameId("{\"Success\":false,\"GameID\":5}", (int)strlen("{\"Success\":false,\"GameID\":5}")) == -1);
+    assert(achievementsParseGameId("{\"Success\":true,\"GameID\":+5}", (int)strlen("{\"Success\":true,\"GameID\":+5}")) == -1);
+    assert(achievementsParseGameId("{\"Success\":true,\"GameID\":100000001}", (int)strlen("{\"Success\":true,\"GameID\":100000001}")) == -1);
+    /* never_played_reaches_game: the ORBIT path, no library title match needed. */
+    strcpy(idTitle, "Never Played Game");
+    httpsRc = 0; httpsDoc = "{\"Success\":true,\"GameID\":19040}";
+    achievementsForget();
+    {
+        int lib = libraryGets, games = gameGets;
+        assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker(); achievementsSnapshot(&p);
+        assert(p.state == ACH_READY && p.gameId == 19040 && gameGets == games + 1 && libraryGets == lib);
+        assert(!strcmp(httpsPath, "/dorequest.php?r=gameid&m=bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"));
+    }
+    /* gameid_zero_unsupported */
+    httpsDoc = "{\"Success\":true,\"GameID\":0}";
+    {
+        int games = gameGets;
+        assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker(); achievementsSnapshot(&p);
+        assert(p.state == ACH_UNSUPPORTED && gameGets == games);
+    }
+    /* https_failure_falls_back: the #926 title match, unchanged. */
+    httpsRc = RATLS_ERR_NET;
+    assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker(); achievementsSnapshot(&p);
+    assert(p.state == ACH_NOT_PLAYED && !strcmp(p.title, "Never Played Game") && !xeraClockNote);
+    /* unreachable_once_per_session: no internet costs one attempt, not one per game card ... */
+    {
+        int calls = httpsCalls;
+        assert(achievementsRequestImage("mass0:DVD/Y.iso", "SLUS_000.02")); worker(); achievementsSnapshot(&p);
+        assert(p.state == ACH_NOT_PLAYED && httpsCalls == calls);
+        httpsRc = RATLS_ERR_TIMEOUT;
+        achievementsForget(); /* ... until Select asks again */
+        assert(achievementsRequestImage("mass0:DVD/Y.iso", "SLUS_000.02")); worker();
+        assert(achievementsRequestImage("mass0:DVD/Y.iso", "SLUS_000.02")); worker();
+        assert(httpsCalls == calls + 1); /* a timeout counts as no internet too */
+        achievementsForget();
+    }
+    /* clock_unset_notes: fallback taken, and the browser says to set the clock. */
+    httpsRc = RATLS_ERR_CLOCK;
+    assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker(); achievementsSnapshot(&p);
+    assert(p.state == ACH_NOT_PLAYED && xeraClockNote == 1 && achievementsClockUnset());
+    /* gameid_rejects_bad_hash: nothing is sent for a malformed hash. */
+    httpsRc = 0; httpsDoc = "{\"Success\":true,\"GameID\":19040}";
+    {
+        int calls = httpsCalls;
+        hashOverride = "ABC";
+        assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker();
+        hashOverride = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbG";
+        assert(achievementsRequestImage("mass0:DVD/X.iso", "SLUS_000.01")); worker();
+        hashOverride = NULL;
+        assert(httpsCalls == calls && !achievementsClockUnset()); /* each lookup starts with no clock note */
+    }
+    httpsRc = RATLS_ERR_NET;
     strcpy(idTitle, "Need for Speed: Underground 2");
     libraryDoc = "{\"games\":[{\"id\":1,\"title\":\"unterminated}]}";
     achievementsForget(); p = run('G', 0, 0, "0"); assert(p.state == ACH_ERROR);
-    puts("PASS: xeRAbora library/game parsing, escapes and UTF-8, cached paging/filters, image lookup, not-played and failures");
+    puts("PASS: xeRAbora library/game parsing, escapes and UTF-8, cached paging/filters, image lookup, not-played, failures and the HTTPS game-ID path");
     return 0;
 }
 """
@@ -204,10 +287,10 @@ typedef long clock_t_;
 struct sockaddr { int x; };
 struct sockaddr_in { int sin_family, sin_port; struct { u32 s_addr; } sin_addr; };
 #include "include/ranet.h"
-constexpr int RA_PORT = 18194, RA_RECV_MAX = 992, RA_MSG_DONTWAIT = 0x08, RA_POLL_MS = 25, RA_WAIT_ROUNDS = 20, RA_WAIT_PAUSE_MS = 500;
+constexpr int RA_PORT = 18194, RA_RECV_MAX = 992, RA_MSG_DONTWAIT = 0x08, RA_MSG_PEEK = 0x01, RA_POLL_MS = 25, RA_WAIT_ROUNDS = 20, RA_WAIT_PAUSE_MS = 500;
 enum { RA_MODE_XERABORA, RA_MODE_CADUCEUS };
 static int gRAMode, pc_ip[4], gRAHostIp[4];
-static int nic, sent, closes, scriptPos, scriptOff, ticks, asks, sockets;
+static int nic, sent, closes, scriptPos, scriptOff, ticks, asks, sockets, peeks, lost;
 static const char *script[8];
 static const char *udp[8];
 static u32 broadcastFrom = 0x0201a8c0;
@@ -232,9 +315,10 @@ int Ranet::ask(int, sockaddr_in *to, const char *req, char *out, int max) {
 static int socket(int, int, int) { return 5; }
 static int connect(int, struct sockaddr *, int) { return 0; }
 static int send(int, const char *b, int n, int) { assert(!strncmp(b, "GET /library HTTP/1.0\r\nHost: 192.168.1.2\r\n", 41)); sent++; return n; }
-static int recv(int, char *b, int n, int f)
+static int recv(int, void *buf, int n, int f)
 {
-    assert(f == RA_MSG_DONTWAIT && ((size_t)b & 63) == 0 && n <= RA_RECV_MAX);
+    char *b = static_cast<char *>(buf);
+    assert((f & ~RA_MSG_PEEK) == RA_MSG_DONTWAIT && ((size_t)b & 63) == 0 && n <= RA_RECV_MAX);
     const char *part = script[scriptPos];
     if (part == NULL)
         return -1;          /* nothing yet */
@@ -242,11 +326,17 @@ static int recv(int, char *b, int n, int f)
         return 0;           /* closed */
     /* Like a real recv: never more than n; the rest of a part comes next call. */
     int left = (int)strlen(part) - scriptOff, take = left < n ? left : n;
-    memcpy(b, part + scriptOff, take);
+    /* ps2ips: a read over 64 bytes returns its unaligned tail through a 48-byte buffer, and the
+       rest of a longer tail is consumed but never delivered (modules/network/ps2ips/ps2ips.c). */
+    int got = take > 64 && take % 64 > 48 ? take - (take % 64 - 48) : take;
+    memcpy(b, part + scriptOff, got);
+    if (f & RA_MSG_PEEK)
+        return peeks++, got;
+    lost += take - got;
     scriptOff += take;
     if (scriptOff == (int)strlen(part))
         scriptPos++, scriptOff = 0;
-    return take;
+    return got;
 }
 static void disconnect(int) { closes++; }
 static void DelayThread(int) { ticks += 25; }
@@ -280,8 +370,13 @@ int main(void)
     script[0] = "HTTP/1.0 200 OK\r\n\r\n0123456789012345678901234567890123456789012345678901234567890123456789"; script[1] = NULL;
     assert(get(buf, 64, &len) < 0); /* larger than the buffer */
     nic = 1; assert(get(buf, sizeof(buf), &len) < 0); nic = 0;
-    assert(closes == 4);
-    puts("PASS: Ranet::httpGet status, body offset, deadline, oversize and NIC guard");
+    /* 119 bytes waiting: one plain read would end in a 55-byte tail and lose 7 of them. */
+    script[0] = "HTTP/1.0 200 OK\r\n\r\n0123456789012345678901234567890123456789012345678901234567890123456789"
+                "012345678901234567890123456789"; script[1] = ""; script[2] = NULL;
+    body = get(buf, sizeof(buf), &len);
+    assert(body == 19 && len == 100 && peeks > 0 && !strcmp(buf + body + 90, "0123456789"));
+    assert(closes == 5 && lost == 0);
+    puts("PASS: Ranet::httpGet status, body offset, deadline, oversize, NIC guard and whole TCP reads");
 
     /* Discovery accepts only "RAO1 OK" and remembers that peer; then RAQ1 asks it, in both reply shapes. */
     gRAMode = RA_MODE_CADUCEUS; assert(identify(NULL, &host, title, &count) == -8 && !sockets); gRAMode = RA_MODE_XERABORA;
@@ -310,12 +405,24 @@ with tempfile.TemporaryDirectory() as tmp:
     program = http_harness + "".join(method(m) for m in (
         "int Ranet::hostIsExplicit()", "void Ranet::rememberPeer(", "unsigned int Ranet::peerIP()", "void Ranet::broadcastTarget(",
         "int Ranet::configuredTarget(", "int Ranet::raqAsk(", "unsigned int Ranet::xeraboraHost(", "int Ranet::xeraboraIdentify(",
-        "int Ranet::httpGet(")) + http_tests
+        "int Ranet::tcpRecv(", "int Ranet::httpGet(")) + http_tests
     (path / "http.cpp").write_text(program, encoding="utf-8")
     subprocess.run(["c++", "-std=gnu++17", "-Wall", "-Wno-unused-function", "-fsanitize=address,undefined",
                     "-fno-sanitize-recover=undefined", "-I", str(root), str(path / "http.cpp"), "-o", str(path / "http.exe")], check=True)
     subprocess.run([str(path / "http.exe")], check=True, timeout=30)
 print("PASS: Xerabora achievement browser")
+
+# The browser's messages name an unset clock when the HTTPS lookup could not run.
+menu = (root / "src/ui/menusys.cpp").read_text(encoding="utf-8")
+assert "achievementsClockUnset() ? _STR_XERA_SET_CLOCK : _STR_XERA_NOT_PLAYED" in menu
+unsupported = menu[menu.index("page.state == ACH_UNSUPPORTED)"):menu.index("page.state == ACH_NOT_PLAYED")]
+assert "SET_CLOCK" not in unsupported, "an unsupported game is not a clock problem"
+base_yml = (root / "lng/tmpl/_base.yml").read_text(encoding="utf-8")
+clock_text = base_yml[base_yml.index("- label: XERA_SET_CLOCK"):]
+clock_text = clock_text[:clock_text.index("\n\n") if "\n\n" in clock_text else len(clock_text)]
+assert "Showing your library" not in clock_text and "library yet" in clock_text and "clock" in clock_text
+assert "- label: XERA_SET_CLOCK" in (root / "lng/tmpl/_base.yml").read_text(encoding="utf-8")
+print("PASS: HTTPS game-ID messages")
 
 # clock() is a 32-bit microsecond counter on the EE: RA_HTTP_MS * CLOCKS_PER_SEC overflows (8 s
 # became ~3.7 s) and an absolute deadline breaks at the wrap. httpGet compares elapsed time.

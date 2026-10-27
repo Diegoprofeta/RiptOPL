@@ -135,6 +135,7 @@ constexpr int RA_WAIT_PAUSE_MS = 500;
    as an unknown flag and block. (The in-game SMSTCPIP stack defines 0x40;
    it serves ee_core's raudp, not this menu path.) */
 constexpr int RA_MSG_DONTWAIT = 0x08;
+constexpr int RA_MSG_PEEK = 0x01; /* lwIP's value, forwarded the same way */
 
 /* The link to the PC is a socket, or -- while a UDPFS chain owns the NIC
    and the menu's lwIP stack cannot run -- the ministack's mstack: device,
@@ -199,6 +200,11 @@ int raNetXeraboraIdentify(const char *hash, const char *serial, unsigned int *ho
 int raNetHttpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length)
 {
     return gRanet.httpGet(host, port, path, buf, max, length);
+}
+
+int raNetTcpRecv(int sock, void *aligned, int max)
+{
+    return Ranet::tcpRecv(sock, aligned, max);
 }
 
 /* The NIC settlement (design doc, decided 2026-09-03): RA's menu check is a
@@ -1053,6 +1059,19 @@ int Ranet::xeraboraIdentify(const char *hash, const char *serial, unsigned int *
 /* Reads use lwIP's per-call MSG_DONTWAIT into the aligned rx_ (the rules above), and the
    whole exchange is bounded so a stalled PC cannot hold the I/O thread. clock() is a 32-bit
    microsecond counter: time the elapsed span, never an absolute deadline that breaks at the wrap. */
+/* A read longer than 64 bytes returns its unaligned tail through ps2ips' side buffer, which holds
+   48 bytes (RESTS_EBUF_MAX, modules/network/ps2ips/ps2ips.c); a longer tail is cut, after lwIP has
+   already consumed it. The padded UDP replies never have a tail, but a TCP stream would lose bytes.
+   So peek at what is waiting and take whole 64-byte blocks, or all of it when that is 64 bytes or
+   less (that travels whole in the head buffer). */
+int Ranet::tcpRecv(int sock, void *aligned, int max)
+{
+    int got = recv(sock, aligned, max, RA_MSG_DONTWAIT | RA_MSG_PEEK);
+    if (got <= 0)
+        return got;
+    return recv(sock, aligned, got > 64 ? got & ~63 : got, RA_MSG_DONTWAIT);
+}
+
 int Ranet::httpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length)
 {
     constexpr int RA_HTTP_MS = 8000;
@@ -1083,7 +1102,7 @@ int Ranet::httpGet(unsigned int host, int port, const char *path, char *buf, int
     const clock_t start = clock();
     while (len < max - 1 && (clock_t)(clock() - start) < (clock_t)RA_HTTP_MS * (CLOCKS_PER_SEC / 1000)) {
         int room = max - 1 - len;
-        int got = recv(sock, rx_, room < RA_RECV_MAX ? room : RA_RECV_MAX, RA_MSG_DONTWAIT);
+        int got = tcpRecv(sock, rx_, room < RA_RECV_MAX ? room : RA_RECV_MAX);
         if (got == 0) {
             closed = 1; // the PC closed: complete
             break;

@@ -838,7 +838,7 @@ void menuRenderAchievements()
         else if (page.state == ACH_UNSUPPORTED)
             message = xera ? _STR_XERA_UNKNOWN_GAME : _STR_CAD_UNKNOWN_GAME;
         else if (page.state == ACH_NOT_PLAYED)
-            message = _STR_XERA_NOT_PLAYED;
+            message = achievementsClockUnset() ? _STR_XERA_SET_CLOCK : _STR_XERA_NOT_PLAYED;
         else if (page.state == ACH_OFFLINE) {
             if (xera) // the xeRAbora list travels over TCP: no UDP transport may own the NIC
                 message = raNetNicReserved() ? _STR_RA_NET_BUSY : _STR_XERA_OPEN_NETWORK;

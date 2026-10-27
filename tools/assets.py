@@ -149,6 +149,10 @@ def embed():
         pngs += ["apps_case", "case_ps1", "disc_ps1", "Players_1", "Players_2", "Players_3", "Players_4"]
     if edition == "ra":
         pngs += ["ra_mark"]
+        # The HTTPS lookup's trust anchors (src/sources/ratls_ps2.cpp): ratls_root_<name>.
+        for der in sorted((Path(ROOT) / "third_party/ca-roots").glob("*.der")):
+            name = "ratls_root_" + der.stem.replace("-", "")
+            bin2c(str(der), name, name)
     for a in pngs:
         name = {"incebtion": "background", "ip": "background_info"}.get(a, a) if theme_dir else a
         themed = theme_dir / f"gfx/{name}.png" if theme_dir else None

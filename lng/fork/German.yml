@@ -601,3 +601,4 @@ translations:
   XERA_OPEN_NETWORK: xeRAbora ist nicht erreichbar. Schalte OPEN TO THE NETWORK in seinen Einstellungen ein, prüfe die IP des RA-Begleiters und die PC-Firewall.
   XERA_UNKNOWN_GAME: xeRAbora kennt dieses Abbild nicht. Führe zuerst die RA-Unterstützungsprüfung aus.
   XERA_USE_LIBRARY: Durchsuche dieses Spiel über die RetroAchievements-Bibliothek im Hauptmenü.
+  XERA_SET_CLOCK: Noch nicht in deiner RetroAchievements-Bibliothek. Stelle die Uhr der Konsole in den Systemeinstellungen, um seine ganze Liste zu sehen, oder spiele es einmal mit Erfolgen.

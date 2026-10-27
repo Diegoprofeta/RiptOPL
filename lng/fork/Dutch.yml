@@ -660,3 +660,4 @@ translations:
   XERA_OPEN_NETWORK: Kan xeRAbora niet bereiken. Zet OPEN TO THE NETWORK aan in de instellingen ervan, controleer het IP van de RA-hulp en de firewall van de pc.
   XERA_UNKNOWN_GAME: xeRAbora kent deze image niet. Voer eerst de RA-controle van gameondersteuning uit.
   XERA_USE_LIBRARY: Blader door deze game via de RetroAchievements-bibliotheek in het hoofdmenu.
+  XERA_SET_CLOCK: Nog niet in je RetroAchievements-bibliotheek. Stel de klok van de console in bij de systeeminstellingen om de volledige lijst te zien, of speel het één keer met prestaties.

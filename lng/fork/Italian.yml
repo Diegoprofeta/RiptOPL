@@ -597,3 +597,4 @@ translations:
   XERA_OPEN_NETWORK: Impossibile raggiungere xeRAbora. Attiva OPEN TO THE NETWORK nelle sue impostazioni, controlla l'IP del compagno RA e il firewall del PC.
   XERA_UNKNOWN_GAME: xeRAbora non conosce questa immagine. Esegui prima il controllo del supporto RA.
   XERA_USE_LIBRARY: Sfoglia questo gioco tramite la libreria RetroAchievements nel menu principale.
+  XERA_SET_CLOCK: Non ancora nella tua libreria RetroAchievements. Imposta l'orologio della console nelle impostazioni di sistema per vederne la lista completa, o giocalo una volta con gli obiettivi.

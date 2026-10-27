@@ -601,3 +601,4 @@ translations:
   XERA_OPEN_NETWORK: xeRAbora'ya ulaşılamıyor. Ayarlarında OPEN TO THE NETWORK'ü açın, RA yardımcı IP'sini ve PC güvenlik duvarını kontrol edin.
   XERA_UNKNOWN_GAME: xeRAbora bu görüntüyü tanımıyor. Önce RA oyun desteği kontrolünü çalıştırın.
   XERA_USE_LIBRARY: Bu oyuna ana menüdeki RetroAchievements kitaplığı üzerinden göz atın.
+  XERA_SET_CLOCK: Henüz RetroAchievements kitaplığınızda değil. Tam listesini görmek için sistem ayarlarında konsol saatini ayarlayın ya da başarımlarla bir kez oynayın.

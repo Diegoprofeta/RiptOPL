@@ -25,6 +25,7 @@ prefix = r"""
 #include <cstring>
 #include <strings.h>
 #include "include/achievements.h"
+#include "include/ratls.h"
 #define RETROACHIEVEMENTS 1
 #define IO_OK 0
 #define IO_CUSTOM_SIMPLEACTION 1
@@ -34,6 +35,7 @@ prefix = r"""
 static int gRAMode = RA_MODE_CADUCEUS;
 static int raNetXeraboraIdentify(const char *, const char *, unsigned *, char *, int, int *) { assert(!"Caduceus mode never asks xeRAbora"); return -1; }
 static int raNetHttpGet(unsigned, int, const char *, char *, int, int *) { assert(!"Caduceus mode never fetches over HTTP"); return -1; }
+int raHttpsGet(const char *, const char *, char *, int, int *) { assert(!"Caduceus mode never looks a game up over HTTPS"); return -1; }
 static void (*worker)(void);
 static int queue_fail, nic_busy, file_length = 64, network_fail, hashed, hash_busy;
 static char key_data[80], received[200];

@@ -322,6 +322,9 @@ def verify(args: argparse.Namespace) -> None:
             "THIRD_PARTY_NOTICES.md", "UPSTREAM-README.md", "PROVENANCE.json"))
         if args.ra:
             required.add("xeRAbora.url")
+            required.add("LICENSE-MBEDTLS.txt")
+        elif "LICENSE-MBEDTLS.txt" in all_names:
+            raise ValueError("ordinary package carries the RA edition's mbedTLS licence")
         required.update(f"POPS/POPSTARTER VERSIONS/{version}/POPSTARTER.ELF" for version in (
             "MAIN", "DEBUG", "USBDELAY", "USBDELAY_DEBUG", "USBDELAY_LONGER_DEBUG"
         ))

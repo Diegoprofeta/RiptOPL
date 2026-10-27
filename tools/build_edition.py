@@ -42,6 +42,16 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         add(main, "sources", "src/platform/md5.c", *[
             f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport", "achievements")])
         add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c", "ee_core/src/ra_pulse.c")
+        # mbedTLS 3.6.7 (third_party/mbedtls, Apache-2.0) for the HTTPS game-ID lookup. RA only:
+        # the other editions must not contain it (test_mbedtls_vendor.py).
+        # The compile line runs through a shell, so the define keeps its quotes escaped. RiptOPL's
+        # own TLS sources name the configuration themselves (include/ratls.h).
+        tls = ["third_party/mbedtls/include", "third_party/mbedtls"]
+        config["targets"].append({"name": "mbedtls", "type": "ee_lib", "sources": ["third_party/mbedtls/library/*.c"],
+                                  "include_dirs": tls, "defines": [r'MBEDTLS_CONFIG_FILE=\"riptopl_mbedtls_config.h\"']})
+        add(main, "sources", "src/platform/ratls.c", "src/sources/ratls_ps2.cpp")
+        add(main, "include_dirs", *tls)
+        add(main, "libs", "mbedtls")
         main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
         add(main, "embed_irx", "raudp")
         add(targets["SMSTCPIP"], "defines", "INGAME_UDP")

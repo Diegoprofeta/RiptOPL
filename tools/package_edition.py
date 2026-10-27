@@ -87,6 +87,8 @@ def package(edition, neutrino_archive):
         manifest["neutrino_archive"] = {"filename": neutrino_archive.name, "sha256": hashlib.sha256(neutrino_archive.read_bytes()).hexdigest()}
         for name in ("LICENSE", "CREDITS", "README.md"):
             shutil.copyfile(ROOT / name, kit / name)
+        if options["ra"]:  # the RA ELF links mbedTLS (Apache-2.0): its licence travels with it
+            shutil.copyfile(ROOT / "third_party/mbedtls/LICENSE", kit / "LICENSE-MBEDTLS.txt")
         manifest["kit_files"] = {p.relative_to(kit).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(kit.rglob("*")) if p.is_file()}
         (kit / "BUILD-MANIFEST.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
         archive = out / f"RIPTOPL-{options['title']}.zip"

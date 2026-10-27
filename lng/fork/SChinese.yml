@@ -597,3 +597,4 @@ translations:
   XERA_OPEN_NETWORK: 无法连接 xeRAbora。请在其设置中开启 OPEN TO THE NETWORK，并检查 RA 伴侣 IP 和电脑防火墙。
   XERA_UNKNOWN_GAME: xeRAbora 不认识这个镜像。请先运行 RA 游戏支持检查。
   XERA_USE_LIBRARY: 请在主菜单中通过 RetroAchievements 游戏库浏览这个游戏。
+  XERA_SET_CLOCK: 尚不在你的 RetroAchievements 游戏库中。请在系统设置中设置主机时钟以查看完整列表，或带成就玩一次。

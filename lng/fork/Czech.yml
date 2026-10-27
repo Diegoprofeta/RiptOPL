@@ -595,3 +595,4 @@ translations:
   XERA_OPEN_NETWORK: xeRAbora není dosažitelná. Zapněte OPEN TO THE NETWORK v jejím nastavení, zkontrolujte IP pomocníka RA a bránu firewall na PC.
   XERA_UNKNOWN_GAME: xeRAbora tento obraz nezná. Nejdřív spusťte kontrolu podpory hry RA.
   XERA_USE_LIBRARY: Tuto hru procházejte přes knihovnu RetroAchievements v hlavním menu.
+  XERA_SET_CLOCK: Zatím není ve vaší knihovně RetroAchievements. Nastavte hodiny konzole v nastavení systému, abyste viděli celý seznam, nebo si ji jednou zahrajte s úspěchy.

@@ -1850,3 +1850,6 @@ gui_strings:
   string: "xeRAbora does not know this image. Run RA check game support first."
 - label: XERA_USE_LIBRARY
   string: "Browse this game through the RetroAchievements library in the main menu."
+# RA Xerabora browser: the HTTPS game-ID lookup needs the console clock.
+- label: XERA_SET_CLOCK
+  string: "Not in your RetroAchievements library yet. Set the console clock in the system settings to see its full list, or play it once with achievements."

@@ -650,3 +650,4 @@ translations:
   XERA_OPEN_NETWORK: تعذّر الوصول إلى xeRAbora. فعّل OPEN TO THE NETWORK في إعداداته، وافحص عنوان IP لمرافق RA وجدار حماية الحاسوب.
   XERA_UNKNOWN_GAME: لا يعرف xeRAbora هذه الصورة. شغّل فحص دعم اللعبة في RA أولاً.
   XERA_USE_LIBRARY: تصفح هذه اللعبة عبر مكتبة RetroAchievements في القائمة الرئيسية.
+  XERA_SET_CLOCK: ليست في مكتبة RetroAchievements الخاصة بك بعد. اضبط ساعة الجهاز في إعدادات النظام لترى قائمتها الكاملة، أو العبها مرة واحدة مع الإنجازات.

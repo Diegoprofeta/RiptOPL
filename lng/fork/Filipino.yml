@@ -635,3 +635,4 @@ translations:
   XERA_OPEN_NETWORK: Hindi maabot ang xeRAbora. I-on ang OPEN TO THE NETWORK sa settings nito, tingnan ang RA companion IP at ang firewall ng PC.
   XERA_UNKNOWN_GAME: Hindi kilala ng xeRAbora ang image na ito. Patakbuhin muna ang RA check game support.
   XERA_USE_LIBRARY: I-browse ang larong ito sa RetroAchievements library sa main menu.
+  XERA_SET_CLOCK: Wala pa sa iyong RetroAchievements library. Itakda ang orasan ng console sa system settings para makita ang buong listahan nito, o laruin ito nang isang beses na may achievement.

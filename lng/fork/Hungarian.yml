@@ -606,3 +606,4 @@ translations:
   XERA_OPEN_NETWORK: A xeRAbora nem érhető el. Kapcsold be az OPEN TO THE NETWORK opciót a beállításaiban, ellenőrizd az RA segédprogram IP-jét és a PC tűzfalát.
   XERA_UNKNOWN_GAME: A xeRAbora nem ismeri ezt a képet. Előbb futtasd az RA játéktámogatás-ellenőrzést.
   XERA_USE_LIBRARY: Ezt a játékot a főmenü RetroAchievements könyvtárában böngészd.
+  XERA_SET_CLOCK: Még nincs a RetroAchievements könyvtáradban. Állítsd be a konzol óráját a rendszerbeállításokban, hogy lásd a teljes listáját, vagy játssz vele egyszer teljesítményekkel.

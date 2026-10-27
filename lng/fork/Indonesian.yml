@@ -621,3 +621,4 @@ translations:
   XERA_OPEN_NETWORK: Tidak bisa menjangkau xeRAbora. Nyalakan OPEN TO THE NETWORK di pengaturannya, periksa IP pendamping RA dan firewall PC.
   XERA_UNKNOWN_GAME: xeRAbora tidak mengenal image ini. Jalankan pemeriksaan dukungan game RA lebih dulu.
   XERA_USE_LIBRARY: Jelajahi game ini lewat pustaka RetroAchievements di menu utama.
+  XERA_SET_CLOCK: Belum ada di pustaka RetroAchievements-mu. Atur jam konsol di pengaturan sistem untuk melihat daftar lengkapnya, atau mainkan sekali dengan pencapaian.

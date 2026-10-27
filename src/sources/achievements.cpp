@@ -12,6 +12,7 @@
 #include "include/opl.h"
 #include "include/achievements.h"
 #include "include/ranet.h"
+#include "include/ratls.h" /* raHttpsGet: the ORBIT-style game-ID lookup */
 #include "include/ioman.h"
 #include "include/supportbase.h"
 #include "include/ethsupport.h"
@@ -449,6 +450,73 @@ static int xeraFindGame(const char *title)
     return 0;
 }
 
+struct GameIdParse
+{
+    int success, id;
+};
+
+static void gameIdMember(const char *key, const char *v, const char *e, void *ctx)
+{
+    GameIdParse *g = static_cast<GameIdParse *>(ctx);
+
+    if (!strcmp(key, "Success"))
+        g->success = e - v >= 4 && !strncmp(v, "true", 4);
+    else if (!strcmp(key, "GameID") && v < e && *v >= '0' && *v <= '9') {
+        char *end;
+        long n = strtol(v, &end, 10);
+        if (end > v && end <= e && n >= 0 && n <= 100000000)
+            g->id = static_cast<int>(n);
+    }
+}
+
+int achievementsParseGameId(const char *json, int length)
+{
+    GameIdParse g = {0, -1};
+
+    if (json == NULL || length <= 0 || !jsonObject(json, json + length, gameIdMember, &g))
+        return -1;
+    return g.success ? g.id : -1;
+}
+
+/* Set when the last HTTPS lookup could not run because the console clock is
+   unset; the browser then says so (read by the GUI, written here). */
+static volatile int xeraClockNote;
+/* No internet (DNS, connect or the deadline failed): one attempt per session, so a console
+   without a route to retroachievements.org does not wait at every game card. Select
+   (achievementsForget) tries again. */
+static int xeraHttpsUnreachable;
+
+int achievementsClockUnset(void)
+{
+    return xeraClockNote;
+}
+
+/* ORBIT's lookup: retroachievements.org's public connect API maps an image
+   hash to its game ID. >= 0 = the ID (0 = unknown to RetroAchievements),
+   < 0 = no answer (no internet, TLS or certificate failure, unset clock). */
+static int raHttpsGameId(const char *hash)
+{
+    static char doc[2048]; /* about 750 bytes of headers today */
+    char path[64];
+    int length;
+
+    xeraClockNote = 0;
+    if (strlen(hash) != 32 || strspn(hash, "0123456789abcdef") != 32)
+        return -1; /* never put anything but a hash into the request line */
+    if (xeraHttpsUnreachable)
+        return -1;
+    snprintf(path, sizeof(path), "/dorequest.php?r=gameid&m=%s", hash);
+    int body = raHttpsGet("retroachievements.org", path, doc, sizeof(doc), &length);
+    if (body < 0) {
+        if (body == RATLS_ERR_CLOCK)
+            xeraClockNote = 1;
+        if (body == RATLS_ERR_NET || body == RATLS_ERR_TIMEOUT)
+            xeraHttpsUnreachable = 1;
+        return -1;
+    }
+    return achievementsParseGameId(doc + body, length - body);
+}
+
 static void loadXerabora(void)
 {
     char hash[33], title[57];
@@ -458,7 +526,25 @@ static void loadXerabora(void)
     if (imagePath[0]) {
         if (raHashIsoDirect(imagePath, imageStartup, hash) != 0)
             return; /* ACH_ERROR */
-        /* #926's match by title in the account library. */
+        /* The xeRAbora PC serves the list either way: find it first (this
+           also brings the network up). */
+        if (raNetXeraboraIdentify(NULL, NULL, &host, title, sizeof(title), &count) != 0) {
+            result.state = ACH_OFFLINE;
+            return;
+        }
+        /* ORBIT's path: the game ID from retroachievements.org by hash, so a
+           game never played still shows its whole list. */
+        if ((id = raHttpsGameId(hash)) == 0) {
+            result.state = ACH_UNSUPPORTED;
+            return;
+        }
+        if (id > 0) {
+            requestKind = 'A';
+            requestPage = 0;
+            requestFilter = 0;
+            goto fetch;
+        }
+        /* No internet (or no clock): #926's match by title in the account library. */
         rc = raNetXeraboraIdentify(hash, imageStartup, &host, title, sizeof(title), &count);
         if (rc == 1) {
             result.state = ACH_UNSUPPORTED;
@@ -493,6 +579,7 @@ static void loadXerabora(void)
         if (requestKind == 'A' && id <= 0)
             return; /* ACH_ERROR */
     }
+fetch:
     if ((rc = xeraFetch(host, requestKind, id)) != 1) {
         result.state = xeraState(rc);
         return;
@@ -502,7 +589,8 @@ static void loadXerabora(void)
 
 void achievementsForget(void)
 {
-    xeraStale = 1; /* read by the I/O thread on the next request */
+    xeraStale = 1;            /* read by the I/O thread on the next request */
+    xeraHttpsUnreachable = 0; /* and Select retries the online lookup */
 }
 
 /* The share that holds ART/CADUCEUS.KEY and the badge images: the folder

@@ -61,6 +61,9 @@ public:
     /* HTTP/1.0 GET of path from host:port (network order): the body offset in buf (its size
        in *length), or negative. 8 s for the whole exchange. */
     int httpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length);
+    /* One non-blocking TCP read of at most max (<= 992) bytes into a 64-byte-aligned buffer:
+       the count, 0 when the peer closed, negative when nothing is waiting. */
+    static int tcpRecv(int sock, void *aligned, int max);
 
 private:
     static int hostIsExplicit();
@@ -109,5 +112,6 @@ void raNetForgetPeer(void);
 int raCaduceusPage(const char *request, unsigned int serial, char *out, int size);
 int raNetXeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int titlesz, int *count);
 int raNetHttpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length);
+int raNetTcpRecv(int sock, void *aligned, int max);
 
 #endif

@@ -617,3 +617,4 @@ translations:
   XERA_OPEN_NETWORK: xeRAbora nije dostupan. Uključi OPEN TO THE NETWORK u njegovim postavkama, provjeri IP RA pratitelja i vatrozid računala.
   XERA_UNKNOWN_GAME: xeRAbora ne poznaje ovu sliku. Najprije pokreni RA provjeru podrške za igru.
   XERA_USE_LIBRARY: Pregledaj ovu igru preko RetroAchievements knjižnice u glavnom izborniku.
+  XERA_SET_CLOCK: Još nije u tvojoj RetroAchievements knjižnici. Postavi sat konzole u postavkama sustava da vidiš puni popis ili je odigraj jednom s postignućima.

@@ -70,3 +70,6 @@ misc/*.sys binary
 *.PDF  diff=astextplain
 *.rtf  diff=astextplain
 *.RTF  diff=astextplain
+
+# The RA edition's TLS trust anchors (third_party/ca-roots): exact bytes, pinned by test_mbedtls_vendor.py.
+*.der binary

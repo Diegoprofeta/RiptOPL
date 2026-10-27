@@ -224,10 +224,17 @@ launch or a network settings change waits until the page has loaded.
   the key. The LAN protocol is unencrypted: keep the share to trusted devices.
 - **Xerabora** reads the xeRAbora PC's own interface on TCP **18280**: turn on **OPEN TO THE NETWORK**
   in xeRAbora and allow it through the firewall. The PC is the RA companion IP, a verified peer, or
-  whoever answers discovery with `RAO1 OK`. A game card's set is found by its title in the account
-  library, so a game never played shows its title and achievement count with a note to play it once.
-  The retroachievements.org lookup by hash that shows a never-played game's whole list is not ported
-  yet. TCP needs the menu's own network stack, so UDPFS and UDPBD cannot open it.
+  whoever answers discovery with `RAO1 OK`. A game card first asks retroachievements.org for the
+  image's game ID over HTTPS (ORBIT's lookup), so even a game never played shows its whole list.
+  Without internet, or with the console clock unset (the certificate check needs it, and the browser
+  then says so), the set is found by its title in the account library instead: a game never played
+  then shows its title and achievement count with a note to play it once. A failed connection is
+  tried once per session; **Select** tries again. TCP needs the menu's own network stack, so UDPFS
+  and UDPBD cannot open it.
+- **The HTTPS lookup** uses [Mbed TLS](https://github.com/Mbed-TLS/mbedtls) 3.6.7 (RA edition only,
+  Apache-2.0, `LICENSE-MBEDTLS.txt` in the package) with TLS 1.3/1.2 and full certificate checks
+  against five embedded roots (`third_party/ca-roots`). The PS2 has no hardware random number
+  generator: the TLS keys are seeded from timer jitter.
 
 **The browser is NOT TESTED on hardware.**
 
