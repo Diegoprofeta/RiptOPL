@@ -1,4 +1,5 @@
 #include "sys/fcntl.h"
+#include <sys/stat.h> // stat -- PP. partition IMAGE0.VCD #Size
 #include <new>
 #include "include/host.h"
 #include "include/opl.h"
@@ -334,6 +335,7 @@ public:
     void launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet) override;
     void launch(item_list_t *itemList, int id, config_set_t *configSet) override;
     config_set_t *config(item_list_t *itemList, int id) override;
+    void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config) override;
     int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) override;
     int textId(item_list_t *itemList) override;
     int iconId(item_list_t *itemList) override;
@@ -1637,6 +1639,7 @@ int HddSupport::buildVcdGameList()
             snprintf(g->extension, sizeof(g->extension), ".VCD");
             g->parts = 1;
             g->format = GAME_FORMAT_ISO;
+            g->sizeMB = vcds[i].sizeMB; // #Size: measured by the scan while the container was mounted
             snprintf(newParts[total + kept], APA_IDMAX + 1, "%s", parts.names[p]);
             kept++;
         }
@@ -1672,20 +1675,28 @@ int HddSupport::buildVcdGameList()
             // not actually hold an install costs this mount plus one failed open and returns 0.
             cue_entry_t *cues = NULL;
             int n = cueScanDir("pfs1:/", &cues);
+            // #Size: the partition is only mounted here, so measure each folder now. A failed
+            // allocation just leaves the sizes at 0.
+            u32 *cueSizes = n > 0 ? static_cast<u32 *>(calloc(n, sizeof(u32))) : NULL;
+            for (int i = 0; cueSizes != NULL && i < n; i++)
+                cueSizes[i] = cueGameSizeMB("pfs1:/", cues[i].name);
             fileXioUmount("pfs1:");
             if (n < 0) {
                 free(cues);
+                free(cueSizes);
                 scanIncomplete = 1;
                 continue;
             }
             if (n == 0) {
                 free(cues);
+                free(cueSizes);
                 continue;
             }
 
             base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
             if (grownGames == NULL) {
                 free(cues);
+                free(cueSizes);
                 scanIncomplete = 1;
                 break;
             }
@@ -1693,6 +1704,7 @@ int HddSupport::buildVcdGameList()
             char(*grownParts)[APA_IDMAX + 1] = static_cast<char(*)[APA_IDMAX + 1]>(realloc(newParts, (total + n) * sizeof(*newParts)));
             if (grownParts == NULL) {
                 free(cues);
+                free(cueSizes);
                 scanIncomplete = 1;
                 break;
             }
@@ -1726,10 +1738,12 @@ int HddSupport::buildVcdGameList()
                 snprintf(g->extension, sizeof(g->extension), "%s", CUE_ROW_EXTENSION);
                 g->parts = 1;
                 g->format = GAME_FORMAT_ISO; // harmless; the row's extension gates the launch path
+                g->sizeMB = cueSizes != NULL ? cueSizes[i] : 0;
                 snprintf(newParts[total + kept], APA_IDMAX + 1, "%s", emberParts.names[p]);
                 kept++;
             }
             free(cues);
+            free(cueSizes);
             total += kept;
         }
         hddFreePopsPartitionList(&emberParts);
@@ -2780,6 +2794,57 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, static_cast<void **>(irx), size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
 }
 
+// #Size of an HDD PS1 row on the info screen. Pooled __.POPS and __.EMBER rows were measured by
+// the scan while their partition was mounted; a one-game PP. partition is never mounted by the scan,
+// so it is measured here, once: mount it read-only on the pfs1: scan slot, stat IMAGE0.VCD, unmount,
+// and cache the result in the row. Runs only on the thread holding the info-size gate (the IO
+// worker, which also owns the scan slot). The list can be republished meanwhile, so snapshot under
+// the UI lock and write back only if the same row is still there.
+static u32 hddVcdResolveSize(int id)
+{
+    char part[APA_IDMAX + 1], name[ISO_GAME_NAME_MAX + 1], mountSrc[64];
+    struct stat st;
+
+    host::ui().lock();
+    if (gHddSupport.vcdGames == NULL || gHddSupport.vcdParts == NULL || id < 0 || id >= gHddSupport.vcdGameCount) {
+        host::ui().unlock();
+        return 0;
+    }
+    u32 sizeMB = gHddSupport.vcdGames[id].sizeMB;
+    snprintf(part, sizeof(part), "%s", gHddSupport.vcdParts[id]);
+    snprintf(name, sizeof(name), "%s", gHddSupport.vcdGames[id].name);
+    host::ui().unlock();
+
+    if (sizeMB != 0 || !sbConfigStatSizeEnabled() || !hddIsPopsPartitionGame(part))
+        return sizeMB;
+
+    snprintf(mountSrc, sizeof(mountSrc), "hdd0:%s", part);
+    fileXioUmount("pfs1:");
+    if (fileXioMount("pfs1:", mountSrc, FIO_MT_RDONLY) < 0)
+        return 0;
+    if (stat("pfs1:/IMAGE0.VCD", &st) == 0)
+        sizeMB = (u32)(st.st_size >> 20);
+    fileXioUmount("pfs1:");
+
+    host::ui().lock();
+    if (gHddSupport.vcdGames != NULL && id < gHddSupport.vcdGameCount && strcmp(gHddSupport.vcdGames[id].name, name) == 0)
+        gHddSupport.vcdGames[id].sizeMB = sizeMB;
+    host::ui().unlock();
+    return sizeMB;
+}
+
+// HDD-backed PS1 favourites take the owner row's size by name.
+void HddSource::ps1Size(item_list_t *, base_game_info_t *game, config_set_t *config)
+{
+    if (game == NULL || config == NULL || !sbConfigStatSizeEnabled())
+        return;
+    host::ui().lock();
+    int id = gHddSupport.findVcdByName(game->name);
+    host::ui().unlock();
+    if (id >= 0)
+        configSetInt(config, CONFIG_ITEM_SIZE, hddVcdResolveSize(id));
+}
+
 config_set_t *HddSource::config(item_list_t *itemList, int id)
 {
     char path[256];
@@ -2790,7 +2855,9 @@ config_set_t *HddSource::config(item_list_t *itemList, int id)
     // APA even when the persistent config/art PFS home is temporarily unavailable. In that state
     // return a runtime-only config instead of dereferencing a NULL prefix or hiding the whole list.
     if (rowView(itemList, id) == LIB_VIEW_PS1) {
-        base_game_info_t *g = gHddSupport.activeVcd(sourceId(itemList, id));
+        int vcdRow = sourceId(itemList, id);
+        hddVcdResolveSize(vcdRow); // PP. rows: measured on the info screen only; cached in the row
+        base_game_info_t *g = gHddSupport.activeVcd(vcdRow);
         if (gHDDPrefix != NULL)
             return sbPopulateConfig(g, gHDDPrefix, "/");
 
@@ -2798,7 +2865,7 @@ config_set_t *HddSource::config(item_list_t *itemList, int id)
         if (config == NULL)
             return NULL;
         configSetStr(config, CONFIG_ITEM_NAME, g->name);
-        configSetInt(config, CONFIG_ITEM_SIZE, 0);
+        configSetInt(config, CONFIG_ITEM_SIZE, g->sizeMB);
         configSetStr(config, CONFIG_ITEM_FORMAT, "VCD");
         sbSetDiscAttributes(config, 1, 1);
         configSetStr(config, CONFIG_ITEM_STARTUP,

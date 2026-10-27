@@ -166,6 +166,8 @@ void cueApplySettings(const char *devPrefix, const char *name, config_set_t *con
 // Returns 1 when an image is present, 0 when the folder is readable and holds none, and 1 when the
 // folder cannot be read at all (never block a launch on a probe that itself failed).
 int cueGameHasImage(const char *devPrefix, const char *name);
+// Total MiB of the .bin tracks in an Ember game folder (info-screen #Size); 0 if unreadable.
+unsigned int cueGameSizeMB(const char *devPrefix, const char *name);
 
 // The exact image Ember would select for this folder (.cue, then .exe, then .bin). 1 and the full
 // path, 0 if readable but empty, -1 if the folder could not be probed. Identity stays the folder.

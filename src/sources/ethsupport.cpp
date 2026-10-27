@@ -1091,7 +1091,9 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 config_set_t *EthSource::config(item_list_t *itemList, int id)
 {
     base_game_info_t *game = gEthSupport.gameForView(itemList, id);
-    return game != NULL ? sbPopulateConfig(game, gEthSupport.prefix(), "\\") : NULL;
+    config_set_t *config = game != NULL ? sbPopulateConfig(game, gEthSupport.prefix(), "\\") : NULL;
+    ps1Size(itemList, game, config);
+    return config;
 }
 
 int EthSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)

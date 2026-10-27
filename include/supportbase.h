@@ -77,6 +77,8 @@ config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const
 // #Size still resolves on demand. (1 = stat, 0 = skip.)
 void sbSetConfigStatSize(int enable);
 int sbConfigStatSizeEnabled(void);
+// Info-screen #Size of a PS1 row (VCD or Ember folder) under the device's PS1 root.
+void sbResolvePs1Size(base_game_info_t *game, const char *ps1Root, config_set_t *config);
 void sbMakeDirTree(const char *path);
 void sbCreateFolders(const char *path, int createDiscImgFolders);
 

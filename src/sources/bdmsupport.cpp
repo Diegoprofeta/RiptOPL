@@ -1475,6 +1475,7 @@ public:
     void deleteGame(item_list_t *itemList, int id) override;
     void rename(item_list_t *itemList, int id, char *newName) override;
     config_set_t *config(item_list_t *itemList, int id) override;
+    void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config) override;
     int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) override;
     int textId(item_list_t *itemList) override;
     int iconId(item_list_t *itemList) override;
@@ -1910,9 +1911,18 @@ config_set_t *BdmSource::config(item_list_t *itemList, int id)
 
     // Active view's array (#120 split) -- a VCD's per-game CFG keys off its own entry, and a stale
     // id resolves to the empty entry instead of indexing outside either backing array.
-    config = sbPopulateConfig(bdmActiveGame(itemList, id), pDeviceData->bdmPrefix, "/");
+    base_game_info_t *game = bdmActiveGame(itemList, id);
+    config = sbPopulateConfig(game, pDeviceData->bdmPrefix, "/");
+    ps1Size(itemList, game, config);
     bdmLogIdentityDiagnosticLive("config-create", itemList, config);
     return config;
+}
+
+void BdmSource::ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config)
+{
+    char root[BDM_DEVICE_ROOT_MAX + 2];
+    bdmBuildPs1Prefix(root, sizeof(root), itemList->mode); // POPS/ and EMBER/ live at the device root
+    sbResolvePs1Size(game, root, config);
 }
 
 int BdmSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)

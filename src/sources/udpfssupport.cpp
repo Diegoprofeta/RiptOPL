@@ -954,7 +954,11 @@ config_set_t *UdpfsSource::config(item_list_t *itemList, int id)
 {
     base_game_info_t *game = gUdpfsSupport.activeGame(itemList, id);
 
-    return game == &gUdpfsSupport.emptyGame_ ? NULL : sbPopulateConfig(game, udpfsPrefix, "/");
+    if (game == &gUdpfsSupport.emptyGame_)
+        return NULL;
+    config_set_t *config = sbPopulateConfig(game, udpfsPrefix, "/");
+    ps1Size(itemList, game, config);
+    return config;
 }
 
 int UdpfsSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)

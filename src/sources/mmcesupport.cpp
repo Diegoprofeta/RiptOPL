@@ -498,6 +498,7 @@ public:
     void launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet) override;
     void launch(item_list_t *itemList, int id, config_set_t *configSet) override;
     config_set_t *config(item_list_t *itemList, int id) override;
+    void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config) override;
     int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) override;
     int textId(item_list_t *itemList) override;
     int iconId(item_list_t *itemList) override;
@@ -1374,7 +1375,17 @@ config_set_t *MmceSource::config(item_list_t *itemList, int id)
     // Config (CFG + #Format/#System/#DiscType badges) comes from the ACTIVE view's array;
     // gMmceSupport.activeGame picks it (VCD keys off the basename) and returns a safe empty entry
     // for any stale/invalid id, so this can never index the wrong/NULL array out of range.
-    return sbPopulateConfig(gMmceSupport.activeGame(itemList, id), gMmceSupport.prefix, "/");
+    base_game_info_t *game = gMmceSupport.activeGame(itemList, id);
+    config_set_t *config = sbPopulateConfig(game, gMmceSupport.prefix, "/");
+    ps1Size(itemList, game, config);
+    return config;
+}
+
+void MmceSource::ps1Size(item_list_t *, base_game_info_t *game, config_set_t *config)
+{
+    char root[sizeof(gMmceSupport.prefix)];
+    gMmceSupport.getDeviceRoot(root, sizeof(root)); // POPS/ and EMBER/ live at the card root
+    sbResolvePs1Size(game, root, config);
 }
 
 int MmceSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)

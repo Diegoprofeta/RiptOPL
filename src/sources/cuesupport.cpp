@@ -957,6 +957,35 @@ int cueGameHasImage(const char *devPrefix, const char *name)
     return gCueSupport.gameHasImage(devPrefix, name);
 }
 
+// Info-screen #Size of an Ember row: the sum of the .bin tracks at the top of the game folder (a
+// multi-track .cue names several, so the .cue alone says nothing). Top level only, as Ember reads.
+unsigned int cueGameSizeMB(const char *devPrefix, const char *name)
+{
+    char gamesDir[288], gameDir[320], filePath[640];
+    struct dirent *de;
+    struct stat st;
+    u64 total = 0;
+
+    if (devPrefix == NULL || name == NULL || name[0] == '\0')
+        return 0;
+    cueBuildGamesDir(devPrefix, gamesDir, sizeof(gamesDir));
+    if (gamesDir[0] == '\0' || snprintf(gameDir, sizeof(gameDir), "%s%c%s", gamesDir, cueSep(devPrefix), name) >= (int)sizeof(gameDir))
+        return 0;
+    DIR *dir = opendir(gameDir);
+    if (dir == NULL)
+        return 0;
+    while ((de = readdir(dir)) != NULL) {
+        int len = (int)strlen(de->d_name);
+        if (len < 5 || strcasecmp(de->d_name + len - 4, ".bin") != 0)
+            continue;
+        if (snprintf(filePath, sizeof(filePath), "%s%c%s", gameDir, cueSep(devPrefix), de->d_name) < (int)sizeof(filePath) &&
+            stat(filePath, &st) == 0 && S_ISREG(st.st_mode))
+            total += (u64)st.st_size;
+    }
+    closedir(dir);
+    return (unsigned int)(total >> 20);
+}
+
 int cueRenameGame(const char *devPrefix, const char *oldName, const char *newName)
 {
     char gamesDir[288];

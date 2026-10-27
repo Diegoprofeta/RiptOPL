@@ -417,6 +417,15 @@ void menuRequestInfoSize(void)
     item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
     int configId = selected_item->item->current->item.id;
 
+    // Folder rows have no size; HDL rows already carry it in APA metadata (total_size_in_kb), so the
+    // CFG+stat pass would be a redundant read. HDD PS1 rows go through: a one-game PP. partition is
+    // only measured on demand.
+    if (list == NULL || selected_item->item->current->item.isFolder ||
+        (list->mode == HDD_MODE && libListRowView(list, configId) != LIB_VIEW_PS1)) {
+        SignalSema(menuSemaId);
+        return;
+    }
+
     if (infoSizeWorkerPending && infoSizeRequestList == list && infoSizeRequestId == configId) {
         SignalSema(menuSemaId);
         return; // exact same work is already active/queued
@@ -2263,8 +2272,10 @@ void menuHandleInputInfo()
             selected_item->item->execCross(selected_item->item);
     } else if (getKey(KEY_UP)) {
         menuPrevV();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKey(KEY_DOWN)) {
         menuNextV();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKeyOn(KEY_CIRCLE)) {
         if (gSelectButton == KEY_CROSS)
             guiSwitchScreen(GUI_SCREEN_MAIN);
@@ -2272,12 +2283,16 @@ void menuHandleInputInfo()
             selected_item->item->execCircle(selected_item->item);
     } else if (getKey(KEY_L1)) {
         menuPrevPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKey(KEY_R1)) {
         menuNextPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKeyOn(KEY_L2)) {
         menuFirstPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKeyOn(KEY_R2)) {
         menuLastPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     }
 }
 

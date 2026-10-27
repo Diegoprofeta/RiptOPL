@@ -28,11 +28,13 @@ constexpr int VCD_MAX_ITEMS = 2048; // hard cap on VCDs scanned from one folder
 typedef struct
 {
     char name[VCD_NAME_MAX]; // VCD basename WITHOUT ".VCD" (the POPSTARTER selector game name)
+    u32 sizeMB;              // vcdScanDirRoot only (0 otherwise): the file size, read while mounted
 } vcd_entry_t;
 
 
 // Like vcdScanDir but scans `dirPath` DIRECTLY (no POPS/ subfolder) -- for the APA/PFS HDD where each
-// __.POPS* partition holds its .VCD at the mounted root (e.g. dirPath = "pfs1:/").
+// __.POPS* partition holds its .VCD at the mounted root (e.g. dirPath = "pfs1:/"). Also fills each
+// entry's sizeMB: the container is only mounted during the scan, so the info screen cannot stat later.
 int vcdScanDirRoot(const char *dirPath, vcd_entry_t **outList);
 
 // Extract a strict leading PS1 ID from "SXXX_NNN.NN.Title" or "XX.SXXX_NNN.NN.Title" for same-folder CFG/art fallback.

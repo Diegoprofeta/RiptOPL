@@ -1205,7 +1205,9 @@ config_set_t *FavSource::config(item_list_t *itemList, int id)
                  (fav->kind == FAV_KIND_CUE) ? CUE_ROW_EXTENSION : ".VCD");
         game.parts = 1;
         game.format = GAME_FORMAT_ISO; // matches the device scans; the extension drives the PS1 badge
-        return sbPopulateConfig(&game, prefix, sep);
+        config_set_t *config = sbPopulateConfig(&game, prefix, sep);
+        gsOf(o)->ps1Size(o, &game, config); // the owner's PS1 root; a stack copy, so per Info open
+        return config;
     }
     if (!favOwnerHasId(o, fav->id))
         return NULL;

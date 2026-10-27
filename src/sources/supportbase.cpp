@@ -1177,6 +1177,16 @@ void sbRename(base_game_info_t **list, const char *prefix, const char *sep, int 
 // The info screen flips this on via menuRequestInfoSize() so #Size still resolves on demand;
 // game->sizeMB is cached after the first resolve, so later scrolls show the size for free.
 // The gate itself lives in gSupportBase (include/supportbaseint.h).
+void SupportBase::setConfigStatSize(int enable)
+{
+    configStatSizeThread_ = enable ? GetThreadId() : -1;
+}
+
+int SupportBase::configStatSizeEnabled() const
+{
+    return configStatSizeThread_ >= 0 && configStatSizeThread_ == GetThreadId();
+}
+
 void sbSetConfigStatSize(int enable)
 {
     gSupportBase.setConfigStatSize(enable);
@@ -1185,6 +1195,31 @@ void sbSetConfigStatSize(int enable)
 int sbConfigStatSizeEnabled(void)
 {
     return gSupportBase.configStatSizeEnabled();
+}
+
+// Info-screen #Size for a PS1 row. sbPopulateConfig never stats one: its prefix is the OPL config
+// root, while PS1 games live under the device's PS1 root (POPS/<name>.VCD or EMBER/games/<name>/).
+// ps1Root ends in its separator. No-op off the info path, for non-PS1 rows, or once sizeMB is cached.
+void sbResolvePs1Size(base_game_info_t *game, const char *ps1Root, config_set_t *config)
+{
+    char gamepath[256];
+    struct stat st;
+
+    if (!gSupportBase.configStatSizeEnabled() || game == NULL || ps1Root == NULL || config == NULL || game->sizeMB != 0)
+        return;
+
+    if (!strcasecmp(game->extension, ".VCD")) {
+        int len = (int)strlen(ps1Root);
+        snprintf(gamepath, sizeof(gamepath), "%s%s%c%s%s", ps1Root, POPS_FOLDER,
+                 (len > 0 && ps1Root[len - 1] == '\\') ? '\\' : '/', game->name, game->extension);
+        if (stat(gamepath, &st) == 0)
+            game->sizeMB = st.st_size >> 20;
+    } else if (cueIsCueEntry(game))
+        game->sizeMB = cueGameSizeMB(ps1Root, game->name);
+    else
+        return;
+
+    configSetInt(config, CONFIG_ITEM_SIZE, game->sizeMB);
 }
 
 config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const char *sep)

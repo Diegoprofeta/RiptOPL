@@ -67,6 +67,9 @@ public:
     // The device prefix a row's files live under (its VMC folder), or NULL. Favourites answer for
     // the source the row belongs to.
     virtual char *rowPrefix(item_list_t *itemList, int id);
+    // Info-screen #Size of a PS1 row, measured under the source's PS1 root (supportbase.h
+    // sbResolvePs1Size). Defaults to the source prefix; BDM/MMCE use the device root, HDD its rows.
+    virtual void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config);
     virtual int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
                            char *partition, int partitionSize);
 

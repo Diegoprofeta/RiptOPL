@@ -2,8 +2,9 @@
 
 #include "include/opl.h"
 #include "include/gamesource.h"
-#include "include/cuesupport.h" // cueIsCueEntry
-#include "include/vcdsupport.h" // PS1_ROW_* + the PS1-row id memo
+#include "include/cuesupport.h"  // cueIsCueEntry
+#include "include/supportbase.h" // sbResolvePs1Size
+#include "include/vcdsupport.h"  // PS1_ROW_* + the PS1-row id memo
 
 GameSource::GameSource(short int mode_, char appsPriority_, unsigned char flags_, int delay_, int updateDelay_, unsigned caps)
 {
@@ -33,6 +34,11 @@ int GameSource::sourceId(item_list_t *, int id) { return id; }
 int GameSource::saveCueSettings(item_list_t *, int, const char *, config_set_t *) { return 0; }
 char *GameSource::rowPrefix(item_list_t *itemList, int) { return hasPrefix() ? prefix(itemList) : NULL; }
 int GameSource::ps1SaveDir(item_list_t *, int, const char *, int *, char *, int, char *, int) { return 0; }
+void GameSource::ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config)
+{
+    if (hasPrefix())
+        sbResolvePs1Size(game, prefix(itemList), config);
+}
 
 int GameSource::ps1RowKind(item_list_t *itemList, int id, int *ember)
 {
