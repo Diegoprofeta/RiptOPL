@@ -4,6 +4,7 @@
 #include "include/lang.h"
 #include "include/gui.h"
 #include "include/supportbase.h"
+#include "include/nativevmc.h"
 #include "include/ethsupport.h"
 #include "include/netsupport.h" // the shared TCP/IP stack; this file owns only the SMB session on top of it
 #include "include/vcdsupport.h"
@@ -865,6 +866,8 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
     sysLaunchEmber(emberElf, launchName);
 }
 
+static int ethMcemuSlots[2] = {-2, -2};
+
 void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 {
     int i, compatmask;
@@ -943,13 +946,12 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             }
         }
 
-        for (i = 0; i < size_smb_mcemu_irx; i++) {
-            if (((u32 *)&smb_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
-                if (smb_vmc_infos.active)
-                    size_mcemu_irx = size_smb_mcemu_irx;
-                memcpy(&((u32 *)&smb_mcemu_irx)[i], &smb_vmc_infos, sizeof(smb_vmc_infos_t));
-                break;
-            }
+        // This write covers the slot's marker, so its position is found once and reused with a full-payload bound.
+        int slotWord = nativeVmcSlotWord(&smb_mcemu_irx, size_smb_mcemu_irx, vmc_id, ethMcemuSlots, sizeof(smb_vmc_infos_t));
+        if (slotWord >= 0) {
+            if (smb_vmc_infos.active)
+                size_mcemu_irx = size_smb_mcemu_irx;
+            memcpy(&((u32 *)&smb_mcemu_irx)[slotWord], &smb_vmc_infos, sizeof(smb_vmc_infos_t));
         }
     }
 

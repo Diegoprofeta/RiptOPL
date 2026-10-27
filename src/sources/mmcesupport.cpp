@@ -4,6 +4,7 @@
 #include "include/lang.h"
 #include "include/gui.h"
 #include "include/supportbase.h"
+#include "include/nativevmc.h"
 #include "include/mmcesupport.h"
 #include "include/vcdsupport.h"
 #include "include/cuesupport.h" // PS1 rows can belong to either core; the ROW decides
@@ -957,9 +958,11 @@ void MmceSource::launchVcd(item_list_t *itemList, const char *vcdName, config_se
     sysLaunchPopstarter(vcdElf, vcdSelector);
 }
 
+static int mmceMcemuSlots[2] = {-2, -2};
+
 void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 {
-    int i, index, compatmask = 0;
+    int index, compatmask = 0;
     int EnablePS2Logo = 0;
     int result;
 
@@ -1086,14 +1089,12 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             }
         }
 
-        u32 max_words = size_mmce_mcemu_irx / sizeof(u32);
-        for (i = 0; i < max_words; i++) {
-            if (((u32 *)&mmce_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
-                if (mmce_vmc_infos.active)
-                    size_mcemu_irx = size_mmce_mcemu_irx;
-                memcpy(&((u32 *)&mmce_mcemu_irx)[i], &mmce_vmc_infos, sizeof(mmce_vmc_infos_t));
-                break;
-            }
+        // This write covers the slot's marker, so its position is found once and reused with a full-payload bound.
+        int slotWord = nativeVmcSlotWord(&mmce_mcemu_irx, size_mmce_mcemu_irx, vmc_id, mmceMcemuSlots, sizeof(mmce_vmc_infos_t));
+        if (slotWord >= 0) {
+            if (mmce_vmc_infos.active)
+                size_mcemu_irx = size_mmce_mcemu_irx;
+            memcpy(&((u32 *)&mmce_mcemu_irx)[slotWord], &mmce_vmc_infos, sizeof(mmce_vmc_infos_t));
         }
     }
 
