@@ -371,14 +371,16 @@ The standard editions are unaffected: every RA source file and call site is behi
 `#ifdef RETROACHIEVEMENTS`, the standard kits reject RA resources, and every build manifest
 records the RA flag.
 
-### Two IOP modules this flavour builds instead of taking from the SDK
+### Two IOP modules RiptOPL builds instead of taking from the SDK
 
 Both are ps2sdk sources vendored with a marked change, the way `modules/network/ps2ips` already is,
-and both are selected by `USBD_MINI_IRX` / `SMBMAN_IRX` at the top of the Makefile.
+built by `ps2.yaml` (`usbd_mini_fork`, `smbman_ra`). Both began in the RA edition; every edition now
+embeds both. [Notes for ps2sdk](PS2SDK-NOTES.md) lists the ps2sdk side of both, and of every other
+SDK module RiptOPL replaces.
 
 | Module | Why | Diff from ps2sdk |
 |---|---|---|
-| `modules/network/smbman-ra` (every edition) | the held-image fix above; also a write now counts only the bytes the server's WRITE_ANDX Count says it stored, where ps2sdk's smbman takes any success status as the whole write. That matters on a server that answers a full disk, or a partial write, with success and a short or zero Count, which MS-CIFS allows; Samba, Windows (per MS-CIFS) and PS2-Servers answer a full disk with an error status, which both copies already fail | `smb.c` (+48/−5: both fixes), `smb.h` (+4) and `auth.c` (+6/−1: an unmarked password-buffer bound); every other source file byte-identical to ps2sdk master, checked 2026-10-27 by the original's #1064; only the build file is ours |
+| `modules/network/smbman-ra` (every edition) | the held-image fix above; also a write now counts only the bytes the server's WRITE_ANDX Count says it stored, where ps2sdk's smbman takes any success status as the whole write. That matters on a server that answers a full disk, or a partial write, with success and a short or zero Count, which MS-CIFS allows; Samba, Windows (per MS-CIFS) and PS2-Servers answer a full disk with an error status, which both copies already fail. A write request also carries at most 65,534 bytes, so its 16-bit ByteCount no longer wraps to 0 | `smb.c` (+57/−8: the three fixes), `smb.h` (+4) and `auth.c` (+6/−1: an unmarked password-buffer bound); every other source file byte-identical to ps2sdk master, checked 2026-10-27 by the original's #1064; only the build file is ours |
 | `modules/usb/usbd-ra` | see below | **nothing** — byte-identical to ps2sdk `iop/usb/usbd` at `314d87e7` (2024-04-01); only the Makefile is ours |
 
 **The usbd swap is not a RetroAchievements feature.** ps2sdk rewrote its USB host driver on

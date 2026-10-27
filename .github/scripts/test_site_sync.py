@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Check site_sync.py: the search-index rules, the RA page render and the --check contract."""
+"""Check site_sync.py: the search-index rules, the Markdown page renders and the --check contract."""
 
+import contextlib
+import io
 import json
 import tempfile
 import unittest
@@ -156,6 +158,53 @@ class SiteSyncTests(unittest.TestCase):
         self.assertTrue(raw.startswith("[\n{") and raw.endswith("}\n]\n"), "one entry per line")
         self.assertEqual(len(raw.splitlines()), len(self.index()) + 2)
         self.assertEqual(self.run_sync("--check"), 0, "a second run must find nothing to change")
+
+    def write_notes(self):
+        md = self.site / "NOTES.md"
+        md.write_text("# Notes\n\n## smbman\n\nSee [the patch](ps2sdk-patches/x.patch).\n", encoding="utf-8")
+        return f"{md}=notes.html"
+
+    def test_md_page_renders_into_its_own_page(self):
+        notes = self.site / "notes.html"
+        notes.write_text(page("<h1>Placeholder</h1>"), encoding="utf-8")
+        spec = self.write_notes()
+        self.assertEqual(self.run_sync(), 0)  # the RA page and the index are current now
+        self.assertEqual(self.run_sync("--md-page", spec, "--check"), 1, "the notes page is stale")
+        self.assertIn("Placeholder", notes.read_text(encoding="utf-8"), "--check must not write")
+        self.assertEqual(self.run_sync("--md-page", spec), 0)
+        after = notes.read_text(encoding="utf-8")
+        self.assertIn('<h2 id="smbman">smbman</h2>', after)
+        self.assertNotIn("Placeholder", after)
+        # A Markdown file outside the repository has its relative links resolved from docs/.
+        self.assertIn(site_sync.REPO_BLOB + "docs/ps2sdk-patches/x.patch", after)
+        self.assertTrue(after.startswith(page("")[: page("").index('<main class="content">')]), "page chrome must survive")
+        self.assertTrue(after.endswith("</main>\n<footer>f</footer></body></html>"))
+        self.assertIn("notes.html#smbman", [e["url"] for e in self.index()])
+        self.assertEqual(self.run_sync("--md-page", spec, "--check"), 0, "a second run must find nothing to change")
+
+    def test_md_page_not_on_the_site_is_skipped(self):
+        # The source change and the gh-pages change can merge in either order.
+        spec = self.write_notes()
+        self.assertEqual(self.run_sync(), 0)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(self.run_sync("--md-page", spec, "--check"), 0)
+            self.assertEqual(self.run_sync("--md-page", spec), 0)
+        self.assertIn("skipped: notes.html", out.getvalue())
+        self.assertFalse((self.site / "notes.html").exists(), "a missing page must not be created")
+
+    def test_md_page_rejects_bad_specs(self):
+        for spec in ("NOTES.md", "=notes.html", "NOTES.md=notes", "NOTES.md=sub/notes.html",
+                     "NOTES.md=retroachievements.html"):
+            with self.subTest(spec=spec), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+                self.run_sync("--md-page", spec)
+
+    def test_doc_dir_of(self):
+        root = site_sync.REPO_ROOT
+        self.assertEqual(site_sync.doc_dir_of(root / "docs" / "PS2SDK-NOTES.md"), "docs/")
+        self.assertEqual(site_sync.doc_dir_of(root / "README.md"), "")
+        self.assertEqual(site_sync.doc_dir_of(root / "modules" / "bdm" / "NOTES.md"), "modules/bdm/")
+        self.assertEqual(site_sync.doc_dir_of(self.md), "docs/")  # outside the repository
+
 
 
 if __name__ == "__main__":
