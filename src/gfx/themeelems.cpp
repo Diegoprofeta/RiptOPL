@@ -533,8 +533,14 @@ static void drawAttributeText(struct menu_list *menu, struct submenu_list *item,
             // force refresh
             mutableText->currentConfigId = config->uid();
             mutableText->currentValue = NULL;
-            if (configGetStr(config, mutableText->value, (const char **)&mutableText->currentValue)) {
-                if ((mutableText->sizingMode == SIZING_WRAP) && mutableText->currentValue) {
+            configGetStr(config, mutableText->value, (const char **)&mutableText->currentValue);
+            // Metadata is optional. A missing/empty Title can still show the library name,
+            // without writing a fabricated metadata field back to the game's CFG.
+            if ((!mutableText->currentValue || !mutableText->currentValue[0]) &&
+                !strcmp(mutableText->value, "Title"))
+                configGetStr(config, CONFIG_ITEM_NAME, (const char **)&mutableText->currentValue);
+            if (mutableText->currentValue) {
+                if (mutableText->sizingMode == SIZING_WRAP) {
                     // Word-wrap a private copy, not the config's own stored string.
                     // configGetStr() hands back a pointer straight into the config
                     // buffer (it->val); fntFitString() inserts '\n's in place, so
