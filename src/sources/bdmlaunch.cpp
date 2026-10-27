@@ -28,6 +28,7 @@
 #include "modules/iopcore/common/cdvd_config.h"
 #include "include/bdmlauncher.h"
 #include "include/neutrinolauncher.h"
+#include "include/rapopslaunch.h"
 
 #include <usbhdfsd-common.h>
 
@@ -225,6 +226,22 @@ void BdmLauncher::launchVcd(item_list_t *itemList, const char *vcdName, config_s
 
     char vcdFullPath[256];
     snprintf(vcdFullPath, sizeof(vcdFullPath), "%sPOPS/%s.VCD", vcdPrefix, vcdName);
+#ifdef RETROACHIEVEMENTS
+    // A module left by an earlier tracked launch must not report for this one; a user's own
+    // MODULE_9.IRX is never touched. Only USB VCDs are tracked (POPStarter's USB stack).
+    int raModule = vcdRemoveRaModule(vcdPrefix);
+    if (raModule == -2) {
+        host::ui().msgBox(_l(_STR_PS1_RA_REMOVE_PREVIOUS), 0, NULL);
+        return;
+    }
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_USB && raPopsPrepare(vcdPrefix, pDeviceData->bdmPrefix, vcdFullPath, raModule == 0) < 0) {
+        host::ui().msgBox(_l(_STR_PS1_RA_PREPARE_FAILED), 0, NULL);
+        return;
+    }
+#else
+    if (!vcdConfirmCleanLaunch(vcdPrefix))
+        return;
+#endif
     vcdPrepareRetroGemBarcode(vcdFullPath);
 
     // POPSTARTER.ELF may be on a different backend than the VCD. Keep both alive until the

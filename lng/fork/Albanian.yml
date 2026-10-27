@@ -621,3 +621,9 @@ translations:
   XERA_USE_LIBRARY: Shfleto këtë lojë përmes bibliotekës RetroAchievements në menynë kryesore.
   XERA_SET_CLOCK: Ende jo në bibliotekën tënde RetroAchievements. Vendos orën e konsolës te cilësimet e sistemit për të parë listën e plotë, ose luaje një herë me arritje.
   RA_NEUTRINO_UNTRACKED: Neutrino RA nuk është i disponueshëm për këtë nisje. Kontrollo mjedisin RA, IP-në e shoqëruesit dhe listën e ruajtur të ndjekjes. Po niset pa arritje.
+  PS1_RA_USB_REQUIRED: Arritjet PS1 kërkojnë një VCD në USB përmes POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Moduli i mëparshëm i arritjeve PS1 nuk mund të hiqet
+  PS1_RA_PREPARE_FAILED: Arritjet PS1 nuk mund të përgatiten. Ruaj ose zhvendos POPS/MODULE_9.IRX dhe kontrollo qasjen e shkrimit të pajisjes.
+  PS1_RA_CLEAN_DELETE: 'Modul RA i papërdorur i RiptOPL: POPS/MODULE_9.IRX. Ta fshij për një nisje të pastër?'
+  PS1_RA_CLEAN_FAILED: Moduli RA i papërdorur nuk mund të fshihet.
+  PS1_RA_CLEAN_CONTINUE: Të vazhdohet gjithsesi? Një modul RA i mbetur mund të ekzekutojë telemetri të vjetër. Jo anulon nisjen.

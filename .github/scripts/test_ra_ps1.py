@@ -1,4 +1,4 @@
-"""Production PS1 hashing (VCD and HDL) against host fixtures. Ported from the original's
+"""Production PS1 hashing (VCD and HDL), module ownership, the rapops handoff and rapull against host fixtures. Ported from the original's
 test_ra_ps1.py; the hashing it covers cannot validate PS2 drive or IOP behavior."""
 from pathlib import Path
 import hashlib
@@ -23,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix='ra-ps1-') as directory:
             o = str(tmp / ('%s_x%d.o' % (name, i)))
             subprocess.run(['gcc', '-std=gnu99', '-Wall', '-Wextra', '-Werror', '-I', str(root), '-c', e, '-o', o], check=True)
             objs.append(o)
-        compiler = ['g++', '-std=gnu++17'] if cxx else ['gcc', '-std=gnu99']
+        compiler = ['g++', '-std=gnu++17'] if cxx else ['gcc', '-std=gnu99', '-Wno-pointer-to-int-cast', '-Wno-int-to-pointer-cast']  # IOP addresses are 32-bit
         subprocess.run(compiler + ['-Wall', '-Wextra', '-Werror', '-I', str(root), str(path), *objs, '-o', str(exe)], check=True)
         subprocess.run([str(exe)], cwd=tmp, check=True)
 
@@ -192,3 +192,272 @@ int main(void) {
 '''
     run('hash_ps1', prefix + source + checks, [root/'src/platform/md5.c'])
 
+
+    # The slot rapops is written into belongs to the user unless it carries rapops' magic.
+    (tmp/'POPS').mkdir()
+    source = (root/'src/sources/vcdsupport.cpp').read_text()
+    source = source[source.index('static int vcdRaModuleStatus('):]
+    run('ownership', '''
+/* constexpr: compiled as C++, like the source */
+#include <assert.h>
+#include <stdio.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <string.h>
+#include <strings.h>
+#define _l(x) "test"
+#define _STR_PS1_RA_CLEAN_DELETE 0
+#define _STR_PS1_RA_CLEAN_FAILED 0
+#define _STR_PS1_RA_CLEAN_CONTINUE 0
+static char vcdSep(const char *p) {(void)p;return '/';}
+static int forced_open_errno, forced_dopen_errno, forced_dread_errno;
+static int module_open(const char *p, int flags) {
+    if (forced_open_errno && strstr(p, "MODULE_9.IRX")) {errno=forced_open_errno;return -1;}
+    return open(p, flags);
+}
+static DIR *module_opendir(const char *p) {
+    if (forced_dopen_errno) {errno=forced_dopen_errno;return NULL;}
+    return opendir(p);
+}
+static struct dirent *module_readdir(DIR *dir) {
+    if (forced_dread_errno) {errno=forced_dread_errno;return NULL;}
+    return readdir(dir);
+}
+static int forced_read_errno;
+static ssize_t module_read(int fd, void *b, size_t n) {
+    if (forced_read_errno) {errno=forced_read_errno;return -1;}
+    return read(fd, b, n);
+}
+#define open module_open
+#define opendir module_opendir
+#define readdir module_readdir
+#define read module_read
+static int replies[3], replypos, fail_remove;
+static int module_unlink(const char *p) {if(fail_remove) {errno=EACCES;return -1;}return unlink(p);}
+#define unlink module_unlink
+namespace host {
+struct Ui { int msgBox(const char *s,int confirm,void *unused) {(void)s;(void)unused;return confirm?replies[replypos++]:0;} };
+static Ui theUi;
+static Ui &ui() {return theUi;}
+}
+''' + source + '''
+int main(void) {
+    assert(vcdRemoveRaModule("")==0);
+    FILE *f=fopen("POPS/MODULE_9.IRX","wb");fputs("user module",f);fclose(f);
+    assert(vcdRemoveRaModule("")==-1);
+    assert(access("POPS/MODULE_9.IRX",0)==0);
+    f=fopen("POPS/MODULE_9.IRX","wb");
+    for(int i=0;i<4093;i++) fputc(0,f);
+    fputs("RIPTRA01",f);fclose(f);
+    replies[0]=0;replies[1]=0;replypos=0;
+    assert(vcdConfirmCleanLaunch("")==0 && access("POPS/MODULE_9.IRX",0)==0);
+    replies[0]=0;replies[1]=1;replypos=0;
+    assert(vcdConfirmCleanLaunch("")==1 && access("POPS/MODULE_9.IRX",0)==0);
+    replies[0]=1;replypos=0;
+    assert(vcdConfirmCleanLaunch("")==1);
+    assert(access("POPS/MODULE_9.IRX",0)<0);
+    f=fopen("POPS/MODULE_9.IRX","wb");fputs("RIPTRA01",f);fclose(f);
+    fail_remove=1;replies[0]=1;replies[1]=0;replypos=0;
+    assert(vcdConfirmCleanLaunch("")==0 && access("POPS/MODULE_9.IRX",0)==0);
+    replies[0]=1;replies[1]=1;replypos=0;
+    assert(vcdConfirmCleanLaunch("")==1 && access("POPS/MODULE_9.IRX",0)==0);
+    fail_remove=0;assert(vcdRemoveRaModule("")==0);
+    /* FatFs's FR_NO_FILE reaches the EE as EINTR, but the directory is readable:
+       no confirmation may be shown for absence. */
+    forced_open_errno=EINTR;
+    replies[0]=0;replypos=0;
+    assert(vcdRemoveRaModule("")==0);
+    assert(vcdConfirmCleanLaunch("")==1 && replypos==0);
+    /* Real I/O errors keep the warning even if the file is absent. */
+    forced_open_errno=EIO;replies[0]=0;replypos=0;
+    assert(vcdRemoveRaModule("")==-2);
+    assert(vcdConfirmCleanLaunch("")==0 && replypos==1);
+    /* Inaccessible directory / failed enumeration: never infer absence. */
+    forced_open_errno=EINTR;
+    forced_dopen_errno=EACCES;
+    assert(vcdRemoveRaModule("")==-2);
+    forced_dopen_errno=0;forced_dread_errno=EIO;
+    assert(vcdRemoveRaModule("")==-2);
+    forced_dread_errno=0;
+    /* User-owned and RiptOPL-owned files both stay when unreadable. */
+    f=fopen("POPS/MODULE_9.IRX","wb");fputs("user module",f);fclose(f);
+    assert(vcdRemoveRaModule("")==-2 && access("POPS/MODULE_9.IRX",0)==0);
+    replies[0]=0;replypos=0;
+    assert(vcdConfirmCleanLaunch("")==0 && replypos==1);
+    forced_open_errno=0;
+    assert(vcdRemoveRaModule("")==-1);
+    /* A module that cannot be read through is not proven to be the user's. */
+    forced_read_errno=EIO;
+    assert(vcdRemoveRaModule("")==-2 && access("POPS/MODULE_9.IRX",0)==0);
+    forced_read_errno=0;
+    f=fopen("POPS/MODULE_9.IRX","wb");fputs("RIPTRA01",f);fclose(f);
+    forced_open_errno=EINTR;
+    assert(vcdRemoveRaModule("")==-2 && access("POPS/MODULE_9.IRX",0)==0);
+    forced_open_errno=0;
+    assert(vcdRemoveRaModule("")==0);
+    puts("PASS: absent FatFs module needs no warning; failures remain guarded; user and RA modules preserved");
+    puts("PASS: user module preserved; owned module across read boundary; delete, continue anyway and cancel choices");
+}
+''')
+
+    source = re.sub(r'^#include.*$', '', (root/'src/sources/rapopslaunch.cpp').read_text(), flags=re.M)
+    run('prepare', r'''
+/* constexpr: compiled as C++, like the source */
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include "modules/network/common/rapops_cfg.h"
+#define RETROACHIEVEMENTS
+#define RA_MODE_CADUCEUS 1
+static int gRATelemetry=1, gRAMode=1, count=1, network=1;
+static int link_up=1, dhcp_ready=1, session_ready=1;
+static void raLaunchNetworkUp(void) { if (!link_up || !dhcp_ready || (gRAMode==1 && !session_ready)) count=0; }
+static int gRAHostIp[4];
+static unsigned char rapops_irx[sizeof(struct rapops_cfg)];
+static int size_rapops_irx=sizeof(rapops_irx);
+/* The six modules rapops starts; sizes are set per case. */
+static unsigned char ps2dev9_irx[64*1024], smsutils_irx[16], ingame_smstcpip_irx[16], smap_ingame_irx[16], raudp_irx[16], rapull_irx[16];
+static int size_ps2dev9_irx=11, size_smsutils_irx=13, size_ingame_smstcpip_irx=16, size_smap_ingame_irx=1, size_raudp_irx=16, size_rapull_irx=5;
+static int raVcdWatchKey(const char *p,char *s,int n) {(void)p;snprintf(s,n,"P123456789abcde");return 0;}
+static int good_guard=1;
+static int raHashVcd(const char *p,char *boot,int n,char *hash)
+    {(void)p;snprintf(boot,n,"SLUS_012.15");snprintf(hash,33,"123456789abcdef0123456789abcdef0");return 0;}
+static int raVcdWatchGuardMatches(const char *r,const char *k,const char *h)
+    {(void)r;(void)k;(void)h;return good_guard;}
+static char loaded_key[16];
+static int sbReadWatchList(const char *p,const char *s) {(void)p;snprintf(loaded_key,sizeof(loaded_key),"%s",s);return count;}
+static int GetWatchCount(void) {return count;}
+static int GetWatchBytes(void) {return 4;}
+static int GetNodeCount(void) {return 0;}
+static unsigned int *GetWatchList(void) {static unsigned int w=RA_WATCH_PACK(15,4);return &w;}
+static struct ra_node *GetNodeList(void) {return NULL;}
+static unsigned int raNetPeerIP(void) {return 0;}
+static int ethGetNetConfig(unsigned char *ip,unsigned char *m,unsigned char *g) {
+    ip[0]=192;ip[1]=168;ip[2]=1;ip[3]=2;memset(m,255,4);memset(g,0,4);return network ? 0 : -1;
+}
+/* Match PS2 FAT's actual behavior: exclusive creation is ignored. */
+static int fail_create, fail_write;
+static int fat_open(const char *p,int flags,int mode) {
+    if (fail_create) { errno=EACCES; return -1; }
+    return open(p,flags & ~O_EXCL,mode);
+}
+static ssize_t fat_write(int fd,const void *data,size_t count) {
+    if (fail_write) { errno=ENOSPC; return -1; }
+    return write(fd,data,count);
+}
+#define open fat_open
+#define write fat_write
+''' + source + r'''
+static struct rapops_cfg cfg;
+static void read_back(void) {
+    FILE *f=fopen("POPS/MODULE_9.IRX","rb");
+    assert(f && fread(&cfg,1,sizeof(cfg),f)==sizeof(cfg));fclose(f);
+}
+int main(void) {
+    memcpy(rapops_irx,RAPOPS_MAGIC,8);
+    memset(ps2dev9_irx,0xd9,sizeof(ps2dev9_irx));memset(rapull_irx,0x9b,sizeof(rapull_irx));
+    FILE *f=fopen("POPS/MODULE_9.IRX","wb");fputs("user module",f);fclose(f);
+    assert(raPopsPrepare("","","game.vcd",0)<0);
+    char buf[32]={0};f=fopen("POPS/MODULE_9.IRX","rb");assert(fread(buf,1,sizeof(buf),f)>0);fclose(f);
+    assert(!strcmp(buf,"user module"));
+    count=0;assert(raPopsPrepare("","","game.vcd",0)==0);
+    count=1;gRATelemetry=0;assert(raPopsPrepare("","","game.vcd",0)==0);
+    gRATelemetry=1;good_guard=0;
+    assert(raPopsPrepare("","","game.vcd",0)==0); /* A stale list never blocks a normal launch. */
+    good_guard=1;
+    unlink("POPS/MODULE_9.IRX");
+    network=0;assert(raPopsPrepare("","","game.vcd",1)==0);
+    assert(access("POPS/MODULE_9.IRX",0)!=0); /* Offline plays without tracking. */
+    network=1;
+    link_up=0;assert(raPopsPrepare("","","game.vcd",0)==0);assert(access("POPS/MODULE_9.IRX",0)<0);
+    link_up=1;count=1;dhcp_ready=0;assert(raPopsPrepare("","","game.vcd",1)==0);assert(access("POPS/MODULE_9.IRX",0)<0);
+    dhcp_ready=1;count=1;session_ready=0;assert(raPopsPrepare("","","game.vcd",1)==0);assert(access("POPS/MODULE_9.IRX",0)<0);
+    session_ready=1;count=1;gRAHostIp[0]=10;
+    assert(raPopsPrepare("","","game.vcd",1)==0);
+    read_back();
+    assert(cfg.host_pinned==1 && cfg.client_mode==1 && cfg.count==1 && cfg.bytes==4 && !strcmp(cfg.game_id,"P123456789abcde"));
+    assert(!strcmp(loaded_key,cfg.game_id) && !strcmp(cfg.host,"10.0.0.0"));
+    assert(!memcmp(cfg.ipcfg,"192.168.1.2\0" "255.255.255.255\0" "0.0.0.0",cfg.ipcfg_len));
+    /* Every module present, in load order, 16-byte aligned and intact. */
+    assert(cfg.blob_off[RAPOPS_DEV9]==0 && cfg.blob_size[RAPOPS_DEV9]==11);
+    for (int i=1;i<RAPOPS_BLOBS;i++)
+        assert(cfg.blob_off[i]%16==0 && cfg.blob_off[i]>=cfg.blob_off[i-1]+cfg.blob_size[i-1] && cfg.blob_size[i]);
+    assert(cfg.blob_off[RAPOPS_RAPULL]==80 && cfg.blob_size[RAPOPS_RAPULL]==5);
+    assert(cfg.blob[0]==0xd9 && cfg.blob[10]==0xd9 && cfg.blob[80]==0x9b && cfg.blob[84]==0x9b);
+    unlink("POPS/MODULE_9.IRX");
+    /* Modules that do not fit, or one that is missing, launch untracked and write nothing. */
+    size_ps2dev9_irx=RAPOPS_BLOB_BYTES-48;
+    assert(raPopsPrepare("","","game.vcd",1)==0 && access("POPS/MODULE_9.IRX",0)<0);
+    size_ps2dev9_irx=RAPOPS_BLOB_BYTES-80;
+    assert(raPopsPrepare("","","game.vcd",1)==0);
+    read_back();
+    assert(cfg.blob_off[RAPOPS_RAPULL]+cfg.blob_size[RAPOPS_RAPULL]<=RAPOPS_BLOB_BYTES);
+    unlink("POPS/MODULE_9.IRX");
+    size_ps2dev9_irx=11;size_rapull_irx=0;
+    assert(raPopsPrepare("","","game.vcd",1)==0 && access("POPS/MODULE_9.IRX",0)<0);
+    size_rapull_irx=5;
+    fail_create=1;
+    assert(raPopsPrepare("","","game.vcd",1)==0);
+    assert(access("POPS/MODULE_9.IRX",0)<0);
+    fail_create=0;
+    fail_write=1;
+    assert(raPopsPrepare("","","game.vcd",1)==0);
+    assert(access("POPS/MODULE_9.IRX",0)<0); /* Partial module removed. */
+    fail_write=0;
+    memset(rapops_irx,0,sizeof(rapops_irx));
+    assert(raPopsPrepare("","","game.vcd",1)==0); /* Absent embedded magic. */
+    assert(access("POPS/MODULE_9.IRX",0)<0);
+    puts("PASS: occupied user slot preserved even when O_EXCL is ignored; modules packed aligned, oversize or missing launches untracked; create/write/config errors fail open");
+}
+''')
+
+    source = re.sub(r'^#include.*$', '', (root/'modules/network/rapull/rapull.c').read_text(), flags=re.M)
+    source = source[:source.index('static void rp_thread(')]
+    run('snapshot', r'''
+#include <assert.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdint.h>
+#include "modules/network/common/ra_snap.h"
+#include "modules/network/common/ra_watch.h"
+typedef uint32_t u32;
+typedef uint8_t u8;
+typedef int SifRpcReceiveData_t;
+#define IRX_ID(a,b,c)
+#define ALLOC_FIRST 0
+static unsigned char ram[0x200000];
+static int fail;
+static void *AllocSysMemory(int a,int b,void *c) {(void)a;(void)c;return calloc(1,b);}
+static void FreeSysMemory(void *p) {free(p);}
+static int sceSifGetOtherData(void *a,void *b,void *c,int d,int e) {
+    (void)a;(void)e;
+    if(fail)return -1;
+    memcpy(c,ram+((uintptr_t)b-0x1000000),d);return 0;
+}
+''' + source + r'''
+int main(void) {
+    u32 entries[]={RA_WATCH_PACK(15,4), RA_WATCH_PACK(0x1fffff,1)};
+    unsigned char snap[RA_SNAP_TOTAL]={0};
+    rp_snap=(void *)snap;rp_list=entries;rp_count=2;rp_bytes=5;
+    assert(rp_hex_at("0000000f",0,8)==15);
+    assert(rp_setup());
+    ram[15]=1;ram[16]=2;ram[17]=3;ram[18]=4;ram[0x1fffff]=7;
+    rp_frames=1;rp_frame_values(1);
+    assert(rp_snap->magic==RA_SNAP_MAGIC && rp_snap->bytes==5);
+    assert(!memcmp(snap+RA_SNAP_HDR,"\1\2\3\4\7",5));
+    u32 seq=rp_snap->seq;
+    fail=1;rp_frame_values(1);
+    assert(rp_snap->seq==seq && rp_fail==1);
+    fail=0;ram[15]=8;rp_frame_values(1);
+    assert(rp_snap->seq==seq+1 && snap[RA_SNAP_HDR]==8);
+    assert(*(u32 *)(snap+RA_SNAP_TRAILER_OFF(5))==rp_snap->seq);
+    puts("PASS: PS1 read windows, unaligned and last-byte reads, failed read suppresses frame, recovery and trailer");
+}
+''')

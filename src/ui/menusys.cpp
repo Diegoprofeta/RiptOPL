@@ -2402,8 +2402,31 @@ void menuHandleInputGameMenu()
             int gid = selected_item->item->current->item.id;
 
             if (menuSelectedRowView(support) == LIB_VIEW_PS1) {
-                // PS1/VCD rows launch through POPSTARTER or Ember, never ee_core.
-                guiShowRANotice(_l(_STR_RA_NA_PS1), NULL);
+                /* PS1 rows never reach ee_core. A USB VCD carries its own telemetry module into
+                   POPStarter (rapopslaunch.cpp); Ember rows and other devices are untracked. */
+                item_list_t ownerView;
+                item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(gid, &ownerView) : support;
+                base_game_info_t *g = NULL;
+                const char *prefix = owner != NULL && gsOf(owner)->hasPrefix() ? gsOf(owner)->prefix(owner) : NULL;
+                base_game_info_t favorite;
+
+                if (support->mode == FAV_MODE) {
+                    if (favGetItemKind(gid) == FAV_KIND_VCD) {
+                        memset(&favorite, 0, sizeof(favorite));
+                        snprintf(favorite.name, sizeof(favorite.name), "%s", gsOf(support)->name(support, gid));
+                        strcpy(favorite.extension, ".VCD");
+                        favorite.format = GAME_FORMAT_ISO;
+                        g = &favorite;
+                    }
+                } else if (gsOf(support)->hasGame())
+                    g = (base_game_info_t *)gsOf(support)->game(support, gid);
+                if (owner != NULL && bdmModeIsUSB(owner->mode) && g && g->name[0] && prefix && !strcasecmp(g->extension, ".VCD")) {
+                    if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
+                        guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+                    else
+                        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+                } else
+                    guiShowRANotice(_l(_STR_PS1_RA_USB_REQUIRED), NULL);
             } else if (bdmModeIsPCCF(support->mode)) {
                 // CF owns DEV9 in game, so the RA network modules never load beside it.
                 guiShowRANotice(_l(_STR_PCCF_UNSUPPORTED_GAME), NULL);

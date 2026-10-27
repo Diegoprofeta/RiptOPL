@@ -140,8 +140,10 @@ IMPORT_BIN2C(udpfs_ioman_irx);
 IMPORT_BIN2C(smap_ingame_irx);
 
 #ifdef RETROACHIEVEMENTS
-/* RetroAchievements telemetry sender; embedded only in the RA flavour. */
+/* RetroAchievements telemetry sender, and the POPStarter pair (rapops, rapull); RA flavour only. */
 IMPORT_BIN2C(raudp_irx);
+IMPORT_BIN2C(rapops_irx);
+IMPORT_BIN2C(rapull_irx);
 #endif
 
 IMPORT_BIN2C(smb_mcemu_irx);

@@ -952,6 +952,8 @@ void MmceSource::launchVcd(item_list_t *itemList, const char *vcdName, config_se
 
     char vcdFullPath[256];
     snprintf(vcdFullPath, sizeof(vcdFullPath), "%sPOPS/%s.VCD", ps1Root, vcdName);
+    if (!vcdConfirmCleanLaunch(ps1Root)) // a module left by a tracked USB launch reports stale telemetry
+        return;
     vcdPrepareRetroGemBarcode(vcdFullPath);
     // Keep the MMCE game device plus any distinct custom POPSTARTER.ELF backend through handoff.
     host::app().deinitEx(sbLoaderDeinitException(vcdElf), itemList->mode, host::app().pathToMode(vcdElf));

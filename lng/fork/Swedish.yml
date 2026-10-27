@@ -619,3 +619,9 @@ translations:
   XERA_USE_LIBRARY: Bläddra i det här spelet via RetroAchievements-biblioteket i huvudmenyn.
   XERA_SET_CLOCK: Inte i ditt RetroAchievements-bibliotek ännu. Ställ in konsolens klocka i systeminställningarna för att se hela listan, eller spela det en gång med prestationer.
   RA_NEUTRINO_UNTRACKED: Neutrino RA är inte tillgängligt för den här starten. Kontrollera RA-körmiljön, hjälparens IP och den sparade bevakningslistan. Startar utan prestationer.
+  PS1_RA_USB_REQUIRED: PS1-prestationer kräver en USB-VCD via POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Kan inte ta bort den tidigare PS1-prestationsmodulen
+  PS1_RA_PREPARE_FAILED: Kan inte förbereda PS1-prestationer. Behåll eller flytta POPS/MODULE_9.IRX och kontrollera enhetens skrivbehörighet.
+  PS1_RA_CLEAN_DELETE: 'Oanvänd RA-modul från RiptOPL: POPS/MODULE_9.IRX. Ta bort för en ren start?'
+  PS1_RA_CLEAN_FAILED: Kan inte ta bort den oanvända RA-modulen.
+  PS1_RA_CLEAN_CONTINUE: Fortsätta ändå? En kvarlämnad RA-modul kan köra inaktuell telemetri. Nej avbryter starten.

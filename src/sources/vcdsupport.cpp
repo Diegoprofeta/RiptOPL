@@ -2893,3 +2893,83 @@ void vcdPrepareRetroGemBarcode(const char *vcdPath)
         displayRetroGemGameID(gameID, 2);
     }
 }
+
+/* POPS/MODULE_9.IRX is the slot the RA edition writes rapops into for a tracked USB VCD launch.
+   Only a file carrying rapops' block magic is RiptOPL's; anything else belongs to the user and is
+   never deleted or overwritten. 0: absent, 1: ours (kept), -1: the user's, -2: cannot tell. */
+static int vcdRaModuleStatus(const char *root, int removeOwned)
+{
+    char path[256];
+    static unsigned char buf[4096];
+    const char magic[] = "RIPTRA01";
+    int fd, got, matched = 0, owned = 0;
+
+    if (snprintf(path, sizeof(path), "%sPOPS%cMODULE_9.IRX", root, vcdSep(root)) >= (int)sizeof(path))
+        return -2;
+    errno = 0;
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        char dirPath[256];
+        DIR *dir;
+        struct dirent *entry;
+        int readErr;
+
+        if (errno == ENOENT)
+            return 0;
+        // Only FatFs's leaked FR_NO_FILE (4) is ambiguous here: libcglue maps -4 to errno 4
+        // (EINTR). Any other error is a real I/O error and keeps the warning.
+        if (errno != EINTR)
+            return -2;
+        // Confirm absence from the readable POPS directory; a failed open never proves it.
+        if (snprintf(dirPath, sizeof(dirPath), "%sPOPS", root) >= (int)sizeof(dirPath))
+            return -2;
+        dir = opendir(dirPath);
+        if (dir == NULL)
+            return -2;
+        do {
+            errno = 0;
+            entry = readdir(dir);
+            if (entry != NULL && strcasecmp(entry->d_name, "MODULE_9.IRX") == 0) {
+                closedir(dir);
+                return -2; // a module exists but cannot be opened: keep the warning
+            }
+        } while (entry != NULL);
+        readErr = errno;
+        if (closedir(dir) < 0 || readErr != 0)
+            return -2; // unreadable or incomplete listing: absence is not proven
+        return 0;
+    }
+    while (!owned && (got = read(fd, buf, sizeof(buf))) > 0) {
+        for (int i = 0; i < got && !owned; i++) {
+            if (buf[i] == (unsigned char)magic[matched])
+                owned = ++matched == 8;
+            else
+                matched = buf[i] == (unsigned char)magic[0] ? 1 : 0;
+        }
+    }
+    close(fd);
+    if (!owned)
+        return got < 0 ? -2 : -1;
+    if (!removeOwned)
+        return 1;
+    return unlink(path) == 0 ? 0 : -2;
+}
+
+int vcdRemoveRaModule(const char *root)
+{
+    return vcdRaModuleStatus(root, 1);
+}
+
+int vcdConfirmCleanLaunch(const char *root)
+{
+    int status = vcdRaModuleStatus(root, 0);
+
+    if (status == 0 || status == -1)
+        return 1; // absent or the user's: ordinary modules stay untouched
+    if (status == 1 && host::ui().msgBox(_l(_STR_PS1_RA_CLEAN_DELETE), 1, NULL)) {
+        if (vcdRemoveRaModule(root) == 0)
+            return 1;
+        host::ui().msgBox(_l(_STR_PS1_RA_CLEAN_FAILED), 0, NULL);
+    }
+    return host::ui().msgBox(_l(_STR_PS1_RA_CLEAN_CONTINUE), 1, NULL);
+}

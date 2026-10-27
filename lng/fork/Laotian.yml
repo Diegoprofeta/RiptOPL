@@ -668,3 +668,9 @@ translations:
   XERA_USE_LIBRARY: ທ່ອງເບິ່ງເກມນີ້ ຜ່ານຫ້ອງສະໝຸດ RetroAchievements ໃນເມນູຫຼັກ.
   XERA_SET_CLOCK: ຍັງບໍ່ຢູ່ໃນຫ້ອງສະໝຸດ RetroAchievements ຂອງທ່ານ. ຕັ້ງໂມງເຄື່ອງ ໃນການຕັ້ງຄ່າລະບົບ ເພື່ອເບິ່ງລາຍຊື່ເຕັມ, ຫຼື ຫຼິ້ນມັນ ໜຶ່ງເທື່ອ ພ້ອມຄວາມສຳເລັດ.
   RA_NEUTRINO_UNTRACKED: Neutrino RA ໃຊ້ບໍ່ໄດ້ ສຳລັບການເລີ່ມນີ້. ກວດ RA runtime, IP ຄູ່ ແລະ ລາຍການຕິດຕາມ ທີ່ບັນທຶກ. ເລີ່ມໂດຍບໍ່ມີຄວາມສຳເລັດ.
+  PS1_RA_USB_REQUIRED: ຄວາມສຳເລັດ PS1 ຕ້ອງການ USB VCD ຜ່ານ POPStarter
+  PS1_RA_REMOVE_PREVIOUS: ເອົາໂມດູນ ຄວາມສຳເລັດ PS1 ເກົ່າ ອອກບໍ່ໄດ້
+  PS1_RA_PREPARE_FAILED: ກຽມ ຄວາມສຳເລັດ PS1 ບໍ່ໄດ້. ເກັບ ຫຼື ຍ້າຍ POPS/MODULE_9.IRX ແລະ ກວດສິດຂຽນ ຂອງອຸປະກອນ.
+  PS1_RA_CLEAN_DELETE: 'ໂມດູນ RA ຂອງ RiptOPL ທີ່ບໍ່ໄດ້ໃຊ້: POPS/MODULE_9.IRX. ລົບມັນ ເພື່ອການເລີ່ມທີ່ສະອາດ ບໍ?'
+  PS1_RA_CLEAN_FAILED: ລົບໂມດູນ RA ທີ່ບໍ່ໄດ້ໃຊ້ ບໍ່ໄດ້.
+  PS1_RA_CLEAN_CONTINUE: ສືບຕໍ່ ຢູ່ດີ ບໍ? ໂມດູນ RA ທີ່ຄ້າງ ອາດເຮັດໃຫ້ ເທເລເມທຣີເກົ່າ ເຮັດວຽກ. ບໍ່ ຍົກເລີກການເລີ່ມ.

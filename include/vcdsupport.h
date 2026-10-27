@@ -290,6 +290,12 @@ vcd_popsnet_ensure_t vcdPreparePopstarterSmbLaunch(const char *smbPrefix);
 // Render the RetroGEM Game ID optical barcode immediately prior to a POPStarter VCD launch.
 void vcdPrepareRetroGemBarcode(const char *vcdPath);
 
+// POPS/MODULE_9.IRX left by an RA launch (rapops): 0 absent or removed, -1 the user's own module
+// (never touched), -2 cannot tell or cannot remove. vcdConfirmCleanLaunch asks before an ordinary
+// launch whether to delete RiptOPL's; 0 means the user cancelled the launch.
+int vcdRemoveRaModule(const char *root);
+int vcdConfirmCleanLaunch(const char *root);
+
 // ---- module runtime state -------------------------------------------------------------
 // The one VcdSupport instance (src/sources/vcdsupport.cpp) owns the mutable state this module keeps
 // between calls: the session disc-id memo + the single async resolve-request slot (issue #380) and

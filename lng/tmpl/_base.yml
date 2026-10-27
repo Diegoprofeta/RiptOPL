@@ -1856,3 +1856,17 @@ gui_strings:
 # RA through Neutrino: the RA kit's ORBIT runtime cannot take this launch (sysNeutrinoPrepareRA).
 - label: RA_NEUTRINO_UNTRACKED
   string: "Neutrino RA is unavailable for this launch. Check the RA runtime, companion IP and saved watch list. Launching without achievements."
+# RA PS1: rapops in POPS/MODULE_9.IRX for tracked USB VCD launches (rapopslaunch.cpp); the clean-up
+# prompts run in every edition, since a module an RA launch left behind would start with any POPStarter.
+- label: PS1_RA_USB_REQUIRED
+  string: "PS1 achievements require a USB VCD through POPStarter"
+- label: PS1_RA_REMOVE_PREVIOUS
+  string: "Cannot remove the previous PS1 achievement module"
+- label: PS1_RA_PREPARE_FAILED
+  string: "Cannot prepare PS1 achievements. Preserve or move POPS/MODULE_9.IRX and check device write access."
+- label: PS1_RA_CLEAN_DELETE
+  string: "Unused RiptOPL RA module: POPS/MODULE_9.IRX. Delete for a clean launch?"
+- label: PS1_RA_CLEAN_FAILED
+  string: "Cannot delete the unused RA module."
+- label: PS1_RA_CLEAN_CONTINUE
+  string: "Continue anyway? A leftover RA module can run stale telemetry. No cancels launch."

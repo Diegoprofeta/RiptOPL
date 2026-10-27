@@ -601,3 +601,9 @@ translations:
   XERA_USE_LIBRARY: Navegue por este jogo pela biblioteca do RetroAchievements no menu principal.
   XERA_SET_CLOCK: Ainda não está na sua biblioteca do RetroAchievements. Acerte o relógio da consola nas definições do sistema para ver a lista completa, ou jogue uma vez com conquistas.
   RA_NEUTRINO_UNTRACKED: O RA no Neutrino não está disponível neste início. Verifique o módulo RA, o IP do companheiro e a lista de acompanhamento guarda. Iniciando sem conquistas.
+  PS1_RA_USB_REQUIRED: Conquistas de PS1 precisam de um VCD no USB pelo POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Não foi possível remover o módulo de conquistas de PS1 anterior
+  PS1_RA_PREPARE_FAILED: Não foi possível preparar as conquistas de PS1. Mantenha ou mova POPS/MODULE_9.IRX e verifique a permissão de gravação da unidade.
+  PS1_RA_CLEAN_DELETE: 'Módulo RA do RiptOPL sem uso: POPS/MODULE_9.IRX. Apagar para um início limpo?'
+  PS1_RA_CLEAN_FAILED: Não foi possível apagar o módulo RA sem uso.
+  PS1_RA_CLEAN_CONTINUE: Continuar mesmo assim? Um módulo RA que sobrou pode enviar telemetria velha. Não cancela o início.

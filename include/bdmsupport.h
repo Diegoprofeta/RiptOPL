@@ -125,6 +125,7 @@ int bdmEnsureTypedSource(int bdmType, u32 timeoutMs);
 int bdmGetLoadedNetProtocol(void);
 int bdmSupportIsUDPBD(const item_list_t *support); // 1 if this support is the UDPBD block device (its games are Neutrino-only)
 int bdmModeIsPCCF(int mode);                       // 1 if this BDM mode slot is the PC CARD CF device
+int bdmModeIsUSB(int mode);                        // 1 if this BDM mode slot is a USB mass-storage device
 int bdmModeIsUDPBD(int mode);                      // 1 if this BDM mode slot is the UDPBD block device
 // Native-core verdict (NATIVE_VMC_*) on an open VMC: one extent covering the card, inside 32-bit LBAs.
 int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragments);

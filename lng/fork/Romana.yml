@@ -653,3 +653,9 @@ translations:
   XERA_USE_LIBRARY: Răsfoiește acest joc prin biblioteca RetroAchievements din meniul principal.
   XERA_SET_CLOCK: Încă nu este în biblioteca ta RetroAchievements. Setează ceasul consolei în setările sistemului ca să îi vezi lista completă sau joacă-l o dată cu realizări.
   RA_NEUTRINO_UNTRACKED: Neutrino RA nu este disponibil pentru această lansare. Verifică mediul de rulare RA, IP-ul însoțitorului și lista de urmărire salvată. Se lansează fără realizări.
+  PS1_RA_USB_REQUIRED: Realizările PS1 necesită un VCD pe USB prin POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Modulul anterior de realizări PS1 nu poate fi eliminat
+  PS1_RA_PREPARE_FAILED: Realizările PS1 nu pot fi pregătite. Păstrează sau mută POPS/MODULE_9.IRX și verifică dreptul de scriere al dispozitivului.
+  PS1_RA_CLEAN_DELETE: 'Modul RA RiptOPL nefolosit: POPS/MODULE_9.IRX. Îl ștergi pentru o lansare curată?'
+  PS1_RA_CLEAN_FAILED: Modulul RA nefolosit nu poate fi șters.
+  PS1_RA_CLEAN_CONTINUE: Continui oricum? Un modul RA rămas poate rula telemetrie învechită. Nu anulează lansarea.

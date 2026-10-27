@@ -598,3 +598,9 @@ translations:
   XERA_USE_LIBRARY: 이 게임은 메인 메뉴의 RetroAchievements 라이브러리에서 둘러보세요.
   XERA_SET_CLOCK: 아직 RetroAchievements 라이브러리에 없습니다. 전체 목록을 보려면 시스템 설정에서 본체 시계를 맞추거나, 업적과 함께 한 번 플레이하세요.
   RA_NEUTRINO_UNTRACKED: 이번 실행에서는 Neutrino RA를 쓸 수 없습니다. RA 런타임, 컴패니언 IP, 저장된 추적 목록을 확인하세요. 업적 없이 실행합니다.
+  PS1_RA_USB_REQUIRED: PS1 업적에는 POPStarter를 통한 USB VCD가 필요합니다
+  PS1_RA_REMOVE_PREVIOUS: 이전 PS1 업적 모듈을 제거할 수 없습니다
+  PS1_RA_PREPARE_FAILED: PS1 업적을 준비할 수 없습니다. POPS/MODULE_9.IRX를 보존하거나 옮기고, 장치의 쓰기 권한을 확인하세요.
+  PS1_RA_CLEAN_DELETE: '사용하지 않는 RiptOPL RA 모듈: POPS/MODULE_9.IRX. 깨끗하게 실행하기 위해 삭제할까요?'
+  PS1_RA_CLEAN_FAILED: 사용하지 않는 RA 모듈을 삭제할 수 없습니다.
+  PS1_RA_CLEAN_CONTINUE: 그래도 계속할까요? 남은 RA 모듈이 오래된 텔레메트리를 실행할 수 있습니다. 아니요를 고르면 실행을 취소합니다.

@@ -598,3 +598,9 @@ translations:
   XERA_USE_LIBRARY: このゲームはメインメニューの RetroAchievements ライブラリから閲覧してください。
   XERA_SET_CLOCK: まだ RetroAchievements ライブラリにありません。全リストを見るにはシステム設定で本体の時計を合わせるか、実績付きで一度プレイしてください。
   RA_NEUTRINO_UNTRACKED: 今回の起動では Neutrino RA は使えません。RA ランタイム、コンパニオン IP、保存済みの追跡リストを確認してください。実績なしで起動します。
+  PS1_RA_USB_REQUIRED: PS1 の実績には POPStarter での USB の VCD が必要です
+  PS1_RA_REMOVE_PREVIOUS: 前回の PS1 実績モジュールを削除できません
+  PS1_RA_PREPARE_FAILED: PS1 の実績を準備できません。POPS/MODULE_9.IRX を残すか移動して、デバイスの書き込み権限を確認してください。
+  PS1_RA_CLEAN_DELETE: 使われていない RiptOPL の RA モジュール：POPS/MODULE_9.IRX。きれいに起動するために削除しますか？
+  PS1_RA_CLEAN_FAILED: 使われていない RA モジュールを削除できません。
+  PS1_RA_CLEAN_CONTINUE: それでも続けますか？残った RA モジュールが古いテレメトリーを動かすことがあります。いいえで起動を取り消します。

@@ -112,10 +112,12 @@ Telemetry lives inside OPL's own loader core, which only exists for launches OPL
 | HTTP | local watch-list loading is wired into OPL-core launch; combined HTTP/RA operation is not hardware-validated, and it shares the ETH/SMB risk below |
 | Neutrino core (`$CoreLoader`) | RA kit's ORBIT runtime only (below); **not hardware-tested** |
 | UDPFS | **no** |
-| PS1 / VCD (POPSTARTER, Ember) | **no** |
+| PS1 / USB VCD (POPStarter) | yes, through its own module (below); **NOT TESTED on hardware** |
+| PS1 / Ember, MMCE, APA HDD, SMB and non-USB BDM | **no** |
 
 UDPFS and PS1 hand the console over to an external ELF and never load OPL's core, so there is nothing to
-take a snapshot from. Neutrino does the same, but the RA kit's Neutrino carries its own agent:
+take a snapshot from. A USB VCD carries its own reader into POPStarter instead (see
+[PS1 through USB POPStarter](#ps1-through-usb-popstarter)). Neutrino does the same, but the RA kit's Neutrino carries its own agent:
 
 ### Neutrino in the RA edition
 
@@ -189,6 +191,34 @@ the ones taken from a USB stick.
 
 Note this fixes *hashing*, not play: a game with an achievement set still stops about a minute in
 when streamed from a share, per the section above.
+
+## PS1 through USB POPStarter
+
+Follows the original RiptOPL, which adapted hacan359/Open-PS2-Loader `531aad45` (xeRAbora alpha.16).
+Put a stock `POPS/POPSTARTER.ELF` and the `.VCD` games in the USB device's root `POPS/` folder.
+
+- **Support check.** **RA: check game support** on a USB VCD row (or its favourite) hashes the
+  executable `SYSTEM.CNF` names, with the `PSX.EXE` fallback, as RetroAchievements does for PS1. The
+  watch list is keyed by a 15-character `P` key from the normalized VCD path, since many PS1 images
+  share a boot name, and saved with an `RA/<key>.md5` guard holding the image's hash. Other PS1 rows
+  say that PS1 achievements need a USB VCD.
+- **Launch.** With a list and a matching guard, telemetry on and the network up (the same link, DHCP
+  and Caduceus session checks as a PS2 launch), the loader writes `POPS/MODULE_9.IRX`: `rapops` with the
+  network settings, the watch list and the six modules it starts (DEV9, SMSUTILS, SMSTCPIP, SMAP,
+  `raudp`, `rapull`) packed into its configuration block. POPStarter loads it after its IOP reset;
+  `rapull` reads PS1 RAM through SIF from **25 seconds after launch**, and `raudp` sends the snapshots
+  to the companion. Unlocks show on the companion only.
+- **Fails open.** No list, an old or mismatched guard, telemetry off, no network, low memory, an
+  unwritable slot or modules that do not fit all launch the game untracked. A partly written module
+  is deleted; one that cannot be deleted blocks the launch rather than boot a broken POPStarter.
+- **Your `MODULE_9.IRX` is never touched.** Only a file carrying `rapops`' marker is RiptOPL's. A
+  tracked launch with your module in the slot stops with a message; move it to track the game. The RA
+  build removes its own leftover before every BDM VCD launch. The standard build, and SMB and MMCE VCD
+  launches, ask before deleting one, then offer **Continue anyway**; declining cancels the launch.
+
+Not yet ported from the original: PS1 list badges and the Caduceus browser for a VCD. Host tests
+cover the hashing, module ownership, the handoff and the reader; **none of this
+is tested on a console**, and POPS compatibility is not established by a build.
 
 ## Networking
 

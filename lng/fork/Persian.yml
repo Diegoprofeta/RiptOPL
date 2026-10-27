@@ -832,3 +832,9 @@ translations:
   XERA_USE_LIBRARY: این بازی را از طریق کتابخانه RetroAchievements در منوی اصلی مرور کنید.
   XERA_SET_CLOCK: هنوز در کتابخانه RetroAchievements شما نیست. ساعت کنسول را در تنظیمات سیستم تنظیم کنید تا فهرست کامل آن را ببینید، یا یک بار با دستاوردها آن را بازی کنید.
   RA_NEUTRINO_UNTRACKED: Neutrino RA برای این اجرا در دسترس نیست. محیط اجرای RA، IP همراه و فهرست پایش ذخیره‌شده را بررسی کنید. اجرا بدون دستاوردها.
+  PS1_RA_USB_REQUIRED: دستاوردهای PS1 به VCD روی USB از طریق POPStarter نیاز دارند
+  PS1_RA_REMOVE_PREVIOUS: ماژول دستاورد PS1 قبلی حذف نمی‌شود
+  PS1_RA_PREPARE_FAILED: دستاوردهای PS1 آماده نمی‌شوند. POPS/MODULE_9.IRX را نگه دارید یا جابه‌جا کنید و دسترسی نوشتن دستگاه را بررسی کنید.
+  PS1_RA_CLEAN_DELETE: 'ماژول RA بلااستفاده RiptOPL: POPS/MODULE_9.IRX. برای اجرای تمیز حذف شود؟'
+  PS1_RA_CLEAN_FAILED: ماژول RA بلااستفاده حذف نمی‌شود.
+  PS1_RA_CLEAN_CONTINUE: با این حال ادامه شود؟ یک ماژول RA جامانده ممکن است تله‌متری کهنه را اجرا کند. خیر اجرا را لغو می‌کند.

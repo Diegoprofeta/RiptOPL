@@ -619,3 +619,9 @@ translations:
   XERA_USE_LIBRARY: Pregledaj ovu igru preko RetroAchievements knjižnice u glavnom izborniku.
   XERA_SET_CLOCK: Još nije u tvojoj RetroAchievements knjižnici. Postavi sat konzole u postavkama sustava da vidiš puni popis ili je odigraj jednom s postignućima.
   RA_NEUTRINO_UNTRACKED: Neutrino RA nije dostupan za ovo pokretanje. Provjeri RA okruženje, IP pratitelja i spremljeni popis praćenja. Pokretanje bez postignuća.
+  PS1_RA_USB_REQUIRED: PS1 postignuća zahtijevaju USB VCD preko POPStartera
+  PS1_RA_REMOVE_PREVIOUS: Prethodni PS1 modul postignuća ne može se ukloniti
+  PS1_RA_PREPARE_FAILED: PS1 postignuća ne mogu se pripremiti. Sačuvaj ili premjesti POPS/MODULE_9.IRX i provjeri pristup za pisanje na uređaj.
+  PS1_RA_CLEAN_DELETE: 'Nekorišteni RiptOPL RA modul: POPS/MODULE_9.IRX. Izbrisati ga za čisto pokretanje?'
+  PS1_RA_CLEAN_FAILED: Nekorišteni RA modul ne može se izbrisati.
+  PS1_RA_CLEAN_CONTINUE: Svejedno nastaviti? Zaostali RA modul može pokrenuti zastarjelu telemetriju. Ne otkazuje pokretanje.

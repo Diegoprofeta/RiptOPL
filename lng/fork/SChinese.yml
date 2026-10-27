@@ -599,3 +599,9 @@ translations:
   XERA_USE_LIBRARY: 请在主菜单中通过 RetroAchievements 游戏库浏览这个游戏。
   XERA_SET_CLOCK: 尚不在你的 RetroAchievements 游戏库中。请在系统设置中设置主机时钟以查看完整列表，或带成就玩一次。
   RA_NEUTRINO_UNTRACKED: 这次启动无法使用 Neutrino RA。请检查 RA 运行模块、伴侣 IP 和已保存的追踪列表。将不带成就启动。
+  PS1_RA_USB_REQUIRED: PS1 成就需要通过 POPStarter 运行 USB 上的 VCD
+  PS1_RA_REMOVE_PREVIOUS: 无法移除之前的 PS1 成就模块
+  PS1_RA_PREPARE_FAILED: 无法准备 PS1 成就。请保留或移动 POPS/MODULE_9.IRX，并检查设备的写入权限。
+  PS1_RA_CLEAN_DELETE: 未使用的 RiptOPL RA 模块：POPS/MODULE_9.IRX。删除它以便干净启动吗？
+  PS1_RA_CLEAN_FAILED: 无法删除未使用的 RA 模块。
+  PS1_RA_CLEAN_CONTINUE: 仍要继续吗？残留的 RA 模块可能发送过时的遥测。选否会取消启动。

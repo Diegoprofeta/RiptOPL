@@ -662,3 +662,9 @@ translations:
   XERA_USE_LIBRARY: Blader door deze game via de RetroAchievements-bibliotheek in het hoofdmenu.
   XERA_SET_CLOCK: Nog niet in je RetroAchievements-bibliotheek. Stel de klok van de console in bij de systeeminstellingen om de volledige lijst te zien, of speel het één keer met prestaties.
   RA_NEUTRINO_UNTRACKED: Neutrino RA is niet beschikbaar voor deze start. Controleer de RA-runtime, het hulp-IP en de opgeslagen volglijst. Starten zonder prestaties.
+  PS1_RA_USB_REQUIRED: PS1-prestaties vereisen een USB-VCD via POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Kan de vorige PS1-prestatiemodule niet verwijderen
+  PS1_RA_PREPARE_FAILED: Kan PS1-prestaties niet voorbereiden. Bewaar of verplaats POPS/MODULE_9.IRX en controleer de schrijftoegang van het apparaat.
+  PS1_RA_CLEAN_DELETE: 'Ongebruikte RA-module van RiptOPL: POPS/MODULE_9.IRX. Verwijderen voor een schone start?'
+  PS1_RA_CLEAN_FAILED: Kan de ongebruikte RA-module niet verwijderen.
+  PS1_RA_CLEAN_CONTINUE: Toch doorgaan? Een achtergebleven RA-module kan verouderde telemetrie uitvoeren. Nee annuleert het starten.

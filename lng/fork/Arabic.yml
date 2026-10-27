@@ -652,3 +652,9 @@ translations:
   XERA_USE_LIBRARY: تصفح هذه اللعبة عبر مكتبة RetroAchievements في القائمة الرئيسية.
   XERA_SET_CLOCK: ليست في مكتبة RetroAchievements الخاصة بك بعد. اضبط ساعة الجهاز في إعدادات النظام لترى قائمتها الكاملة، أو العبها مرة واحدة مع الإنجازات.
   RA_NEUTRINO_UNTRACKED: Neutrino RA غير متاح لهذا التشغيل. افحص بيئة RA وعنوان IP للمرافق وقائمة المراقبة المحفوظة. التشغيل دون إنجازات.
+  PS1_RA_USB_REQUIRED: تحتاج إنجازات PS1 إلى VCD على USB عبر POPStarter
+  PS1_RA_REMOVE_PREVIOUS: تعذّرت إزالة وحدة إنجازات PS1 السابقة
+  PS1_RA_PREPARE_FAILED: تعذّر تجهيز إنجازات PS1. احتفظ بـ POPS/MODULE_9.IRX أو انقله وافحص صلاحية الكتابة على الجهاز.
+  PS1_RA_CLEAN_DELETE: 'وحدة RA غير مستخدمة من RiptOPL: POPS/MODULE_9.IRX. حذفها لتشغيل نظيف؟'
+  PS1_RA_CLEAN_FAILED: تعذّر حذف وحدة RA غير المستخدمة.
+  PS1_RA_CLEAN_CONTINUE: المتابعة على أي حال؟ قد تشغّل وحدة RA متبقية قياساً قديماً. لا يلغي التشغيل.

@@ -40,7 +40,17 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         for target in (main, core):
             add(target, "defines", "RETROACHIEVEMENTS")
         add(main, "sources", "src/platform/md5.c", *[
-            f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport", "achievements")])
+            f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport", "achievements",
+                                                   "rapopslaunch")])
+        # USB PS1 under POPStarter: rapops is written as POPS/MODULE_9.IRX and starts the network
+        # modules the loader copies into it, then rapull, which reads the game's RAM from the IOP.
+        headers = targets["raudp"]["headers"]
+        for name in ("rapull", "rapops"):
+            config["targets"].append({"name": name, "type": "iop", "sources": [f"modules/network/{name}/{name}.c"],
+                                      "include_dirs": [f"modules/network/{name}/", "modules/network/common",
+                                                       "modules/iopcore/common"],
+                                      "headers": headers, "imports_lst": f"modules/network/{name}/imports.lst"})
+        add(main, "embed_irx", "rapull", "rapops")
         add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c", "ee_core/src/ra_pulse.c")
         # mbedTLS 3.6.7 (third_party/mbedtls, Apache-2.0) for the HTTPS game-ID lookup. RA only:
         # the other editions must not contain it (test_mbedtls_vendor.py).

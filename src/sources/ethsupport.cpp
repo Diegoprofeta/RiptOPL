@@ -813,6 +813,8 @@ void EthSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
     char separator = (prefixLen > 0 && gEthSupport.prefix()[prefixLen - 1] == '\\') ? '\\' : '/';
     char vcdFullPath[256];
     snprintf(vcdFullPath, sizeof(vcdFullPath), "%sPOPS%c%s.VCD", gEthSupport.prefix(), separator, vcdName);
+    if (!vcdConfirmCleanLaunch(gEthSupport.prefix())) // a module left by a tracked USB launch reports stale telemetry
+        return;
     vcdPrepareRetroGemBarcode(vcdFullPath);
     // Keep the SMB game share plus any distinct custom POPSTARTER.ELF backend through handoff.
     host::app().deinitEx(sbLoaderDeinitException(vcdElf), itemList->mode, host::app().pathToMode(vcdElf));

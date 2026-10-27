@@ -603,3 +603,9 @@ translations:
   XERA_USE_LIBRARY: Durchsuche dieses Spiel über die RetroAchievements-Bibliothek im Hauptmenü.
   XERA_SET_CLOCK: Noch nicht in deiner RetroAchievements-Bibliothek. Stelle die Uhr der Konsole in den Systemeinstellungen, um seine ganze Liste zu sehen, oder spiele es einmal mit Erfolgen.
   RA_NEUTRINO_UNTRACKED: Neutrino-RA ist für diesen Start nicht verfügbar. Prüfe das RA-Laufzeitmodul, die Begleiter-IP und die gespeicherte Beobachtungsliste. Ohne Erfolge gestartet.
+  PS1_RA_USB_REQUIRED: PS1-Erfolge brauchen eine VCD auf USB über POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Das vorige PS1-Erfolgsmodul lässt sich nicht entfernen
+  PS1_RA_PREPARE_FAILED: PS1-Erfolge lassen sich nicht vorbereiten. Behalte oder verschiebe POPS/MODULE_9.IRX und prüfe den Schreibzugriff des Laufwerks.
+  PS1_RA_CLEAN_DELETE: 'Unbenutztes RiptOPL-RA-Modul: POPS/MODULE_9.IRX. Für einen sauberen Start löschen?'
+  PS1_RA_CLEAN_FAILED: Das unbenutzte RA-Modul lässt sich nicht löschen.
+  PS1_RA_CLEAN_CONTINUE: Trotzdem weiter? Ein übrig gebliebenes RA-Modul kann veraltete Telemetrie senden. Nein bricht den Start ab.

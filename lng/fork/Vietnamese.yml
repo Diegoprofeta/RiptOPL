@@ -643,3 +643,9 @@ translations:
   XERA_USE_LIBRARY: Hãy duyệt trò chơi này qua thư viện RetroAchievements ở menu chính.
   XERA_SET_CLOCK: Chưa có trong thư viện RetroAchievements của bạn. Hãy đặt đồng hồ máy trong cài đặt hệ thống để xem đủ danh sách, hoặc chơi một lần có thành tích.
   RA_NEUTRINO_UNTRACKED: Lần chạy này không dùng được Neutrino RA. Hãy kiểm tra phần chạy RA, IP đồng hành và danh sách theo dõi đã lưu. Chạy không có thành tích.
+  PS1_RA_USB_REQUIRED: Thành tích PS1 cần VCD trên USB chạy qua POPStarter
+  PS1_RA_REMOVE_PREVIOUS: Không gỡ được mô-đun thành tích PS1 trước đó
+  PS1_RA_PREPARE_FAILED: Không chuẩn bị được thành tích PS1. Hãy giữ hoặc dời POPS/MODULE_9.IRX và kiểm tra quyền ghi của thiết bị.
+  PS1_RA_CLEAN_DELETE: 'Mô-đun RA của RiptOPL không dùng tới: POPS/MODULE_9.IRX. Xóa để chạy sạch?'
+  PS1_RA_CLEAN_FAILED: Không xóa được mô-đun RA không dùng tới.
+  PS1_RA_CLEAN_CONTINUE: Vẫn tiếp tục? Mô-đun RA còn sót có thể chạy đo đạc cũ. Không sẽ hủy việc chạy.
