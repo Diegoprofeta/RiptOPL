@@ -339,18 +339,28 @@ int HddSupport::loadModules()
 
     LOG("[HDD STARTUP DIAG] hddLoadModules entry count=%u loaded=%u\n", modulesLoadCount, modulesLoaded);
 
-    if (modulesLoaded)
+    // The ATA modules are resident for the lifetime of this IOP generation. A readiness
+    // probe is NOT a new DEV9 owner: all HDD entry points share the one sysInitDev9()
+    // reference acquired by the first successful load. A prior non-terminal HDD-page
+    // shutdown may have released the logical page latch, but did not stop DEV9.
+    if (modulesLoaded) {
+        modulesLoadCount = 1;
         retStatus = HDD_LOADMODULES_STATUS_ALREADYLOADED;
-
-    if (modulesLoadCount == 0) {
+    } else if (modulesLoadCount == 0) {
         // Increment the load count as soon as possible to prevent thread scheduling from allowing another thread to
         // call into here and try to double load modules.
         modulesLoadCount = 1;
 
         // DEV9 must be loaded, as HDD.IRX depends on it. Even if not required by the I/F (i.e. HDPro)
         diagBootStageBegin("HDD:DEV9");
-        sysInitDev9();
+        int dev9Ready = sysInitDev9();
         diagBootStageEndVoid("HDD:DEV9");
+        if (!dev9Ready) {
+            sysShutdownDev9();
+            modulesLoadCount = 0;
+            host::app().setError(_STR_HDD_NOT_CONNECTED_ERROR, ERROR_HDD_IF_NOT_DETECTED);
+            return HDD_LOADMODULES_STATUS_ERROR;
+        }
 
         // try to detect HD Pro Kit (not the connected HDD),
         // if detected it loads the specific ATAD module
@@ -415,9 +425,9 @@ int HddSupport::loadModules()
             diagBootStageEndVoid("HDD:SETTLE");
         }
     } else {
-        modulesLoadCount++;
-        if (!modulesLoaded)
-            retStatus = HDD_LOADMODULES_STATUS_BUSYLOADING;
+        // Another caller is still loading the first ATA generation. Do not acquire
+        // a reference or claim success until it publishes modulesLoaded.
+        retStatus = HDD_LOADMODULES_STATUS_BUSYLOADING;
     }
 
     LOG("[HDD STARTUP DIAG] hddLoadModules exit count=%u loaded=%u ret=%d bdm=%d atad=%d xhdd=%d\n",
@@ -2616,23 +2626,22 @@ void HddSupport::shutdownSupportModules()
 void HddSupport::shutdownBaseModules()
 {
     if (modulesLoadCount > 0) {
-        modulesLoadCount -= 1;
-        if (modulesLoadCount == 0) {
-            // DEV9 will remain active if ETH is in use, so put the HDD in IDLE state.
-            // The HDD should still enter standby state after 21 minutes & 15 seconds, as per the ATAD defaults.
-            hddSetIdleImmediate();
-        }
+        // The single logical ATA owner is released once per shutdown. A non-terminal game launch
+        // must NOT idle the HDD: the selected game may still need ATA via BDM (massN:) after this
+        // cleanup, as POPSTARTER's post-deinit ELF read does. The next page entry reuses the
+        // resident modules and the retained DEV9 owner.
+        modulesLoadCount = 0;
 
-        // Only shut down dev9 from here, if it was initialized from here before -- and only on a
-        // TERMINAL teardown (exit/poweroff). On the launch path this shutdown runs for every
-        // non-selected page, and powering DEV9 off here kills the ATA bus BEFORE bdmLaunchVcd's
-        // post-deinit POPSTARTER.ELF read from the ATA-backed massN: mount -- the elf-loader then
-        // returns into deinit'd OPL: the 4236edf6-class black-screen freeze (PCSX2 masks it; its
-        // emulated DEV9 power-off is inert). ee_core/POPSTARTER reset the IOP right after, so the
-        // launch path needs no power-off. Note the refcount asymmetry this also softens: N
-        // hddLoadModules calls take ONE dev9 reference, but every hddShutdown used to drop it.
-        if (gDeinitTerminal)
+        // Only power DEV9 down on a TERMINAL teardown (exit/poweroff). On the launch path this
+        // shutdown runs for every non-selected page, and powering DEV9 off here kills the ATA bus
+        // BEFORE bdmLaunchVcd's post-deinit POPSTARTER.ELF read from the ATA-backed massN: mount --
+        // the elf-loader then returns into deinit'd OPL: the 4236edf6-class black-screen freeze.
+        // On a real exit the flush happened in shutdownSupportModules; idle before dropping our
+        // DEV9 reference, since other users (ETH/UDPBD) may keep DEV9 itself powered.
+        if (gDeinitTerminal) {
+            hddSetIdleImmediate();
             sysShutdownDev9();
+        }
     }
 }
 
