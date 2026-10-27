@@ -101,19 +101,7 @@ def package(edition, neutrino_archive, orbit_archive=None):
         shutil.copyfile(app.EXAMPLE / "EMBER/games/Per-Game-Folder/GAME FILES", games / "GAME FILES")
         if (kit / "EMBER/bios.bin").exists():
             raise ValueError("Ember BIOS must not be redistributed")
-        extractor = shutil.which("7z") or shutil.which("7za")
-        if not extractor:
-            raise ValueError("7z is required for the upstream Neutrino archive")
-        # Inspect members before extraction; never allow an archive to leave its directory.
-        listing = subprocess.check_output([extractor, "l", "-slt", str(neutrino_archive)], text=True)
-        for line in listing.split("----------", 1)[-1].splitlines():
-            if line.startswith("Path = "):
-                name = line[7:].replace("\\", "/")
-                if name.startswith("/") or ":" in name or ".." in name.split("/"):
-                    raise ValueError(f"unsafe Neutrino archive path: {name}")
-            if line.startswith(("Symbolic Link = ", "Hard Link = ")):
-                raise ValueError("Neutrino archive contains a link")
-        if options["ra"]:
+        if options["ra"]:  # ORBIT's runtime replaces upstream Neutrino in the RA kit
             pin = json.loads(ORBIT_PIN.read_text(encoding="utf-8"))
             if orbit_archive is None:
                 orbit_archive = kit.parent / pin["asset"]
@@ -123,6 +111,18 @@ def package(edition, neutrino_archive, orbit_archive=None):
             stage_orbit(orbit_archive, kit / "neutrino", pin)
             neutrino_archive = orbit_archive
         else:
+            extractor = shutil.which("7z") or shutil.which("7za")
+            if not extractor:
+                raise ValueError("7z is required for the upstream Neutrino archive")
+            # Inspect members before extraction; never allow an archive to leave its directory.
+            listing = subprocess.check_output([extractor, "l", "-slt", str(neutrino_archive)], text=True)
+            for line in listing.split("----------", 1)[-1].splitlines():
+                if line.startswith("Path = "):
+                    name = line[7:].replace("\\", "/")
+                    if name.startswith("/") or ":" in name or ".." in name.split("/"):
+                        raise ValueError(f"unsafe Neutrino archive path: {name}")
+                if line.startswith(("Symbolic Link = ", "Hard Link = ")):
+                    raise ValueError("Neutrino archive contains a link")
             subprocess.run([extractor, "x", "-y", "-o" + str(kit / "neutrino"), str(neutrino_archive)], check=True, stdout=subprocess.DEVNULL)
         shutil.copyfile(ROOT / "ship/neutrino/bsd-udpfsbd.toml", kit / "neutrino/config/bsd-udpfsbd.toml")
         # i.LINK: Neutrino's own IEEE1394_bd_mini.irx loses its login after an IOP reset (original
@@ -174,7 +174,7 @@ def package(edition, neutrino_archive, orbit_archive=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("edition", choices=EDITIONS)
-    parser.add_argument("--neutrino-archive", required=True, type=Path)
+    parser.add_argument("--neutrino-archive", required=True, type=Path, help="standard kits: the upstream Neutrino .7z (unused for RA)")
     parser.add_argument("--orbit-archive", type=Path, help="RA only: the pinned ORBIT ZIP (else downloaded)")
     args = parser.parse_args()
     try:
