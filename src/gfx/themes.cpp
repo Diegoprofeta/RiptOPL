@@ -1372,9 +1372,15 @@ static int thmLoad(const char *themePath)
     // element's own _default (or nothing), not our art. Gating the decode also reclaims the ~153 KB
     // of EE RAM on disk themes. The draw-site fallback is additionally gated on the built-in
     // (NULL-prefix) cache in drawAttributeImage, so this can never regress by re-widening one side.
-    if (!themePath)
+    if (!themePath) {
         for (i = ELF_FORMAT; i <= VMODE_PAL; i++)
             thmLoadResource(&newT->textures[i], i, NULL, GS_PSM_CT32, 1);
+#ifdef BUILTIN_KORIUM
+        // Korium's cfgs draw attribute=Players; its badges are outside the ELF_FORMAT..VMODE_PAL range.
+        for (i = PLAYERS_1; i <= PLAYERS_4; i++)
+            thmLoadResource(&newT->textures[i], i, NULL, GS_PSM_CT32, 1);
+#endif
+    }
 
     // Optional settings/menu background (guiDrawBGSettings draws it instead of the plasma).
     // Theme-supplied only for now: a disk theme opts in with use_settings_bg=1 and ships its

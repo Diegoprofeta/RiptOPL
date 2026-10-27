@@ -146,6 +146,8 @@ def embed():
                 destination.write_bytes(data)
     pngs = list(PNG_ASSETS)
     if theme_dir:
+        # inceBtion's app placeholder and foliage layer: Korium maps neither (src/gfx/textures.cpp).
+        pngs = [p for p in pngs if p not in ("coverapp", "case_overlay")]
         pngs += ["apps_case", "case_ps1", "disc_ps1", "Players_1", "Players_2", "Players_3", "Players_4"]
     if os.environ.get("RIPTOPL_RA") == "1":
         pngs += ["ra_mark"]

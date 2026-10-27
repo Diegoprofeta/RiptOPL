@@ -12,6 +12,7 @@ installation folder can still discover settings on another device.
 | Coverflow | Optional built-in `<Coverflow>` theme | Settings → Interface → Theme |
 | PSBBN Flow | Optional built-in `<PSBBN Flow>` theme | Settings → Interface → Theme |
 | Cover and disc artwork | On | Settings → Interface → Artwork Settings |
+| Per-game background art | Off in Korium and RetroAchievements (as the original's Korium); On in IncebtIon | Settings → Interface → Artwork Settings |
 | Notifications | On | Settings → Interface |
 | PS2 logo | On | Settings → Game Launching |
 | Sound effects, boot sound, background music | Off; stored volume 90 | Settings → Audio Settings |
