@@ -111,8 +111,18 @@ static int dechunk(char *body, int len, int write)
         if (end == body + in || size < 0)
             return -1;
         in = eol + 2;
-        if (size == 0)
-            return out;
+        if (size == 0) {
+            /* Complete only at the blank line that ends the (usually empty) trailer section. */
+            for (;;) {
+                for (eol = in; eol + 1 < len && !(body[eol] == '\r' && body[eol + 1] == '\n'); eol++)
+                    ;
+                if (eol + 1 >= len)
+                    return -1;
+                if (eol == in)
+                    return out;
+                in = eol + 2;
+            }
+        }
         if (size > len - in - 2 || body[in + size] != '\r' || body[in + size + 1] != '\n')
             return -1;
         if (write)

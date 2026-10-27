@@ -204,6 +204,13 @@ def main():
         s.finish()
         check("chunk_ending_in_zero_crlf", rc > 0 and body == b"1230\r\n", f"rc={rc} body={body!r}")
 
+        # The last chunk is complete only at the blank line after it: a close before that is a
+        # truncated response, not an empty trailer.
+        s = Server(d, version="1.3", response=b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n4\r\n1234\r\n0\r\n")
+        rc, body = get(exe, s.port, d)
+        s.finish()
+        check("chunk_missing_final_crlf", rc < 0, f"rc={rc} body={body!r}")
+
         # A whole response ends the read at once, without waiting for the server to close.
         empty_chunked = b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\n"
         for name, response, expected in (("length", http(json_body), json_body), ("chunked", chunked, json_body),
@@ -277,7 +284,7 @@ def main():
     if failures:
         print(f"{len(failures)} failure(s)")
         sys.exit(1)
-    print("PASS: ratls host tests (19 checks)")
+    print("PASS: ratls host tests (20 checks)")
 
 
 if __name__ == "__main__":

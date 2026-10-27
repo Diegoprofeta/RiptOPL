@@ -441,6 +441,13 @@ static int xeraState(int fetched)
     return fetched < 0 ? ACH_OFFLINE : ACH_ERROR;
 }
 
+/* A failed raNetXeraboraIdentify: -7 is the PC still identifying the image (retry). The rest show
+   as offline, and the browser tells a NIC held by a UDP transport (-8) apart by asking ranet. */
+static int xeraIdentifyState(int rc)
+{
+    return rc == -7 ? ACH_ERROR : ACH_OFFLINE;
+}
+
 /* The account library entry for an image: exact title, case-insensitive. */
 static int xeraFindGame(const char *title)
 {
@@ -538,8 +545,8 @@ static void loadXerabora(void)
             return; /* ACH_ERROR */
         /* The xeRAbora PC serves the list either way: find it first (this
            also brings the network up). */
-        if (raNetXeraboraIdentify(NULL, NULL, &host, title, sizeof(title), &count) != 0) {
-            result.state = ACH_OFFLINE;
+        if ((rc = raNetXeraboraIdentify(NULL, NULL, &host, title, sizeof(title), &count)) != 0) {
+            result.state = xeraIdentifyState(rc);
             return;
         }
         /* ORBIT's path: the game ID from retroachievements.org by hash, so a
@@ -561,7 +568,7 @@ static void loadXerabora(void)
             return;
         }
         if (rc != 0) {
-            result.state = rc == -7 ? ACH_ERROR : ACH_OFFLINE; /* -7: the PC answered, still identifying */
+            result.state = xeraIdentifyState(rc);
             return;
         }
         if ((rc = xeraFetch(host, 'G', 0)) != 1) {
@@ -581,8 +588,8 @@ static void loadXerabora(void)
         requestPage = 0;
         requestFilter = 0;
     } else {
-        if (raNetXeraboraIdentify(NULL, NULL, &host, title, sizeof(title), &count) != 0) {
-            result.state = ACH_OFFLINE;
+        if ((rc = raNetXeraboraIdentify(NULL, NULL, &host, title, sizeof(title), &count)) != 0) {
+            result.state = xeraIdentifyState(rc);
             return;
         }
         id = requestKind == 'A' ? (int)strtol(requestTarget, NULL, 10) : 0;

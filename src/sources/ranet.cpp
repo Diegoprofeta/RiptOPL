@@ -1066,14 +1066,17 @@ int Ranet::xeraboraIdentify(const char *hash, const char *serial, unsigned int *
 /* A read longer than 64 bytes returns its unaligned tail through ps2ips' side buffer, which holds
    48 bytes (RESTS_EBUF_MAX, modules/network/ps2ips/ps2ips.c); a longer tail is cut, after lwIP has
    already consumed it. The padded UDP replies never have a tail, but a TCP stream would lose bytes.
-   So peek at what is waiting and take whole 64-byte blocks, or all of it when that is 64 bytes or
-   less (that travels whole in the head buffer). */
+   So peek at what is waiting and shorten the read until its tail fits those 48 bytes; the rest comes
+   on the next call. A read over 64 bytes still lands mostly by direct DMA, and 64 bytes or less
+   travels whole in the head buffer. */
 int Ranet::tcpRecv(int sock, void *aligned, int max)
 {
     int got = recv(sock, aligned, max, RA_MSG_DONTWAIT | RA_MSG_PEEK);
     if (got <= 0)
         return got;
-    return recv(sock, aligned, got > 64 ? got & ~63 : got, RA_MSG_DONTWAIT);
+    if (got > 64 && got % 64 > 48)
+        got -= got % 64 - 48;
+    return recv(sock, aligned, got, RA_MSG_DONTWAIT);
 }
 
 int Ranet::httpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length)
