@@ -626,3 +626,4 @@ translations:
   XERA_UNKNOWN_GAME: Wala mailhi sa xeRAbora kining image. Padagana una ang RA check game support.
   XERA_USE_LIBRARY: I-browse kining dula pinaagi sa RetroAchievements library sa main menu.
   XERA_SET_CLOCK: Wala pa sa imong RetroAchievements library. I-set ang orasan sa console sa system settings aron makita ang tibuok lista niini, o dulaa kini kausa uban ang achievement.
+  RA_NEUTRINO_UNTRACKED: Dili magamit ang Neutrino RA alang niining paglansad. Susiha ang RA runtime, companion IP ug ang na-save nga watch list. Ilansad nga walay achievement.

@@ -667,3 +667,4 @@ translations:
   XERA_UNKNOWN_GAME: xeRAbora ບໍ່ຮູ້ຈັກຮູບນີ້. ເປີດ RA ກວດການຮອງຮັບເກມ ກ່ອນ.
   XERA_USE_LIBRARY: ທ່ອງເບິ່ງເກມນີ້ ຜ່ານຫ້ອງສະໝຸດ RetroAchievements ໃນເມນູຫຼັກ.
   XERA_SET_CLOCK: ຍັງບໍ່ຢູ່ໃນຫ້ອງສະໝຸດ RetroAchievements ຂອງທ່ານ. ຕັ້ງໂມງເຄື່ອງ ໃນການຕັ້ງຄ່າລະບົບ ເພື່ອເບິ່ງລາຍຊື່ເຕັມ, ຫຼື ຫຼິ້ນມັນ ໜຶ່ງເທື່ອ ພ້ອມຄວາມສຳເລັດ.
+  RA_NEUTRINO_UNTRACKED: Neutrino RA ໃຊ້ບໍ່ໄດ້ ສຳລັບການເລີ່ມນີ້. ກວດ RA runtime, IP ຄູ່ ແລະ ລາຍການຕິດຕາມ ທີ່ບັນທຶກ. ເລີ່ມໂດຍບໍ່ມີຄວາມສຳເລັດ.

@@ -134,7 +134,7 @@ def main():
     for edition, options, path, sums in candidates:
         tag = options["tag"]
         manifest = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
-        neutrino = manifest["neutrino_archive"]["filename"].removeprefix("neutrino_").removesuffix(".7z")
+        neutrino = manifest["neutrino_archive"]["filename"].removeprefix("neutrino_").removesuffix(".7z").removesuffix(".zip")
         notes = release_notes(options, sha, neutrino, repo)
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".md", delete=False) as stream:
             stream.write(notes)

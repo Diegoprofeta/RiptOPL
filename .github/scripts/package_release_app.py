@@ -323,8 +323,12 @@ def verify(args: argparse.Namespace) -> None:
         if args.ra:
             required.add("xeRAbora.url")
             required.add("LICENSE-MBEDTLS.txt")
+            required.update({"neutrino/ORBIT-RA.json", "neutrino/ORBIT-RA.txt", "neutrino/RA-EDITION-NEUTRINO.txt",
+                             "neutrino/LICENSE", "neutrino/modules/ee_core.elf", "neutrino/modules/raagent.irx"})
         elif "LICENSE-MBEDTLS.txt" in all_names:
             raise ValueError("ordinary package carries the RA edition's mbedTLS licence")
+        elif any("raagent" in name.lower() or "/ORBIT-RA." in name or "/RA-EDITION-NEUTRINO." in name for name in all_names):
+            raise ValueError("ordinary package contains the ORBIT RA runtime")
         required.update(f"POPS/POPSTARTER VERSIONS/{version}/POPSTARTER.ELF" for version in (
             "MAIN", "DEBUG", "USBDELAY", "USBDELAY_DEBUG", "USBDELAY_LONGER_DEBUG"
         ))

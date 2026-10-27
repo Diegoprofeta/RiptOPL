@@ -723,6 +723,111 @@ int sysNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const c
     return 0;
 }
 
+#ifdef RETROACHIEVEMENTS
+// RA through Neutrino: the RA kit's neutrino/ is ORBIT's runtime (third_party/orbit-neutrino), whose
+// raagent.irx speaks xeRAbora's wire protocol. sbNeutrinoPrepareRA decides whether a game is tracked;
+// sysNeutrinoHandRA writes its files and sysRunNeutrinoLaunch appends -cfg=ript-ra and this argument.
+static char sysNeutrinoRAArg[336], sysNeutrinoRAStartup[32];
+
+// The effective -cwd, user overrides included, else the folder holding neutrino.elf; with a trailing '/'.
+// 0 = usable; -1 = none, or one we must not write under (hddN: is raw APA, where O_CREAT makes a partition).
+static int sysNeutrinoRADir(const char *neutrinoPath, const char *extraArgs, char *dir, int size)
+{
+    if (!neutrinoArgActiveValue(extraArgs, "-cwd=", dir, size)) {
+        const char *slash = sysLastPathSeparator(neutrinoPath);
+        if (slash == NULL || slash - neutrinoPath + 1 >= size)
+            return -1;
+        snprintf(dir, size, "%.*s", (int)(slash - neutrinoPath) + 1, neutrinoPath);
+    }
+    int len = (int)strlen(dir);
+    if (len == 0 || len + 1 >= size || strchr(dir, '\\') != NULL || strchr(dir, '"') != NULL ||
+        (!strncmp(dir, "hdd", 3) && dir[3] >= '0' && dir[3] <= '9' && dir[4] == ':'))
+        return -1;
+    if (dir[len - 1] != '/' && dir[len - 1] != ':')
+        strcpy(dir + len, "/");
+    return 0;
+}
+
+int sysNeutrinoRARuntime(const char *neutrinoPath, const char *extraArgs)
+{
+    char dir[256], path[300], text[40];
+    int fd, len;
+
+    if (neutrinoPath == NULL || sysNeutrinoRADir(neutrinoPath, extraArgs, dir, sizeof(dir)) < 0)
+        return 0;
+    // Only the RA kit's runtime carries this marker: a stock Neutrino is never sent unknown options.
+    snprintf(path, sizeof(path), "%sORBIT-RA.txt", dir);
+    if ((fd = open(path, O_RDONLY)) < 0)
+        return 0;
+    len = read(fd, text, sizeof(text));
+    close(fd);
+    if (len < 28 || memcmp(text, "RiptOPL ORBIT RA handoff v1\n", 28))
+        return 0;
+    snprintf(path, sizeof(path), "%smodules/raagent.irx", dir);
+    if ((fd = open(path, O_RDONLY)) < 0)
+        return 0;
+    close(fd);
+    return 1;
+}
+
+static int sysNeutrinoRAWrite(const char *path, const void *data, int size)
+{
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0)
+        return -1;
+    int written = write(fd, data, size);
+    if (close(fd) < 0 || written != size) {
+        unlink(path);
+        return -1;
+    }
+    return 0;
+}
+
+int sysNeutrinoHandRA(const char *startup, const char *neutrinoPath, const char *extraArgs, int networkGame,
+                      const unsigned char *ip, const unsigned char *peer, const void *watch, int size)
+{
+    char dir[256], config[320], path[340], userCfg[64], text[1024];
+    int len;
+
+    sysNeutrinoRAArg[0] = '\0';
+    sysNeutrinoRAStartup[0] = '\0';
+    if (startup == NULL)
+        return 0;
+    // Next to the cheats file: config/ under the working directory, or the directory itself.
+    if (sysNeutrinoRADir(neutrinoPath, extraArgs, dir, sizeof(dir)) < 0 ||
+        sysNeutrinoCheatPath(neutrinoPath, extraArgs, config, sizeof(config)) < 0)
+        return -1;
+    config[strlen(config) - strlen(NEUTRINO_CHEAT_CFG ".toml")] = '\0'; // keep its directory
+    if (snprintf(path, sizeof(path), "%sript-ra.wl", config) >= (int)sizeof(path) || sysNeutrinoRAWrite(path, watch, size) < 0)
+        return -1;
+    // ript-ra is the -cfg Neutrino keeps (the last); it loads the cheats file or the user's own through depends.
+    if (sysNeutrinoCheatArg[0] && !strcmp(sysNeutrinoCheatStartup, startup))
+        snprintf(userCfg, sizeof(userCfg), "%s", NEUTRINO_CHEAT_CFG);
+    else if (!neutrinoArgActiveValue(extraArgs, "-cfg=", userCfg, sizeof(userCfg)))
+        userCfg[0] = '\0';
+    if (!sysNeutrinoCfgNameSafe(userCfg) || !strcmp(userCfg, "ript-ra"))
+        return -1;
+    len = snprintf(text, sizeof(text), "# Written by RiptOPL for an RA launch through ORBIT Neutrino. Safe to delete.\n"
+                                       "name = \"RiptOPL RA\"\ndepends = [%s%s%s%s%s]\n",
+                   networkGame ? "" : "\"i_dev9_hidden\"", userCfg[0] && !networkGame ? ", " : "",
+                   userCfg[0] ? "\"" : "", userCfg, userCfg[0] ? "\"" : "");
+    // A network game's own transport already loads SMAP and the stack.
+    if (!networkGame)
+        len += snprintf(text + len, sizeof(text) - len,
+                        "[[module]]\nfile = \"smap.irx\"\nenv = [\"EE\"]\n"
+                        "[[module]]\nfile = \"ministack.irx\"\nargs = [\"ip=%u.%u.%u.%u\"]\nenv = [\"EE\"]\n",
+                        ip[0], ip[1], ip[2], ip[3]);
+    len += snprintf(text + len, sizeof(text) - len,
+                    "[[module]]\nfile = \"raagent.irx\"\nargs = [\"srv=%u.%u.%u.%u\", \"me=%u.%u.%u.%u\"]\nenv = [\"EE\"]\nload_order = 30\n",
+                    peer[0], peer[1], peer[2], peer[3], ip[0], ip[1], ip[2], ip[3]);
+    if (snprintf(path, sizeof(path), "%sript-ra.toml", config) >= (int)sizeof(path) || sysNeutrinoRAWrite(path, text, len) < 0)
+        return -1;
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=%sript-ra.wl", config);
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "%s", startup);
+    return 0;
+}
+#endif
+
 // Settings > Game Launching > Show Launch Arguments: before the teardown, show the exact argv this
 // launch will hand to Neutrino -- the array sysRunNeutrinoLaunch just composed, not a reconstruction --
 // and let the user back out. Autolaunch has no menu to answer it, so it launches as configured.
@@ -973,6 +1078,15 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
     // last -- is ours, which loads theirs through `depends`. Only for the game the file was written for.
     if (sysNeutrinoCheatArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoCheatStartup) && argc < argvMax)
         argv[argc++] = sysNeutrinoCheatArg;
+#ifdef RETROACHIEVEMENTS
+    static char raCfgArg[] = "-cfg=ript-ra";
+    if (sysNeutrinoRAArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoRAStartup)) {
+        if (argc + 2 > argvMax)
+            return -1;
+        argv[argc++] = raCfgArg;
+        argv[argc++] = sysNeutrinoRAArg;
+    }
+#endif
     static char breakArg[] = "--b"; // writable: argv is char *, and a literal would add a -Wwrite-strings warning
     if ((globalBreak || gameBreak) && argc < argvMax)
         argv[argc++] = breakArg;
@@ -1023,6 +1137,20 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
 int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs)
 {
     int result = sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 1);
+#ifdef RETROACHIEVEMENTS
+    // The RA handoff's two arguments must never cost the player the game: when they push the argv over
+    // the launch budget, launch without them. Warn only when they were the cause.
+    if (result < 0 && result != NEUTRINO_LAUNCH_DECLINED && sysNeutrinoRAArg[0] != '\0' && startup != NULL &&
+        !strcmp(startup, sysNeutrinoRAStartup)) {
+        sysNeutrinoRAArg[0] = '\0';
+        sysNeutrinoRAStartup[0] = '\0';
+        result = sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 1);
+        if (result == 0 || result == NEUTRINO_LAUNCH_DECLINED) {
+            LOG("[RA] handoff arguments exceed the launch budget for %s; launching untracked\n", startup);
+            host::ui().warningId(_STR_RA_NEUTRINO_UNTRACKED, 6);
+        }
+    }
+#endif
     if (result == NEUTRINO_LAUNCH_DECLINED)
         return -1; // Back on the argument preview: stay in the menu, nothing to warn about
     if (result < 0) {

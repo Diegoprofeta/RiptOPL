@@ -438,6 +438,9 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
     // core asks nothing twice; backing out returns to the menu, never to the other core.
     if (sbNeutrinoLoadCheats(pDeviceData->bdmPrefix, game->startup, configSet, neutrinoPath, neutrinoExtraArgs) < 0)
         return abortLaunch(1, configSet);
+#ifdef RETROACHIEVEMENTS
+    sbNeutrinoPrepareRA(pDeviceData->bdmPrefix, game->startup, bdmCurrentDriver, neutrinoPath, neutrinoExtraArgs);
+#endif
     if (sysNeutrinoArgsPreflight(bdmCurrentDriver, partname, game->startup, compatmask, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdmDevNr, &neutrinoVmc) < 0)
         return abortLaunch(1, configSet); // an overfull Neutrino argv must not silently fall back to the native core
     sysNeutrinoWarnPadEmu(configSet);

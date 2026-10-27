@@ -60,6 +60,14 @@ int sysNeutrinoPreflight(const char *driver, const char *neutrinoPath, int neutr
 // over nothing. 0 = launch; <0 = the user chose to stay in the menu. Callers go through
 // sbNeutrinoHandCheats, which reads the codes from the cheat engine.
 int sysNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs, const u32 *list, int pairs);
+#ifdef RETROACHIEVEMENTS
+/* RA through the RA kit's ORBIT Neutrino (sbNeutrinoPrepareRA decides). 1 when the effective -cwd holds
+   that runtime. HandRA writes the watch file and ript-ra.toml beside the cheats file and arms
+   -cfg=ript-ra -ra=... for startup's launch: 0 = armed, -1 = could not; NULL startup only disarms. */
+int sysNeutrinoRARuntime(const char *neutrinoPath, const char *extraArgs);
+int sysNeutrinoHandRA(const char *startup, const char *neutrinoPath, const char *extraArgs, int networkGame,
+                      const unsigned char *ip, const unsigned char *peer, const void *watch, int size);
+#endif
 int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs);
 
 // Launch an external POPSTARTER.ELF for a PS1 VCD. selector = the target's argv[0]

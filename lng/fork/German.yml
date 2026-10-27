@@ -602,3 +602,4 @@ translations:
   XERA_UNKNOWN_GAME: xeRAbora kennt dieses Abbild nicht. Führe zuerst die RA-Unterstützungsprüfung aus.
   XERA_USE_LIBRARY: Durchsuche dieses Spiel über die RetroAchievements-Bibliothek im Hauptmenü.
   XERA_SET_CLOCK: Noch nicht in deiner RetroAchievements-Bibliothek. Stelle die Uhr der Konsole in den Systemeinstellungen, um seine ganze Liste zu sehen, oder spiele es einmal mit Erfolgen.
+  RA_NEUTRINO_UNTRACKED: Neutrino-RA ist für diesen Start nicht verfügbar. Prüfe das RA-Laufzeitmodul, die Begleiter-IP und die gespeicherte Beobachtungsliste. Ohne Erfolge gestartet.

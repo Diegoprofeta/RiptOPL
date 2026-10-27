@@ -1705,6 +1705,76 @@ int sbNeutrinoLoadCheats(const char *prefix, const char *startup, config_set_t *
     return sbNeutrinoHandCheats(startup, neutrinoPath, extraArgs);
 }
 
+#ifdef RETROACHIEVEMENTS
+#define RA_ORBIT_SNAPSHOT_MAX 1216 // ORBIT v1.0.2's one-packet snapshot (third_party/orbit-neutrino)
+
+void sbNeutrinoPrepareRA(const char *prefix, const char *startup, const char *driver, const char *neutrinoPath, const char *extraArgs)
+{
+    unsigned char ip[4], mask[4], gateway[4], peer[4];
+    int networkGame;
+
+    sysNeutrinoHandRA(NULL, NULL, NULL, 0, NULL, NULL, NULL, 0);
+    // Both modes: Caduceus's engine receives the same wire protocol as the xeRAbora PC.
+    if (!gRATelemetry || (gRAMode != RA_MODE_XERABORA && gRAMode != RA_MODE_CADUCEUS) || prefix == NULL ||
+        startup == NULL || driver == NULL || neutrinoPath == NULL)
+        return;
+    // No saved watch list: nothing to track, so launch quietly before any runtime check could warn.
+    if (sbReadWatchList(prefix, startup) <= 0)
+        return;
+    // raagent sends each snapshot in ONE packet and skips anything larger. It reads the direct entries
+    // only and ignores a pointer-chain tail (xeRAbora PROTOCOL.md), so chain-based achievements do not
+    // track; the hand-over below carries the direct entries.
+    if (!sysNeutrinoRARuntime(neutrinoPath, extraArgs) || GetWatchBytes() > RA_ORBIT_SNAPSHOT_MAX)
+        goto untracked;
+    networkGame = !strcmp(driver, "udpfs") || !strcmp(driver, "udp") || !strcmp(driver, "udpbd") || !strcmp(driver, "udpfsbd");
+    if (networkGame) {
+        // The game's transport brings the adapter up with the static address; DHCP has none to hand over.
+        if (ps2_ip_use_dhcp)
+            goto untracked;
+        for (int i = 0; i < 4; i++)
+            ip[i] = ps2_ip[i];
+    } else {
+        // A resident UDP transport owns the NIC: raLaunchNetworkUp would drop the list without a word.
+        if (raNetNicBusy())
+            goto untracked;
+        // Raises the network and, for Caduceus, rechecks the session; when it clears the list it has
+        // already said why.
+        raLaunchNetworkUp();
+        if (GetWatchCount() <= 0)
+            return;
+        if (ethGetNetConfig(ip, mask, gateway) < 0)
+            goto untracked;
+    }
+    if (!(ip[0] | ip[1] | ip[2] | ip[3]))
+        goto untracked;
+    if (gRAHostIp[0] | gRAHostIp[1] | gRAHostIp[2] | gRAHostIp[3]) {
+        for (int i = 0; i < 4; i++)
+            peer[i] = gRAHostIp[i];
+    } else {
+        unsigned int verified = raNetPeerIP();
+        memcpy(peer, &verified, sizeof(peer)); // network byte order
+    }
+    if (!(peer[0] | peer[1] | peer[2] | peer[3]) || peer[0] >= 224 || peer[0] == 127)
+        goto untracked;
+    {
+        struct ra_watch_file header = {RA_WATCH_MAGIC, RA_WATCH_VERSION, (unsigned int)GetWatchCount(), (unsigned int)GetWatchBytes()};
+        int size = (int)sizeof(header) + (int)header.count * (int)sizeof(unsigned int);
+        unsigned char *file = static_cast<unsigned char *>(malloc(size));
+        if (file == NULL)
+            goto untracked;
+        memcpy(file, &header, sizeof(header));
+        memcpy(file + sizeof(header), GetWatchList(), size - sizeof(header));
+        int result = sysNeutrinoHandRA(startup, neutrinoPath, extraArgs, networkGame, ip, peer, file, size);
+        free(file);
+        if (result == 0)
+            return;
+    }
+untracked:
+    LOG("[RA] ORBIT Neutrino handoff unavailable for %s; launch remains untracked\n", startup);
+    host::ui().warningId(_STR_RA_NEUTRINO_UNTRACKED, 6);
+}
+#endif
+
 // Δ1 (NHDDL-parity): a resolved neutrino.elf is only USABLE if its install is complete. Neutrino
 // chdir()s to the elf's dir (our -cwd) then opens config/system.toml; if absent it falls back to a
 // FLAT "system.toml" (SAS layout); if NEITHER loads it returns -1 = black screen post-teardown
@@ -2493,7 +2563,7 @@ void sbBuildVmcNeutrinoArgs(config_set_t *configSet, const char *vmcPrefix, neut
   deliberately quiet and its result is advisory. Returns the entry count, or
   negative when there is no usable list.
 */
-int sbLoadWatchList(const char *path, const char *file)
+int sbReadWatchList(const char *path, const char *file)
 {
     static const char *wlExt[] = {"wl", "WL"};
     unsigned int ext;
@@ -2514,9 +2584,14 @@ int sbLoadWatchList(const char *path, const char *file)
 
     if (result < 0)
         LOG("RA: no watch list for %s under %sRA/\n", file, path);
-    else
-        raLaunchNetworkUp(); // the in-game DEV9 driver needs the adapter already up
+    return result;
+}
 
+int sbLoadWatchList(const char *path, const char *file)
+{
+    int result = sbReadWatchList(path, file);
+    if (result >= 0)
+        raLaunchNetworkUp(); // the in-game DEV9 driver needs the adapter already up
     return result;
 }
 

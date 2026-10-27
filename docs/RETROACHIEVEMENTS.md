@@ -106,12 +106,38 @@ Telemetry lives inside OPL's own loader core, which only exists for launches OPL
 | MMCE | yes |
 | Physical PS2 disc, **RA: launch disc** | implemented; **not hardware-tested** |
 | HTTP | local watch-list loading is wired into OPL-core launch; combined HTTP/RA operation is not hardware-validated, and it shares the ETH/SMB risk below |
-| Neutrino core (`$CoreLoader`) | **no** |
+| Neutrino core (`$CoreLoader`) | RA kit's ORBIT runtime only (below); **not hardware-tested** |
 | UDPFS | **no** |
 | PS1 / VCD (POPSTARTER, Ember) | **no** |
 
-Neutrino, UDPFS and PS1 hand the console over to an external ELF and never load OPL's core, so there is
-nothing to take a snapshot from. This is structural, not an oversight.
+UDPFS and PS1 hand the console over to an external ELF and never load OPL's core, so there is nothing to
+take a snapshot from. Neutrino does the same, but the RA kit's Neutrino carries its own agent:
+
+### Neutrino in the RA edition
+
+The RetroAchievements kit's `neutrino/` is **[ORBIT v1.0.2](https://github.com/danielnuld/ps2-launcher/releases/tag/v1.0.2)**'s
+RA-Neutrino by **Daniel / danielnuld**, based on Neutrino by **Maximus32**, with an achievement agent
+(`raagent.irx`) that speaks **hacan359 / xeRAbora**'s protocol. Its AFL-3.0 licence, source commit and
+archive SHA-256 ship beside it (`neutrino/ORBIT-RA.json`). Standard kits keep ordinary upstream Neutrino,
+and an ELF-only update does not install this runtime: copy the RA kit's whole `neutrino/` folder.
+`neutrino/RA-EDITION-NEUTRINO.txt` labels it. ORBIT is built on **Neutrino v1.8.0**, so every Neutrino
+launch in the RA edition lacks later upstream changes, Neutrino cheats included. RiptOPL replaces only its
+`IEEE1394_bd_mini.irx`, with the same i.LINK driver as the standard kit.
+
+For a game with a saved watch list, RiptOPL writes `ript-ra.wl` and `ript-ra.toml` next to the cheats file
+(`config/` under the effective `-cwd`, or beside `neutrino.elf` without one) and adds `-cfg=ript-ra -ra=...`;
+the generated config keeps the user's `-cfg` and the cheats config through `depends`. That folder must be
+writable, and a raw `hdd0:` path is refused. Both RA modes work: Caduceus's engine receives the same wire
+protocol. The agent sends to the RA companion IP, else the verified peer. Network games (UDPFS, UDPBD) need
+a static console IP; other devices raise the menu network first, unless a UDP transport holds the adapter.
+
+The agent sends each snapshot in one packet, so a set whose **direct values exceed 1,216 bytes** cannot be
+tracked. It reads the direct entries only and ignores a pointer-chain tail, as xeRAbora's protocol defines
+for an agent without chain support: chain-based achievements do not unlock on Neutrino launches while the
+rest of the set does. A game without a watch list launches quietly; any other reason the handoff cannot be
+made (no ORBIT runtime, no companion address, a failed write, or the two arguments pushing the launch past
+Neutrino's 256-byte budget) launches the game without achievements and says so. **Console unlock cards and
+remote reset are not provided by this runtime**; unlocks appear on the companion. **NOT TESTED on hardware.**
 
 ### Do not expect a game with achievements to run from a network share
 

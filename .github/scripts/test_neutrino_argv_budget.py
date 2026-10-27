@@ -58,16 +58,20 @@ harness = r'''
 #define LAUNCHDIAG_REFUSE_CORE_ARGV 2
 #define _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW 7
 #define _STR_NEUTRINO_ARGS_CONFIRM 8
+#define _STR_RA_NEUTRINO_UNTRACKED 9
 #define NEUTRINO_VMC_SLOTS 2
 typedef struct { char arg[NEUTRINO_VMC_SLOTS][160]; } neutrino_vmc_args_t;
 
 static char gNeutrinoArgs[256];
 static int gNeutrinoElfArg = 1, gEnableDebug, gLaunchDiag;
-static int lastWarning, loads, refuses, lastArgc;
+static int lastWarning, raWarnings, loads, refuses, lastArgc;
+#ifdef RETROACHIEVEMENTS
+static char sysNeutrinoRAArg[336], sysNeutrinoRAStartup[32]; /* set by sysNeutrinoHandRA */
+#endif
 static char lastArgs[14][256];
 static int bdmGetLoadedNetProtocol(void) { return 0; }
 static int convertCompatmaskToModes(int mask) { return mask; }
-static const char *_l(int id) { lastWarning = id; return ""; }
+static const char *_l(int id) { lastWarning = id; raWarnings += id == _STR_RA_NEUTRINO_UNTRACKED; return ""; }
 static void guiWarning(const char *msg, int secs) { (void)msg; (void)secs; }
 static void launchDiagRefuse(int reason) { (void)reason; refuses++; }
 static void launchDiagMark(int stage) { (void)stage; }
@@ -267,6 +271,76 @@ int main(void)
             failures++;
     }
     if (sawDvr != 1 || sawPath != 1) failures++;
+
+#ifdef RETROACHIEVEMENTS
+    /* RA (sysNeutrinoHandRA): -cfg=ript-ra and -ra= follow the user's options and precede --b, and
+       only the game the handoff was written for gets them. */
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=mass0:/neutrino/config/ript-ra.wl");
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "SLUS_123.45");
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "-a --b tail");
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                             "mass0:/neutrino/neutrino.elf", "-cfg=mine", 0, 0, 0, 0, NULL, 0) != 0)
+        failures++;
+    int raArg = -1, raCfg = -1, mine = -1, boundary = -1;
+    for (int i = 0; i < lastArgc; i++) {
+        if (!strncmp(lastArgs[i], "-ra=", 4)) raArg = i;
+        if (!strcmp(lastArgs[i], "-cfg=ript-ra")) raCfg = i;
+        if (!strcmp(lastArgs[i], "-cfg=mine")) mine = i;
+        if (!strcmp(lastArgs[i], "--b")) boundary = i;
+    }
+    if (!(mine >= 0 && mine < raCfg && raCfg < raArg && raArg < boundary)) {
+        printf("FAIL RA arguments must follow the user's options and precede --b (mine=%d cfg=%d ra=%d --b=%d)\n", mine, raCfg, raArg, boundary);
+        failures++;
+    }
+    gNeutrinoArgs[0] = '\0';
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/b.iso", "SLUS_999.99", 0, 0,
+                             "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL, 0) != 0)
+        failures++;
+    for (int i = 0; i < lastArgc; i++)
+        if (!strncmp(lastArgs[i], "-ra=", 4) || !strcmp(lastArgs[i], "-cfg=ript-ra")) failures++;
+
+    /* A launch that fits on its own but not with the handoff's two arguments goes ahead untracked:
+       the preflight drops them and warns instead of refusing the game. */
+    char fill[64] = "";
+    int fits = -1;
+    sysNeutrinoRAArg[0] = '\0';
+    for (int n = 0; n < 14; n++) {
+        snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", fill);
+        if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                                     "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL) != 0)
+            break;
+        fits = n;
+        strcat(fill, "-x ");
+    }
+    fill[fits * 3] = '\0';
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", fill);
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=mass0:/neutrino/config/ript-ra.wl");
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "SLUS_123.45");
+    raWarnings = 0;
+    int pre = sysNeutrinoArgsPreflight("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                                       "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL);
+    if (fits < 0 || pre != 0 || raWarnings != 1 || sysNeutrinoRAArg[0] != '\0') {
+        printf("FAIL RA overflow must launch untracked: fits=%d result=%d warnings=%d ra=%s\n", fits, pre, raWarnings, sysNeutrinoRAArg);
+        failures++;
+    }
+    sysRunNeutrinoLaunch("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0, "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL, 0);
+    for (int i = 0; i < lastArgc; i++)
+        if (!strncmp(lastArgs[i], "-ra=", 4) || !strcmp(lastArgs[i], "-cfg=ript-ra")) failures++;
+
+    /* Over budget without them too: refused with the overflow warning alone, not "launching untracked". */
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", many);
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=mass0:/neutrino/config/ript-ra.wl");
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "SLUS_123.45");
+    raWarnings = 0;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL) != -1 ||
+        raWarnings != 0 || lastWarning != _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW) {
+        printf("FAIL an argv over budget without RA must not claim an untracked launch (warnings=%d)\n", raWarnings);
+        failures++;
+    }
+    gNeutrinoArgs[0] = '\0';
+#endif
     return failures ? 1 : 0;
 }
 '''
@@ -275,10 +349,11 @@ with tempfile.TemporaryDirectory() as tmp:
     src = Path(tmp) / "budget.c"
     exe = Path(tmp) / "budget"
     src.write_text(harness.replace("@FUNCTIONS@", functions), encoding="utf-8")
-    build = subprocess.run(["gcc", "-std=gnu99", "-Wall", "-Werror", "-Wno-unused-function",
-                            "-o", str(exe), str(src)], capture_output=True, text=True)
-    assert build.returncode == 0, build.stderr
-    result = subprocess.run([str(exe)], capture_output=True, text=True)
-    assert result.returncode == 0, result.stdout + result.stderr
+    for flags in ([], ["-DRETROACHIEVEMENTS"]):
+        build = subprocess.run(["gcc", *flags, "-std=gnu99", "-Wall", "-Werror", "-Wno-unused-function",
+                                "-o", str(exe), str(src)], capture_output=True, text=True)
+        assert build.returncode == 0, build.stderr
+        result = subprocess.run([str(exe)], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
 
 print("neutrino argv budget: count, bytes, VMC, 14-entry token integrity, and pre-teardown refusal OK")

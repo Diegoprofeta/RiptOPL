@@ -618,3 +618,4 @@ translations:
   XERA_UNKNOWN_GAME: xeRAbora ne poznaje ovu sliku. Najprije pokreni RA provjeru podrške za igru.
   XERA_USE_LIBRARY: Pregledaj ovu igru preko RetroAchievements knjižnice u glavnom izborniku.
   XERA_SET_CLOCK: Još nije u tvojoj RetroAchievements knjižnici. Postavi sat konzole u postavkama sustava da vidiš puni popis ili je odigraj jednom s postignućima.
+  RA_NEUTRINO_UNTRACKED: Neutrino RA nije dostupan za ovo pokretanje. Provjeri RA okruženje, IP pratitelja i spremljeni popis praćenja. Pokretanje bez postignuća.

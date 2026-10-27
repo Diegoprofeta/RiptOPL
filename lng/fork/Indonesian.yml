@@ -622,3 +622,4 @@ translations:
   XERA_UNKNOWN_GAME: xeRAbora tidak mengenal image ini. Jalankan pemeriksaan dukungan game RA lebih dulu.
   XERA_USE_LIBRARY: Jelajahi game ini lewat pustaka RetroAchievements di menu utama.
   XERA_SET_CLOCK: Belum ada di pustaka RetroAchievements-mu. Atur jam konsol di pengaturan sistem untuk melihat daftar lengkapnya, atau mainkan sekali dengan pencapaian.
+  RA_NEUTRINO_UNTRACKED: Neutrino RA tidak tersedia untuk peluncuran ini. Periksa runtime RA, IP pendamping, dan daftar pantau yang disimpan. Diluncurkan tanpa pencapaian.

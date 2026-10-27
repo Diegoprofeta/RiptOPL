@@ -1272,6 +1272,9 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             sbUnprepare(&settings->common);
             return;
         }
+#ifdef RETROACHIEVEMENTS
+        sbNeutrinoPrepareRA(gMmceSupport.prefix, mmceStartup, "mmce", neutrinoPath, neutrinoExtraArgs);
+#endif
         if (sysNeutrinoArgsPreflight("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0) {
             sbUnprepare(&settings->common);
             return;

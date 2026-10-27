@@ -607,3 +607,4 @@ translations:
   XERA_UNKNOWN_GAME: A xeRAbora nem ismeri ezt a képet. Előbb futtasd az RA játéktámogatás-ellenőrzést.
   XERA_USE_LIBRARY: Ezt a játékot a főmenü RetroAchievements könyvtárában böngészd.
   XERA_SET_CLOCK: Még nincs a RetroAchievements könyvtáradban. Állítsd be a konzol óráját a rendszerbeállításokban, hogy lásd a teljes listáját, vagy játssz vele egyszer teljesítményekkel.
+  RA_NEUTRINO_UNTRACKED: A Neutrino RA ennél az indításnál nem érhető el. Ellenőrizd az RA futtatókörnyezetet, a segédprogram IP-jét és a mentett figyelési listát. Teljesítmények nélkül indul.

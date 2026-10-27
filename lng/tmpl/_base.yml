@@ -1853,3 +1853,6 @@ gui_strings:
 # RA Xerabora browser: the HTTPS game-ID lookup needs the console clock.
 - label: XERA_SET_CLOCK
   string: "Not in your RetroAchievements library yet. Set the console clock in the system settings to see its full list, or play it once with achievements."
+# RA through Neutrino: the RA kit's ORBIT runtime cannot take this launch (sysNeutrinoPrepareRA).
+- label: RA_NEUTRINO_UNTRACKED
+  string: "Neutrino RA is unavailable for this launch. Check the RA runtime, companion IP and saved watch list. Launching without achievements."

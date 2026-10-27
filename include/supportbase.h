@@ -95,6 +95,11 @@ int sbLoadCheats(const char *path, const char *file, config_set_t *configSet);
 // cheats off or a NULL startup it only clears the last hand-over. 0 = launch; <0 = stay in the menu.
 int sbNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs);
 int sbNeutrinoLoadCheats(const char *prefix, const char *startup, config_set_t *configSet, const char *neutrinoPath, const char *extraArgs);
+#ifdef RETROACHIEVEMENTS
+// Hand the game's watch list to the RA kit's ORBIT Neutrino (sysNeutrinoHandRA), or say the launch goes
+// untracked. Before sysNeutrinoArgsPreflight and the teardown; never refuses the launch.
+void sbNeutrinoPrepareRA(const char *prefix, const char *startup, const char *driver, const char *neutrinoPath, const char *extraArgs);
+#endif
 
 
 
@@ -143,6 +148,8 @@ void sbBuildVmcNeutrinoArgs(config_set_t *configSet, const char *vmcPrefix, neut
 // RA: load this game's watch list from <path>RA/<file>.wl. Mirrors sbLoadCheats'
 // shape (256-byte path, both extension cases). A missing list is not an error.
 int sbLoadWatchList(const char *path, const char *file);
+/* The same, without raising the network (an external runtime brings its own). */
+int sbReadWatchList(const char *path, const char *file);
 
 // RA: the hash log, <path>RA/hashes.txt. Open before hashing, close after:
 // raHashStep and ranet.c drop their crumbs into whatever log is open.

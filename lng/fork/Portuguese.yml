@@ -600,3 +600,4 @@ translations:
   XERA_UNKNOWN_GAME: O xeRAbora não conhece esta imagem. Execute antes a verificação de suporte RA.
   XERA_USE_LIBRARY: Navegue por este jogo pela biblioteca do RetroAchievements no menu principal.
   XERA_SET_CLOCK: Ainda não está na sua biblioteca do RetroAchievements. Acerte o relógio da consola nas definições do sistema para ver a lista completa, ou jogue uma vez com conquistas.
+  RA_NEUTRINO_UNTRACKED: O RA no Neutrino não está disponível neste início. Verifique o módulo RA, o IP do companheiro e a lista de acompanhamento guarda. Iniciando sem conquistas.

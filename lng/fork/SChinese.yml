@@ -598,3 +598,4 @@ translations:
   XERA_UNKNOWN_GAME: xeRAbora 不认识这个镜像。请先运行 RA 游戏支持检查。
   XERA_USE_LIBRARY: 请在主菜单中通过 RetroAchievements 游戏库浏览这个游戏。
   XERA_SET_CLOCK: 尚不在你的 RetroAchievements 游戏库中。请在系统设置中设置主机时钟以查看完整列表，或带成就玩一次。
+  RA_NEUTRINO_UNTRACKED: 这次启动无法使用 Neutrino RA。请检查 RA 运行模块、伴侣 IP 和已保存的追踪列表。将不带成就启动。

@@ -4,12 +4,13 @@ import argparse
 import hashlib
 import importlib.util
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
 import sys
 import tempfile
 from types import SimpleNamespace
+import urllib.request
 import zipfile
 
 from build_edition import EDITIONS, ROOT, git
@@ -19,7 +20,56 @@ app = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(app)
 
 
-def package(edition, neutrino_archive):
+ORBIT_PIN = ROOT / "third_party/orbit-neutrino/release.json"
+
+
+def stage_orbit(archive, destination, pin):
+    """The RA kit's neutrino/: ORBIT's pinned runtime (raagent.irx), checked in full before any write."""
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != pin["sha256"]:
+        raise ValueError("ORBIT release digest mismatch")
+    payload = {}
+    with zipfile.ZipFile(archive) as source:
+        for entry in source.infolist():
+            path = PurePosixPath(entry.filename)
+            if path.is_absolute() or ".." in path.parts or "\\" in entry.orig_filename:
+                raise ValueError("unsafe ORBIT archive path")
+            if entry.is_dir() or len(path.parts) < 3 or path.parts[1] != "neutrino":
+                continue  # the GPL ORBIT launcher beside neutrino/ is not ours to ship
+            relative = PurePosixPath(*path.parts[2:]).as_posix()
+            if relative in payload:
+                raise ValueError("duplicate ORBIT runtime entry")
+            payload[relative] = source.read(entry)
+    for name in ("neutrino.elf", "modules/ee_core.elf", "modules/raagent.irx", "modules/IEEE1394_bd_mini.irx",
+                 "config/system.toml", "config/bsd-udpfs.toml", "LICENSE"):
+        if not payload.get(name):
+            raise ValueError(f"missing ORBIT runtime entry: {name}")
+    if b"-ra=<file>" not in payload["neutrino.elf"]:
+        raise ValueError("ORBIT loader lacks the expected RA handoff")
+    for name, data in payload.items():
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    (destination / "ORBIT-RA.json").write_text(json.dumps(pin, indent=2) + "\n", encoding="utf-8")
+    # sysNeutrinoRARuntime accepts a runtime only when this marker's first line matches.
+    (destination / "ORBIT-RA.txt").write_text(
+        "RiptOPL ORBIT RA handoff v1\n"
+        "ORBIT Neutrino RA runtime by Daniel (danielnuld), based on Neutrino by Maximus32\n"
+        "and xeRAbora's protocol by hacan359. AFL-3.0; see LICENSE.\n"
+        f"Source: https://github.com/{pin['repository']}/tree/{pin['source_commit']}/third_party/neutrino-igr\n"
+        "Pinned release and archive SHA-256: see ORBIT-RA.json.\n", encoding="utf-8")
+    (destination / "RA-EDITION-NEUTRINO.txt").write_text(
+        "THIS neutrino/ FOLDER BELONGS TO THE RIPTOPL RETROACHIEVEMENTS EDITION.\n"
+        "\n"
+        f"It is ORBIT's RA-Neutrino {pin['tag']}: Neutrino v1.8.0 with the achievement agent\n"
+        "(raagent.irx). Only modules/IEEE1394_bd_mini.irx is replaced, by RiptOPL's i.LINK driver,\n"
+        "as in the standard kit. It is NOT the standard RiptOPL Neutrino: keep this folder with\n"
+        "the RA loader (APPS/APP_RIPTOPL-RA) and the standard one with the standard loader.\n"
+        "\n"
+        "Every Neutrino launch in the RA edition uses this runtime, so upstream changes made\n"
+        "after Neutrino v1.8.0 (including Neutrino cheats) are not available here.\n", encoding="utf-8")
+
+
+def package(edition, neutrino_archive, orbit_archive=None):
     options = EDITIONS[edition]
     built = ROOT / "dist/editions" / edition
     manifest = json.loads((built / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
@@ -63,7 +113,17 @@ def package(edition, neutrino_archive):
                     raise ValueError(f"unsafe Neutrino archive path: {name}")
             if line.startswith(("Symbolic Link = ", "Hard Link = ")):
                 raise ValueError("Neutrino archive contains a link")
-        subprocess.run([extractor, "x", "-y", "-o" + str(kit / "neutrino"), str(neutrino_archive)], check=True, stdout=subprocess.DEVNULL)
+        if options["ra"]:
+            pin = json.loads(ORBIT_PIN.read_text(encoding="utf-8"))
+            if orbit_archive is None:
+                orbit_archive = kit.parent / pin["asset"]
+                url = f"https://github.com/{pin['repository']}/releases/download/{pin['tag']}/{pin['asset']}"
+                with urllib.request.urlopen(url, timeout=60) as response:
+                    orbit_archive.write_bytes(response.read())
+            stage_orbit(orbit_archive, kit / "neutrino", pin)
+            neutrino_archive = orbit_archive
+        else:
+            subprocess.run([extractor, "x", "-y", "-o" + str(kit / "neutrino"), str(neutrino_archive)], check=True, stdout=subprocess.DEVNULL)
         shutil.copyfile(ROOT / "ship/neutrino/bsd-udpfsbd.toml", kit / "neutrino/config/bsd-udpfsbd.toml")
         # i.LINK: Neutrino's own IEEE1394_bd_mini.irx loses its login after an IOP reset (original
         # #1018). Replace it with RiptOPL's build of the same driver -- the one the ELF embeds -- and
@@ -115,8 +175,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("edition", choices=EDITIONS)
     parser.add_argument("--neutrino-archive", required=True, type=Path)
+    parser.add_argument("--orbit-archive", type=Path, help="RA only: the pinned ORBIT ZIP (else downloaded)")
     args = parser.parse_args()
     try:
-        package(args.edition, args.neutrino_archive.resolve())
+        package(args.edition, args.neutrino_archive.resolve(), args.orbit_archive and args.orbit_archive.resolve())
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         sys.exit(str(error))
