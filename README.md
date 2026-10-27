@@ -199,8 +199,8 @@ This build layers several features on top of upstream OPL:
 > emulator. Release packaging normally bundles the official
 > latest build, re-fetched at publish time (download/extraction failures can omit it; check the release notes), under its **AFL-3.0** licence. We add one file to
 > that folder — `config/bsd-udpfsbd.toml`, because Neutrino ships `udpfs_bd.irx` without a matching
-> `-bsd` token and RiptOPL launches UDPFS as `-bsd=udpfsbd` — and replace its i.LINK driver
-> `modules/IEEE1394_bd_mini.irx` with RiptOPL's build of the same ps2sdk driver, which keeps its login
+> `-bsd` token and RiptOPL launches UDPFS as `-bsd=udpfsbd` — and replace its i.LINK pair
+> (`modules/IEEE1394_bd_mini.irx` and `modules/iLinkman.irx`) with RiptOPL's builds of the same ps2sdk modules, which keep the login
 > across an IOP reset ([details](docs/NEUTRINO.md)). Nothing else of rickgaiser's is altered or
 > removed. RiptOPL is one of several front-ends built on Neutrino, alongside
 > **[LUNA](https://github.com/dnunezx/LUNA)** by **[darkladark](https://github.com/dnunezx)** (our #1

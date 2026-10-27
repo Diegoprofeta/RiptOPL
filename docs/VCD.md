@@ -157,8 +157,8 @@ re-registers the selected device driver as bare `mass:` before it resolves that 
 > size no longer matches. If the drive's `POPS/` still has an old file, RiptOPL does not copy it: it
 > warns *The device's POPS folder has old BDMA drivers -- copy this release's POPS folder there.*,
 > leaves the card as it is, and the launch goes ahead with the card's current driver.
-> RiptOPL's embedded `iLinkman` and `IEEE1394_bd` modules, and the `IEEE1394_bd_mini.irx` that
-> replaces Neutrino's own in the release kit, are built from the same corrected sources in `modules/ilink/`.
+> RiptOPL's embedded `iLinkman` and `IEEE1394_bd` modules, and the `iLinkman.irx` and `IEEE1394_bd_mini.irx`
+> that replace Neutrino's own in the release kits, are built from the same corrected sources in `modules/ilink/`.
 > Source- and host-tested only; not yet confirmed on hardware.
 
 Where `POPSTARTER.ELF` is loaded from is controlled by **PS Emulation Settings →

@@ -1148,7 +1148,7 @@ int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *s
         sysNeutrinoRAArg[0] = '\0';
         sysNeutrinoRAStartup[0] = '\0';
         result = sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 1);
-        if (result == 0 || result == NEUTRINO_LAUNCH_DECLINED) {
+        if (result == 0) { // declined on the preview: nothing launches, so nothing to warn about
             LOG("[RA] handoff arguments exceed the launch budget for %s; launching untracked\n", startup);
             host::ui().warningId(_STR_RA_NEUTRINO_UNTRACKED, 6);
         }

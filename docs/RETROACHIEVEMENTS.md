@@ -128,7 +128,7 @@ archive SHA-256 ship beside it (`neutrino/ORBIT-RA.json`). Standard kits keep or
 and an ELF-only update does not install this runtime: copy the RA kit's whole `neutrino/` folder.
 `neutrino/RA-EDITION-NEUTRINO.txt` labels it. ORBIT is built on **Neutrino v1.8.0**, so every Neutrino
 launch in the RA edition lacks later upstream changes, Neutrino cheats included. RiptOPL replaces only its
-`IEEE1394_bd_mini.irx`, with the same i.LINK driver as the standard kit.
+i.LINK pair, `IEEE1394_bd_mini.irx` and `iLinkman.irx`, with the same builds as the standard kit.
 
 For a game with a saved watch list, RiptOPL writes `ript-ra.wl` and `ript-ra.toml` next to the cheats file
 (`config/` under the effective `-cwd`, or beside `neutrino.elf` without one) and adds `-cfg=ript-ra -ra=...`;

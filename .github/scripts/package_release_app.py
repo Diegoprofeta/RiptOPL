@@ -306,6 +306,7 @@ def verify(args: argparse.Namespace) -> None:
             "neutrino/neutrino.elf",
             "neutrino/config/bsd-udpfsbd.toml",
             "neutrino/modules/IEEE1394_bd_mini.irx",
+            "neutrino/modules/iLinkman.irx",
             "neutrino/config/bsd-udpfs.toml",
             "neutrino/config/system.toml",
             "PS2-Servers.url",
