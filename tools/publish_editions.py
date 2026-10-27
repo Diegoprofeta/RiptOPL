@@ -7,14 +7,27 @@ import os
 import re
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
+import time
 import zipfile
 
 from build_edition import EDITIONS, git
 
 
+# GitHub's release API intermittently answers 5xx; every call below is safe to repeat.
+RETRY_DELAYS = (5, 15)
+
+
 def gh(*args):
-    return subprocess.check_output(["gh", *args], text=True).strip()
+    for delay in (*RETRY_DELAYS, None):
+        try:
+            return subprocess.check_output(["gh", *args], text=True).strip()
+        except subprocess.CalledProcessError:
+            if delay is None:
+                raise
+            print(f"gh {' '.join(args[:2])} failed; retrying in {delay}s", file=sys.stderr)
+            time.sleep(delay)
 
 
 def publication_allowed(environment, sha):
@@ -110,6 +123,35 @@ def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
     )
 
 
+def upload_verified(repo, tag, sha, title, notes_path, assets, exists):
+    """Upload a channel's assets and confirm GitHub kept them. A published channel that fails part-way
+    gets every clobbered file back, so its downloads never mix two builds under the old tag."""
+    with tempfile.TemporaryDirectory() as backup:
+        replaced = []
+        if exists:
+            current = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "assets"))["assets"]
+            replaced = sorted({a["name"] for a in current} & {Path(a).name for a in assets})
+            for name in replaced:
+                gh("release", "download", tag, "--repo", repo, "--pattern", name, "--dir", backup)
+        try:
+            if exists:
+                gh("release", "upload", tag, "--repo", repo, "--clobber", *assets)
+            else:
+                gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", title, "--notes-file", str(notes_path), *assets)
+            release = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "id,assets"))
+            remote = {a["name"]: a for a in release["assets"]}
+            for asset in assets:
+                file = Path(asset)
+                digest = hashlib.sha256(file.read_bytes()).hexdigest()
+                item = remote.get(file.name, {})
+                if item.get("size") != file.stat().st_size or item.get("digest") != "sha256:" + digest:
+                    raise ValueError(f"GitHub did not retain the verified asset: {tag}/{file.name}")
+        except (subprocess.CalledProcessError, ValueError):
+            if replaced:
+                gh("release", "upload", tag, "--repo", repo, "--clobber", *(str(Path(backup) / n) for n in replaced))
+            raise
+
+
 def latest_release_arg(edition):
     """Only IncebtIon is presented as GitHub's Latest release."""
     return "--latest=" + ("true" if edition == "incebtion" else "false")
@@ -142,18 +184,7 @@ def main():
         try:
             exists = subprocess.run(["gh", "release", "view", tag, "--repo", repo], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
             assets = [str(p) for p in sorted(path.iterdir()) if p.is_file()]
-            if exists:
-                gh("release", "upload", tag, "--repo", repo, "--clobber", *assets)
-            else:
-                gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", options["title"], "--notes-file", str(notes_path), *assets)
-            release = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "id,assets"))
-            remote = {a["name"]: a for a in release["assets"]}
-            for asset in assets:
-                file = Path(asset)
-                digest = hashlib.sha256(file.read_bytes()).hexdigest()
-                item = remote.get(file.name, {})
-                if item.get("size") != file.stat().st_size or item.get("digest") != "sha256:" + digest:
-                    raise ValueError(f"GitHub did not retain the verified asset: {tag}/{file.name}")
+            upload_verified(repo, tag, sha, options["title"], notes_path, assets, exists)
             update_tag(repo, tag, sha)
             gh("release", "edit", tag, "--repo", repo, "--title", options["title"], "--notes-file", str(notes_path),
                "--draft=false", "--prerelease=false", latest_release_arg(edition))
