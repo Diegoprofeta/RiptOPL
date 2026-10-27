@@ -11,7 +11,7 @@ A heartfelt thank you to developers who have contributed pull requests directly 
 
 # RiptOPL
 
-> **C++ / ps2build transition:** This repository is the migration home of RiptOPL. It uses **one SDK: ps2build**, with **Korium**, **RetroAchievements** and **IncebtIon** release editions. GCC builds release kits; GCC and LLVM are both validated in CI. Channel links become available after deliberate publication; until then use the workflow artifacts. See the [release contract](ROLLING_RELEASE.md), [migration checkpoint](docs/MIGRATION-CHECKPOINT-2026-10-12.md), [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md) and [wiki](https://github.com/NathanNeurotic/RiptOPL/wiki). Imported production guides do not establish feature or hardware parity for the new SDK.
+> **C++ / ps2build edition:** This repository is RiptOPL's main line. The C codebase continues as the [legacy Open-PS2-Loader edition](https://github.com/NathanNeurotic/Open-PS2-Loader). It uses **one SDK: ps2build**, with **Korium**, **RetroAchievements** and **IncebtIon** release editions. GCC builds release kits; GCC and LLVM are both validated in CI. See the [release contract](ROLLING_RELEASE.md), [migration checkpoint](docs/MIGRATION-CHECKPOINT-2026-10-12.md), [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md), [documentation site](https://nathanneurotic.github.io/RiptOPL/) and [wiki](https://github.com/NathanNeurotic/RiptOPL/wiki). A passing build does not establish hardware acceptance; test the exact edition and commit on your console.
 
 **An opinionated [Open PS2 Loader](https://github.com/ps2homebrew/Open-PS2-Loader) fork — aiming to be the "definitive build."**
 <br>
@@ -62,7 +62,7 @@ GCC produces release kits, while GCC and LLVM are both compiler validation gates
 The [Rolling Release workflow](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/rolling-release.yml)
 builds full install ZIPs, standalone loaders, app PSU saves, exact source snapshots,
 build manifests and checksums for all three editions. Channels are published only
-by an explicit dispatch after verification. Until their first publication, use the
+by an explicit dispatch after verification; unpublished builds are available as
 Actions artifacts. See [release channels and packaging](ROLLING_RELEASE.md).
 
 Imported feature and hardware documentation describes production behavior and
@@ -740,7 +740,7 @@ The internal special-disc parameter table now lives in `src/core/xparam.cpp`.
 
 ## OPL Archive
 
-The [MEGA Rolling Archive](https://mega.nz/folder/74pRHKRB#9SLDkrkvZAbeKO4Qvxg9LQ) preserves historical production builds. The C++ migration publishes its three ps2build editions through the GitHub release channels described above; automatic MEGA archival has not been migrated.
+The [MEGA Rolling Archive](https://mega.nz/folder/74pRHKRB#9SLDkrkvZAbeKO4Qvxg9LQ) preserves historical builds of the legacy C edition. The C++ migration publishes its three ps2build editions through the GitHub release channels described above; automatic MEGA archival has not been migrated.
 
 ## Frequent Issues
 

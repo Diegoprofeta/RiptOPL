@@ -34,7 +34,7 @@ as finished.
 
 | Part | State |
 | --- | --- |
-| `RETROACHIEVEMENTS=1` build flavour | done |
+| RetroAchievements editions (`ra`, `ra_incebtion`) | done |
 | In-game telemetry (`raudp`, ee_core snapshots) | **hardware-tested** from MMCE and USB, static IP (#702–#704) |
 | Watch-list loading from `<device>/RA/<serial>.wl` | done |
 | Image hashing (ISO9660 walk + MD5) | done; images on a share and on a USB stick hashed to matching values on hardware (hacan359, 2026-09-10) |
@@ -389,10 +389,10 @@ loses its controller *and* its sound at the game's first IOP reboot — Dynasty 
 hardware, reported by hacan359 on 2026-09-10, reproducing **with official OPL as much as with this
 fork**. Swapping only that one module fixes it. `usbd_mini.irx` is not a separate source tree:
 `iop/usb/usbd_mini/Makefile` points `IOP_SRC_DIR` at `iop/usb/usbd/src` and adds `-DMINI_DRIVER`, so
-the rewrite lands squarely on the module every RiptOPL flavour embeds straight from its container.
+the rewrite lands squarely on the module every RiptOPL edition embeds straight from the SDK.
 
 It is therefore **not** gated: `USBD_MINI_IRX` sits outside the `RETROACHIEVEMENTS` conditional and
-every flavour gets the pre-rewrite driver. It is listed here only because this is where the module
+every edition gets the pre-rewrite driver. It is listed here only because this is where the module
 came from; it is not a RetroAchievements feature and does not depend on the flag.
 
 Hardware-checked by **Zack on 2026-09-10** before that promotion landed: no noticeable USB
@@ -450,20 +450,20 @@ Hand testers a **run-pinned nightly.link build**, never a bare artifact link.
 * **The texture table is positional.** `RA_MARK` in `enum INTERNAL_TEXTURE` and its row in
   `internalDefault[]` are guarded by the same `#ifdef` for that reason. Guard one without the other
   and the array silently goes one short.
-* **Deleting `obj/` is mandatory** after any change to `EECoreConfig_t`, `OPL_MODULE_ID` or the
-  submenu structs. This Makefile does not track header dependencies, so an incremental build can
-  pass locally while CI's `make clean` fails.
+* **Build from a clean object tree** (`build/editions/<edition>-gcc`) after any change to
+  `EECoreConfig_t`, `OPL_MODULE_ID` or the submenu structs. A stale incremental build can pass
+  locally while CI's clean build fails.
 * **`ee_core`'s stack is whatever ram84 leaves above `.bss`.** ram84 is 77312 bytes
   (`ee_core/linkfile`), and the link now fails when less than 3 KB of stack is left, so the next
   thing that grows `.bss` breaks the build rather than a console. RA's two buffers, `ra_snap_buf` and
   `ra_watch` (about 8 KB), used to live in `.bss`: they left the RA build 1920 bytes of stack, which
   overflowed at the first IOP reset. Since #702 they sit in a work area the launcher reserves at the
   end of module storage (`raWorkArea` in `EECoreConfig_t`), and only for a launch that has a watch
-  list with telemetry on. When #702 landed, the stack left was 13312 bytes in the default build, 3348
-  with `EXTRA_FEATURES=1`, and 9984 / 10112 in the RA builds (`PADEMU=1` / `0`). The release builds
-  RA at the default `EXTRA_FEATURES=0`, which is also what the main loader ships as — so the RA
-  archive is the shipping loader plus achievements, not a variant. Before #702, RA and
-  `EXTRA_FEATURES=1` together overflowed ram84 by roughly 6.5 KB; that pairing has not been
+  list with telemetry on. When #702 landed (in the original C loader), the stack left was 13312 bytes
+  in the default build, 3348 with in-game screenshots and RTL enabled (today's `extras` configuration),
+  and 9984 / 10112 in the RA builds with and without PADEMU. The RA release is built without `extras`,
+  like the standard loader, so the RA kit is the shipping loader plus achievements, not a variant.
+  Before #702, RA and `extras` together overflowed ram84 by roughly 6.5 KB; that pairing has not been
   re-measured since.
 * **PC integration uses xeRAbora**, maintained by hacan359.
 * **Physical discs use an EESYNC-only reset image.** ROM CDVDMAN/CDVDFSV remain in place;
