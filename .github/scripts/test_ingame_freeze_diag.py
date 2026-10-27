@@ -110,7 +110,7 @@ check("{edition: korium, configuration: ingamediag}" in read(".github/workflows/
 pad = read("ee_core/src/padhook.c")
 handler = pad[pad.index("static int IGR_Intc_Handler(int cause)"):]
 handler = handler[:handler.index("\n}\n")]
-check("g_freeze_diag_polls++;" in handler[:handler.index("if (Pad_Data.pad_buf != NULL)")], "each VBLANK input sample is counted")
+check("g_freeze_diag_polls++;" in handler[:handler.index("IGR_CheckInputs();")], "each VBLANK input sample is counted")
 check(handler.index("iSuspendThread(i);") < handler.index("iWakeupThread(IGR_Thread_ID);"),
       "the handler suspends the game's threads before waking the worker")
 worker = pad[pad.index("static void IGR_Thread(void *arg)"):]

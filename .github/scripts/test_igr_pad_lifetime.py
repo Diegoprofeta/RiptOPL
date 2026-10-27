@@ -13,11 +13,12 @@ def function(signature):
     return source[start:source.index("\n}", start) + 2]
 
 
-# Stop before physical-button registers and teardown; execute the actual input
-# reads in interrupt context, rather than substituting upstream's polling worker.
-handler = function("static int IGR_Intc_Handler(")
+# Stop before physical-button registers and teardown; execute the actual input reads the VBLANK_END
+# handler makes (IGR_CheckInputs). The handler's own RA snapshot call is covered by test_igr_polling.py.
+handler = function("static void IGR_CheckInputs(")
 handler = handler[:handler.index("#ifdef RETROACHIEVEMENTS", handler.index("if (Pad_Data.pad_buf"))]
-handler = handler.replace("    int i;", "    (void)cause;")
+handler = handler.replace("static void IGR_CheckInputs(void)", "static int IGR_Intc_Handler(int cause)")
+handler = handler.replace("    int intr = DI();", "    (void)cause;")
 handler += "    return Pad_Data.combo_type;\n}\n"
 prefix = r'''
 #include <assert.h>
@@ -54,7 +55,7 @@ static struct { u16 libpad,libversion;u8 *pad_buf;int vb_count;
  int pos_combo1,pos_combo2,pos_state,pos_frame;u8 combo_type,prev_frame; } Pad_Data;
 static struct { int press,vb_count,latched; } Power_Button;
 static int IGR_Thread_ID=-1, IGR_Intc_ID=-1, padOpen_hooked;
-static int creates, starts, handlers, enables, snapshots, deletes;
+static int creates, starts, handlers, enables, deletes;
 static int createResult=5, startResult=0, handlerResult=7;
 static int _gp;
 static u8 IGR_Stack[4096];
@@ -70,7 +71,6 @@ static int AddIntcHandler(int cause,int (*fn)(int),int n) {
 }
 static void EnableIntc(int n) {assert(n==kINTC_VBLANK_END);enables++;}
 #ifdef RETROACHIEVEMENTS
-static void RA_OnVblank(void) {snapshots++;}
 #endif
 '''
 test = r'''
@@ -131,11 +131,6 @@ int main(void) {
  memset(fresh,0,sizeof(fresh));Pad_Data.combo_type=0;
  fresh[4]=IGR_PAD_STABLE_V2;fresh[29]=IGR_COMBO_R1_L1_R2_L2;fresh[28]=IGR_COMBO_START_SELECT;
  assert(tick()==IGR_COMBO_START_SELECT && intrEnabled);
-#ifdef RETROACHIEVEMENTS
- assert(snapshots==37);
-#else
- assert(snapshots==0);
-#endif
  padOpen_hooked=0;Pad_Data.combo_type=0;
  assert(Hook_scePadPortOpen(0,0,fresh)==1 && padOpen_hooked==1 && Pad_Data.pad_buf==fresh);
  padOpen_hooked=0;Invalidate_PadBuffer();

@@ -11,7 +11,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 padhook = (ROOT / 'ee_core/src/padhook.c').read_text()
-start = padhook.index('        // Check power button press.')
+start = padhook.index('        /* The CDVD power-off interrupt is a latched')
 end = padhook.index('        ee_kmode_exit();', start)
 sampler = padhook[start:end]
 

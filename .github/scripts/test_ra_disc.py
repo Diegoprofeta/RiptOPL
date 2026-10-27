@@ -233,10 +233,13 @@ run('launch',prefix+s+test)
 # Exercise the actual interrupt handler up to the point where it would suspend
 # game threads. Hardware register reads/writes use host bytes in this harness.
 s=(root/'ee_core/src/padhook.c').read_text(encoding='utf-8')
+check=s[s.index('static void IGR_CheckInputs'):]
+check=check[:check.index('\n}\n')+3]
 s=s[s.index('static int IGR_Intc_Handler'):]
 s=s[:s.index('    // If power button or combo is press')]
 s=s.replace('    int i;','    (void)cause;')
 s+='    return Pad_Data.combo_type;\n}\n'
+s=check+s
 prefix=r'''
 #include <assert.h>
 #include <stdio.h>
@@ -260,6 +263,8 @@ static int padOpen_hooked, snapshots, kernel_enters;
 static void RA_OnVblank(void) {snapshots++;}
 static void ee_kmode_enter(void) {kernel_enters++;}
 static void ee_kmode_exit(void) {}
+static int DI(void) {return 0;} /* IGR handler already runs with interrupts disabled. */
+static void EI(void) {assert(0);}
 '''
 test=r'''
 int main(void) {
@@ -274,8 +279,13 @@ int main(void) {
     assert(IGR_Intc_Handler(0)==IGR_COMBO_START_SELECT); /* return combo still reaches teardown */
     cfg.GameMode=OTHER_MODE;pad[3]=IGR_COMBO_R3_L3;
     assert(IGR_Intc_Handler(0)==IGR_COMBO_R3_L3);
-    assert(sdin==0 && scmd==0x1b && Power_Button.press==1 && kernel_enters==1);
-    puts("PASS: disc power-off combo cannot suspend game threads; physical button untouched; normal mode preserved");
+    assert(sdin==0 && scmd==0x1b && Power_Button.press==1 && Power_Button.latched==1 && kernel_enters==1);
+    /* Holding the same status must not create a false double press in RA. */
+    for (int i=0;i<51;i++) IGR_CheckInputs();
+    assert(Power_Button.press==1 && Pad_Data.combo_type==IGR_COMBO_R3_L3);
+    poff=0; IGR_CheckInputs(); assert(!Power_Button.latched);
+    poff=4; IGR_CheckInputs(); assert(Power_Button.press==2);
+    puts("PASS: RA disc leaves ROM power-off untouched; sustained physical button counts once and rearms");
 }
 '''
 run('power_input',prefix+s+test)
