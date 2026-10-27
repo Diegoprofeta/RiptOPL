@@ -2378,14 +2378,23 @@ static void menuCheckSelectedGameSupport(void)
     /* RA: hash the selected image, on demand. Hashing every image during the scan would
        hold the console on the splash screen: the scan runs before the menu appears and
        each image has to be opened and read.
-       Every refusal SAYS why -- a silent no-op reads as broken, and hashing an image
-       nothing will ever watch is worse. Only the four legs that reach sysLaunchLoaderElf
-       (BDM, ETH/SMB, HDD/APA, MMCE) can ever carry telemetry; the rest exec an external
-       ELF and ee_core never loads. */
+       Every refusal SAYS why -- a silent no-op reads as broken. OPL-core launches carry
+       ee_core's telemetry, Neutrino and UDPFS launches the RA kit's ORBIT agent, and USB VCDs
+       their own POPStarter module; Ember and the PC CARD CF device carry none. */
     item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
     int gid = selected_item->item->current->item.id;
+    int rowView = menuSelectedRowView(support);
+    item_list_t sourceView;
 
-    if (menuSelectedRowView(support) == LIB_VIEW_PS1) {
+    // A PS2 favourite is checked on its source device, by its current id there.
+    if (support->mode == FAV_MODE && rowView != LIB_VIEW_PS1) {
+        support = gFavSupport.sourceItem(gid, &sourceView, &gid);
+        if (support == NULL) {
+            guiShowRANotice(_l(gRAMode == RA_MODE_CADUCEUS ? _STR_CAD_USE_LIBRARY : _STR_XERA_USE_LIBRARY), NULL);
+            return;
+        }
+    }
+    if (rowView == LIB_VIEW_PS1) {
         /* PS1 rows never reach ee_core. A USB VCD carries its own telemetry module into
            POPStarter (rapopslaunch.cpp); Ember rows and other devices are untracked. */
         item_list_t ownerView;
@@ -2414,11 +2423,6 @@ static void menuCheckSelectedGameSupport(void)
     } else if (bdmModeIsPCCF(support->mode)) {
         // CF owns DEV9 in game, so the RA network modules never load beside it.
         guiShowRANotice(_l(_STR_PCCF_UNSUPPORTED_GAME), NULL);
-    } else if (support->mode == UDPFS_MODE) {
-        // UDPFS is Neutrino-only in this fork.
-        guiShowRANotice(_l(_STR_RA_NA_UDPFS), NULL);
-    } else if (gameMenuCoreIsNeutrino()) {
-        guiShowRANotice(_l(_STR_RA_NA_NEUTRINO), NULL);
     } else if (support->mode == HDD_MODE) {
         /* An HDLoader install has no image file: hash through its partition map, read-only,
            on the I/O worker. */

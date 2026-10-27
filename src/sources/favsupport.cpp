@@ -948,6 +948,15 @@ item_list_t *FavSupport::ownerView(int id, item_list_t *view)
     return view;
 }
 
+item_list_t *FavSupport::sourceItem(int id, item_list_t *view, int *sourceId)
+{
+    item_list_t *owner = ownerView(id, view);
+
+    if (owner == NULL || sourceId == NULL || !favResolveStoredId(owner, array_[id].id, array_[id].text, array_[id].kind, sourceId))
+        return NULL;
+    return owner;
+}
+
 int FavSupport::addItem(int mode, int id, int icon_id, int text_id, const char *text, int kind)
 {
     if (text == NULL || text[0] == '\0')

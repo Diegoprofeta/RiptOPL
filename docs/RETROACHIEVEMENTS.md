@@ -111,13 +111,13 @@ Telemetry lives inside OPL's own loader core, which only exists for launches OPL
 | Physical PS2 disc, **RA: launch disc** | implemented; **not hardware-tested** |
 | HTTP | local watch-list loading is wired into OPL-core launch; combined HTTP/RA operation is not hardware-validated, and it shares the ETH/SMB risk below |
 | Neutrino core (`$CoreLoader`) | RA kit's ORBIT runtime only (below); **not hardware-tested** |
-| UDPFS | **no** |
+| UDPFS | RA kit's ORBIT runtime (below), with the support check run from the menu over the UDPFS link; **not hardware-tested** |
 | PS1 / USB VCD (POPStarter) | yes, through its own module (below); **NOT TESTED on hardware** |
 | PS1 / Ember, MMCE, APA HDD, SMB and non-USB BDM | **no** |
 
-UDPFS and PS1 hand the console over to an external ELF and never load OPL's core, so there is nothing to
-take a snapshot from. A USB VCD carries its own reader into POPStarter instead (see
-[PS1 through USB POPStarter](#ps1-through-usb-popstarter)). Neutrino does the same, but the RA kit's Neutrino carries its own agent:
+Neutrino (and so UDPFS) and PS1 hand the console over to an external ELF and never load OPL's core, so
+ee_core has nothing to take a snapshot from. The RA kit's Neutrino carries its own agent (below), and a USB
+VCD carries its own reader into POPStarter (see [PS1 through USB POPStarter](#ps1-through-usb-popstarter)).
 
 ### Neutrino in the RA edition
 
