@@ -626,3 +626,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Modul RA i papërdorur i RiptOPL: POPS/MODULE_9.IRX. Ta fshij për një nisje të pastër?'
   PS1_RA_CLEAN_FAILED: Moduli RA i papërdorur nuk mund të fshihet.
   PS1_RA_CLEAN_CONTINUE: Të vazhdohet gjithsesi? Një modul RA i mbetur mund të ekzekutojë telemetri të vjetër. Jo anulon nisjen.
+  HINT_COVERFLOW_COUNT: Sa kopertina shfaq RIPFLOW në secilën anë të asaj të zgjedhur.
+  HINT_COVERFLOW_SCALE: Sa e madhe e vizaton RIPFLOW kopertinën e zgjedhur kundrejt të tjerave.
+  HINT_COVERFLOW_ANIM: Sa shpejt rrëshqasin kopertinat kur lëviz përgjatë rrjedhës.
+  HINT_NARGS_QB: 'Nisje e shpejtë: anashkalon ekranin e nisjes së Neutrino. Ndezur këtu, dërgohet për çdo lojë; fikur, RIPPS2 e dërgon ende vetë për lojërat USB, iLink dhe rrjeti, ku duhet.'
+  HINT_NARGS_DBC: 'Ngjyrat e korrigjimit: Neutrino mbush ekranin me një ngjyrë në çdo hap ngarkimi, ndaj një foto tregon ku ndalet një lojë.'
+  HINT_NARGS_LOGO: Shfaq logon PS2 para lojës (një rinisje e dytë e IOP, që u duhet disa njësive iLink). Fikur këtu, RIPPS2 ndjek Nisja e lojërave > Logo PS2, dhe nuk e dërgon kurrë për lojërat MMCE ose të rrjetit.
+  HINT_NARGS_CWD: 'Dosja që loja e sheh si të vetën. Bosh: parazgjedhja e Neutrino.'
+  HINT_NARGS_CFG: 'Një skedar konfigurimi Neutrino i yti (-cfg). Bosh: ai i Neutrino.'
+  HINT_NARGS_ELF: 'Nis këtë ELF në vend të skedarit të nisjes që emërton disku. Bosh: ai i vetë lojës.'
+  HINT_NARGS_ATA0: Një imazh HDD që Neutrino e monton si HDD-në e brendshme të konsolës, për lojërat që përdorin HDD-në (-ata0).
+  HINT_NARGS_ATA0ID: Skedari ID që shkon me atë imazh HDD (-ata0id).
+  HINT_NARGS_ATA1: Një imazh i dytë HDD (-ata1).
+  HINT_NARGS_EXTRA: Flamuj të tjerë Neutrino, të ndarë me hapësira, dërguar pas gjithçkaje më sipër. RIPPS2 shton gjithmonë -bsd dhe -dvd për njësinë dhe ISO-n e lojës, -mc0 dhe -mc1 për VMC-të e saj, -gsm për mënyrën e saj të videos, dhe mënyrat e veta të përputhshmërisë së lojës. Një flamur me rreshtin e vet më sipër (si -logo) kalon në atë rresht kur ruhet, dhe dërgohet ende.
+  NETBOOT_RESTART_NOW: Protokolli i rrjetit ndryshon pas një rinisjeje. Të ruhen cilësimet dhe të riniset OPL tani?
+  HINT_GSM_DEFAULTS_BUTTON: Rregullimet e mënyrës së videos që merr çdo lojë përveç nëse ka cilësimet e veta GSM.
+  HINT_MMCE_SETTINGS_BUTTON: Opsionet e folesë, kartës së nisjes IGR, GameID dhe kohës për MMCE.
+  HINT_BDMA_BUTTON: Cilin drajver exFAT përdor POPSTARTER për lojërat PS1 në USB, MX4SIO, MMCE, HDD ose iLink.
+  HINT_MMCE_COMM_BUTTON: Opsionet e kohës për lidhjen MMCE. Ndryshoji vetëm nëse lojërat ngrijnë ose ngarkohen ngadalë.
+  HINT_MMCE_PATH_BUTTON: Ku ndodhen dosjet e lojërave në kartën MMCE.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Shtegu, mënyra e videos dhe argumentet e Neutrino për çdo lojë.
+  HINT_OSD_DEFAULTS_BUTTON: Gjuha e konsolës, madhësia e ekranit dhe mënyra e videos që u jepen lojërave.
+  HINT_SETTINGS_SOURCE: Globale përdor cilësimet e përbashkëta; Për lojë i mban vetëm për këtë lojë.
+  HINT_PADMACRO_TOGGLE: Ndërsa butoni shtypet ngadalëson levën vetëm ndërsa mban butonin; Ndërrohet nga butoni e ndez dhe e fik.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 përmes USB ose Bluetooth, dhe multitap, për çdo lojë.
+  HINT_PADMACRO_GLOBAL: Ngadalësimi i levës, përmbysja e boshteve dhe turbo për çdo lojë.
+  HINT_COVERFLOW_DIM: Errëson kopertinat anësore.
+  HINT_OSD_ENABLE: I jep lojës cilësimet më poshtë. Fikur përdor ato të vetë konsolës.
+  HINT_OSD_TVASPECT: Forma e televizorit që i jepet lojës.
+  HINT_OSD_VMODE: Mënyra e videos që i jepet lojës.
+  DNAS_ID: ID DNAS

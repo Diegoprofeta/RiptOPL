@@ -35,7 +35,7 @@ harness = r'''
 #define O_RDONLY 0
 enum { _STR_NEUTRINO_DEV_UNSUPPORTED=1, _STR_NEUTRINO_BD_NO_DEVICE_NUMBER,
        _STR_NEUTRINO_TOML_SYNC_FAILED, _STR_NEUTRINO_DVR_QUICKBOOT,
-       _STR_NEUTRINO_DVR_BACKEND_ARGS, _STR_NEUTRINO_DVR_FILE_MISSING };
+       _STR_NEUTRINO_DVR_BACKEND_OVERRIDE, _STR_NEUTRINO_DVR_FILE_MISSING };
 static char gNeutrinoArgs[256];
 static std::set<std::string> files;
 static std::set<int> live;
@@ -72,7 +72,7 @@ int main() {
     for (const char *flag: {"-qb", "-bsdfs=bd", "-bsd=ata", "-bsd=dvr"}) {
         reset(); snprintf(gNeutrinoArgs,sizeof(gNeutrinoArgs),"%s",flag);
         assert(preflight()<0 && warning==1 && opened.empty());
-        assert(messageId==(!strcmp(flag,"-qb") ? _STR_NEUTRINO_DVR_QUICKBOOT : _STR_NEUTRINO_DVR_BACKEND_ARGS));
+        assert(messageId==(!strcmp(flag,"-qb") ? _STR_NEUTRINO_DVR_QUICKBOOT : _STR_NEUTRINO_DVR_BACKEND_OVERRIDE));
         reset(); assert(preflight(flag)<0 && warning==1 && opened.empty());
     }
     for (const char *inactive: {"$-qb", "--b -qb", "-qb-extra", "--b -bsdfs=bd", "$-bsd=ata"}) {

@@ -468,7 +468,7 @@ static int sysNeutrinoDvrPreflight(const char *neutrinoPath, const char *extraAr
             return -1;
         }
         if (neutrinoArgHasActiveFlag(sources[i], "-bsd=") || neutrinoArgHasActiveFlag(sources[i], "-bsdfs=")) {
-            host::ui().warningId(_STR_NEUTRINO_DVR_BACKEND_ARGS, 6);
+            host::ui().warningId(_STR_NEUTRINO_DVR_BACKEND_OVERRIDE, 6);
             return -1;
         }
     }

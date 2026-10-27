@@ -608,3 +608,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Kullanılmayan RiptOPL RA modülü: POPS/MODULE_9.IRX. Temiz bir başlatma için silinsin mi?'
   PS1_RA_CLEAN_FAILED: Kullanılmayan RA modülü silinemiyor.
   PS1_RA_CLEAN_CONTINUE: Yine de devam edilsin mi? Artakalan bir RA modülü eski telemetri çalıştırabilir. Hayır başlatmayı iptal eder.
+  HINT_COVERFLOW_COUNT: RIPFLOW'un seçili kapağın her iki yanında kaç kapak gösterdiği.
+  HINT_COVERFLOW_SCALE: RIPFLOW'un seçili kapağı diğerlerine göre ne kadar büyük çizdiği.
+  HINT_COVERFLOW_ANIM: Akış boyunca ilerlerken kapakların ne kadar hızlı kaydığı.
+  HINT_NARGS_QB: 'Quick Boot: Neutrino''nun kendi açılış ekranını atlar. Burada açıkken her oyun için gönderilir; kapalıyken RIPPS2 gerektiği yerlerde, yani USB, iLink ve ağ oyunları için onu yine kendisi gönderir.'
+  HINT_NARGS_DBC: 'Hata Ayıklama Renkleri: Neutrino her yükleme adımında ekranı bir renkle doldurur, böylece bir fotoğraf oyunun nerede durduğunu gösterir.'
+  HINT_NARGS_LOGO: Oyundan önce PS2 logosunu gösterir (bazı iLink sürücülerinin ihtiyaç duyduğu ikinci bir IOP yeniden başlatması). Burada kapalıyken RIPPS2 Oyun Başlatma > PS2 Logosu ayarını izler ve MMCE ya da ağ oyunları için onu asla göndermez.
+  HINT_NARGS_CWD: 'Oyunun kendi klasörü saydığı klasör. Boş: Neutrino''nun varsayılanı.'
+  HINT_NARGS_CFG: 'Size ait bir Neutrino yapılandırma dosyası (-cfg). Boş: Neutrino''nunki.'
+  HINT_NARGS_ELF: 'Diskin adlandırdığı önyükleme dosyası yerine bu ELF''i başlatır. Boş: oyunun kendisininki.'
+  HINT_NARGS_ATA0: Neutrino'nun konsolun dahili HDD'si olarak bağladığı bir HDD görüntüsü, HDD kullanan oyunlar için (-ata0).
+  HINT_NARGS_ATA0ID: O HDD görüntüsüyle birlikte giden kimlik dosyası (-ata0id).
+  HINT_NARGS_ATA1: İkinci bir HDD görüntüsü (-ata1).
+  HINT_NARGS_EXTRA: Diğer Neutrino bayrakları, boşluklarla ayrılmış, yukarıdaki her şeyden sonra gönderilir. RIPPS2 her zaman oyunun sürücüsü ve ISO'su için -bsd ve -dvd, VMC'leri için -mc0 ve -mc1, video modu için -gsm ve oyunun kendi uyumluluk modlarını ekler. Yukarıda kendi satırı olan bir bayrak (-logo gibi) kaydedildiğinde o satıra taşınır ve yine gönderilir.
+  NETBOOT_RESTART_NOW: Ağ protokolü yeniden başlatmadan sonra değişir. Ayarlar kaydedilip OPL şimdi yeniden başlatılsın mı?
+  HINT_GSM_DEFAULTS_BUTTON: Kendi GSM ayarları olmadıkça her oyunun aldığı video modu düzeltmeleri.
+  HINT_MMCE_SETTINGS_BUTTON: MMCE için yuva, IGR bootcard, GameID ve zamanlama seçenekleri.
+  HINT_BDMA_BUTTON: POPSTARTER'ın USB, MX4SIO, MMCE, HDD veya iLink üzerindeki PS1 oyunları için kullandığı exFAT sürücüsü.
+  HINT_MMCE_COMM_BUTTON: MMCE bağlantısı için zamanlama seçenekleri. Yalnızca oyunlar donarsa veya yavaş yüklenirse değiştirin.
+  HINT_MMCE_PATH_BUTTON: Oyun klasörlerinin MMCE kartında nerede durduğu.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Her oyun için Neutrino'nun yolu, video modu ve argümanları.
+  HINT_OSD_DEFAULTS_BUTTON: Oyunlara verilen konsol dili, ekran boyutu ve video modu.
+  HINT_SETTINGS_SOURCE: Genel ortak ayarları kullanır; Oyuna Özel bunları yalnızca bu oyun için tutar.
+  HINT_PADMACRO_TOGGLE: Tuşa Basılıyken çubuğu yalnızca tuşu tuttuğunuz sürece yavaşlatır; Tuşla Aç/Kapat onu açar ve kapatır.
+  HINT_PADEMU_GLOBAL: Her oyun için USB veya Bluetooth üzerinden DualShock 3/4 ve multitap.
+  HINT_PADMACRO_GLOBAL: Her oyun için çubuk yavaşlatma, eksen ters çevirme ve turbo.
+  HINT_COVERFLOW_DIM: Yandaki kapakları karartır.
+  HINT_OSD_ENABLE: Aşağıdaki ayarları oyuna verir. Kapalı, konsolun kendi ayarlarını kullanır.
+  HINT_OSD_TVASPECT: Oyuna verilen TV biçimi.
+  HINT_OSD_VMODE: Oyuna verilen video modu.
+  DNAS_ID: DNAS Kimliği

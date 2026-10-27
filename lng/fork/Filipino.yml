@@ -642,3 +642,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Hindi ginagamit na RiptOPL RA module: POPS/MODULE_9.IRX. Burahin para sa malinis na paglulunsad?'
   PS1_RA_CLEAN_FAILED: Hindi mabura ang hindi ginagamit na RA module.
   PS1_RA_CLEAN_CONTINUE: Magpatuloy pa rin? Maaaring magpatakbo ng lumang telemetry ang naiwang RA module. Kinakansela ng Hindi ang paglulunsad.
+  HINT_COVERFLOW_COUNT: Ilang cover ang ipinapakita ng RIPFLOW sa bawat gilid ng napili.
+  HINT_COVERFLOW_SCALE: Gaano kalaki iginuguhit ng RIPFLOW ang napiling cover kumpara sa iba.
+  HINT_COVERFLOW_ANIM: Gaano kabilis dumudulas ang mga cover habang gumagalaw ka sa flow.
+  HINT_NARGS_QB: 'Quick Boot: nilalaktawan ang sariling start-up screen ng Neutrino. Kapag naka-on dito, ipinapadala ito para sa bawat laro; kapag naka-off, ipinapadala pa rin ito ng RIPPS2 para sa USB, iLink at network na laro, kung saan ito kailangan.'
+  HINT_NARGS_DBC: 'Debug Colors: pinupuno ng Neutrino ang screen ng kulay sa bawat hakbang ng pag-load, kaya ipinapakita ng litrato kung saan humihinto ang laro.'
+  HINT_NARGS_LOGO: Ipinapakita ang PS2 logo bago ang laro (pangalawang IOP reboot, na kailangan ng ilang iLink drive). Kapag naka-off dito, sinusundan ng RIPPS2 ang Game Launching > PS2 Logo, at hindi ito kailanman ipinapadala para sa MMCE o network na laro.
+  HINT_NARGS_CWD: 'Ang folder na nakikita ng laro bilang sarili nito. Blangko: default ng Neutrino.'
+  HINT_NARGS_CFG: 'Sarili mong Neutrino config file (-cfg). Blangko: ang sa Neutrino.'
+  HINT_NARGS_ELF: 'Sinisimulan ang ELF na ito sa halip na ang boot file na pinangalanan ng disc. Blangko: ang sa laro mismo.'
+  HINT_NARGS_ATA0: HDD image na mina-mount ng Neutrino bilang internal HDD ng console, para sa mga larong gumagamit ng HDD (-ata0).
+  HINT_NARGS_ATA0ID: Ang ID file na kasama ng HDD image na iyon (-ata0id).
+  HINT_NARGS_ATA1: Pangalawang HDD image (-ata1).
+  HINT_NARGS_EXTRA: Ibang Neutrino flag, hinihiwalay ng espasyo, na ipinapadala pagkatapos ng lahat ng nasa itaas. Laging idinadagdag ng RIPPS2 ang -bsd at -dvd para sa drive at ISO ng laro, -mc0 at -mc1 para sa mga VMC nito, -gsm para sa video mode nito, at ang sariling compatibility mode ng laro. Ang flag na may sariling row sa itaas (gaya ng -logo) ay lilipat sa row na iyon pag-save, at ipinapadala pa rin.
+  NETBOOT_RESTART_NOW: Magbabago ang network protocol pagkatapos ng restart. I-save ang settings at i-restart ang OPL ngayon?
+  HINT_GSM_DEFAULTS_BUTTON: Mga ayos sa video mode na nakukuha ng bawat laro maliban kung may sarili itong GSM settings.
+  HINT_MMCE_SETTINGS_BUTTON: Mga opsyon sa slot, IGR bootcard, GameID at timing para sa MMCE.
+  HINT_BDMA_BUTTON: Aling exFAT driver ang ginagamit ng POPSTARTER para sa mga PS1 na laro sa USB, MX4SIO, MMCE, HDD o iLink.
+  HINT_MMCE_COMM_BUTTON: Mga opsyon sa timing para sa MMCE link. Baguhin lang kung nagfi-freeze o mabagal mag-load ang mga laro.
+  HINT_MMCE_PATH_BUTTON: Kung saan sa MMCE card nakalagay ang mga game folder.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Path, video mode at mga argument ng Neutrino para sa bawat laro.
+  HINT_OSD_DEFAULTS_BUTTON: Wika ng console, laki ng screen at video mode na ibinibigay sa mga laro.
+  HINT_SETTINGS_SOURCE: Ginagamit ng Global ang pinagsasaluhang settings; itinatabi ng Bawat laro ang mga ito para sa larong ito lang.
+  HINT_PADMACRO_TOGGLE: Pinababagal ng While Button Pressed ang stick habang hawak mo lang ang button; ino-on at ino-off ito ng Toggled By Button.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 sa USB o Bluetooth, at multitap, para sa bawat laro.
+  HINT_PADMACRO_GLOBAL: Pagbagal ng stick, pag-invert ng axis at turbo para sa bawat laro.
+  HINT_COVERFLOW_DIM: Pinapadilim ang mga cover sa gilid.
+  HINT_OSD_ENABLE: Ibinibigay sa laro ang mga setting sa ibaba. Ang sariling setting ng console ang gamit ng Off.
+  HINT_OSD_TVASPECT: Hugis ng TV na ibinibigay sa laro.
+  HINT_OSD_VMODE: Video mode na ibinibigay sa laro.
+  DNAS_ID: DNAS ID

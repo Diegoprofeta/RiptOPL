@@ -673,3 +673,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'ໂມດູນ RA ຂອງ RiptOPL ທີ່ບໍ່ໄດ້ໃຊ້: POPS/MODULE_9.IRX. ລົບມັນ ເພື່ອການເລີ່ມທີ່ສະອາດ ບໍ?'
   PS1_RA_CLEAN_FAILED: ລົບໂມດູນ RA ທີ່ບໍ່ໄດ້ໃຊ້ ບໍ່ໄດ້.
   PS1_RA_CLEAN_CONTINUE: ສືບຕໍ່ ຢູ່ດີ ບໍ? ໂມດູນ RA ທີ່ຄ້າງ ອາດເຮັດໃຫ້ ເທເລເມທຣີເກົ່າ ເຮັດວຽກ. ບໍ່ ຍົກເລີກການເລີ່ມ.
+  HINT_COVERFLOW_COUNT: RIPFLOW ສະແດງໜ້າປົກ ຈັກອັນ ໃນແຕ່ລະຂ້າງ ຂອງອັນທີ່ເລືອກ.
+  HINT_COVERFLOW_SCALE: RIPFLOW ແຕ້ມໜ້າປົກທີ່ເລືອກ ໃຫຍ່ປານໃດ ທຽບກັບອັນອື່ນ.
+  HINT_COVERFLOW_ANIM: ໜ້າປົກ ເລື່ອນໄວປານໃດ ເມື່ອທ່ານເລື່ອນໄປຕາມ flow.
+  HINT_NARGS_QB: 'ບູດໄວ: ຂ້າມໜ້າເລີ່ມຕົ້ນ ຂອງ Neutrino. ເປີດຢູ່ນີ້, ມັນຖືກສົ່ງ ສຳລັບທຸກເກມ; ປິດ, RIPPS2 ຍັງສົ່ງມັນເອງ ສຳລັບເກມ USB, iLink ແລະ ເຄືອຂ່າຍ, ບ່ອນທີ່ຕ້ອງການ.'
+  HINT_NARGS_DBC: 'ສີດີບັກ: Neutrino ເຕັມຈໍ ດ້ວຍສີ ໃນແຕ່ລະຂັ້ນການໂຫຼດ, ດັ່ງນັ້ນ ຮູບຖ່າຍ ສະແດງວ່າ ເກມຢຸດຢູ່ໃສ.'
+  HINT_NARGS_LOGO: ສະແດງໂລໂກ້ PS2 ກ່ອນເກມ (ການເລີ່ມ IOP ໃໝ່ ເທື່ອທີສອງ, ເຊິ່ງບາງໄດຣຟ໌ iLink ຕ້ອງການ). ປິດຢູ່ນີ້, RIPPS2 ເຮັດຕາມ ການເປີດເກມ > ໂລໂກ້ PS2, ແລະ ບໍ່ເຄີຍສົ່ງມັນ ສຳລັບເກມ MMCE ຫຼື ເຄືອຂ່າຍ.
+  HINT_NARGS_CWD: 'ໂຟນເດີ ທີ່ເກມເຫັນເປັນຂອງມັນເອງ. ວ່າງ: ຄ່າເລີ່ມຕົ້ນ ຂອງ Neutrino.'
+  HINT_NARGS_CFG: 'ໄຟລ໌ການຕັ້ງຄ່າ Neutrino ຂອງທ່ານເອງ (-cfg). ວ່າງ: ຂອງ Neutrino.'
+  HINT_NARGS_ELF: 'ເລີ່ມ ELF ນີ້ ແທນໄຟລ໌ບູດ ທີ່ແຜ່ນລະບຸ. ວ່າງ: ຂອງເກມເອງ.'
+  HINT_NARGS_ATA0: ຮູບ HDD ທີ່ Neutrino ເມົາເປັນ HDD ພາຍໃນ ຂອງເຄື່ອງ, ສຳລັບເກມທີ່ໃຊ້ HDD (-ata0).
+  HINT_NARGS_ATA0ID: ໄຟລ໌ ID ທີ່ຄູ່ກັບຮູບ HDD ນັ້ນ (-ata0id).
+  HINT_NARGS_ATA1: ຮູບ HDD ທີສອງ (-ata1).
+  HINT_NARGS_EXTRA: ແຟລັກ Neutrino ອື່ນ, ແຍກດ້ວຍຍະຫວ່າງ, ສົ່ງຫຼັງທຸກຢ່າງ ຂ້າງເທິງ. RIPPS2 ເພີ່ມສະເໝີ -bsd ແລະ -dvd ສຳລັບໄດຣຟ໌ ແລະ ISO ຂອງເກມ, -mc0 ແລະ -mc1 ສຳລັບ VMC ຂອງມັນ, -gsm ສຳລັບໂໝດວິດີໂອ ຂອງມັນ, ແລະ ໂໝດຄວາມເຂົ້າກັນໄດ້ ຂອງເກມເອງ. ແຟລັກທີ່ມີແຖວ ຂອງມັນເອງ ຂ້າງເທິງ (ເຊັ່ນ -logo) ຍ້າຍໄປແຖວນັ້ນ ຕອນບັນທຶກ, ແລະ ຍັງຖືກສົ່ງ.
+  NETBOOT_RESTART_NOW: ໂປໂຕຄອນເຄືອຂ່າຍ ປ່ຽນ ຫຼັງເລີ່ມໃໝ່. ບັນທຶກການຕັ້ງຄ່າ ແລະ ເລີ່ມ OPL ໃໝ່ ດຽວນີ້ ບໍ?
+  HINT_GSM_DEFAULTS_BUTTON: ການແກ້ໂໝດວິດີໂອ ທີ່ທຸກເກມໄດ້ ເວັ້ນແຕ່ມັນມີ ການຕັ້ງຄ່າ GSM ຂອງມັນເອງ.
+  HINT_MMCE_SETTINGS_BUTTON: ຕົວເລືອກ ຊ່ອງ, ກາດບູດ IGR, GameID ແລະ ຈັງຫວະ ສຳລັບ MMCE.
+  HINT_BDMA_BUTTON: ໄດຣເວີ exFAT ອັນໃດ ທີ່ POPSTARTER ໃຊ້ ສຳລັບເກມ PS1 ເທິງ USB, MX4SIO, MMCE, HDD ຫຼື iLink.
+  HINT_MMCE_COMM_BUTTON: ຕົວເລືອກຈັງຫວະ ສຳລັບລິ້ງ MMCE. ປ່ຽນມັນ ສະເພາະຖ້າເກມຄ້າງ ຫຼື ໂຫຼດຊ້າ.
+  HINT_MMCE_PATH_BUTTON: ໂຟນເດີເກມ ຢູ່ໃສ ເທິງກາດ MMCE.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: ເສັ້ນທາງ, ໂໝດວິດີໂອ ແລະ ອາກິວເມັນ ຂອງ Neutrino ສຳລັບທຸກເກມ.
+  HINT_OSD_DEFAULTS_BUTTON: ພາສາເຄື່ອງ, ຂະໜາດຈໍ ແລະ ໂໝດວິດີໂອ ທີ່ສົ່ງໃຫ້ເກມ.
+  HINT_SETTINGS_SOURCE: ລວມ ໃຊ້ການຕັ້ງຄ່າ ທີ່ໃຊ້ຮ່ວມກັນ; ແຕ່ລະເກມ ເກັບພວກມັນ ສຳລັບເກມນີ້ເທົ່ານັ້ນ.
+  HINT_PADMACRO_TOGGLE: ຂະນະກົດປຸ່ມ ເຮັດໃຫ້ກ້ານຊ້າ ສະເພາະຂະນະທີ່ທ່ານກົດປຸ່ມຄ້າງ; ສະລັບດ້ວຍປຸ່ມ ເປີດ ແລະ ປິດມັນ.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 ຜ່ານ USB ຫຼື Bluetooth, ແລະ multitap, ສຳລັບທຸກເກມ.
+  HINT_PADMACRO_GLOBAL: ການເຮັດໃຫ້ກ້ານຊ້າ, ການກັບແກນ ແລະ turbo ສຳລັບທຸກເກມ.
+  HINT_COVERFLOW_DIM: ເຮັດໃຫ້ໜ້າປົກຂ້າງ ມືດລົງ.
+  HINT_OSD_ENABLE: ສົ່ງການຕັ້ງຄ່າ ຂ້າງລຸ່ມ ໃຫ້ເກມ. ປິດ ໃຊ້ຂອງເຄື່ອງເອງ.
+  HINT_OSD_TVASPECT: ຮູບຊົງທີວີ ທີ່ສົ່ງໃຫ້ເກມ.
+  HINT_OSD_VMODE: ໂໝດວິດີໂອ ທີ່ສົ່ງໃຫ້ເກມ.
+  DNAS_ID: ID DNAS

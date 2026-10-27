@@ -648,3 +648,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Mô-đun RA của RiptOPL không dùng tới: POPS/MODULE_9.IRX. Xóa để chạy sạch?'
   PS1_RA_CLEAN_FAILED: Không xóa được mô-đun RA không dùng tới.
   PS1_RA_CLEAN_CONTINUE: Vẫn tiếp tục? Mô-đun RA còn sót có thể chạy đo đạc cũ. Không sẽ hủy việc chạy.
+  HINT_COVERFLOW_COUNT: RIPFLOW hiện bao nhiêu ảnh bìa ở mỗi bên ảnh bìa đang chọn.
+  HINT_COVERFLOW_SCALE: RIPFLOW vẽ ảnh bìa đang chọn to cỡ nào so với các ảnh khác.
+  HINT_COVERFLOW_ANIM: Ảnh bìa trượt nhanh cỡ nào khi bạn di chuyển dọc dòng chảy.
+  HINT_NARGS_QB: 'Quick Boot: bỏ qua màn hình khởi động riêng của Neutrino. Bật ở đây thì nó được gửi cho mọi trò chơi; tắt thì RIPPS2 vẫn tự gửi cho trò chơi USB, iLink và mạng, nơi nó cần thiết.'
+  HINT_NARGS_DBC: 'Màu gỡ lỗi: Neutrino tô màn hình một màu ở mỗi bước nạp, nên một tấm ảnh chụp cho biết trò chơi dừng ở đâu.'
+  HINT_NARGS_LOGO: Hiện logo PS2 trước trò chơi (một lần khởi động lại IOP thứ hai, một số ổ iLink cần). Tắt ở đây thì RIPPS2 theo Chạy trò chơi > Logo PS2, và không bao giờ gửi nó cho trò chơi MMCE hay mạng.
+  HINT_NARGS_CWD: 'Thư mục mà trò chơi coi là của nó. Để trống: mặc định của Neutrino.'
+  HINT_NARGS_CFG: 'Tệp cấu hình Neutrino của riêng bạn (-cfg). Để trống: của Neutrino.'
+  HINT_NARGS_ELF: 'Chạy ELF này thay cho tệp khởi động mà đĩa chỉ định. Để trống: của chính trò chơi.'
+  HINT_NARGS_ATA0: Ảnh HDD mà Neutrino gắn làm HDD trong của máy, cho trò chơi dùng HDD (-ata0).
+  HINT_NARGS_ATA0ID: Tệp ID đi kèm ảnh HDD đó (-ata0id).
+  HINT_NARGS_ATA1: Ảnh HDD thứ hai (-ata1).
+  HINT_NARGS_EXTRA: Các cờ Neutrino khác, cách nhau bằng dấu cách, gửi sau mọi thứ ở trên. RIPPS2 luôn thêm -bsd và -dvd cho ổ và ISO của trò chơi, -mc0 và -mc1 cho VMC, -gsm cho chế độ video, và các chế độ tương thích riêng của trò chơi. Cờ có dòng riêng ở trên (như -logo) sẽ chuyển vào dòng đó khi lưu, và vẫn được gửi.
+  NETBOOT_RESTART_NOW: Giao thức mạng sẽ đổi sau khi khởi động lại. Lưu cài đặt và khởi động lại OPL ngay?
+  HINT_GSM_DEFAULTS_BUTTON: Các bản sửa chế độ video mọi trò chơi đều nhận, trừ khi nó có cài đặt GSM riêng.
+  HINT_MMCE_SETTINGS_BUTTON: Khe, IGR bootcard, GameID và tùy chọn định thời cho MMCE.
+  HINT_BDMA_BUTTON: Trình điều khiển exFAT mà POPSTARTER dùng cho trò chơi PS1 trên USB, MX4SIO, MMCE, HDD hoặc iLink.
+  HINT_MMCE_COMM_BUTTON: Tùy chọn định thời cho liên kết MMCE. Chỉ đổi khi trò chơi bị treo hoặc nạp chậm.
+  HINT_MMCE_PATH_BUTTON: Vị trí các thư mục trò chơi trên thẻ MMCE.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Đường dẫn, chế độ video và tham số của Neutrino cho mọi trò chơi.
+  HINT_OSD_DEFAULTS_BUTTON: Ngôn ngữ máy, kích thước màn hình và chế độ video truyền cho trò chơi.
+  HINT_SETTINGS_SOURCE: Chung dùng cài đặt dùng chung; Theo trò chơi giữ các cài đặt này chỉ cho trò chơi này.
+  HINT_PADMACRO_TOGGLE: Khi giữ nút chỉ làm chậm cần trong lúc bạn giữ nút; Bật tắt bằng nút thì bật và tắt nó.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 qua USB hoặc Bluetooth, và multitap, cho mọi trò chơi.
+  HINT_PADMACRO_GLOBAL: Làm chậm cần, đảo trục và bắn liên thanh cho mọi trò chơi.
+  HINT_COVERFLOW_DIM: Làm tối các ảnh bìa hai bên.
+  HINT_OSD_ENABLE: Truyền các cài đặt bên dưới cho trò chơi. Tắt thì dùng cài đặt riêng của máy.
+  HINT_OSD_TVASPECT: Dạng TV truyền cho trò chơi.
+  HINT_OSD_VMODE: Chế độ video truyền cho trò chơi.
+  DNAS_ID: ID DNAS

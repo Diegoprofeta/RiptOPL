@@ -245,8 +245,8 @@ static int guiNetProtocolToPicker(int protocol)
     return 0;
 }
 
-// The Access row's value for a protocol: IMG (1) for the udpfs block backend AND for UDPBD (IMG-locked),
-// Files (0) otherwise. Both pages use it, so switching UDPBD -> UDPFS keeps IMG on either page.
+// Display-only Access for the currently shown protocol. UDPBD's IMG-locked value
+// must never become the saved UDPFS Access preference (gUdpfsAccessMode).
 static int guiNetProtocolAccess(int protocol)
 {
     return (protocol == NET_PROTO_UDPFSBD || protocol == NET_PROTO_UDPBD) ? 1 : 0;
@@ -268,13 +268,23 @@ static int guiNetProtocolFromPicker(int picker, int access)
 // Off -- then gNetworkProtocol is OFF (the stack does not run at all) and the pick waits for it.
 static void guiNetProtocolStore(int picker, int access)
 {
+    if (picker == 1)
+        gUdpfsAccessMode = access ? 1 : 0;
     gNetProtocolPick = guiNetProtocolFromPicker(picker, access);
     gNetworkProtocol = (gNetStartMode == START_MODE_DISABLED) ? NET_PROTO_OFF : gNetProtocolPick;
 }
 
+// The protocol the user picked differs from the stack already running. Yes saves every setting and
+// restarts; No keeps the choice pending, and Save Settings offers the restart again.
+static void guiNetProtocolOfferRestart(void)
+{
+    if (guiMsgBox(_l(_STR_NETBOOT_RESTART_NOW), 1, NULL))
+        menuSaveSettingsAndRestart();
+}
+
 // After either page set gNetworkProtocol: re-derive the legacy shadows downstream consumers read, then
-// give the same notices in the same order from both pages -- the UDP static-IP note, what to expect
-// from the new tab, and LAST the restart note when another stack is already resident.
+// give the same notices in the same order from both pages -- the UDP static-IP note, then EITHER the
+// restart offer (another stack is already resident) OR what to expect from the new page.
 static void guiNetProtocolApplied(int netProtocolWas)
 {
     gEnableUDPBD = (gNetworkProtocol == NET_PROTO_UDPBD || gNetworkProtocol == NET_PROTO_UDPFSBD);
@@ -293,6 +303,16 @@ static void guiNetProtocolApplied(int netProtocolWas)
     if (nowUdp && !wasUdp && ps2_ip_use_dhcp)
         guiMsgBox(_l(_STR_UDPBD_NEEDS_STATIC_IP), 0, NULL);
 
+    // Each network transport loads its IOP module chain once per boot (the load latch is not cleared
+    // live). If a stack is already up and the protocol changed away from the one actually running,
+    // the new protocol's page cannot connect until a restart -- so the "open its page" hints below
+    // would send the user to a page that does nothing. Offer the restart instead, saving first so the
+    // choice survives it.
+    if (guiNetProtocolNeedsRestart()) {
+        guiNetProtocolOfferRestart();
+        return;
+    }
+
     // "Nothing happens" guard: enabling a network protocol gives NO feedback -- the UDPFS tab joins the
     // ring silently (Manual start waits for a Confirm-press inside it), and the block transports show a
     // tab only once the PC server answers. Tell the user what to expect + which PC server to run.
@@ -302,14 +322,6 @@ static void guiNetProtocolApplied(int netProtocolWas)
         guiMsgBox(_l(_STR_NET_UDPFS_TAB_HINT), 0, NULL);
     else if (gNetworkProtocol == NET_PROTO_UDPFSBD || gNetworkProtocol == NET_PROTO_UDPBD)
         guiMsgBox(_l(_STR_NET_UDPBD_TAB_HINT), 0, NULL);
-
-    // Each network transport loads its IOP module chain once per boot (the load latch is not cleared
-    // live). If a stack is already up and the protocol changed away from the one actually running,
-    // the switch takes effect only after a restart -- say so instead of silently doing nothing. The
-    // OFFER to restart lives on the Save Settings path (see guiNetProtocolNeedsRestart): these
-    // dialogs only touch RAM, and acting now would tear OPL down before the choice was written.
-    if (guiNetProtocolNeedsRestart())
-        guiMsgBox(_l(_STR_NETBOOT_RESTART), 0, NULL);
 }
 
 // Game Sources: the indented Protocol row greys while Connectivity is Off.
@@ -330,12 +342,11 @@ static void guiSourcesNetRowsBegin(struct UIItem *ui, const char **deviceModes)
     guiSourcesNetRowsUpdate(ui); // the first frame renders before the updater runs
 }
 
-// Game Sources read-back. Access is not on this page, so UDPFS takes the Access the Network page would
-// show for the current protocol (guiNetProtocolAccess).
+// Game Sources has no Access row. Restore UDPFS's own preference, not UDPBD's IMG.
 static void guiSourcesNetRowsRead(struct UIItem *ui)
 {
     int netProtocolWas = gNetworkProtocol;
-    int access = guiNetProtocolAccess(guiNetProtocolShown());
+    int access = gUdpfsAccessMode;
     int picker = guiNetProtocolToPicker(guiNetProtocolShown());
 
     diaGetInt(ui, CFG_NETSTART, &gNetStartMode);
@@ -748,6 +759,7 @@ static char httpTestBase[HTTP_BASE_PATH_MAX], httpTestMessage[128];
 // selecting a UDP protocol can force Static without permanently clobbering that preference.
 static int netConfigDhcpPreference;
 static int netConfigLastProtocol = -1;
+static int netConfigUdpfsAccess; // pending UDPFS Files/IMG preference, not UDPBD's forced IMG
 
 static void httpTestWorker(void)
 {
@@ -768,6 +780,13 @@ static int netConfigUpdater(int modified)
         isSMB = netProto == 0;
         isHTTP = netProto == 3;
         isUdp = netProto == 1 || netProto == 2;
+
+        // Preserve UDPFS Access across in-dialog switches. A forced UDPBD IMG
+        // never overwrites a user-selected UDPFS Files (or explicit IMG).
+        if (netConfigLastProtocol == 1 && netProto != 1)
+            diaGetInt(diaNetConfig, CFG_UDPFSMODE, &netConfigUdpfsAccess);
+        if (netProto == 1 && netConfigLastProtocol != 1)
+            diaSetInt(diaNetConfig, CFG_UDPFSMODE, netConfigUdpfsAccess);
 
         // UDPFS/UDPBD always bind the configured static PS2 IP; their ministack has no DHCP client.
         // Force the effective row to Static while either protocol is selected, but remember the
@@ -988,7 +1007,7 @@ int guiShowNetConfig(void)
     // default a user reaches when they switch the Game Sources Start row from Off to Manual/Auto.
     int netProtoVal = guiNetProtocolToPicker(guiNetProtocolShown()); // while Off: the remembered pick
     // IMG for the udpfs block backend AND UDPBD (IMG-locked), so the seed already matches the lock.
-    int netAccessVal = guiNetProtocolAccess(guiNetProtocolShown());
+    int netAccessVal = (netProtoVal == 1) ? gUdpfsAccessMode : guiNetProtocolAccess(guiNetProtocolShown());
     for (i = 0; i < 4; ++i)
         diaSetInt(diaNetConfig, NETCFG_HTTP_IP_0 + i, gHttpServerIp[i]);
     diaSetInt(diaNetConfig, NETCFG_HTTP_PORT, gHttpPort);
@@ -1001,6 +1020,7 @@ int guiShowNetConfig(void)
     diaSetEnabled(diaNetConfig, CFG_UDPFSMODE, netProtoVal == 1);
     diaSetEnabled(diaNetConfig, CFG_SMBDIALECT, 0); // NOTE(rebuild): greyed until item 4
     netConfigDhcpPreference = ps2_ip_use_dhcp;
+    netConfigUdpfsAccess = gUdpfsAccessMode;
     netConfigLastProtocol = -1;
     netConfigUpdater(1);
 
@@ -1100,7 +1120,14 @@ reshow_network:
         // NOTE(rebuild): the fork also reads the SMB dialect row back here (item 4).
         int netProtocolWas = gNetworkProtocol;
         guiNetProtocolStore(netProtoVal2, netAccessVal2);
+        if (netProtoVal2 != 1)
+            gUdpfsAccessMode = netConfigUdpfsAccess; // retain pending preference even if switching away
         guiNetProtocolApplied(netProtocolWas);
+        // OK is this page's apply button. A protocol change made on Game Sources (or declined here
+        // earlier) is still waiting on a restart, so OK offers it again rather than doing nothing.
+        if (gNetworkProtocol == netProtocolWas && (result == NETCFG_OK || result == NETCFG_RECONNECT) &&
+            guiNetProtocolNeedsRestart())
+            guiNetProtocolOfferRestart();
 
 #ifdef RETROACHIEVEMENTS
         // Applied network/RA settings invalidate the peer a previous menu query verified.

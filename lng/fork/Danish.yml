@@ -619,3 +619,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Ubrugt RA-modul fra RiptOPL: POPS/MODULE_9.IRX. Slet det for en ren start?'
   PS1_RA_CLEAN_FAILED: Kan ikke slette det ubrugte RA-modul.
   PS1_RA_CLEAN_CONTINUE: Fortsæt alligevel? Et efterladt RA-modul kan køre forældet telemetri. Nej annullerer starten.
+  HINT_COVERFLOW_COUNT: Hvor mange covers RIPFLOW viser på hver side af det valgte.
+  HINT_COVERFLOW_SCALE: Hvor stort RIPFLOW tegner det valgte cover i forhold til de andre.
+  HINT_COVERFLOW_ANIM: Hvor hurtigt covers glider, når du bevæger dig langs flowet.
+  HINT_NARGS_QB: 'Quick Boot: springer Neutrinos egen startskærm over. Til her sendes den for hvert spil; fra sender RIPPS2 den stadig selv for USB-, iLink- og netværksspil, hvor den er nødvendig.'
+  HINT_NARGS_DBC: 'Fejlfindingsfarver: Neutrino fylder skærmen med en farve ved hvert indlæsningstrin, så et foto viser, hvor et spil stopper.'
+  HINT_NARGS_LOGO: Viser PS2-logoet før spillet (en anden genstart af IOP, som nogle iLink-drev har brug for). Fra her følger RIPPS2 Spilstart > PS2-logo og sender det aldrig for MMCE- eller netværksspil.
+  HINT_NARGS_CWD: 'Mappen, spillet ser som sin egen. Tom: Neutrinos standard.'
+  HINT_NARGS_CFG: 'En egen Neutrino-konfigurationsfil (-cfg). Tom: Neutrinos.'
+  HINT_NARGS_ELF: 'Starter denne ELF i stedet for den startfil, disken angiver. Tom: spillets egen.'
+  HINT_NARGS_ATA0: Et HDD-billede, som Neutrino monterer som konsollens interne HDD, til spil, der bruger HDD'en (-ata0).
+  HINT_NARGS_ATA0ID: ID-filen, der hører til det HDD-billede (-ata0id).
+  HINT_NARGS_ATA1: Et andet HDD-billede (-ata1).
+  HINT_NARGS_EXTRA: Andre Neutrino-flag, adskilt af mellemrum, sendt efter alt ovenfor. RIPPS2 tilføjer altid -bsd og -dvd for spillets drev og ISO, -mc0 og -mc1 for dets VMC'er, -gsm for dets videotilstand og spillets egne kompatibilitetstilstande. Et flag med sin egen række ovenfor (som -logo) flyttes til den række, når du gemmer, og sendes stadig.
+  NETBOOT_RESTART_NOW: Netværksprotokollen ændres efter en genstart. Gem indstillingerne, og genstart OPL nu?
+  HINT_GSM_DEFAULTS_BUTTON: Rettelser af videotilstand, som hvert spil får, medmindre det har sine egne GSM-indstillinger.
+  HINT_MMCE_SETTINGS_BUTTON: Stik, IGR bootcard, GameID og timingindstillinger for MMCE.
+  HINT_BDMA_BUTTON: Hvilken exFAT-driver POPSTARTER bruger til PS1-spil på USB, MX4SIO, MMCE, HDD eller iLink.
+  HINT_MMCE_COMM_BUTTON: Timingindstillinger for MMCE-forbindelsen. Skift dem kun, hvis spil fryser eller indlæses langsomt.
+  HINT_MMCE_PATH_BUTTON: Hvor på MMCE-kortet spilmapperne ligger.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Neutrinos sti, videotilstand og argumenter for hvert spil.
+  HINT_OSD_DEFAULTS_BUTTON: Konsolsprog, skærmstørrelse og videotilstand, der gives videre til spil.
+  HINT_SETTINGS_SOURCE: Global bruger de delte indstillinger; Pr. spil beholder dem kun til dette spil.
+  HINT_PADMACRO_TOGGLE: Mens knappen holdes sænker kun pindens fart, mens du holder knappen; Skiftes med knap slår det til og fra.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 over USB eller Bluetooth, og multitap, til hvert spil.
+  HINT_PADMACRO_GLOBAL: Nedsat pindhastighed, akseinvertering og turbo til hvert spil.
+  HINT_COVERFLOW_DIM: Gør sidecovers mørkere.
+  HINT_OSD_ENABLE: Giver indstillingerne nedenfor videre til spillet. Fra bruger konsollens egne.
+  HINT_OSD_TVASPECT: Tv-form, der gives videre til spillet.
+  HINT_OSD_VMODE: Videotilstand, der gives videre til spillet.
+  DNAS_ID: DNAS-id

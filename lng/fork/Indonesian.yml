@@ -628,3 +628,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Modul RA RiptOPL yang tak terpakai: POPS/MODULE_9.IRX. Hapus agar peluncuran bersih?'
   PS1_RA_CLEAN_FAILED: Tidak bisa menghapus modul RA yang tak terpakai.
   PS1_RA_CLEAN_CONTINUE: Tetap lanjutkan? Modul RA yang tertinggal bisa menjalankan telemetri usang. Tidak membatalkan peluncuran.
+  HINT_COVERFLOW_COUNT: Berapa sampul yang ditampilkan RIPFLOW di setiap sisi sampul yang dipilih.
+  HINT_COVERFLOW_SCALE: Seberapa besar RIPFLOW menggambar sampul yang dipilih dibanding yang lain.
+  HINT_COVERFLOW_ANIM: Seberapa cepat sampul meluncur saat kamu bergerak di sepanjang aliran.
+  HINT_NARGS_QB: 'Quick Boot: melewati layar awal Neutrino sendiri. Nyala di sini, dikirim untuk setiap game; mati, RIPPS2 tetap mengirimnya sendiri untuk game USB, iLink, dan jaringan, tempat ia dibutuhkan.'
+  HINT_NARGS_DBC: 'Warna Debug: Neutrino mengisi layar dengan satu warna di setiap langkah pemuatan, sehingga foto menunjukkan di mana game berhenti.'
+  HINT_NARGS_LOGO: Menampilkan logo PS2 sebelum game (boot ulang IOP kedua, yang dibutuhkan beberapa drive iLink). Mati di sini, RIPPS2 mengikuti Peluncuran Game > Logo PS2, dan tidak pernah mengirimnya untuk game MMCE atau jaringan.
+  HINT_NARGS_CWD: 'Folder yang dianggap game sebagai miliknya. Kosong: bawaan Neutrino.'
+  HINT_NARGS_CFG: 'File konfigurasi Neutrino milikmu sendiri (-cfg). Kosong: milik Neutrino.'
+  HINT_NARGS_ELF: 'Menjalankan ELF ini alih-alih file boot yang ditunjuk disk. Kosong: milik game sendiri.'
+  HINT_NARGS_ATA0: Image HDD yang dipasang Neutrino sebagai HDD internal konsol, untuk game yang memakai HDD (-ata0).
+  HINT_NARGS_ATA0ID: File ID yang menyertai image HDD itu (-ata0id).
+  HINT_NARGS_ATA1: Image HDD kedua (-ata1).
+  HINT_NARGS_EXTRA: Flag Neutrino lainnya, dipisahkan spasi, dikirim setelah semua yang di atas. RIPPS2 selalu menambahkan -bsd dan -dvd untuk drive dan ISO game, -mc0 dan -mc1 untuk VMC-nya, -gsm untuk mode videonya, dan mode kompatibilitas milik game. Flag yang punya baris sendiri di atas (seperti -logo) dipindah ke baris itu saat disimpan, dan tetap dikirim.
+  NETBOOT_RESTART_NOW: Protokol jaringan berubah setelah mulai ulang. Simpan pengaturan dan mulai ulang OPL sekarang?
+  HINT_GSM_DEFAULTS_BUTTON: Perbaikan mode video yang didapat setiap game kecuali punya pengaturan GSM sendiri.
+  HINT_MMCE_SETTINGS_BUTTON: Slot, IGR bootcard, GameID, dan opsi timing untuk MMCE.
+  HINT_BDMA_BUTTON: Driver exFAT yang dipakai POPSTARTER untuk game PS1 di USB, MX4SIO, MMCE, HDD, atau iLink.
+  HINT_MMCE_COMM_BUTTON: Opsi timing untuk link MMCE. Ubah hanya jika game macet atau dimuat lambat.
+  HINT_MMCE_PATH_BUTTON: Letak folder game di kartu MMCE.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Jalur, mode video, dan argumen Neutrino untuk setiap game.
+  HINT_OSD_DEFAULTS_BUTTON: Bahasa konsol, ukuran layar, dan mode video yang diberikan ke game.
+  HINT_SETTINGS_SOURCE: Global memakai pengaturan bersama; Per Game menyimpannya hanya untuk game ini.
+  HINT_PADMACRO_TOGGLE: Saat Tombol Ditekan melambatkan stik hanya selama kamu menahan tombol; Diganti dengan Tombol menyalakan dan mematikannya.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 lewat USB atau Bluetooth, dan multitap, untuk setiap game.
+  HINT_PADMACRO_GLOBAL: Perlambatan stik, pembalikan sumbu, dan turbo untuk setiap game.
+  HINT_COVERFLOW_DIM: Menggelapkan sampul samping.
+  HINT_OSD_ENABLE: Memberikan pengaturan di bawah ke game. Mati memakai milik konsol sendiri.
+  HINT_OSD_TVASPECT: Bentuk TV yang diberikan ke game.
+  HINT_OSD_VMODE: Mode video yang diberikan ke game.
+  DNAS_ID: ID DNAS

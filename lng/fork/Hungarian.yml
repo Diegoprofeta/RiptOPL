@@ -613,3 +613,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Nem használt RiptOPL RA modul: POPS/MODULE_9.IRX. Törlöd a tiszta indításhoz?'
   PS1_RA_CLEAN_FAILED: A nem használt RA modul nem törölhető.
   PS1_RA_CLEAN_CONTINUE: Így is folytatod? Egy ottmaradt RA modul elavult telemetriát futtathat. A Nem megszakítja az indítást.
+  HINT_COVERFLOW_COUNT: Hány borítót mutat a RIPFLOW a kiválasztott mindkét oldalán.
+  HINT_COVERFLOW_SCALE: Mekkorának rajzolja a RIPFLOW a kiválasztott borítót a többihez képest.
+  HINT_COVERFLOW_ANIM: Milyen gyorsan siklanak a borítók, amikor a folyamban mozogsz.
+  HINT_NARGS_QB: 'Quick Boot: átugorja a Neutrino saját kezdőképernyőjét. Itt bekapcsolva minden játékhoz elküldi; kikapcsolva a RIPPS2 akkor is magától elküldi az USB-s, iLinkes és hálózati játékoknál, ahol szükség van rá.'
+  HINT_NARGS_DBC: 'Hibakereső színek: a Neutrino minden betöltési lépésnél egy színnel tölti ki a képernyőt, így egy fénykép megmutatja, hol akad el a játék.'
+  HINT_NARGS_LOGO: A játék előtt megmutatja a PS2 logót (egy második IOP-újraindítás, amelyre néhány iLink meghajtónak szüksége van). Itt kikapcsolva a RIPPS2 a Játékindítás > PS2 logó beállítást követi, és MMCE-s vagy hálózati játékoknál sosem küldi el.
+  HINT_NARGS_CWD: 'A mappa, amelyet a játék a sajátjának tekint. Üres: a Neutrino alapértéke.'
+  HINT_NARGS_CFG: 'Saját Neutrino beállításfájl (-cfg). Üres: a Neutrinóé.'
+  HINT_NARGS_ELF: 'Ezt az ELF-et indítja a lemez által megnevezett rendszerindító fájl helyett. Üres: a játék sajátja.'
+  HINT_NARGS_ATA0: Egy HDD-kép, amelyet a Neutrino a konzol belső HDD-jeként csatol, a HDD-t használó játékokhoz (-ata0).
+  HINT_NARGS_ATA0ID: Az ahhoz a HDD-képhez tartozó azonosítófájl (-ata0id).
+  HINT_NARGS_ATA1: Egy második HDD-kép (-ata1).
+  HINT_NARGS_EXTRA: További Neutrino kapcsolók szóközzel elválasztva, a fentiek után elküldve. A RIPPS2 mindig hozzáadja a -bsd és -dvd kapcsolót a játék meghajtójához és ISO-jához, a -mc0 és -mc1 kapcsolót a VMC-ihez, a -gsm-et a videómódjához, valamint a játék saját kompatibilitási módjait. A fenti saját sorral rendelkező kapcsoló (például -logo) mentéskor abba a sorba kerül, és továbbra is elküldésre kerül.
+  NETBOOT_RESTART_NOW: A hálózati protokoll újraindítás után változik. Mented a beállításokat, és most újraindítod az OPL-t?
+  HINT_GSM_DEFAULTS_BUTTON: Videómód-javítások, amelyeket minden játék megkap, hacsak nincs saját GSM beállítása.
+  HINT_MMCE_SETTINGS_BUTTON: Foglalat, IGR bootcard, GameID és időzítési beállítások az MMCE-hez.
+  HINT_BDMA_BUTTON: Melyik exFAT illesztőprogramot használja a POPSTARTER az USB-n, MX4SIO-n, MMCE-n, HDD-n vagy iLinken lévő PS1 játékokhoz.
+  HINT_MMCE_COMM_BUTTON: Időzítési beállítások az MMCE kapcsolathoz. Csak akkor módosítsd, ha a játékok lefagynak vagy lassan töltenek.
+  HINT_MMCE_PATH_BUTTON: Hol vannak a játékmappák az MMCE kártyán.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: A Neutrino útvonala, videómódja és argumentumai minden játékhoz.
+  HINT_OSD_DEFAULTS_BUTTON: A játékoknak átadott konzolnyelv, képernyőméret és videómód.
+  HINT_SETTINGS_SOURCE: A Globális a közös beállításokat használja; a Játékonként csak ennek a játéknak tartja meg őket.
+  HINT_PADMACRO_TOGGLE: A Gomb lenyomása közben csak addig lassítja a kart, amíg tartod a gombot; a Gombbal váltva be- és kikapcsolja.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 USB-n vagy Bluetoothon, és multitap, minden játékhoz.
+  HINT_PADMACRO_GLOBAL: Karlassítás, tengelyfordítás és turbó minden játékhoz.
+  HINT_COVERFLOW_DIM: Elsötétíti az oldalsó borítókat.
+  HINT_OSD_ENABLE: Átadja a játéknak az alábbi beállításokat. Kikapcsolva a konzol saját beállításait használja.
+  HINT_OSD_TVASPECT: A játéknak átadott tévéforma.
+  HINT_OSD_VMODE: A játéknak átadott videómód.
+  DNAS_ID: DNAS azonosító

@@ -658,3 +658,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Modul RA RiptOPL nefolosit: POPS/MODULE_9.IRX. Îl ștergi pentru o lansare curată?'
   PS1_RA_CLEAN_FAILED: Modulul RA nefolosit nu poate fi șters.
   PS1_RA_CLEAN_CONTINUE: Continui oricum? Un modul RA rămas poate rula telemetrie învechită. Nu anulează lansarea.
+  HINT_COVERFLOW_COUNT: Câte coperți arată RIPFLOW de fiecare parte a celei alese.
+  HINT_COVERFLOW_SCALE: Cât de mare desenează RIPFLOW coperta aleasă față de celelalte.
+  HINT_COVERFLOW_ANIM: Cât de repede alunecă coperțile când te miști prin flux.
+  HINT_NARGS_QB: 'Quick Boot: sare peste ecranul de pornire al Neutrino. Pornit aici, este trimis pentru fiecare joc; oprit, RIPPS2 îl trimite oricum singur pentru jocurile de pe USB, iLink și din rețea, unde e nevoie de el.'
+  HINT_NARGS_DBC: 'Culori de depanare: Neutrino umple ecranul cu o culoare la fiecare pas de încărcare, așa că o fotografie arată unde se oprește un joc.'
+  HINT_NARGS_LOGO: Arată sigla PS2 înaintea jocului (o a doua repornire IOP, de care au nevoie unele unități iLink). Oprit aici, RIPPS2 urmează Lansare jocuri > Sigla PS2 și nu îl trimite niciodată pentru jocuri MMCE sau din rețea.
+  HINT_NARGS_CWD: 'Folderul pe care jocul îl consideră al lui. Gol: valoarea implicită Neutrino.'
+  HINT_NARGS_CFG: 'Un fișier de configurație Neutrino propriu (-cfg). Gol: cel al Neutrino.'
+  HINT_NARGS_ELF: 'Pornește acest ELF în locul fișierului de pornire numit de disc. Gol: cel al jocului.'
+  HINT_NARGS_ATA0: O imagine HDD pe care Neutrino o montează ca HDD intern al consolei, pentru jocurile care folosesc HDD-ul (-ata0).
+  HINT_NARGS_ATA0ID: Fișierul ID care merge cu acea imagine HDD (-ata0id).
+  HINT_NARGS_ATA1: O a doua imagine HDD (-ata1).
+  HINT_NARGS_EXTRA: Alte opțiuni Neutrino, separate prin spații, trimise după tot ce e mai sus. RIPPS2 adaugă mereu -bsd și -dvd pentru unitatea și ISO-ul jocului, -mc0 și -mc1 pentru VMC-urile lui, -gsm pentru modul video și modurile proprii de compatibilitate ale jocului. O opțiune cu propriul rând mai sus (cum ar fi -logo) se mută în acel rând la salvare și este trimisă în continuare.
+  NETBOOT_RESTART_NOW: Protocolul de rețea se schimbă după repornire. Salvezi setările și repornești OPL acum?
+  HINT_GSM_DEFAULTS_BUTTON: Remedieri de mod video pe care le primește fiecare joc, dacă nu are propriile setări GSM.
+  HINT_MMCE_SETTINGS_BUTTON: Slot, IGR bootcard, GameID și opțiuni de sincronizare pentru MMCE.
+  HINT_BDMA_BUTTON: Ce driver exFAT folosește POPSTARTER pentru jocurile PS1 de pe USB, MX4SIO, MMCE, HDD sau iLink.
+  HINT_MMCE_COMM_BUTTON: Opțiuni de sincronizare pentru legătura MMCE. Schimbă-le doar dacă jocurile se blochează sau se încarcă greu.
+  HINT_MMCE_PATH_BUTTON: Unde se află folderele jocurilor pe cardul MMCE.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Calea, modul video și argumentele Neutrino pentru fiecare joc.
+  HINT_OSD_DEFAULTS_BUTTON: Limba consolei, mărimea ecranului și modul video date jocurilor.
+  HINT_SETTINGS_SOURCE: Global folosește setările comune; Per joc le păstrează doar pentru acest joc.
+  HINT_PADMACRO_TOGGLE: Cât timp e apăsat butonul încetinește stickul doar cât ții butonul; Comutat cu butonul îl pornește și îl oprește.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 prin USB sau Bluetooth, și multitap, pentru fiecare joc.
+  HINT_PADMACRO_GLOBAL: Încetinirea stickului, inversarea axelor și turbo pentru fiecare joc.
+  HINT_COVERFLOW_DIM: Întunecă coperțile laterale.
+  HINT_OSD_ENABLE: Dă jocului setările de mai jos. Oprit folosește setările proprii ale consolei.
+  HINT_OSD_TVASPECT: Forma televizorului dată jocului.
+  HINT_OSD_VMODE: Modul video dat jocului.
+  DNAS_ID: ID DNAS

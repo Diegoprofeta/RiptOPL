@@ -1732,6 +1732,12 @@ void _loadConfig()
                      gNetProtocolPick <= NET_PROTO_OFF || gNetProtocolPick > NET_PROTO_HTTP)
                 gNetProtocolPick = NET_PROTO_SMB;
 
+            // Recover UDPFS Access independently of UDPBD. Older configs have no key: infer
+            // IMG only if their active/remembered protocol really was UDPFSBD, else Files.
+            if (!configGetInt(configOPL, CONFIG_OPL_UDPFS_ACCESS, &gUdpfsAccessMode) ||
+                (gUdpfsAccessMode != 0 && gUdpfsAccessMode != 1))
+                gUdpfsAccessMode = (gNetProtocolPick == NET_PROTO_UDPFSBD) ? 1 : 0;
+
             // Network start row (Off/Manual/Auto). A config predating this field has no net_start_mode
             // key -- derive it from the protocol we just resolved so an existing user keeps working:
             //   OFF   -> Off (Row 1); SMB -> its persisted eth_mode (so a prior SMB=Auto survives);
@@ -2169,6 +2175,7 @@ static void _saveConfig()
         configSetInt(configOPL, CONFIG_OPL_NETWORK_PROTOCOL, gNetworkProtocol);
         configSetInt(configOPL, CONFIG_OPL_NET_START_MODE, gNetStartMode);
         configSetInt(configOPL, CONFIG_OPL_NET_PROTOCOL_PICK, gNetProtocolPick);
+        configSetInt(configOPL, CONFIG_OPL_UDPFS_ACCESS, gUdpfsAccessMode);
 
         configSetInt(configOPL, CONFIG_OPL_SWAP_SEL_BUTTON, gSelectButton == KEY_CIRCLE ? 0 : 1);
     }

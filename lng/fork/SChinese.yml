@@ -604,3 +604,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 未使用的 RiptOPL RA 模块：POPS/MODULE_9.IRX。删除它以便干净启动吗？
   PS1_RA_CLEAN_FAILED: 无法删除未使用的 RA 模块。
   PS1_RA_CLEAN_CONTINUE: 仍要继续吗？残留的 RA 模块可能发送过时的遥测。选否会取消启动。
+  HINT_COVERFLOW_COUNT: RIPFLOW 在所选封面两侧各显示多少个封面。
+  HINT_COVERFLOW_SCALE: RIPFLOW 中所选封面相对于其他封面的大小。
+  HINT_COVERFLOW_ANIM: 在封面流中移动时封面滑动的速度。
+  HINT_NARGS_QB: Quick Boot：跳过 Neutrino 自己的启动画面。在这里开启时，每个游戏都会发送；关闭时，RIPPS2 仍会为需要它的 USB、iLink 和网络游戏自动发送。
+  HINT_NARGS_DBC: 调试颜色：Neutrino 在每个加载步骤用一种颜色填满屏幕，拍张照片就能看出游戏停在哪里。
+  HINT_NARGS_LOGO: 在游戏前显示 PS2 标志（再重启一次 IOP，某些 iLink 驱动器需要）。在这里关闭时，RIPPS2 遵循 游戏启动 > PS2 标志，并且从不为 MMCE 或网络游戏发送。
+  HINT_NARGS_CWD: 游戏视为自己目录的文件夹。留空：Neutrino 的默认值。
+  HINT_NARGS_CFG: 你自己的 Neutrino 配置文件（-cfg）。留空：Neutrino 自带的。
+  HINT_NARGS_ELF: 启动这个 ELF，而不是光盘指定的启动文件。留空：游戏自己的。
+  HINT_NARGS_ATA0: Neutrino 挂载为主机内置硬盘的硬盘镜像，用于使用硬盘的游戏（-ata0）。
+  HINT_NARGS_ATA0ID: 与该硬盘镜像配套的 ID 文件（-ata0id）。
+  HINT_NARGS_ATA1: 第二个硬盘镜像（-ata1）。
+  HINT_NARGS_EXTRA: 其他 Neutrino 参数，以空格分隔，在上面所有参数之后发送。RIPPS2 总会为游戏的驱动器和 ISO 加上 -bsd 和 -dvd，为其 VMC 加上 -mc0 和 -mc1，为其视频模式加上 -gsm，以及游戏自己的兼容模式。在上面有专属行的参数（例如 -logo）保存时会移到那一行，并且照常发送。
+  NETBOOT_RESTART_NOW: 网络协议会在重启后更改。现在保存设置并重启 OPL 吗？
+  HINT_GSM_DEFAULTS_BUTTON: 每个游戏都会获得的视频模式修正，除非它有自己的 GSM 设置。
+  HINT_MMCE_SETTINGS_BUTTON: MMCE 的插槽、IGR bootcard、GameID 和时序选项。
+  HINT_BDMA_BUTTON: POPSTARTER 为 USB、MX4SIO、MMCE、硬盘或 iLink 上的 PS1 游戏使用哪个 exFAT 驱动。
+  HINT_MMCE_COMM_BUTTON: MMCE 连接的时序选项。仅在游戏卡死或加载缓慢时更改。
+  HINT_MMCE_PATH_BUTTON: MMCE 卡上游戏文件夹的位置。
+  HINT_NEUTRINO_DEFAULTS_BUTTON: 所有游戏的 Neutrino 路径、视频模式和参数。
+  HINT_OSD_DEFAULTS_BUTTON: 传给游戏的主机语言、屏幕比例和视频模式。
+  HINT_SETTINGS_SOURCE: “全局”使用共用设置；“按游戏”只为这个游戏保存。
+  HINT_PADMACRO_TOGGLE: “按住时”只在你按住按键时减慢摇杆；“按键切换”用按键开关。
+  HINT_PADEMU_GLOBAL: 为所有游戏启用 USB 或蓝牙的 DualShock 3/4 以及多分插。
+  HINT_PADMACRO_GLOBAL: 为所有游戏启用摇杆减速、轴反转和连发。
+  HINT_COVERFLOW_DIM: 让两侧的封面变暗。
+  HINT_OSD_ENABLE: 把下面的设置传给游戏。关闭则使用主机自己的设置。
+  HINT_OSD_TVASPECT: 传给游戏的电视比例。
+  HINT_OSD_VMODE: 传给游戏的视频模式。
+  DNAS_ID: DNAS ID

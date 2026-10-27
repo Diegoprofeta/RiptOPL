@@ -604,3 +604,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Modulo RA di RiptOPL inutilizzato: POPS/MODULE_9.IRX. Eliminarlo per un avvio pulito?'
   PS1_RA_CLEAN_FAILED: Impossibile eliminare il modulo RA inutilizzato.
   PS1_RA_CLEAN_CONTINUE: Continuare comunque? Un modulo RA rimasto può inviare telemetria vecchia. No annulla l'avvio.
+  HINT_COVERFLOW_COUNT: Quante copertine RIPFLOW mostra su ogni lato di quella scelta.
+  HINT_COVERFLOW_SCALE: Quanto è grande in RIPFLOW la copertina scelta rispetto alle altre.
+  HINT_COVERFLOW_ANIM: Quanto velocemente scorrono le copertine quando ti muovi nel flusso.
+  HINT_NARGS_QB: 'Quick Boot: salta la schermata di avvio di Neutrino. Attivo qui, viene inviato per ogni gioco; disattivo, RIPPS2 lo invia comunque da sé per i giochi USB, iLink e di rete, dove serve.'
+  HINT_NARGS_DBC: 'Colori di debug: Neutrino riempie lo schermo di un colore a ogni passo del caricamento, così una foto mostra dove si ferma un gioco.'
+  HINT_NARGS_LOGO: Mostra il logo PS2 prima del gioco (un secondo riavvio dell'IOP, che serve ad alcune unità iLink). Disattivo qui, RIPPS2 segue Avvio dei giochi > Logo PS2, e non lo invia mai per i giochi MMCE o di rete.
+  HINT_NARGS_CWD: 'La cartella che il gioco vede come propria. Vuoto: quella predefinita di Neutrino.'
+  HINT_NARGS_CFG: 'Un tuo file di configurazione di Neutrino (-cfg). Vuoto: quello di Neutrino.'
+  HINT_NARGS_ELF: 'Avvia questo ELF invece del file di avvio indicato dal disco. Vuoto: quello del gioco.'
+  HINT_NARGS_ATA0: Un'immagine di hard disk che Neutrino monta come hard disk interno della console, per i giochi che usano l'hard disk (-ata0).
+  HINT_NARGS_ATA0ID: Il file di identificazione che accompagna quell'immagine di hard disk (-ata0id).
+  HINT_NARGS_ATA1: Una seconda immagine di hard disk (-ata1).
+  HINT_NARGS_EXTRA: Altre opzioni di Neutrino, separate da spazi, inviate dopo tutto quanto sopra. RIPPS2 aggiunge sempre -bsd e -dvd per l'unità e l'ISO del gioco, -mc0 e -mc1 per le sue VMC, -gsm per la sua modalità video e le modalità di compatibilità proprie del gioco. Un'opzione con una riga propria qui sopra (come -logo) passa in quella riga al salvataggio, e viene comunque inviata.
+  NETBOOT_RESTART_NOW: Il protocollo di rete cambia dopo un riavvio. Salvare le impostazioni e riavviare OPL ora?
+  HINT_GSM_DEFAULTS_BUTTON: Le correzioni della modalità video che ogni gioco riceve, a meno che non abbia impostazioni GSM proprie.
+  HINT_MMCE_SETTINGS_BUTTON: Slot, bootcard IGR, GameID e opzioni di temporizzazione per MMCE.
+  HINT_BDMA_BUTTON: Quale driver exFAT usa POPSTARTER per i giochi PS1 su USB, MX4SIO, MMCE, hard disk o iLink.
+  HINT_MMCE_COMM_BUTTON: Opzioni di temporizzazione del collegamento MMCE. Cambiale solo se i giochi si bloccano o caricano lentamente.
+  HINT_MMCE_PATH_BUTTON: Dove si trovano le cartelle dei giochi sulla memory card MMCE.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Percorso, modalità video e argomenti di Neutrino per ogni gioco.
+  HINT_OSD_DEFAULTS_BUTTON: Lingua della console, formato dello schermo e modalità video passati ai giochi.
+  HINT_SETTINGS_SOURCE: Globale usa le impostazioni comuni; Per gioco le tiene solo per questo gioco.
+  HINT_PADMACRO_TOGGLE: Mentre premuto rallenta la levetta solo mentre tieni premuto il tasto; Alternato dal tasto la attiva e disattiva.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 via USB o Bluetooth, e multitap, per ogni gioco.
+  HINT_PADMACRO_GLOBAL: Rallentamento della levetta, inversione degli assi e turbo per ogni gioco.
+  HINT_COVERFLOW_DIM: Scurisce le copertine laterali.
+  HINT_OSD_ENABLE: Passa al gioco le impostazioni qui sotto. Disattivo usa quelle della console.
+  HINT_OSD_TVASPECT: Formato del televisore passato al gioco.
+  HINT_OSD_VMODE: Modalità video passata al gioco.
+  DNAS_ID: ID DNAS

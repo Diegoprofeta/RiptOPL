@@ -603,3 +603,33 @@ translations:
   PS1_RA_CLEAN_DELETE: '사용하지 않는 RiptOPL RA 모듈: POPS/MODULE_9.IRX. 깨끗하게 실행하기 위해 삭제할까요?'
   PS1_RA_CLEAN_FAILED: 사용하지 않는 RA 모듈을 삭제할 수 없습니다.
   PS1_RA_CLEAN_CONTINUE: 그래도 계속할까요? 남은 RA 모듈이 오래된 텔레메트리를 실행할 수 있습니다. 아니요를 고르면 실행을 취소합니다.
+  HINT_COVERFLOW_COUNT: RIPFLOW가 고른 표지 양쪽에 각각 몇 개의 표지를 보여 줄지.
+  HINT_COVERFLOW_SCALE: RIPFLOW가 고른 표지를 다른 표지보다 얼마나 크게 그릴지.
+  HINT_COVERFLOW_ANIM: 흐름을 따라 움직일 때 표지가 미끄러지는 속도.
+  HINT_NARGS_QB: 'Quick Boot: Neutrino 자체의 시작 화면을 건너뜁니다. 여기서 켜면 모든 게임에 보냅니다. 꺼도 RIPPS2는 필요한 USB, iLink, 네트워크 게임에는 알아서 보냅니다.'
+  HINT_NARGS_DBC: '디버그 색: Neutrino가 불러오기 단계마다 화면을 한 색으로 채우므로, 사진을 찍으면 게임이 어디서 멈추는지 알 수 있습니다.'
+  HINT_NARGS_LOGO: 게임 전에 PS2 로고를 보여 줍니다 (두 번째 IOP 재부팅으로, 일부 iLink 드라이브에 필요). 여기서 끄면 RIPPS2는 게임 실행 > PS2 로고를 따르며, MMCE나 네트워크 게임에는 보내지 않습니다.
+  HINT_NARGS_CWD: 게임이 자기 것으로 여기는 폴더. 비워 두면 Neutrino의 기본값.
+  HINT_NARGS_CFG: 내 Neutrino 설정 파일 (-cfg). 비워 두면 Neutrino의 것.
+  HINT_NARGS_ELF: 디스크가 지정한 부트 파일 대신 이 ELF를 시작합니다. 비워 두면 게임 자체의 것.
+  HINT_NARGS_ATA0: Neutrino가 본체의 내장 HDD로 마운트하는 HDD 이미지. HDD를 쓰는 게임용 (-ata0).
+  HINT_NARGS_ATA0ID: 그 HDD 이미지와 짝을 이루는 ID 파일 (-ata0id).
+  HINT_NARGS_ATA1: 두 번째 HDD 이미지 (-ata1).
+  HINT_NARGS_EXTRA: 그 밖의 Neutrino 플래그를 공백으로 구분해 적으며, 위의 모든 것 다음에 보냅니다. RIPPS2는 항상 게임의 드라이브와 ISO에 -bsd와 -dvd, VMC에 -mc0과 -mc1, 영상 모드에 -gsm, 그리고 게임 자체의 호환 모드를 붙입니다. 위에 전용 줄이 있는 플래그(-logo 등)는 저장할 때 그 줄로 옮겨지며, 보내는 것은 그대로입니다.
+  NETBOOT_RESTART_NOW: 네트워크 프로토콜은 재시작 후에 바뀝니다. 지금 설정을 저장하고 OPL을 재시작할까요?
+  HINT_GSM_DEFAULTS_BUTTON: 자체 GSM 설정이 없는 한 모든 게임에 적용되는 영상 모드 수정.
+  HINT_MMCE_SETTINGS_BUTTON: MMCE의 슬롯, IGR bootcard, GameID, 타이밍 옵션.
+  HINT_BDMA_BUTTON: USB, MX4SIO, MMCE, HDD, iLink의 PS1 게임에 POPSTARTER가 쓰는 exFAT 드라이버.
+  HINT_MMCE_COMM_BUTTON: MMCE 연결의 타이밍 옵션. 게임이 멈추거나 느리게 불러올 때만 바꾸세요.
+  HINT_MMCE_PATH_BUTTON: MMCE 카드에서 게임 폴더가 있는 곳.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: 모든 게임에 쓰는 Neutrino의 경로, 영상 모드, 인수.
+  HINT_OSD_DEFAULTS_BUTTON: 게임에 넘기는 본체 언어, 화면 크기, 영상 모드.
+  HINT_SETTINGS_SOURCE: 전역은 공용 설정을 쓰고, 게임별은 이 게임만의 설정으로 둡니다.
+  HINT_PADMACRO_TOGGLE: 버튼을 누르는 동안은 버튼을 누르고 있을 때만 스틱을 느리게 하고, 버튼으로 전환은 버튼으로 켜고 끕니다.
+  HINT_PADEMU_GLOBAL: 모든 게임에서 USB 또는 블루투스 DualShock 3/4와 멀티탭을 씁니다.
+  HINT_PADMACRO_GLOBAL: 모든 게임에서 스틱 감속, 축 반전, 연사를 씁니다.
+  HINT_COVERFLOW_DIM: 양옆의 표지를 어둡게 합니다.
+  HINT_OSD_ENABLE: 아래 설정을 게임에 넘깁니다. 끄면 본체 자체의 설정을 씁니다.
+  HINT_OSD_TVASPECT: 게임에 넘기는 TV 모양.
+  HINT_OSD_VMODE: 게임에 넘기는 영상 모드.
+  DNAS_ID: DNAS ID

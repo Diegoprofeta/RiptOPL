@@ -603,3 +603,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 使われていない RiptOPL の RA モジュール：POPS/MODULE_9.IRX。きれいに起動するために削除しますか？
   PS1_RA_CLEAN_FAILED: 使われていない RA モジュールを削除できません。
   PS1_RA_CLEAN_CONTINUE: それでも続けますか？残った RA モジュールが古いテレメトリーを動かすことがあります。いいえで起動を取り消します。
+  HINT_COVERFLOW_COUNT: RIPFLOW が選んだカバーの両側にそれぞれ何枚のカバーを表示するか。
+  HINT_COVERFLOW_SCALE: RIPFLOW が選んだカバーをほかと比べてどれだけ大きく描くか。
+  HINT_COVERFLOW_ANIM: フローの中を移動するときにカバーが滑る速さ。
+  HINT_NARGS_QB: Quick Boot：Neutrino 自身の起動画面を飛ばします。ここでオンにするとすべてのゲームに送ります。オフでも、必要な USB、iLink、ネットワークのゲームには RIPPS2 が自動で送ります。
+  HINT_NARGS_DBC: デバッグカラー：Neutrino が読み込みの各段階で画面を 1 色で塗るので、写真を撮ればゲームがどこで止まったか分かります。
+  HINT_NARGS_LOGO: ゲームの前に PS2 ロゴを表示します（IOP の 2 回目の再起動で、一部の iLink ドライブに必要）。ここでオフなら RIPPS2 は ゲームの起動 > PS2 ロゴ に従い、MMCE やネットワークのゲームには送りません。
+  HINT_NARGS_CWD: ゲームが自分のものとみなすフォルダ。空欄：Neutrino の既定値。
+  HINT_NARGS_CFG: 自分用の Neutrino 設定ファイル（-cfg）。空欄：Neutrino のもの。
+  HINT_NARGS_ELF: ディスクが指定する起動ファイルの代わりにこの ELF を起動します。空欄：ゲーム自身のもの。
+  HINT_NARGS_ATA0: Neutrino が本体の内蔵 HDD としてマウントする HDD イメージ。HDD を使うゲーム用（-ata0）。
+  HINT_NARGS_ATA0ID: その HDD イメージに対応する ID ファイル（-ata0id）。
+  HINT_NARGS_ATA1: 2 つ目の HDD イメージ（-ata1）。
+  HINT_NARGS_EXTRA: そのほかの Neutrino フラグをスペース区切りで。上のすべての後に送ります。RIPPS2 は常に、ゲームのドライブと ISO に -bsd と -dvd、VMC に -mc0 と -mc1、映像モードに -gsm、そしてゲーム自身の互換モードを付けます。上に専用の行があるフラグ（-logo など）は保存時にその行に移り、送られるのは変わりません。
+  NETBOOT_RESTART_NOW: ネットワークプロトコルは再起動後に変わります。今設定を保存して OPL を再起動しますか？
+  HINT_GSM_DEFAULTS_BUTTON: 独自の GSM 設定がない限りすべてのゲームに適用される映像モードの修正。
+  HINT_MMCE_SETTINGS_BUTTON: MMCE のスロット、IGR bootcard、GameID、タイミングのオプション。
+  HINT_BDMA_BUTTON: USB、MX4SIO、MMCE、HDD、iLink 上の PS1 ゲームに POPSTARTER が使う exFAT ドライバー。
+  HINT_MMCE_COMM_BUTTON: MMCE 接続のタイミングのオプション。ゲームが固まるか読み込みが遅いときだけ変えてください。
+  HINT_MMCE_PATH_BUTTON: MMCE カード上のゲームフォルダの場所。
+  HINT_NEUTRINO_DEFAULTS_BUTTON: すべてのゲームに使う Neutrino のパス、映像モード、引数。
+  HINT_OSD_DEFAULTS_BUTTON: ゲームに渡す本体の言語、画面サイズ、映像モード。
+  HINT_SETTINGS_SOURCE: 「グローバル」は共通の設定を使い、「ゲームごと」はこのゲームだけの設定にします。
+  HINT_PADMACRO_TOGGLE: 「押している間」はボタンを押している間だけスティックを遅くし、「ボタンで切り替え」はボタンでオンとオフを切り替えます。
+  HINT_PADEMU_GLOBAL: USB または Bluetooth の DualShock 3/4 とマルチタップを、すべてのゲームで使います。
+  HINT_PADMACRO_GLOBAL: スティックの減速、軸の反転、連射を、すべてのゲームで使います。
+  HINT_COVERFLOW_DIM: 両側のカバーを暗くします。
+  HINT_OSD_ENABLE: 下の設定をゲームに渡します。オフでは本体自身の設定を使います。
+  HINT_OSD_TVASPECT: ゲームに渡すテレビの形。
+  HINT_OSD_VMODE: ゲームに渡す映像モード。
+  DNAS_ID: DNAS ID

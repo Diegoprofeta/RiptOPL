@@ -624,3 +624,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Nekorišteni RiptOPL RA modul: POPS/MODULE_9.IRX. Izbrisati ga za čisto pokretanje?'
   PS1_RA_CLEAN_FAILED: Nekorišteni RA modul ne može se izbrisati.
   PS1_RA_CLEAN_CONTINUE: Svejedno nastaviti? Zaostali RA modul može pokrenuti zastarjelu telemetriju. Ne otkazuje pokretanje.
+  HINT_COVERFLOW_COUNT: Koliko omota RIPFLOW prikazuje sa svake strane odabranog.
+  HINT_COVERFLOW_SCALE: Koliko veliko RIPFLOW crta odabrani omot u odnosu na ostale.
+  HINT_COVERFLOW_ANIM: Koliko brzo omoti klize dok se krećeš kroz tok.
+  HINT_NARGS_QB: 'Brzo pokretanje: preskače Neutrinov početni zaslon. Ako je ovdje uključeno, šalje se za svaku igru; ako je isključeno, RIPPS2 ga i dalje sam šalje za USB, iLink i mrežne igre, gdje je potrebno.'
+  HINT_NARGS_DBC: 'Boje za otklanjanje pogrešaka: Neutrino puni zaslon bojom na svakom koraku učitavanja, pa fotografija pokazuje gdje igra staje.'
+  HINT_NARGS_LOGO: Prikazuje PS2 logo prije igre (drugo ponovno pokretanje IOP-a, koje trebaju neki iLink pogoni). Ako je ovdje isključeno, RIPPS2 prati Pokretanje igara > PS2 logo i nikad ga ne šalje za MMCE ili mrežne igre.
+  HINT_NARGS_CWD: 'Mapa koju igra vidi kao svoju. Prazno: Neutrinova zadana.'
+  HINT_NARGS_CFG: 'Tvoja vlastita Neutrino konfiguracijska datoteka (-cfg). Prazno: Neutrinova.'
+  HINT_NARGS_ELF: 'Pokreće ovaj ELF umjesto datoteke za pokretanje koju disk navodi. Prazno: ona same igre.'
+  HINT_NARGS_ATA0: HDD slika koju Neutrino montira kao unutarnji HDD konzole, za igre koje koriste HDD (-ata0).
+  HINT_NARGS_ATA0ID: ID datoteka koja ide uz tu HDD sliku (-ata0id).
+  HINT_NARGS_ATA1: Druga HDD slika (-ata1).
+  HINT_NARGS_EXTRA: Druge Neutrino zastavice, odvojene razmacima, šalju se nakon svega iznad. RIPPS2 uvijek dodaje -bsd i -dvd za pogon i ISO igre, -mc0 i -mc1 za njezine VMC-ove, -gsm za njezin video način i vlastite načine kompatibilnosti igre. Zastavica koja ima vlastiti redak iznad (kao -logo) pri spremanju prelazi u taj redak i i dalje se šalje.
+  NETBOOT_RESTART_NOW: Mrežni protokol mijenja se nakon ponovnog pokretanja. Spremiti postavke i ponovno pokrenuti OPL sada?
+  HINT_GSM_DEFAULTS_BUTTON: Popravci video načina koje dobiva svaka igra osim ako ima vlastite GSM postavke.
+  HINT_MMCE_SETTINGS_BUTTON: Opcije za utor, IGR karticu za pokretanje, GameID i vremenski način za MMCE.
+  HINT_BDMA_BUTTON: Koji exFAT upravljački program POPSTARTER koristi za PS1 igre na USB-u, MX4SIO, MMCE, HDD-u ili iLinku.
+  HINT_MMCE_COMM_BUTTON: Opcije vremenskog načina za MMCE vezu. Mijenjaj ih samo ako se igre smrzavaju ili sporo učitavaju.
+  HINT_MMCE_PATH_BUTTON: Gdje su na MMCE kartici mape igara.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Neutrino putanja, video način i argumenti za svaku igru.
+  HINT_OSD_DEFAULTS_BUTTON: Jezik konzole, veličina zaslona i video način koji se predaju igrama.
+  HINT_SETTINGS_SOURCE: Globalno koristi zajedničke postavke; Po igri ih čuva samo za ovu igru.
+  HINT_PADMACRO_TOGGLE: Dok je tipka pritisnuta usporava palicu samo dok držiš tipku; Uključuje tipka je uključuje i isključuje.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 preko USB-a ili Bluetootha, i multitap, za svaku igru.
+  HINT_PADMACRO_GLOBAL: Usporavanje palice, obrtanje osi i turbo za svaku igru.
+  HINT_COVERFLOW_DIM: Zatamnjuje bočne omote.
+  HINT_OSD_ENABLE: Predaje igri postavke ispod. Isključeno koristi postavke same konzole.
+  HINT_OSD_TVASPECT: Oblik TV-a koji se predaje igri.
+  HINT_OSD_VMODE: Video način koji se predaje igri.
+  DNAS_ID: DNAS ID

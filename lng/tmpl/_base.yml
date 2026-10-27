@@ -1474,8 +1474,6 @@ gui_strings:
 
 - label: NEUTRINO_DVR_QUICKBOOT
   string: DVR launches require the PSX-mode reset. Remove active -qb options.
-- label: NEUTRINO_DVR_BACKEND_ARGS
-  string: DVR launches use their filesystem backend. Remove active -bsd and -bsdfs overrides.
 - label: NEUTRINO_DVR_FILE_MISSING
   string: The DVR Neutrino companion is incomplete. Required file missing or path too long
 
@@ -1544,6 +1542,8 @@ gui_strings:
   string: "3D Save Icons"
 - label: HINT_SAVE_ICONS
   string: "Shows the selected game's save icon, spinning, where the theme has a spot for it. Reads the game's own VMC first, then the memory cards."
+- label: NETBOOT_RESTART_NOW
+  string: "The network protocol changes after a restart. Save settings and restart OPL now?"
 - label: HINT_NET_PROTOCOL
   string: "Which network service RiptOPL uses: an SMB share, UDPFS, UDPBD or HTTP. The same setting as on Game Sources. Switching away from one that is already running needs a restart."
 - label: HINT_UDPFS_ACCESS
@@ -1598,10 +1598,14 @@ gui_strings:
   string: "Starts on the game you launched last time."
 - label: HINT_LANGUAGE
   string: "Menu language. Add more by putting lang_*.lng files in an LNG folder."
+- label: HINT_GSM_DEFAULTS_BUTTON
+  string: "Video mode fixes every game gets unless it has its own GSM settings."
 - label: HINT_DEFDEVICE
   string: "The page RiptOPL opens on at boot."
 - label: HINT_MMCE_MODE
   string: "Games on an SD2PSX or MemCard PRO2. Auto starts at boot, Manual when you open the page, Off hides it."
+- label: HINT_MMCE_SETTINGS_BUTTON
+  string: "Slot, IGR bootcard, GameID and timing options for MMCE."
 - label: HINT_ENABLE_USB
   string: "Loads the USB storage driver."
 - label: HINT_ENABLE_MX4SIO
@@ -1614,12 +1618,18 @@ gui_strings:
   string: "The Apps page. Auto starts at boot, Manual when you open it, Off hides it."
 - label: HINT_FAVMODE
   string: "The Favorites page. Auto starts at boot, Manual when you open it, Off hides it."
+- label: HINT_BDMA_BUTTON
+  string: "Which exFAT driver POPSTARTER uses for PS1 games on USB, MX4SIO, MMCE, HDD or iLink."
 - label: HINT_VCD_LIST_BUTTON
   string: "How PS1 games are listed: hide game IDs, show only disc 1, show HDD PP partitions."
 - label: HINT_MMCE_SLOT
   string: "Which memory card slot the MMCE device is in. Auto finds it."
 - label: HINT_MMCE_GAMEID
   string: "Tells the MMCE device which game is starting, so it can switch to that game's memory card."
+- label: HINT_MMCE_COMM_BUTTON
+  string: "Timing options for the MMCE link. Change them only if games freeze or load slowly."
+- label: HINT_MMCE_PATH_BUTTON
+  string: "Where on the MMCE card the game folders live."
 - label: HINT_MMCE_PREFIX
   string: "Subfolder on the MMCE card that holds CD, DVD and the other OPL folders. Blank uses the card root."
 - label: HINT_GAME_TYPE_LABELS
@@ -1674,6 +1684,10 @@ gui_strings:
   string: "Shrinks the menu inward if the TV cuts off its edges."
 - label: HINT_APPLYGAMEID
   string: "Shows a barcode as a game starts, so Pixel FX, RetroGEM and PS2Digital devices switch profiles."
+- label: HINT_NEUTRINO_DEFAULTS_BUTTON
+  string: "Neutrino's path, video mode and arguments for every game."
+- label: HINT_OSD_DEFAULTS_BUTTON
+  string: "Console language, screen size and video mode handed to games."
 - label: HINT_ENWRITEOP
   string: "Allows renaming and deleting games and creating VMCs. Never touches the HDD partition table."
 - label: HINT_DEBUG
@@ -1710,6 +1724,10 @@ gui_strings:
   string: "Creates the card, or applies a new size to it."
 - label: HINT_VMC_DELETE
   string: "Deletes this card file."
+- label: HINT_SETTINGS_SOURCE
+  string: "Global uses the shared settings; Per Game keeps these just for this game."
+- label: HINT_PADMACRO_TOGGLE
+  string: "While Button Pressed slows the stick only while you hold the button; Toggled By Button switches it on and off."
 - label: HINT_SFX
   string: "Menu sound effects."
 - label: HINT_BOOT_SND
@@ -1730,12 +1748,52 @@ gui_strings:
   string: "How easily the left stick moves the cursor left and right. Off ignores it."
 - label: HINT_YSENSITIVITY
   string: "How easily the left stick moves the cursor up and down. Off ignores it."
+- label: HINT_PADEMU_GLOBAL
+  string: "DualShock 3/4 over USB or Bluetooth, and multitap, for every game."
+- label: HINT_PADMACRO_GLOBAL
+  string: "Stick slow-down, axis invert and turbo for every game."
+- label: HINT_COVERFLOW_COUNT
+  string: "How many covers show at once."
+- label: HINT_COVERFLOW_SCALE
+  string: "How much bigger the center cover is."
+- label: HINT_COVERFLOW_ANIM
+  string: "Speed of the slide when scrolling. Off snaps instantly."
+- label: HINT_COVERFLOW_DIM
+  string: "Darkens the side covers."
+- label: HINT_NARGS_QB
+  string: "Enters Neutrino's loader without an IOP reset. Added automatically for USB, iLink, UDPBD and UDPFS."
+- label: HINT_NARGS_DBC
+  string: "Neutrino shows colored debug screens while it boots."
+- label: HINT_NARGS_LOGO
+  string: "Shows the PS2 logo before the game. Skipped on MMCE and UDPFS."
+- label: HINT_NARGS_CWD
+  string: "Neutrino's working folder, where it looks for its config files."
+- label: HINT_NARGS_CFG
+  string: "Loads an extra Neutrino config, config/<name>.toml."
+- label: HINT_NARGS_ELF
+  string: "Boots this ELF instead of the disc's own and finds its per-title config."
+- label: HINT_NARGS_ATA0
+  string: "Disk image for Neutrino's emulated HDD 0."
+- label: HINT_NARGS_ATA0ID
+  string: "ID file for Neutrino's emulated HDD 0."
+- label: HINT_NARGS_ATA1
+  string: "Disk image for Neutrino's emulated HDD 1."
+- label: HINT_OSD_ENABLE
+  string: "Hands the settings below to the game. Off uses the console's own."
+- label: HINT_OSD_TVASPECT
+  string: "TV shape handed to the game."
+- label: HINT_OSD_VMODE
+  string: "Video mode handed to the game."
+- label: DNAS_ID
+  string: DNAS ID
 - label: NEUTRINO_SHOW_ARGS
   string: Show Launch Arguments
 - label: HINT_NEUTRINO_SHOW_ARGS
   string: "Before each Neutrino launch, show every argument Neutrino will receive and ask to continue. Back returns to the menu without launching."
 - label: NEUTRINO_ARGS_CONFIRM
   string: "Neutrino will start with these arguments. Launch?"
+- label: HINT_NARGS_EXTRA
+  string: "Other Neutrino flags, separated by spaces. A flag with its own row above (such as -logo) moves into that row when saved, and is still sent."
 - label: NEUTRINO_CHEATS_WRITE_FAILED
   string: "The cheat list could not be saved into the Neutrino folder, so Neutrino cannot use it. Launch without cheats?"
 - label: HINT_ENABLE_PCCF
@@ -1748,6 +1806,8 @@ gui_strings:
   string: "CF currently supports native PS2 games only. CF VMC, PS1 loading and network achievements are unavailable."
 - label: HINT_ENABLE_DVR
   string: "Experimental DESR DVR ISO discovery. Requires HDD source enabled; game launch needs external DVR-capable Neutrino."
+- label: NEUTRINO_DVR_BACKEND_OVERRIDE
+  string: "DVR launch selects its own backend. Remove -bsd= and -bsdfs= from global and per-game Neutrino arguments."
 - label: NEUTRINO_PADEMU_WARN
   string: "Pad emulation is unavailable with Neutrino. Use a PS2 controller or a source that supports the <OPL> core."
 - label: RA_MODE

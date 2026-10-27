@@ -409,7 +409,7 @@ struct UIItem diaConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_GSM_DEFAULTS}}},
     {UI_SPACER},
-    {UI_BUTTON, GENERAL_GSM_DEFAULTS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, GENERAL_GSM_DEFAULTS_BUTTON, 1, 1, _STR_HINT_GSM_DEFAULTS_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     // buttons
@@ -443,7 +443,7 @@ struct UIItem diaDeviceConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {"MMCE Settings", -1}}},
     {UI_SPACER},
-    {UI_BUTTON, MMCE_SETTINGS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, MMCE_SETTINGS_BUTTON, 1, 1, _STR_HINT_MMCE_SETTINGS_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {"BDM Devices Start Mode", -1}}},
@@ -564,15 +564,15 @@ struct UIItem diaVcdConfig[] = {
     // and composes the BDMA fields inline below.
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_BDMA_SETTINGS}}},
     {UI_SPACER},
-    {UI_BUTTON, VCD_BDMA_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, VCD_BDMA_BUTTON, 1, 1, _STR_HINT_BDMA_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {"VCD Games List Settings", -1}}},
     {UI_SPACER},
-    {UI_BUTTON, VCD_LIST_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, VCD_LIST_BUTTON, 1, 1, _STR_HINT_VCD_LIST_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_POPSTARTER_NETWORK_SETTINGS}}},
     {UI_SPACER},
-    {UI_BUTTON, VCD_NET_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, VCD_NET_BUTTON, 1, 1, _STR_HINT_POPS_NET_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     // buttons
@@ -744,11 +744,11 @@ struct UIItem diaMmceConfig[] = {
     // Legacy action rows. The Settings page skips these and composes both editors inline below.
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_COMM_SETTINGS}}},
     {UI_SPACER},
-    {UI_BUTTON, MMCE_COMM_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, MMCE_COMM_BUTTON, 1, 1, _STR_HINT_MMCE_COMM_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_PATH_SETTINGS}}},
     {UI_SPACER},
-    {UI_BUTTON, MMCE_PATH_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, MMCE_PATH_BUTTON, 1, 1, _STR_HINT_MMCE_PATH_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     // buttons
@@ -795,7 +795,7 @@ struct UIItem diaLanguageConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_OSD_DEFAULTS}}},
     {UI_SPACER},
-    {UI_BUTTON, LAUNCH_OSD_DEFAULTS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, LAUNCH_OSD_DEFAULTS_BUTTON, 1, 1, _STR_HINT_OSD_DEFAULTS_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     {UI_OK, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_OK}}},
@@ -1038,7 +1038,7 @@ struct UIItem diaDisplayConfig[] = {
     // mode of the OPL MENU, this is the video mode games are launched in.
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_GSM_DEFAULTS}}},
     {UI_SPACER},
-    {UI_BUTTON, DISPLAY_GSM_DEFAULTS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, DISPLAY_GSM_DEFAULTS_BUTTON, 1, 1, _STR_HINT_GSM_DEFAULTS_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     // buttons
@@ -1070,12 +1070,12 @@ struct UIItem diaLaunchConfig[] = {
     {UI_BREAK},
 
     // Neutrino's fields are composed below; the Settings shell skips this legacy button.
-    {UI_BUTTON, LAUNCH_NEUTRINO_DEFAULTS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_NEUTRINO_DEFAULTS}}},
+    {UI_BUTTON, LAUNCH_NEUTRINO_DEFAULTS_BUTTON, 1, 1, _STR_HINT_NEUTRINO_DEFAULTS_BUTTON, 0, 0, {.label = {NULL, _STR_NEUTRINO_DEFAULTS}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_GSM_DEFAULTS}}},
     {UI_SPACER},
-    {UI_BUTTON, LAUNCH_GSM_DEFAULTS_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_MODIFY}}},
+    {UI_BUTTON, LAUNCH_GSM_DEFAULTS_BUTTON, 1, 1, _STR_HINT_GSM_DEFAULTS_BUTTON, 0, 0, {.label = {NULL, _STR_MODIFY}}},
     {UI_BREAK},
 
     // buttons
@@ -1227,7 +1227,7 @@ struct UIItem diaCompatConfig[] = {
     {UI_ENUM, COMPAT_DMA, 1, 1, _STR_HINT_DMA_MODE, 0, 0, {.intvalue = {0, 0}}},
     {UI_SPLITTER},
 
-    {UI_LABEL, 0, 1, 1, -1, -30, 0, {.label = {NULL, _STR_GAME_ID}}},
+    {UI_LABEL, 0, 1, 1, -1, -30, 0, {.label = {NULL, _STR_DNAS_ID}}},
     {UI_SPACER},
     {UI_STRING, COMPAT_GAMEID, 1, 1, _STR_HINT_DNAS_GAMEID, 0, 0, {.stringvalue = {"", "", NULL}}},
     {UI_SPACER},
@@ -1385,7 +1385,7 @@ struct UIItem diaGSConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
     {UI_SPACER},
-    {UI_ENUM, GSMCFG_GSMSOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, GSMCFG_GSMSOURCE, 1, 1, _STR_HINT_SETTINGS_SOURCE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
     {UI_BREAK},
 
@@ -1428,7 +1428,7 @@ struct UIItem diaCheatConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
     {UI_SPACER},
-    {UI_ENUM, CHTCFG_CHEATSOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, CHTCFG_CHEATSOURCE, 1, 1, _STR_HINT_SETTINGS_SOURCE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
     {UI_BREAK},
 
@@ -1461,7 +1461,7 @@ struct UIItem diaPadEmuConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -50, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
     {UI_SPACER},
-    {UI_ENUM, PADCFG_PADEMU_SOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, PADCFG_PADEMU_SOURCE, 1, 1, _STR_HINT_SETTINGS_SOURCE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
     {UI_BREAK},
 
@@ -1714,7 +1714,7 @@ struct UIItem diaPadMacroConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -50, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
     {UI_SPACER},
-    {UI_ENUM, PADMACRO_CFG_SOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, PADMACRO_CFG_SOURCE, 1, 1, _STR_HINT_SETTINGS_SOURCE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
     {UI_BREAK},
 
@@ -1726,9 +1726,9 @@ struct UIItem diaPadMacroConfig[] = {
     {UI_LABEL, 0, 1, 1, -1, -20, 0, {.label = {NULL, _STR_RIGHT_ANALOG}}},
     {UI_ENUM, PADMACRO_SLOWDOWN_R, 1, 1, _STR_HINT_PADMACRO_SLOWDOWN_AXIS, -20, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
-    {UI_ENUM, PADMACRO_SLOWDOWN_TOGGLE_L, 1, 1, -1, -40, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, PADMACRO_SLOWDOWN_TOGGLE_L, 1, 1, _STR_HINT_PADMACRO_TOGGLE, -40, 0, {.intvalue = {0, 0}}},
     {UI_SPACER},
-    {UI_ENUM, PADMACRO_SLOWDOWN_TOGGLE_R, 1, 1, -1, -40, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, PADMACRO_SLOWDOWN_TOGGLE_R, 1, 1, _STR_HINT_PADMACRO_TOGGLE, -40, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
     {UI_BREAK},
 
@@ -1925,9 +1925,9 @@ struct UIItem diaControllerConfig[] = {
     {UI_BOOL, CFG_RUMBLE, 1, 1, _STR_HINT_RUMBLE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 #ifdef PADEMU
-    {UI_BUTTON, PADEMU_GLOBAL_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_CONTROLLER_EMULATION}}},
+    {UI_BUTTON, PADEMU_GLOBAL_BUTTON, 1, 1, _STR_HINT_PADEMU_GLOBAL, 0, 0, {.label = {NULL, _STR_CONTROLLER_EMULATION}}},
     {UI_BREAK},
-    {UI_BUTTON, PADMACRO_GLOBAL_BUTTON, 1, 1, -1, 0, 0, {.label = {NULL, _STR_CONTROLLER_MACROS}}},
+    {UI_BUTTON, PADMACRO_GLOBAL_BUTTON, 1, 1, _STR_HINT_PADMACRO_GLOBAL, 0, 0, {.label = {NULL, _STR_CONTROLLER_MACROS}}},
     {UI_BREAK},
 #endif
     // buttons
@@ -1941,22 +1941,22 @@ struct UIItem diaCoverflowConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_COVERFLOW_COUNT}}},
     {UI_SPACER},
-    {UI_ENUM, COVERFLOW_CFG_COUNT, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, COVERFLOW_CFG_COUNT, 1, 1, _STR_HINT_COVERFLOW_COUNT, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_COVERFLOW_SCALE}}},
     {UI_SPACER},
-    {UI_ENUM, COVERFLOW_CFG_SCALE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, COVERFLOW_CFG_SCALE, 1, 1, _STR_HINT_COVERFLOW_SCALE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_COVERFLOW_ANIM}}},
     {UI_SPACER},
-    {UI_ENUM, COVERFLOW_CFG_ANIM, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, COVERFLOW_CFG_ANIM, 1, 1, _STR_HINT_COVERFLOW_ANIM, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_COVERFLOW_DIM}}},
     {UI_SPACER},
-    {UI_BOOL, COVERFLOW_CFG_DIM, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BOOL, COVERFLOW_CFG_DIM, 1, 1, _STR_HINT_COVERFLOW_DIM, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     // buttons
@@ -1971,52 +1971,52 @@ struct UIItem diaNeutrinoArgs[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_QB}}},
     {UI_SPACER},
-    {UI_BOOL, NARGS_QB, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BOOL, NARGS_QB, 1, 1, _STR_HINT_NARGS_QB, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_DBC}}},
     {UI_SPACER},
-    {UI_BOOL, NARGS_DBC, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BOOL, NARGS_DBC, 1, 1, _STR_HINT_NARGS_DBC, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_LOGO}}},
     {UI_SPACER},
-    {UI_BOOL, NARGS_LOGO, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BOOL, NARGS_LOGO, 1, 1, _STR_HINT_NARGS_LOGO, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_CWD}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_CWD, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsCwdHandler}}},
+    {UI_STRING, NARGS_CWD, 1, 1, _STR_HINT_NARGS_CWD, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsCwdHandler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_CFG}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_CFG, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsCfgHandler}}},
+    {UI_STRING, NARGS_CFG, 1, 1, _STR_HINT_NARGS_CFG, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsCfgHandler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_ELF}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_ELF, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsElfHandler}}},
+    {UI_STRING, NARGS_ELF, 1, 1, _STR_HINT_NARGS_ELF, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsElfHandler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_ATA0}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_ATA0, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsAta0Handler}}},
+    {UI_STRING, NARGS_ATA0, 1, 1, _STR_HINT_NARGS_ATA0, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsAta0Handler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_ATA0ID}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_ATA0ID, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsAta0idHandler}}},
+    {UI_STRING, NARGS_ATA0ID, 1, 1, _STR_HINT_NARGS_ATA0ID, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsAta0idHandler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_ATA1}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_ATA1, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsAta1Handler}}},
+    {UI_STRING, NARGS_ATA1, 1, 1, _STR_HINT_NARGS_ATA1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsAta1Handler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_EXTRA}}},
     {UI_SPACER},
-    {UI_STRING, NARGS_EXTRA, 1, 1, -1, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsExtraHandler}}},
+    {UI_STRING, NARGS_EXTRA, 1, 1, _STR_HINT_NARGS_EXTRA, 0, 0, {.stringvalue = {"", "", &guiNeutrinoArgsExtraHandler}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_NARGS_AUTO_NOTE}}},
@@ -2034,13 +2034,13 @@ struct UIItem diaOSDConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_SETTINGS_SOURCE}}},
     {UI_SPACER},
-    {UI_ENUM, OSD_LANGUAGE_SOURCE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, OSD_LANGUAGE_SOURCE, 1, 1, _STR_HINT_SETTINGS_SOURCE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {NULL, _STR_ENABLE_LNG}}},
     {UI_SPACER},
-    {UI_BOOL, OSD_LANGUAGE_ENABLE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BOOL, OSD_LANGUAGE_ENABLE, 1, 1, _STR_HINT_OSD_ENABLE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -41, 0, {.label = {NULL, _STR_OSD_SETTINGS_LNG}}},
@@ -2050,12 +2050,12 @@ struct UIItem diaOSDConfig[] = {
 
     {UI_LABEL, 0, 1, 1, -1, -41, 0, {.label = {NULL, _STR_OSD_SETTINGS_TVASPECT}}},
     {UI_SPACER},
-    {UI_ENUM, OSD_TVASPECT_VALUE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, OSD_TVASPECT_VALUE, 1, 1, _STR_HINT_OSD_TVASPECT, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -41, 0, {.label = {NULL, _STR_OSD_SETTINGS_VMODE}}},
     {UI_SPACER},
-    {UI_ENUM, OSD_VMODE_VALUE, 1, 1, -1, 0, 0, {.intvalue = {0, 0}}},
+    {UI_ENUM, OSD_VMODE_VALUE, 1, 1, _STR_HINT_OSD_VMODE, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
 
     // buttons

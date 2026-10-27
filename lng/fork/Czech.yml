@@ -602,3 +602,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Nepoužívaný modul RA z RiptOPL: POPS/MODULE_9.IRX. Smazat pro čisté spuštění?'
   PS1_RA_CLEAN_FAILED: Nepoužívaný modul RA nelze smazat.
   PS1_RA_CLEAN_CONTINUE: Přesto pokračovat? Zbylý modul RA může spustit zastaralou telemetrii. Ne zruší spuštění.
+  HINT_COVERFLOW_COUNT: Kolik obalů RIPFLOW ukazuje po každé straně vybraného.
+  HINT_COVERFLOW_SCALE: Jak velký RIPFLOW kreslí vybraný obal oproti ostatním.
+  HINT_COVERFLOW_ANIM: Jak rychle obaly kloužou, když se pohybujete proudem.
+  HINT_NARGS_QB: 'Quick Boot: přeskočí vlastní úvodní obrazovku Neutrina. Zapnuto tady se posílá pro každou hru; vypnuto ho RIPPS2 stejně posílá samo pro hry z USB, iLink a sítě, kde je potřeba.'
+  HINT_NARGS_DBC: 'Ladicí barvy: Neutrino při každém kroku načítání vyplní obrazovku barvou, takže fotka ukáže, kde se hra zastavila.'
+  HINT_NARGS_LOGO: Před hrou ukáže logo PS2 (druhý restart IOP, který některé disky iLink potřebují). Vypnuto tady se RIPPS2 řídí podle Spouštění her > Logo PS2 a pro hry z MMCE ani ze sítě ho nikdy neposílá.
+  HINT_NARGS_CWD: 'Složka, kterou hra považuje za svou. Prázdné: výchozí Neutrina.'
+  HINT_NARGS_CFG: 'Váš vlastní soubor nastavení Neutrina (-cfg). Prázdné: ten od Neutrina.'
+  HINT_NARGS_ELF: 'Spustí tento ELF místo zaváděcího souboru, který určuje disk. Prázdné: vlastní soubor hry.'
+  HINT_NARGS_ATA0: Obraz HDD, který Neutrino připojí jako interní HDD konzole, pro hry, které HDD používají (-ata0).
+  HINT_NARGS_ATA0ID: Soubor ID, který k tomuto obrazu HDD patří (-ata0id).
+  HINT_NARGS_ATA1: Druhý obraz HDD (-ata1).
+  HINT_NARGS_EXTRA: Další příznaky Neutrina, oddělené mezerami, posílané po všem výše. RIPPS2 vždy přidá -bsd a -dvd pro disk a ISO hry, -mc0 a -mc1 pro její VMC, -gsm pro režim videa a vlastní režimy kompatibility hry. Příznak s vlastním řádkem výše (například -logo) se při uložení přesune do toho řádku a posílá se dál.
+  NETBOOT_RESTART_NOW: Síťový protokol se změní po restartu. Uložit nastavení a restartovat OPL teď?
+  HINT_GSM_DEFAULTS_BUTTON: Opravy režimu videa, které dostane každá hra, pokud nemá vlastní nastavení GSM.
+  HINT_MMCE_SETTINGS_BUTTON: Slot, IGR bootcard, GameID a volby časování pro MMCE.
+  HINT_BDMA_BUTTON: Který ovladač exFAT POPSTARTER používá pro hry PS1 na USB, MX4SIO, MMCE, HDD nebo iLink.
+  HINT_MMCE_COMM_BUTTON: Volby časování spojení MMCE. Měňte je jen tehdy, když hry zamrzají nebo se pomalu načítají.
+  HINT_MMCE_PATH_BUTTON: Kde jsou na kartě MMCE složky her.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Cesta, režim videa a argumenty Neutrina pro každou hru.
+  HINT_OSD_DEFAULTS_BUTTON: Jazyk konzole, velikost obrazovky a režim videa předávané hrám.
+  HINT_SETTINGS_SOURCE: Globální používá sdílená nastavení; Pro hru je uchová jen pro tuto hru.
+  HINT_PADMACRO_TOGGLE: Při stisku tlačítka zpomalí páčku jen tehdy, když tlačítko držíte; Přepínáno tlačítkem ho zapíná a vypíná.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 přes USB nebo Bluetooth a multitap, pro každou hru.
+  HINT_PADMACRO_GLOBAL: Zpomalení páčky, obrácení osy a turbo pro každou hru.
+  HINT_COVERFLOW_DIM: Ztmaví boční obaly.
+  HINT_OSD_ENABLE: Předá hře nastavení níže. Vypnuto použije vlastní nastavení konzole.
+  HINT_OSD_TVASPECT: Tvar televizoru předávaný hře.
+  HINT_OSD_VMODE: Režim videa předávaný hře.
+  DNAS_ID: ID DNAS

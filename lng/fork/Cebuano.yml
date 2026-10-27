@@ -632,3 +632,33 @@ translations:
   PS1_RA_CLEAN_DELETE: 'Wala gigamit nga RiptOPL RA module: POPS/MODULE_9.IRX. Papason alang sa limpyo nga paglansad?'
   PS1_RA_CLEAN_FAILED: Dili mapapas ang wala gigamit nga RA module.
   PS1_RA_CLEAN_CONTINUE: Padayon gihapon? Ang nahibilin nga RA module mahimong modagan og daan nga telemetry. Kanselahon sa Dili ang paglansad.
+  HINT_COVERFLOW_COUNT: Pila ka cover ang gipakita sa RIPFLOW sa matag kilid sa gipili.
+  HINT_COVERFLOW_SCALE: Unsa kadako gidrowing sa RIPFLOW ang gipiling cover kumpara sa uban.
+  HINT_COVERFLOW_ANIM: Unsa kapaspas mo-slide ang mga cover samtang naglihok ka sa flow.
+  HINT_NARGS_QB: 'Quick Boot: laktawan ang kaugalingong start-up screen sa Neutrino. Kung naka-on dinhi, ipadala kini sa matag dula; kung naka-off, ipadala gihapon kini sa RIPPS2 alang sa USB, iLink ug network nga dula, diin kini kinahanglan.'
+  HINT_NARGS_DBC: 'Debug Colors: pun-on sa Neutrino ang screen og kolor sa matag lakang sa pag-load, mao nga makita sa litrato kung asa mihunong ang dula.'
+  HINT_NARGS_LOGO: Ipakita ang PS2 logo sa dili pa ang dula (ikaduhang IOP reboot, nga kinahanglan sa pipila ka iLink drive). Kung naka-off dinhi, sundan sa RIPPS2 ang Game Launching > PS2 Logo, ug dili gyud kini ipadala alang sa MMCE o network nga dula.
+  HINT_NARGS_CWD: 'Ang folder nga makita sa dula isip iyaha. Blangko: default sa Neutrino.'
+  HINT_NARGS_CFG: 'Imong kaugalingong Neutrino config file (-cfg). Blangko: ang sa Neutrino.'
+  HINT_NARGS_ELF: 'Sugdan kining ELF puli sa boot file nga ginganlan sa disc. Blangko: ang sa dula mismo.'
+  HINT_NARGS_ATA0: HDD image nga i-mount sa Neutrino isip internal HDD sa console, alang sa mga dula nga mogamit sa HDD (-ata0).
+  HINT_NARGS_ATA0ID: Ang ID file nga kauban niadtong HDD image (-ata0id).
+  HINT_NARGS_ATA1: Ikaduhang HDD image (-ata1).
+  HINT_NARGS_EXTRA: Ubang Neutrino flag, gibulag sa espasyo, nga ipadala human sa tanan sa ibabaw. Kanunay idugang sa RIPPS2 ang -bsd ug -dvd alang sa drive ug ISO sa dula, -mc0 ug -mc1 alang sa mga VMC niini, -gsm alang sa video mode niini, ug ang kaugalingong compatibility mode sa dula. Ang flag nga adunay kaugalingong row sa ibabaw (sama sa -logo) mobalhin sa maong row sa pag-save, ug ipadala gihapon.
+  NETBOOT_RESTART_NOW: Mausab ang network protocol human sa restart. I-save ang settings ug i-restart ang OPL karon?
+  HINT_GSM_DEFAULTS_BUTTON: Mga ayo sa video mode nga makuha sa matag dula gawas kung adunay kaugalingong GSM settings.
+  HINT_MMCE_SETTINGS_BUTTON: Mga opsyon sa slot, IGR bootcard, GameID ug timing alang sa MMCE.
+  HINT_BDMA_BUTTON: Unsang exFAT driver ang gigamit sa POPSTARTER alang sa PS1 nga dula sa USB, MX4SIO, MMCE, HDD o iLink.
+  HINT_MMCE_COMM_BUTTON: Mga opsyon sa timing alang sa MMCE link. Usba lang kung mo-freeze o hinay mo-load ang mga dula.
+  HINT_MMCE_PATH_BUTTON: Kung asa sa MMCE card ang mga game folder.
+  HINT_NEUTRINO_DEFAULTS_BUTTON: Path, video mode ug mga argument sa Neutrino alang sa matag dula.
+  HINT_OSD_DEFAULTS_BUTTON: Pinulongan sa console, gidak-on sa screen ug video mode nga ihatag sa mga dula.
+  HINT_SETTINGS_SOURCE: Gigamit sa Global ang gipaambit nga settings; gitipigan sa Matag dula kini alang niining dula ra.
+  HINT_PADMACRO_TOGGLE: Pahinayon sa While Button Pressed ang stick samtang gikuptan ra nimo ang button; i-on ug i-off kini sa Toggled By Button.
+  HINT_PADEMU_GLOBAL: DualShock 3/4 sa USB o Bluetooth, ug multitap, alang sa matag dula.
+  HINT_PADMACRO_GLOBAL: Pagpahinay sa stick, pag-invert sa axis ug turbo alang sa matag dula.
+  HINT_COVERFLOW_DIM: Ngitngitan ang mga cover sa kilid.
+  HINT_OSD_ENABLE: Ihatag sa dula ang mga setting sa ubos. Ang kaugalingong setting sa console ang gamit sa Off.
+  HINT_OSD_TVASPECT: Porma sa TV nga ihatag sa dula.
+  HINT_OSD_VMODE: Video mode nga ihatag sa dula.
+  DNAS_ID: DNAS ID
