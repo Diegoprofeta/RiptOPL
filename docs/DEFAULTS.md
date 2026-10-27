@@ -19,7 +19,7 @@ installation folder can still discover settings on another device.
 | Controller Vibration in Menus | Off | Settings → Controller Settings |
 | Remember last played | Off | Settings → General & System |
 | Automatic VMC creation | Off | Settings → Game Launching |
-| GameID barcode | Off | Settings → Interface |
+| GameID barcode | PS1 half On, PS2 half Off (shown as *On (POPSTARTER only)*) | Settings → Interface |
 
 Background music still needs a playable configured/default track. An enabled
 setting alone does not supply music. Storage discovery and saved configuration
