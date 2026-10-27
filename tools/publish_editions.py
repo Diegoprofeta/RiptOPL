@@ -5,16 +5,46 @@ import hashlib
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
+import time
 import zipfile
 
+from build_configuration import CONFIGURATIONS
 from build_edition import EDITIONS, git
 
+# The original's VARIANTS and DEBUG zips (every Korium configuration) and its RA nopademu loader, each
+# published beside its edition's kit: configurations are never channels of their own.
+# name: (edition, configurations, release-notes description). docs/BUILD-CONFIGURATIONS.md has each one.
+VARIANTS = ("pademu0", "ds5", "extras", "extras_ds5")
+BUNDLES = {
+    "VARIANTS": ("korium", VARIANTS, "pad emulation off, DualSense and extras builds"),
+    "DEBUG": ("korium", tuple(c for c in CONFIGURATIONS if c != "standard" and c not in VARIANTS),
+              "debug and diagnostic builds"),
+    "RA-VARIANTS": ("ra", ("pademu0",), "pad emulation off"),
+}
+BUNDLE_README = ("RiptOPL {title} configuration builds. Each folder holds one {elf} and the manifest it was\n"
+                 "built from; replace the ELF of an existing {title} install to use one. What each configuration\n"
+                 "changes: https://github.com/NathanNeurotic/RiptOPL/blob/rebuild/main/docs/BUILD-CONFIGURATIONS.md\n")
 
-def gh(*args):
-    return subprocess.check_output(["gh", *args], text=True).strip()
+
+# GitHub's release API intermittently answers 5xx. Calls are retried unless retry=False: a create that
+# failed part-way has already made the release, so repeating it can only fail.
+RETRY_DELAYS = (5, 15)
+
+
+def gh(*args, retry=True):
+    for delay in (*(RETRY_DELAYS if retry else ()), None):
+        try:
+            return subprocess.check_output(["gh", *args], text=True).strip()
+        except subprocess.CalledProcessError:
+            if delay is None:
+                raise
+            print(f"gh {' '.join(args[:2])} failed; retrying in {delay}s", file=sys.stderr)
+            time.sleep(delay)
 
 
 def publication_allowed(environment, sha):
@@ -38,6 +68,37 @@ def update_tag(repo, tag, sha):
         raise RuntimeError(f"cannot inspect release tag {tag}: {result.stderr.strip()}")
 
 
+def add_sum(path, name, digest):
+    """List name in path/SHA256SUMS.txt once, so a second run over the same folder stays valid."""
+    sums = path / "SHA256SUMS.txt"
+    lines = [line for line in sums.read_text(encoding="utf-8").splitlines() if line.split("  ", 1)[-1] != name]
+    sums.write_text("".join(f"{line}\n" for line in [*lines, f"{digest}  {name}"]), encoding="utf-8")
+
+
+def bundle_configurations(root, expected_sha):
+    """Pack the configuration builds into their edition's release and add them to its checksums."""
+    for name, (edition, configurations, _) in BUNDLES.items():
+        path = root / ("release-" + edition)
+        kit = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+        elf_name = "RIPTOPL-RA.ELF" if EDITIONS[edition]["ra"] else "RIPTOPL.ELF"
+        archive = path / f"RIPTOPL-{name}.zip"
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+            for configuration in configurations:
+                stage = root / f"variant-{edition}-{configuration}"
+                manifest = json.loads((stage / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+                elf = (stage / "RIPTOPL.ELF").read_bytes()
+                if (manifest["source_commit"] != expected_sha or manifest["dirty"] or manifest["edition"] != edition
+                        or manifest["compiler"] != "gcc" or manifest["configuration"] != configuration
+                        or manifest["ps2build_version"] != kit["ps2build_version"]
+                        or manifest["components"] != kit["components"] or manifest["ports"] != kit["ports"]
+                        or manifest["elf_sha256"] != hashlib.sha256(elf).hexdigest()):
+                    raise ValueError(f"invalid configuration build: {edition}/{configuration}")
+                bundle.writestr(f"{configuration}/{elf_name}", elf)
+                bundle.writestr(f"{configuration}/BUILD-MANIFEST.json", json.dumps(manifest, indent=2) + "\n")
+            bundle.writestr("README.txt", BUNDLE_README.format(title=EDITIONS[edition]["title"], elf=elf_name))
+        add_sum(path, archive.name, hashlib.sha256(archive.read_bytes()).hexdigest())
+
+
 def verify(root, expected_sha):
     candidates = []
     suites = []
@@ -49,7 +110,7 @@ def verify(root, expected_sha):
                 or manifest["sdk"] != "ps2build" or manifest["ra"] != options["ra"]
                 or manifest.get("configuration", "standard") != "standard"):
             raise ValueError(f"invalid source/edition manifest for {edition}")
-        suites.append((manifest["ps2build_version"], manifest["components"]))
+        suites.append((manifest["ps2build_version"], manifest["components"], manifest["ports"]))
         sums = {}
         for line in (path / "SHA256SUMS.txt").read_text(encoding="utf-8").splitlines():
             digest, name = line.split("  ", 1)
@@ -61,7 +122,8 @@ def verify(root, expected_sha):
         actual = {p.name for p in path.iterdir() if p.is_file()}
         elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
         psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
-        required = {elf, psu, "BUILD-MANIFEST.json", "RIPTOPL-src.zip", f"RIPTOPL-{options['title']}.zip"}
+        required = {elf, psu, "BUILD-MANIFEST.json", "RIPTOPL-src.zip", "RIPTOPL-LANGS.zip", f"RIPTOPL-{options['title']}.zip"}
+        required |= {f"RIPTOPL-{name}.zip" for name, bundle in BUNDLES.items() if bundle[0] == edition}
         if set(sums) != required or actual != required | {"SHA256SUMS.txt"}:
             raise ValueError(f"unexpected release inventory: {edition}")
         if sums[elf] != manifest["elf_sha256"]:
@@ -80,6 +142,30 @@ def verify(root, expected_sha):
         raise ValueError("editions resolved different SDK suites; rebuild them together before publication")
     return candidates
 
+
+
+def companion_assets(options):
+    """A companion's channel files under the names they take in its parent's channel."""
+    elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
+    psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
+    label = options["label"]
+    return {f"RIPTOPL-{options['title']}.zip": f"RIPTOPL-{options['title']}.zip",
+            elf: elf.replace(".ELF", f"-{label}.ELF"), psu: psu.replace(".psu", f"-{label}.psu")}
+
+
+def fold_companions(candidates):
+    """Move each verified companion edition (one with "into") into its parent's channel."""
+    parents = {edition: path for edition, _, path, _ in candidates}
+    for _, options, path, sums in candidates:
+        if "into" not in options:
+            continue
+        parent = parents[options["into"]]
+        for source, target in companion_assets(options).items():
+            if (parent / target).exists() and hashlib.sha256((parent / target).read_bytes()).hexdigest() != sums[source]:
+                raise ValueError(f"companion asset collides with its channel: {target}")
+            shutil.copyfile(path / source, parent / target)
+            add_sum(parent, target, sums[source])
+    return [candidate for candidate in candidates if "into" not in candidate[1]]
 
 
 def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
@@ -103,11 +189,55 @@ def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
         "## Downloads\n\n"
         f"- [Full install kit]({downloads}/RIPTOPL-{options['title']}.zip) - loader and companions.\n"
         f"- [Loader ELF]({downloads}/{elf}) - update an existing installation.\n"
-        f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n\n"
+        f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n"
+        f"- [Languages]({downloads}/RIPTOPL-LANGS.zip) - translations and their fonts.\n"
+        + "".join(f"- [{name.replace('-', ' ').title().replace('Ra ', 'RA ')}]({downloads}/RIPTOPL-{name}.zip) - {what}.\n"
+                  for name, (edition, _, what) in BUNDLES.items() if EDITIONS[edition] is options)
+        + "".join(f"- {other['label']} theme: " + ", ".join(f"[{what}]({downloads}/{name})" for what, name in
+                  zip(("install kit", "ELF", "app"), companion_assets(other).values())) + ".\n"
+                  for other in EDITIONS.values() if EDITIONS.get(other.get("into")) is options)
+        + "\n"
         f"Included build: {neutrino} -- Neutrino.\n\n"
         "[Installation and guides](https://nathanneurotic.github.io/RiptOPL/) - "
         f"[Wiki]({base}/wiki)\n"
     )
+
+
+def upload_verified(repo, tag, sha, title, notes_path, assets, exists):
+    """Upload a channel's assets and confirm GitHub kept them. A published channel that fails part-way
+    gets every clobbered file back and loses the files it added, so its downloads never mix two builds
+    under the old tag."""
+    with tempfile.TemporaryDirectory() as backup:
+        replaced, added = [], []
+        if exists:
+            current = {a["name"] for a in json.loads(gh("release", "view", tag, "--repo", repo, "--json", "assets"))["assets"]}
+            replaced = sorted(current & {Path(a).name for a in assets})
+            added = sorted({Path(a).name for a in assets} - current)
+            for name in replaced:
+                gh("release", "download", tag, "--repo", repo, "--pattern", name, "--dir", backup, "--clobber")
+        try:
+            if exists:
+                gh("release", "upload", tag, "--repo", repo, "--clobber", *assets)
+            else:
+                gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", title,
+                   "--notes-file", str(notes_path), *assets, retry=False)
+            release = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "id,assets"))
+            remote = {a["name"]: a for a in release["assets"]}
+            for asset in assets:
+                file = Path(asset)
+                digest = hashlib.sha256(file.read_bytes()).hexdigest()
+                item = remote.get(file.name, {})
+                if item.get("size") != file.stat().st_size or item.get("digest") != "sha256:" + digest:
+                    raise ValueError(f"GitHub did not retain the verified asset: {tag}/{file.name}")
+        except (subprocess.CalledProcessError, ValueError):
+            if replaced:
+                gh("release", "upload", tag, "--repo", repo, "--clobber", *(str(Path(backup) / n) for n in replaced))
+            for name in added:  # new to this channel: not part of the build it still serves
+                try:
+                    gh("release", "delete-asset", tag, name, "--repo", repo, "--yes")
+                except subprocess.CalledProcessError:
+                    pass  # best effort: the original failure is the one to report
+            raise
 
 
 def latest_release_arg(edition):
@@ -121,7 +251,8 @@ def main():
     parser.add_argument("--check", action="store_true", help="verify only; never contact GitHub")
     args = parser.parse_args()
     sha = git("rev-parse", "HEAD")
-    candidates = verify(args.artifacts, sha)
+    bundle_configurations(args.artifacts, sha)
+    candidates = fold_companions(verify(args.artifacts, sha))
     if args.check:
         print(f"Verified all three channels at {sha}")
         return
@@ -134,7 +265,7 @@ def main():
     for edition, options, path, sums in candidates:
         tag = options["tag"]
         manifest = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
-        neutrino = manifest["neutrino_archive"]["filename"].removeprefix("neutrino_").removesuffix(".7z")
+        neutrino = manifest["neutrino_archive"]["filename"].removeprefix("neutrino_").removesuffix(".7z").removesuffix(".zip")
         notes = release_notes(options, sha, neutrino, repo)
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", suffix=".md", delete=False) as stream:
             stream.write(notes)
@@ -142,18 +273,7 @@ def main():
         try:
             exists = subprocess.run(["gh", "release", "view", tag, "--repo", repo], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
             assets = [str(p) for p in sorted(path.iterdir()) if p.is_file()]
-            if exists:
-                gh("release", "upload", tag, "--repo", repo, "--clobber", *assets)
-            else:
-                gh("release", "create", tag, "--repo", repo, "--target", sha, "--draft", "--title", options["title"], "--notes-file", str(notes_path), *assets)
-            release = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "id,assets"))
-            remote = {a["name"]: a for a in release["assets"]}
-            for asset in assets:
-                file = Path(asset)
-                digest = hashlib.sha256(file.read_bytes()).hexdigest()
-                item = remote.get(file.name, {})
-                if item.get("size") != file.stat().st_size or item.get("digest") != "sha256:" + digest:
-                    raise ValueError(f"GitHub did not retain the verified asset: {tag}/{file.name}")
+            upload_verified(repo, tag, sha, options["title"], notes_path, assets, exists)
             update_tag(repo, tag, sha)
             gh("release", "edit", tag, "--repo", repo, "--title", options["title"], "--notes-file", str(notes_path),
                "--draft=false", "--prerelease=false", latest_release_arg(edition))

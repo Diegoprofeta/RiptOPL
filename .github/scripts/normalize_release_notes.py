@@ -12,7 +12,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 def description(name):
     fixed = {
         "RIPTOPL.ELF": "Standard loader update; replace your existing ELF.",
-        "RIPTOPL-RA.ELF": "RetroAchievements loader update (requires xeRAbora v0.1.0-alpha.10).",
+        "RIPTOPL-RA.ELF": "RetroAchievements loader update (requires xeRAbora v0.1.0-alpha.17).",
         "APP_RIPTOPL.psu": "Standard app for memory-card import; app files only.",
         "APP_RIPTOPL-RA.psu": "RetroAchievements app for memory-card import; app files only.",
     }
@@ -21,10 +21,12 @@ def description(name):
     if name.endswith("-src.zip"):
         return "Source code snapshot."
     for prefix, text in (
-        ("RIPTOPL-RetroAchievements-", "Full RetroAchievements kit: loader, artwork, PSU and shared cores; requires xeRAbora v0.1.0-alpha.10."),
+        ("RIPTOPL-RetroAchievements-", "Full RetroAchievements kit: loader, artwork, PSU and shared cores; requires xeRAbora v0.1.0-alpha.17."),
+        ("RIPTOPL-RA-VARIANTS", "RetroAchievements loader with pad emulation off."),
         ("RIPTOPL-RA-", "RetroAchievements package."),
-        ("RIPTOPL-VARIANTS-", "Alternative loaders with extra features, controller emulation and DualSense support."),
-        ("RIPTOPL-DEBUG-", "Debug loaders for troubleshooting."),
+        # Current bundles are RIPTOPL-VARIANTS.zip/RIPTOPL-DEBUG.zip; older ones carried a version suffix.
+        ("RIPTOPL-VARIANTS", "Alternative loaders with extra features, controller emulation and DualSense support."),
+        ("RIPTOPL-DEBUG", "Debug loaders for troubleshooting."),
         ("RIPTOPL-LANGS-", "Extra interface languages and fonts."),
         ("RIPTOPL-", "Full install: loader, artwork, PSU, POPStarter, Ember, Neutrino and companion-tool links."),
     ):

@@ -60,9 +60,10 @@ int sbLoadImage(const char *path, const char *file);
 void sbSetDiscAttributes(config_set_t *config, int isPS1, int isCD); // #System/#Media/#DiscType identity stamp
 
 // Compatibility modes for a game: its saved $Compatibility key, else a known title default. Every reader of
-// the modes (launch paths and the per-game screen) must use sbGetCompatModes so they agree.
-int sbTitleCompatDefault(config_set_t *configSet);
-int sbGetCompatModes(config_set_t *configSet);
+// the modes (launch paths and the per-game screen) must use sbGetCompatModes so they agree. A title default
+// can be limited to one core, so pass neutrino=1 for a Neutrino launch and 0 for the OPL core.
+int sbTitleCompatDefault(config_set_t *configSet, int neutrino);
+int sbGetCompatModes(config_set_t *configSet, int neutrino);
 
 void sbEnsureIgrUsbDrivers(int compatmask);
 int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman, void **cdvdman_irx, int *patchindex);
@@ -77,14 +78,31 @@ config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const
 // #Size still resolves on demand. (1 = stat, 0 = skip.)
 void sbSetConfigStatSize(int enable);
 int sbConfigStatSizeEnabled(void);
+// Info-screen #Size of a PS1 row (VCD or Ember folder) under the device's PS1 root.
+void sbResolvePs1Size(base_game_info_t *game, const char *ps1Root, config_set_t *config);
 void sbMakeDirTree(const char *path);
 void sbCreateFolders(const char *path, int createDiscImgFolders);
 
 // ISO9660 filesystem management functions.
 u32 sbGetISO9660MaxLBA(const char *path);
+// Real sector count of an image (upstream OPL #1763): the ZSO header's block count, else totalBytes / 2048.
+// 0 = unknown (unopenable, an unreadable ZSO header, or totalBytes 0), which keeps CDVDMAN on the PVD.
+u32 sbGetMediaLsnCount(const char *path, u64 totalBytes);
 int sbProbeISO9660(const char *path, base_game_info_t *game, u32 layer1_offset);
 
-int sbLoadCheats(const char *path, const char *file);
+int sbLoadCheats(const char *path, const char *file, config_set_t *configSet);
+// The cheats of a Neutrino launch whose leg skips the native preparation (BDM, APA): this game's cheat
+// settings, its .cht from <prefix>CHT/ (Select mode: remembered picks, then the picker), then
+// sbNeutrinoHandCheats. 0 = launch; <0 = the user chose to stay in the menu.
+// The enabled codes of the cheats loaded for `startup`, handed to Neutrino (sysNeutrinoHandCheats). With
+// cheats off or a NULL startup it only clears the last hand-over. 0 = launch; <0 = stay in the menu.
+int sbNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs);
+int sbNeutrinoLoadCheats(const char *prefix, const char *startup, config_set_t *configSet, const char *neutrinoPath, const char *extraArgs);
+#ifdef RETROACHIEVEMENTS
+// Hand the game's watch list to the RA kit's ORBIT Neutrino (sysNeutrinoHandRA), or say the launch goes
+// untracked. Before sysNeutrinoArgsPreflight and the teardown; never refuses the launch.
+void sbNeutrinoPrepareRA(const char *prefix, const char *startup, const char *driver, const char *neutrinoPath, const char *extraArgs);
+#endif
 
 
 
@@ -133,6 +151,8 @@ void sbBuildVmcNeutrinoArgs(config_set_t *configSet, const char *vmcPrefix, neut
 // RA: load this game's watch list from <path>RA/<file>.wl. Mirrors sbLoadCheats'
 // shape (256-byte path, both extension cases). A missing list is not an error.
 int sbLoadWatchList(const char *path, const char *file);
+/* The same, without raising the network (an external runtime brings its own). */
+int sbReadWatchList(const char *path, const char *file);
 
 // RA: the hash log, <path>RA/hashes.txt. Open before hashing, close after:
 // raHashStep and ranet.c drop their crumbs into whatever log is open.
@@ -143,10 +163,14 @@ void raHashLogClose(void);
 
 int sbHashGameBusy(void);
 int sbHashGameDeferred(const char *path, const char *name, const char *ext, const char *startup, int format);
+int sbHashHdlDeferred(const char *path, const char *name, const char *startup, unsigned int start_sector);
 
 // RA: ask the PC client to answer, from the I/O thread; the result is shown
 // as a notice.
 void sbTestPCLinkDeferred(void);
 #endif
+
+// Neutrino has no pad emulation: tell the user when this game has it on (no-op without PADEMU).
+void sysNeutrinoWarnPadEmu(config_set_t *configSet);
 
 #endif

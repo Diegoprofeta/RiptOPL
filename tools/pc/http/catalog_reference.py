@@ -2,7 +2,7 @@
 """Reference implementation of the RiptOPL HTTP catalog (games.csv) contract.
 
 This is the executable half of docs/HTTP-INTEGRATION-PLAN.md section 4. The C parser in
-src/sources/httpsupport.c must agree with this file on every fixture in fixtures/, in all three
+src/sources/httpsupport.cpp must agree with this file on every fixture in fixtures/, in all three
 line-ending forms. Where the two disagree, this file and expected.json are the contract and
 the C is wrong -- unless the disagreement is deliberate, in which case change both here and
 in the plan, in the same commit.

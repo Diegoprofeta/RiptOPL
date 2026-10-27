@@ -4,10 +4,12 @@
 #include "include/lang.h"
 #include "include/gui.h"
 #include "include/supportbase.h"
+#include "include/nativevmc.h"
 #include "include/ethsupport.h"
 #include "include/netsupport.h" // the shared TCP/IP stack; this file owns only the SMB session on top of it
 #include "include/vcdsupport.h"
 #include "include/cuesupport.h" // ps1FillGameList + the Ember launch helpers
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/util.h"
 #include "include/renderman.h"
@@ -20,6 +22,7 @@
 #include "include/bdmsupport.h"   // bdmIsUDPBDLoaded() for the SMB<->UDPBD NIC interlock
 #include "include/udpfssupport.h" // udpfsGetModulesLoaded() for the SMB<->UDPFS-filesystem NIC interlock
 #include "include/mmcesupport.h"  // mmceSendGameID() cross-device game-id (#261)
+#include "include/ps2sdkapi_compat.h"
 #include "modules/iopcore/common/cdvd_config.h"
 
 #define NEWLIB_PORT_AWARE
@@ -153,6 +156,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     int count(item_list_t *itemList) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
@@ -780,7 +785,8 @@ void EthSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
     if (!gPCShareName[0] || vcdName == NULL || vcdName[0] == '\0' || !strcasecmp(vcdName, "POPSTARTER")) // reserved-name belt: the scanner no longer lists it (#154); strcasecmp -- FAT is case-insensitive
         return;
     if (!vcdResolvePopstarter(gEthSupport.prefix(), vcdElf, sizeof(vcdElf))) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        vcdDescribePopstarterLookup(gEthSupport.prefix(), vcdElf, sizeof(vcdElf));
+        host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
     {
@@ -807,6 +813,8 @@ void EthSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
     char separator = (prefixLen > 0 && gEthSupport.prefix()[prefixLen - 1] == '\\') ? '\\' : '/';
     char vcdFullPath[256];
     snprintf(vcdFullPath, sizeof(vcdFullPath), "%sPOPS%c%s.VCD", gEthSupport.prefix(), separator, vcdName);
+    if (!vcdConfirmCleanLaunch(gEthSupport.prefix())) // a module left by a tracked USB launch reports stale telemetry
+        return;
     vcdPrepareRetroGemBarcode(vcdFullPath);
     // Keep the SMB game share plus any distinct custom POPSTARTER.ELF backend through handoff.
     host::app().deinitEx(sbLoaderDeinitException(vcdElf), itemList->mode, host::app().pathToMode(vcdElf));
@@ -818,6 +826,7 @@ void EthSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
 void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set_t *configSet)
 {
     char emberElf[256], biosPath[288];
+    char launchName[CUE_NAME_MAX];
 
     if (!gPCShareName[0] || cueName == NULL || cueName[0] == '\0')
         return;
@@ -835,6 +844,8 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
         host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
+    if (!cuePrepareLaunch(gEthSupport.prefix(), cueName, emberElf, launchName, sizeof(launchName)))
+        return;
     cueApplySettings(gEthSupport.prefix(), cueName, configSet); // best-effort marker, never a launch gate
     if (!cueGameHasImage(gEthSupport.prefix(), cueName)) {
         host::ui().msgBox(_l(_STR_EMBER_NO_DISC), 0, NULL);
@@ -847,11 +858,17 @@ void EthSource::launchCue(item_list_t *itemList, const char *cueName, config_set
     // network configuration of its own, and writing POPSTARTER's files for an Ember launch would
     // be a side effect with no purpose.
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(gEthSupport.prefix(), cueName);
+
     // UNMOUNT_EXCEPTION is load-bearing: Ember reads its game through the SMB mount that is live
     // right now, so that mount must survive the teardown.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);
-    sysLaunchEmber(emberElf, cueName);
+    sysLaunchEmber(emberElf, launchName);
 }
+
+static int ethMcemuSlots[2] = {-2, -2};
 
 void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 {
@@ -931,13 +948,12 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             }
         }
 
-        for (i = 0; i < size_smb_mcemu_irx; i++) {
-            if (((u32 *)&smb_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
-                if (smb_vmc_infos.active)
-                    size_mcemu_irx = size_smb_mcemu_irx;
-                memcpy(&((u32 *)&smb_mcemu_irx)[i], &smb_vmc_infos, sizeof(smb_vmc_infos_t));
-                break;
-            }
+        // This write covers the slot's marker, so its position is found once and reused with a full-payload bound.
+        int slotWord = nativeVmcSlotWord(&smb_mcemu_irx, size_smb_mcemu_irx, vmc_id, ethMcemuSlots, sizeof(smb_vmc_infos_t));
+        if (slotWord >= 0) {
+            if (smb_vmc_infos.active)
+                size_mcemu_irx = size_smb_mcemu_irx;
+            memcpy(&((u32 *)&smb_mcemu_irx)[slotWord], &smb_vmc_infos, sizeof(smb_vmc_infos_t));
         }
     }
 
@@ -947,6 +963,8 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     compatmask = sbPrepare(game, configSet, size_smb_cdvdman_irx, smb_cdvdman_irx, &i);
+    if (compatmask < 0) // sbPrepare failed (patch zone not found) and never set `i`: it still holds the
+        return;         // VMC loop's counter, so every settings write below would land at a wrong offset.
     sbEnsureIgrUsbDrivers(compatmask);
 
 #ifdef RETROACHIEVEMENTS
@@ -955,7 +973,7 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // launch. Absent is normal -- the game is simply not tracked.
     sbLoadWatchList(gEthSupport.prefix(), game->startup);
 #endif
-    if ((result = sbLoadCheats(gEthSupport.prefix(), game->startup)) < 0) {
+    if ((result = sbLoadCheats(gEthSupport.prefix(), game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
         // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
         // `settings` is not assigned until below, so derive the common block from the IRX base.
@@ -1000,6 +1018,26 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     strcpy(settings->smb_user, gPCUserName);
     strcpy(settings->smb_password, gPCPassword);
 
+    // Sum the size of all parts, for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763).
+    // One part that cannot be opened or sized makes the whole size unknown: a partial total would be
+    // too small a bound and refuse reads in the missing part, while an unknown size keeps the driver
+    // on the PVD, as before (sbGetMediaLsnCount).
+    u64 isoTotalBytes = 0;
+    int isoSizeKnown = 1;
+    for (int part = 0; part < game->parts; part++) {
+        sbCreatePath(game, partname, gEthSupport.prefix(), "\\", part);
+        int fd = open(partname, O_RDONLY, 0666);
+        s64 partBytes = -1;
+        if (fd >= 0) {
+            partBytes = lseek64(fd, 0, SEEK_END);
+            close(fd);
+        }
+        if (partBytes > 0)
+            isoTotalBytes += (u64)partBytes;
+        else
+            isoSizeKnown = 0;
+    }
+
     // Initialize layer 1 information.
     sbCreatePath(game, partname, gEthSupport.prefix(), "\\", 0);
 
@@ -1012,6 +1050,7 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     layer1_start = sbGetISO9660MaxLBA(partname);
+    settings->common.mediaLsnCount = sbGetMediaLsnCount(partname, isoSizeKnown ? isoTotalBytes : 0);
 
     switch (game->format) {
         case GAME_FORMAT_USBLD:
@@ -1052,7 +1091,9 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 config_set_t *EthSource::config(item_list_t *itemList, int id)
 {
     base_game_info_t *game = gEthSupport.gameForView(itemList, id);
-    return game != NULL ? sbPopulateConfig(game, gEthSupport.prefix(), "\\") : NULL;
+    config_set_t *config = game != NULL ? sbPopulateConfig(game, gEthSupport.prefix(), "\\") : NULL;
+    ps1Size(itemList, game, config);
+    return config;
 }
 
 int EthSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)
@@ -1151,6 +1192,16 @@ int ethGetNetConfig(u8 *ip_address, u8 *netmask, u8 *gateway)
 int ethGetDHCPStatus(void)
 {
     return netGetDHCPStatus();
+}
+
+int EthSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    return gPCShareName[0] && saveIconPs1Directory(gEthSupport.prefix(), name, *ember, directory, directorySize);
 }
 
 int EthSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

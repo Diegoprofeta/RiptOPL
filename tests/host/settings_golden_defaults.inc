@@ -1,4 +1,5 @@
-// GENERATED from the setDefaults() that preceded src/core/settings.cpp: one check per table row.
+// GENERATED from the setDefaults() that preceded src/core/settings.cpp: one check per table row. Audio, menu
+// rumble and widescreen were since changed to the original's fresh defaults (off / 4:3).
 CHECK(gScrollSpeed == (1));
 // gDefaultBgColor: no default in setDefaults (initialiser / another routine owns it)
 // gDefaultTextColor: no default in setDefaults (initialiser / another routine owns it)
@@ -11,11 +12,15 @@ CHECK(gRATelemetry == (0));
 #endif
 #ifdef RETROACHIEVEMENTS
 CHECK(gRABadges == (1));
+CHECK(gRABadgeSuffix == (0));
+CHECK(gRAMode == (RA_MODE_XERABORA));
+CHECK(gRAExperimentalCards == (0));
 #endif
 CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));
 CHECK(gEnableLogoArt == (1));
-CHECK(gWideScreen == (1));
+CHECK(gWideScreen == (0));
+CHECK(gFontSize == (FONT_SIZE_DEFAULT));
 CHECK(gVMode == (0));
 CHECK(gXOff == (0));
 CHECK(gYOff == (0));
@@ -63,6 +68,7 @@ CHECK(gVcdHideGameId == (1));
 CHECK(gVcdFirstDiscOnly == (1));
 CHECK(gVcdShowPpPops == (1));
 CHECK(gEnableBGArt == (1));
+CHECK(gEnableSaveIcons == (0));
 CHECK(gEnableArtTar == (0));
 CHECK(gArtDelay == (0));
 CHECK(gEnableFolderNav == (0));
@@ -73,12 +79,14 @@ CHECK(gDefaultPlasBlendColor[0] == RIPTOPL_PLASMA_BLEND_R && gDefaultPlasBlendCo
 // gCoverflowDimCovers: no default in setDefaults (initialiser / another routine owns it)
 CHECK(gEnableILK == (0));
 CHECK(gEnableMX4SIO == (0));
+CHECK(gEnablePCCF == (0));
+CHECK(gEnableDVR == (0));
 CHECK(gEnableBdmHDD == (0));
 CHECK(gNetBootProtocol == (NET_BOOT_UDPBD));
-CHECK(gEnableSFX == (1));
-CHECK(gEnableRumble == (1));
-CHECK(gEnableBootSND == (1));
-CHECK(gEnableBGM == (1));
+CHECK(gEnableSFX == (0));
+CHECK(gEnableRumble == (0));
+CHECK(gEnableBootSND == (0));
+CHECK(gEnableBGM == (0));
 CHECK(gSFXVolume == (90));
 CHECK(gBootSndVolume == (90));
 CHECK(gBGMVolume == (90));

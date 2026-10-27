@@ -100,7 +100,7 @@ Bundled third-party software, shipped in the release package and NOT part of Rip
     The design and the console implementation that RiptOPL's RETROACHIEVEMENTS
     flavour follows: hashing an image the way rcheevos does, streaming the
     watched memory addresses out of the running game over UDP, and the PC client
-    (xeRAbora v0.1.0-alpha.10) that runs rcheevos on the console's behalf. Adopted with
+    (xeRAbora v0.1.0-alpha.17) that runs rcheevos on the console's behalf. Adopted with
     the author's permission (2026-08-27); he supplies and maintains the PC client.
     Re-authored against this fork rather than merged, so any defect in the port is ours.
     Includes md5.c/md5.h by L. Peter Deutsch, vendored unchanged under the zlib
@@ -114,6 +114,19 @@ Bundled third-party software, shipped in the release package and NOT part of Rip
     dependency, cold-launch network bring-up / unusable-IP fallback, and the RA
     settings-page placement. Landed through PRs #702, #703, #704 and #705 after
     hardware testing on a real PS2, with careful separation from normal builds.
+
+  - Mbed TLS, by the Mbed TLS project   https://github.com/Mbed-TLS/mbedtls
+    TLS 1.3/1.2 for the RetroAchievements edition's HTTPS game lookup on
+    retroachievements.org, the same lookup ORBIT performs. Vendored unmodified
+    from the 3.6.7 release archive (third_party/mbedtls) and used under the
+    Apache-2.0 licence; the upstream GPL option is not used. Shipped in the RA
+    package as LICENSE-MBEDTLS.txt; not compiled into the other editions.
+
+  - ORBIT Neutrino RA runtime, by Daniel (danielnuld)   https://github.com/danielnuld/ps2-launcher
+    The RetroAchievements kit's neutrino/: Neutrino by Maximus32 with an
+    achievement agent speaking xeRAbora's protocol (hacan359). AFL-3.0; the
+    pinned v1.0.2 release, source commit and archive digest ship as
+    neutrino/ORBIT-RA.json (third_party/orbit-neutrino). Not in the other kits.
 
   - POPStarter, by krHACKen          https://www.psx-place.com/resources/popstarter.683/
     A PS1 launcher built around Sony's native POPS emulator for the PS2, used as
@@ -206,16 +219,17 @@ Special and sincere thanks to:
     game subfolders came from seeing it there.
   - Irfanlesnar - creator of PS2-Launcher, for UI and feature ideas across the OPL
     fork ecosystem.
-  - Okeanos (Okeanos86) - for BDM-UDPFS Assault Alpha, the read-only POPSTARTER
-    network VCD fallback. The unchanged driver pair, archive hash and complete
-    upstream license/credit notices are preserved under ship/POPS/UDPFS-NOTICES/.
+  - Okeanos (Okeanos86) - for UDPFS Assault 1.0.0, POPSTARTER's network read/write
+    VCD driver based on israpps' BDM Assault (https://github.com/Okeanos86/BDMAssault/releases).
+    The unchanged driver pair, archive hash and complete upstream license/credit
+    notices are preserved under ship/POPS/UDPFS-NOTICES/.
   - pcm720 - for udpfsd and nhddl, key foundations for modern PS2 streaming.
   - Ifcaro and jimmikaelkael - the original Open PS2 Loader authors - and every
     contributor across OPL's long history, all named above in this file.
 
 Testing, bug reports and real-hardware feedback:
 by eliminator1403, lucaslmgv, AndrewBento, AcidReach, bodvenomz, nuno6573, Blade1984,
-zackcage6 and Aislinn🏳️‍⚧️
+zackcage6, Vapor, V3ditata and Aislinn🏳️‍⚧️
 
 The RiptOPL name:
 by Akilluminati47 (https://github.com/akilluminati47)
@@ -228,3 +242,5 @@ If you want the canonical, actively-maintained project, it lives at
 https://github.com/ps2homebrew/Open-PS2-Loader - please support it. This fork is a
 downstream labor of love, not a replacement, and it exists only because that
 upstream work is open for everyone to learn from.
+
+PC CARD CompactFlash integration: mihhru / PS2CF 1.0 (driver and transfer tests).

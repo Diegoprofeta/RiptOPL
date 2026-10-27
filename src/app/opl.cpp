@@ -189,6 +189,7 @@ int gDefaultCoreLoader;      // global default Loader Core (0=<OPL>, 1=Neutrino)
 int gAutoCreateVmc;          // opt in: create and assign a first-launch PS2 card in slot 1
 int gNeutrinoVideoDefault;   // global default Neutrino -gsm video mode (0=Off..5=1080i x3); per-game $NeutrinoVideo overrides
 int gNeutrinoGsmCompDefault; // global default -gsm ":c" field-flip half (0=off, 1-3=type)
+int gNeutrinoShowArgs;       // default-off: show the composed Neutrino argv and ask before each launch
 int gNeutrinoElfArg;         // default-on (settings key only, no UI): auto-emit -elf=cdrom0: on Neutrino launches
 int gDefaultGameView;
 int gAppsDisplay;
@@ -212,6 +213,7 @@ int gVcdFirstDiscOnly;             // hide discs 2+ of multi-disc PS1 sets
 char gBootDir[256];                // boot directory (cwd) OPL launched from; "" if undeterminable
 int gEnableILK;
 int gEnableBGArt;
+int gEnableSaveIcons;                    // 3D save icon theme element (SaveIcon)
 int gEnableArtTar;                       // .tar art packs (item 45); no UI until gate D
 int gArtDelay;                           // inactivity frames before art loads; safe default until gate D tunes it
 int gEnableFolderNav;                    // folder browsing in game lists (item 34)
@@ -221,11 +223,14 @@ volatile int gLastSaveErrno = 0;
 // error the caller would otherwise report against the target path is meaningless.
 volatile int gLastDeferredTimedOut = 0;
 int gEnableMX4SIO;
+int gEnablePCCF;
+int gEnableDVR;
 int gEnableBdmHDD;
 int gEnableUDPBD;
 int gNetBootProtocol; // NET_BOOT_UDPBD | NET_BOOT_UDPFS (legacy shadow, derived from gNetworkProtocol)
 int gNetworkProtocol; // enum NETWORK_PROTOCOL -- authoritative backend selector (Off/SMB/UDPBD/UDPFSBD/UDPFS)
 int gNetProtocolPick; // last protocol chosen, never OFF (see opl.h)
+int gUdpfsAccessMode; // UDPFS Files/IMG preference, independent of UDPBD
 int gNetStartMode;    // START_MODE_* -- the Off/Manual/Auto network start row (see the 3-row Network setting)
 int gAutosort;
 int gAutoRefresh;
@@ -233,11 +238,16 @@ int gEnableNotifications;
 #ifdef RETROACHIEVEMENTS
 int gRATelemetry;
 int gRABadges;
+int gRABadgeSuffix;
+int gRAMode;
+int gRAHostIp[4];
+int gRAExperimentalCards;
 #endif
 int gEnableArt;
 int gEnableDiscArt;
 int gEnableLogoArt;
 int gWideScreen;
+int gFontSize = FONT_SIZE_DEFAULT;
 int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
 int gXOff;
 int gYOff;
@@ -741,9 +751,11 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                 gup->submenu.id = i;
 #ifdef RETROACHIEVEMENTS
                 {
-                    // The RA badge prefix, when this game has a watch list. NULL means plain name.
+                    // The source name stays the row's identity; the badge is copied now, before the next
+                    // raBadgeRefresh frees the cache it lives in. NULL means plain name.
                     const char *badge = raBadgeText(mdl->support, i);
-                    gup->submenu.text = (char *)(badge != NULL ? badge : gsOf(mdl->support)->name(mdl->support, i));
+                    gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);
+                    gup->submenu.raText = badge != NULL ? strdup(badge) : NULL;
                     /* Resolve the cover mark HERE, on the I/O thread that owns the badge cache,
                        and carry the answer to the renderer as a plain int. */
                     gup->submenu.raBadged = (badge != NULL);
@@ -1348,6 +1360,9 @@ void setDefaultColors(void)
 static void setDefaults(void)
 {
     settingsApplyDefaults(); // plain settings: key, variable and default live in src/settings.cpp
+#ifdef RETROACHIEVEMENTS
+    memset(gRAHostIp, 0, sizeof(gRAHostIp));
+#endif
 
     for (int i = 0; i < MODE_COUNT; i++)
         clearIOModuleT(&list_support[i]);
@@ -1421,6 +1436,7 @@ static void setDefaults(void)
     gNeutrinoVideoDefault = 0; // no global -gsm until the user opts in
     gNeutrinoGsmCompDefault = 0;
     gNeutrinoElfArg = 1; // auto-emit the game ELF for Neutrino compatibility lookup by default
+    gNeutrinoShowArgs = 0;
     gPopstarterDevice = POPS_DEV_DEFAULT;
     gPopstarterRetroGemGameID = 1;
     gGameTypeLabels = 0;
@@ -1448,6 +1464,7 @@ static void setDefaults(void)
     gNetworkProtocol = NET_PROTO_OFF;
     gNetStartMode = START_MODE_DISABLED; // Off in the 3-row Network setting; migration reconciles old configs
     gNetProtocolPick = NET_PROTO_SMB;
+    gUdpfsAccessMode = 0; // UDPFS Files; never inherit UDPBD's forced IMG
 
     frameCounter = 0;
 
@@ -1475,6 +1492,7 @@ static void init(void)
     thmInit();
     guiInit();
     ioInit();
+    bdmSetAutoLaunch(0);
     menuInit();
 
     startPads();
@@ -1512,6 +1530,9 @@ static void init(void)
         LOG("--- SKIPPING OPL CONFIG LOADING\n");
         applyConfig(-1, -1, 0);
     }
+    // _loadConfig may move the settings home away from the boot folder: resolve the optional title
+    // font only now, from the final settings owner.
+    lngInitFallbackFont();
     guiSetBootStatus(_l(_STR_BOOT_READY));
     guiRenderGreetingScreen();
     gBootInProgress = 0;
@@ -1614,6 +1635,7 @@ void miniInit(int mode)
     configInit(gBootDir[0] ? gBootDir : NULL); // settings live in the boot dir (cwd)
 
     ioInit();
+    bdmSetAutoLaunch(1);
     LOG_ENABLE();
 
     // Settings discovery can need a BDM transport even when the game itself is on APA HDD.
@@ -1663,6 +1685,9 @@ void miniInit(int mode)
         if (ret & CONFIG_OPL) {
             config_set_t *configOPL = configGetByType(CONFIG_OPL);
 
+            // Autolaunch error dialogs use the same menu font size as the interactive menu.
+            configGetInt(configOPL, CONFIG_OPL_FONT_SIZE, &gFontSize);
+            gFontSize = fntValidFontSize(gFontSize);
             configGetInt(configOPL, CONFIG_OPL_PS2LOGO, &gPS2Logo);
             configGetStrCopy(configOPL, CONFIG_OPL_EXIT_PATH, gExitPath, sizeof(gExitPath));
             configGetInt(configOPL, CONFIG_OPL_HDD_SPINDOWN, &gHDDSpindown);
@@ -1671,6 +1696,7 @@ void miniInit(int mode)
             // game must resolve the SAME neutrino.elf (device pick / custom path) with the SAME global
             // args as an interactive launch, or it silently boots a different/stale core without flags.
             configReadNeutrinoGlobals(configOPL);
+            configReadRA(configOPL); // or an auto-launched game is never tracked
             if (mode == BDM_MODE) {
                 configGetStrCopy(configOPL, CONFIG_OPL_BDM_PREFIX, gBDMPrefix, sizeof(gBDMPrefix));
                 sanitizePrefix(gBDMPrefix);
@@ -1727,21 +1753,49 @@ void miniDeinit(config_set_t *configSet)
 }
 
 // --------------------- Main --------------------
+// "mc?:" names no card. A launcher that hands over its configured wildcard leaves the slot to us,
+// and the file helpers would then use whichever card checkMC() prefers -- mc0 whenever both are
+// inserted -- so an mc1 install read and saved its settings on the other card. The card holding the
+// booted ELF (or, with no ELF name, the boot folder) is the boot card. Runs after reset() has loaded
+// the card driver; when neither card answers, the wildcard stays and nothing changes.
+static void resolveMcWildcardBootDir(void)
+{
+    char probe[sizeof(gBootDir) + sizeof(gBootElfName) + 8];
+    const char *rest;
+    DIR *dir;
+    int slot, fd;
+
+    if (strncmp(gBootDir, "mc?:", 4))
+        return;
+    rest = gBootDir + 4;
+    while (*rest == '/')
+        rest++;
+    for (slot = 0; slot < 2; slot++) {
+        if (gBootElfName[0] != '\0') {
+            snprintf(probe, sizeof(probe), "mc%d:/%s%s%s", slot, rest, rest[0] != '\0' ? "/" : "", gBootElfName);
+            fd = open(probe, O_RDONLY);
+            if (fd < 0)
+                continue;
+            close(fd);
+        } else {
+            snprintf(probe, sizeof(probe), "mc%d:/%s", slot, rest);
+            dir = opendir(probe);
+            if (dir == NULL)
+                continue;
+            closedir(dir);
+        }
+        gBootDir[2] = (char)('0' + slot);
+        return;
+    }
+}
+
 // Memory-card roots require an explicit slash for file creation (mc1:/FILE, not mc1:FILE).
 // Some launchers provide an equivalent compact path such as mc1:APPS/OPL.ELF or leave getcwd()
 // at mc1:. Normalize the generic device representation once, without any launcher-specific branch.
 static void normalizeMcBootDir(void)
 {
-    if (strncmp(gBootDir, "mc", 2) || (gBootDir[2] != '0' && gBootDir[2] != '1') ||
-        gBootDir[3] != ':' || gBootDir[4] == '/')
-        return;
-
-    size_t len = strlen(gBootDir);
-    if (len + 1 >= sizeof(gBootDir))
-        return;
-
-    memmove(&gBootDir[5], &gBootDir[4], len - 3);
-    gBootDir[4] = '/';
+    resolveMcWildcardBootDir();
+    normalizeMcPath(gBootDir, sizeof(gBootDir));
 }
 
 static void setBootDir(const char *bootPath)

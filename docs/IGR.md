@@ -33,7 +33,8 @@ The power button on the front of the console is hooked too, and does not need a 
 | Press **twice** | Reset — the same as Start + Select |
 
 The second press has to land within **about a second** — RiptOPL waits ~50 vertical blanks after the
-first press to see whether another arrives, then acts on the count.
+first press to see whether another arrives, then acts on the count. One press is counted once, however
+long the console takes to clear its power-off signal.
 
 This is the fallback worth remembering when a game has stopped responding to the pad entirely.
 
@@ -80,6 +81,10 @@ button still works.
 compatibility **Mode 6 — Disable IGR** turns the hook off for that title. If a game misbehaves in a
 way that started when you launched it through RiptOPL, this is the mode to try — at the cost of
 losing IGR for that game.
+
+Fatal Fury: Battle Archives Volume 2 (USA, `SLUS_217.23`) black-screens with the hook installed
+(upstream OPL #1762), so it starts with Mode 6 already set. Clearing the mode in its settings and
+saving brings IGR back for that game.
 
 **Under the Neutrino core.** Neutrino has no IGR at all. This is not a RiptOPL limitation but a
 property of that loader, and it is why Mode 6 is greyed out whenever the Loader Core is set to

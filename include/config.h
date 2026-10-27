@@ -81,6 +81,9 @@ enum CONFIG_INDEX {
 #define CONFIG_ITEM_CHEATMODE    "$CheatMode"
 #define CONFIG_ITEM_ENABLEIMAGE  "$EnableImage"
 
+// + NNN: the remembered Select-mode cheat picks (cheatconfig.cpp)
+#define CONFIG_ITEM_CHEAT_SELECTION_PREFIX "$CheatSel"
+
 #define CONFIG_ITEM_PADEMUSOURCE     "$PADEMUSource"
 #define CONFIG_ITEM_ENABLEPADEMU     "$EnablePadEmu"
 #define CONFIG_ITEM_PADEMUSETTINGS   "$PadEmuSettings"
@@ -102,10 +105,12 @@ enum CONFIG_INDEX {
 #define CONFIG_OPL_ENABLE_DISCART             "enable_discart"
 #define CONFIG_OPL_ENABLE_LOGOART             "enable_logoart"
 #define CONFIG_OPL_ENABLE_BGART               "enable_bgart"
+#define CONFIG_OPL_ENABLE_SAVE_ICONS          "enable_save_icons"
 #define CONFIG_OPL_ENABLE_ART_TAR             "enable_art_tar"
 #define CONFIG_OPL_ENABLE_ANALOG_NAV          "enable_analog_nav"
 #define CONFIG_OPL_ART_DELAY                  "art_delay"
 #define CONFIG_OPL_WIDESCREEN                 "wide_screen"
+#define CONFIG_OPL_FONT_SIZE                  "font_size" // FONT_SIZE_* (fntsys.h); absent = Default
 #define CONFIG_OPL_DEFAULT_GAME_VIEW          "default_game_view"
 #define CONFIG_OPL_APPS_DISPLAY               "apps_display"
 #define CONFIG_OPL_CFG_TITLES                 "cfg_titles_in_lists"
@@ -135,6 +140,7 @@ enum CONFIG_INDEX {
 #define CONFIG_OPL_NEUTRINO_PATH              "neutrino_path"
 #define CONFIG_OPL_NEUTRINO_DEVICE            "neutrino_device"            // legacy device-INDEX (mc0/mass0/mmce0); read-only, migrated
 #define CONFIG_OPL_NEUTRINO_DEVTYPE           "neutrino_devtype"           // device-TYPE (NEUTRINO_DEV_*); the live key
+#define CONFIG_OPL_NEUTRINO_SHOW_ARGS         "neutrino_show_args"         // default-off GUI toggle: show the composed Neutrino argv and ask before each launch
 #define CONFIG_OPL_NEUTRINO_ELF_ARG           "neutrino_elf_arg"           // default-on GUI toggle: auto-emit -elf=cdrom0:\<startup>;1 (parity Delta-10)
 #define CONFIG_OPL_POPSTARTER_PATH            "popstarter_path"            // free-text custom path (used only when device=Custom)
 #define CONFIG_OPL_POPSTARTER_DEVICE          "popstarter_device"          // device TYPE holding POPS/POPSTARTER.ELF (POPS_DEV_*)
@@ -184,12 +190,15 @@ enum CONFIG_INDEX {
 #define CONFIG_OPL_ENABLE_USB           "enable_usb"
 #define CONFIG_OPL_ENABLE_ILINK         "enable_ilink"
 #define CONFIG_OPL_ENABLE_MX4SIO        "enable_mx4sio"
+#define CONFIG_OPL_ENABLE_DVR           "enable_dvr"
+#define CONFIG_OPL_ENABLE_PCCF          "enable_pccf"
 #define CONFIG_OPL_ENABLE_BDMHDD        "enable_bdm_hdd"
 #define CONFIG_OPL_ENABLE_UDPBD         "enable_udpbd"
 #define CONFIG_OPL_NET_BOOT_PROTOCOL    "net_boot_protocol"
 #define CONFIG_OPL_NETWORK_PROTOCOL     "network_protocol"
 #define CONFIG_OPL_NET_START_MODE       "net_start_mode"
 #define CONFIG_OPL_NET_PROTOCOL_PICK    "net_protocol_pick" // last protocol chosen (never Off); kept while Connectivity is Off
+#define CONFIG_OPL_UDPFS_ACCESS         "udpfs_access"      // UDPFS-specific Files(0)/IMG(1), independent of UDPBD
 #define CONFIG_OPL_SMB_DIALECT          "smb_dialect"
 #define CONFIG_OPL_SWAP_SEL_BUTTON      "swap_select_btn"
 #define CONFIG_OPL_PARENTAL_LOCK_PWD    "parental_lock_password"
@@ -210,8 +219,12 @@ enum CONFIG_INDEX {
 // RetroAchievements keys. Placed AFTER the block above, not inside it: an #ifdef in the middle
 // of a run of #defines splits clang-format's alignment group and reflows every line above it.
 #ifdef RETROACHIEVEMENTS
-#define CONFIG_OPL_RA_TELEMETRY "ra_telemetry"
-#define CONFIG_OPL_RA_BADGES    "ra_badges"
+#define CONFIG_OPL_RA_TELEMETRY          "ra_telemetry"
+#define CONFIG_OPL_RA_BADGES             "ra_badges"
+#define CONFIG_OPL_RA_BADGE_SUFFIX       "ra_badge_suffix"
+#define CONFIG_OPL_RA_MODE               "ra_mode"
+#define CONFIG_OPL_RA_HOST_IP            "ra_host_ip"
+#define CONFIG_OPL_RA_EXPERIMENTAL_CARDS "ra_experimental_cards"
 #endif
 
 // Network config keys

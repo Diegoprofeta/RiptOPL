@@ -65,6 +65,9 @@ public:
     int userId() const { return userId_; }
     /// count of entries (copy of the requested cache size upon cache initialization)
     int count() const { return count_; }
+    /// 1 when slot `i` holds another value than `value` (one short enough to be keyed). A row that
+    /// probes two values through one slot (PS1 id art, then its name) re-finds its own by value.
+    int slotKeyedOther(int i, const char *value) const;
     /// directory prefix for this cache (if any)
     char *prefix() const { return prefix_; }
     int isPrefixRelative() const { return isPrefixRelative_; }

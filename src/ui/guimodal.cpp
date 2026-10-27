@@ -6,6 +6,7 @@
 
 // Modal dialogs: message box, reboot prompt, remove-settings prompt, cheat selector, warning. Split out of gui.cpp.
 
+#include "include/cheatconfig.h"
 #include "include/opl.h"
 #include "include/plasma.h"
 #include "include/gui.h"
@@ -149,13 +150,10 @@ void MessageBoxScreen::draw()
 {
     if (ui_)
         diaRenderUI(ui_, guiScreenInMenu(), NULL, 0);
-    else
-        guiShow();
 
     // With a `ui` the CALLER chose what sits behind this box, so keep that context visible.
-    // With ui == NULL the backdrop is just whichever menu happened to be on screen -- it carries
-    // no information and, at gColDarker's ~75%, left the menu legible straight through the
-    // message. Errors get their own background in that case.
+    // A context-free error paints its own opaque background. Do not render the active menu behind
+    // it: that can queue cover IO while a launch preflight has pfs0: remounted (original #1034).
     rmDrawRect(0, 0, gGuiScreenWidth, gGuiScreenHeight, ui_ ? gColDarker : gColBlack);
 
     rmDrawLine(50, 75, gGuiScreenWidth - 50, 75, gColWhite);
@@ -381,7 +379,8 @@ int guiGameShowRemoveSettings(config_set_t *configSet, config_set_t *configGame)
     return prompt.run();
 }
 
-CheatScreen::CheatScreen()
+CheatScreen::CheatScreen(config_set_t *configSet)
+    : configSet_(configSet)
 {
     while (cheatCount_ < MAX_CODES && gCheats[cheatCount_].name[0] != '\0')
         cheatCount_++;
@@ -402,7 +401,7 @@ bool CheatScreen::onKeys()
     }
 
     if (getKeyOn(gSelectButton)) {
-        if (!(strncasecmp(gCheats[selected_].name, "mastercode", 10) == 0 || strncasecmp(gCheats[selected_].name, "master code", 11) == 0))
+        if (!cheatConfigIsMasterCode(gCheats[selected_].name))
             gCheats[selected_].enabled = !gCheats[selected_].enabled;
     }
 
@@ -410,7 +409,7 @@ bool CheatScreen::onKeys()
         // Disable All: clear every cheat's enabled flag in one press. Skip the mastercode (the
         // per-cheat toggle can't touch it either -- it is the engine enabler, not a cheat).
         for (int i = 0; i < cheatCount_; i++) {
-            if (!(strncasecmp(gCheats[i].name, "mastercode", 10) == 0 || strncasecmp(gCheats[i].name, "master code", 11) == 0))
+            if (!cheatConfigIsMasterCode(gCheats[i].name))
                 gCheats[i].enabled = 0;
         }
         sfxPlay(SFX_CURSOR);
@@ -462,15 +461,20 @@ void CheatScreen::draw()
 
 int CheatScreen::finish()
 {
+    // Remember these picks for the game's next launch, on either core (upstream #1748). A save that
+    // fails only costs the memory of them: this launch still runs with what was just chosen.
+    cheatConfigSaveSelections(configSet_);
+    if (configSet_ != NULL && !configWrite(configSet_))
+        LOG("CHEATS: could not save this game's cheat picks\n");
     sfxPlay(SFX_CONFIRM);
     return 0;
 }
 
-void guiManageCheats(void)
+void guiManageCheats(config_set_t *configSet)
 {
     if (gCheats == NULL) // defensive: the menu is only reachable after load_cheats, but never deref NULL
         return;
 
-    CheatScreen screen;
+    CheatScreen screen(configSet);
     screen.run();
 }

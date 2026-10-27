@@ -11,6 +11,7 @@ independent of checkout and file times. The vendored reader checks both outputs.
 import argparse
 import datetime as dt
 import hashlib
+import json
 import re
 import shutil
 import struct
@@ -304,6 +305,7 @@ def verify(args: argparse.Namespace) -> None:
             "EMBER/games/Per-Game-Folder/GAME FILES",
             "neutrino/neutrino.elf",
             "neutrino/config/bsd-udpfsbd.toml",
+            "neutrino/modules/IEEE1394_bd_mini.irx",
             "neutrino/config/bsd-udpfs.toml",
             "neutrino/config/system.toml",
             "PS2-Servers.url",
@@ -321,6 +323,13 @@ def verify(args: argparse.Namespace) -> None:
             "THIRD_PARTY_NOTICES.md", "UPSTREAM-README.md", "PROVENANCE.json"))
         if args.ra:
             required.add("xeRAbora.url")
+            required.add("LICENSE-MBEDTLS.txt")
+            required.update({"neutrino/ORBIT-RA.json", "neutrino/ORBIT-RA.txt", "neutrino/RA-EDITION-NEUTRINO.txt",
+                             "neutrino/LICENSE", "neutrino/modules/ee_core.elf", "neutrino/modules/raagent.irx"})
+        elif "LICENSE-MBEDTLS.txt" in all_names:
+            raise ValueError("ordinary package carries the RA edition's mbedTLS licence")
+        elif any("raagent" in name.lower() or "/ORBIT-RA." in name or "/RA-EDITION-NEUTRINO." in name for name in all_names):
+            raise ValueError("ordinary package contains the ORBIT RA runtime")
         required.update(f"POPS/POPSTARTER VERSIONS/{version}/POPSTARTER.ELF" for version in (
             "MAIN", "DEBUG", "USBDELAY", "USBDELAY_DEBUG", "USBDELAY_LONGER_DEBUG"
         ))
@@ -369,6 +378,15 @@ def verify(args: argparse.Namespace) -> None:
                 raise ValueError(f"empty required ZIP entry: {name}")
         if "udpfs-server.url" in names:
             raise ValueError("legacy udpfs-server.url remains in the installable ZIP")
+        # The UDPFS driver pair, configs and notices ship unchanged: every pinned member must match
+        # PROVENANCE.json, and every notice the repository's copy, byte for byte.
+        notices = ROOT / "ship" / "POPS" / "UDPFS-NOTICES"
+        for name, expected in json.loads((notices / "PROVENANCE.json").read_text(encoding="utf-8"))["files"].items():
+            if hashlib.sha256(package.read("POPS/" + name)).hexdigest() != expected["sha256"]:
+                raise ValueError(f"packaged UDPFS file differs from its pinned release member: POPS/{name}")
+        for path in sorted(notices.rglob("*")):
+            if path.is_file() and package.read("POPS/" + path.relative_to(notices.parent).as_posix()) != path.read_bytes():
+                raise ValueError(f"packaged UDPFS notice differs from the repository copy: {path.name}")
         wrong_app = "APP_RIPTOPL" if args.ra else "APP_RIPTOPL-RA"
         if any(name.startswith(f"APPS/{wrong_app}/") for name in names) or f"{wrong_app}.psu" in names:
             raise ValueError("ZIP contains the other edition's installable app")

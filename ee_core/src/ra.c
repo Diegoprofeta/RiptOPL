@@ -46,6 +46,20 @@ static unsigned int ra_snap_fail = 0;
 static unsigned int ra_frames = 0;
 static unsigned int ra_snap_every = 1;
 
+/* COP0 Count, for the cost of the reads. The clock is not assumed: the
+   PC gets the ticks per frame alongside. */
+static u32 ra_last_vblank_ticks = 0;
+static u32 ra_frame_ticks = 0;
+
+static inline u32 ra_ticks(void)
+{
+    u32 t;
+
+    asm volatile("mfc0 %0, $9"
+                 : "=r"(t));
+    return t;
+}
+
 /* Own copy of the watch list. config->raWatchList points into loader
    memory, which the game overwrites, so the list is copied during init
    the same way SetupCheats() copies the cheat list.
@@ -87,6 +101,11 @@ static int ra_snap_bytes = 0;
    snapshot keeps its shape and the client still gets a value for every entry. */
 #define RA_RAM_LOW  0x00080000
 #define RA_RAM_HIGH 0x02000000
+
+int RA_SnapBytes(void)
+{
+    return ra_snap_bytes; /* RA_SetupWatchList sets it only for an accepted list */
+}
 
 void RA_SetupWatchList(void)
 {
@@ -180,6 +199,7 @@ static void ra_snap_send(void)
     u8 *vals = (u8 *)UNCACHED_SEG(&ra_snap_buf[RA_SNAP_HDR]);
     SifDmaTransfer_t dmat;
     int i, off = 0;
+    u32 t0;
 
     if (ra_snap_iop == 0 || ra_watch_count == 0)
         return;
@@ -203,6 +223,8 @@ static void ra_snap_send(void)
 
     for (i = 0; i < (int)sizeof(s->game_id); i++)
         s->game_id[i] = config->GameID[i];
+
+    t0 = ra_ticks();
 
     /* Values are read in list order and packed back to back, little
        endian. Reads go through UNCACHED_SEG, which returns RAM: a value
@@ -313,6 +335,8 @@ static void ra_snap_send(void)
         vals[off++] = (u8)(v >> 24);
     }
 
+    s->read_cycles = ra_ticks() - t0;
+    s->frame_cycles = ra_frame_ticks;
     s->seq_end = ra_snap_seq;
 
     /* Trailer after the values: the DMA copies front to back, so this is
@@ -337,6 +361,10 @@ static void ra_snap_send(void)
 
 void RA_OnVblank(void)
 {
+    u32 now = ra_ticks();
+
+    ra_frame_ticks = now - ra_last_vblank_ticks;
+    ra_last_vblank_ticks = now;
     ra_frames++;
 
     /* The unlock notice has its own schedule and does not wait for the

@@ -13,6 +13,7 @@ IMPORT_BIN2C(audsrv_irx);
 IMPORT_BIN2C(bdm_irx);
 
 IMPORT_BIN2C(bdm_ata_cdvdman_irx);
+IMPORT_BIN2C(pccf_cdvdman_irx);
 
 IMPORT_BIN2C(bdm_cdvdman_irx);
 
@@ -37,6 +38,10 @@ IMPORT_BIN2C(drvtif_ingame_irx);
 IMPORT_BIN2C(ds34bt_irx);
 
 IMPORT_BIN2C(ds34usb_irx);
+
+IMPORT_BIN2C(dvrdrv_irx);
+
+IMPORT_BIN2C(dvrfile_irx);
 
 IMPORT_BIN2C(filexio_irx);
 
@@ -113,10 +118,16 @@ IMPORT_BIN2C(ps2ip_irx);
 IMPORT_BIN2C(ps2link_irx);
 
 IMPORT_BIN2C(resetspu_irx);
+#ifdef INGAMEDIAG
+IMPORT_BIN2C(freezediag_irx);
+#endif
 
 IMPORT_BIN2C(sio2man_irx);
 
 IMPORT_BIN2C(mx4sio_bd_irx);
+
+IMPORT_BIN2C(pccf_bd_irx);
+IMPORT_BIN2C(pccf_game_irx);
 
 IMPORT_BIN2C(smap_irx);
 
@@ -129,8 +140,10 @@ IMPORT_BIN2C(udpfs_ioman_irx);
 IMPORT_BIN2C(smap_ingame_irx);
 
 #ifdef RETROACHIEVEMENTS
-/* RetroAchievements telemetry sender; embedded only in the RA flavour. */
+/* RetroAchievements telemetry sender, and the POPStarter pair (rapops, rapull); RA flavour only. */
 IMPORT_BIN2C(raudp_irx);
+IMPORT_BIN2C(rapops_irx);
+IMPORT_BIN2C(rapull_irx);
 #endif
 
 IMPORT_BIN2C(smb_mcemu_irx);

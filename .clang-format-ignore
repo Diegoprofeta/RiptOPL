@@ -8,4 +8,9 @@
 ./modules/network/smbman-ra
 ./modules/usb/usbd-ra
 ./modules/bdmassault
+./modules/ilink/iLinkman
 ./tests/host
+./modules/bdm/bdmfs_fatfs
+./modules/ilink/IEEE1394_bd
+./modules/mmce/mmceman
+./.github/scripts/fixtures

@@ -8,16 +8,18 @@
 #include "include/hddsupport.h"
 #include "../modules/isofs/zso.c"
 
-int probed_fd = 0;
+int probed_fd = -1;
 u32 probed_lba = 0;
 
-static void ReadHDDSectors(u32 lba, u8 *buffer, u32 nsectors)
+static int ReadHDDSectors(u32 lba, u8 *buffer, u32 nsectors)
 {
     u32 lsn = probed_lba + (lba * 4);
     for (int k = 0; k < nsectors * 4; k++) {
-        hddReadSectors(lsn + k, 1, buffer);
+        if (hddReadSectors(lsn + k, 1, buffer) != 0)
+            return -1;
         buffer += 512;
     }
+    return 0;
 }
 
 static void longLseek(int fd, unsigned int lba)
@@ -40,19 +42,20 @@ static void longLseek(int fd, unsigned int lba)
 
 int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
 {
-    u32 lba = offset / (2048 >> shift); // avoid overflow by shifting sector size instead of offset
-    u32 pos = (offset << shift) & 2047; // doesn't matter if it overflows since we only care about the 11 LSB anyways
-    if (probed_fd > 0) {                // USB/ETH
+    u32 lba = offset / (2048 >> shift);      // avoid overflow by shifting sector size instead of offset
+    u32 pos = (offset << shift) & 2047;      // doesn't matter if it overflows since we only care about the 11 LSB anyways
+    if (probed_fd >= 0 && probed_lba == 0) { // File-backed probe; zero is a valid descriptor.
         longLseek(probed_fd, lba);
         lseek(probed_fd, pos, SEEK_CUR);
         return read(probed_fd, addr, size);
-    } else { // HDD
+    } else if (probed_fd == 0 && probed_lba > 0) { // HDD
         u32 o_size = size;
 
         // read first block if not aligned to sector size
         if (pos) {
             int r = MIN(size, (2048 - pos));
-            ReadHDDSectors(lba, ziso_tmp_buf, 1);
+            if (ReadHDDSectors(lba, ziso_tmp_buf, 1) != 0)
+                return -1;
             memcpy(addr, ziso_tmp_buf + pos, r);
             size -= r;
             lba++;
@@ -65,7 +68,8 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
             n_blocks++;
         if (n_blocks > 1) {
             int r = 2048 * (n_blocks - 1);
-            ReadHDDSectors(lba, addr, n_blocks - 1);
+            if (ReadHDDSectors(lba, addr, n_blocks - 1) != 0)
+                return -1;
             size -= r;
             addr += r;
             lba += n_blocks - 1;
@@ -73,7 +77,8 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
 
         // read remaining data
         if (size) {
-            ReadHDDSectors(lba, ziso_tmp_buf, 1);
+            if (ReadHDDSectors(lba, ziso_tmp_buf, 1) != 0)
+                return -1;
             memcpy(addr, ziso_tmp_buf, size);
             size = 0;
         }
@@ -81,6 +86,7 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
         // return remaining size
         return o_size - size;
     }
+    return -1; // No valid backing store was selected.
 }
 
 void *ziso_alloc(u32 size)

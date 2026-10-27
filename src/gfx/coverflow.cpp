@@ -28,7 +28,7 @@
 constexpr int COVERFLOW_PAD = 1;  // extra covers built off each edge, purely to fill the slide (see drawCoverFlow)
 constexpr int COVERFLOW_MAX = (5 + 2 * COVERFLOW_PAD);
 int gCoverflowCount = 3;        // 3 or 5 only (clamped on load AND at draw)
-int gCoverflowCenterScale = 30; // px added to the center cover (UI 0/15/30/45)
+int gCoverflowCenterScale = 45; // px added to the center cover: Large by default; saved UI choices override (0/15/30/45)
 int gCoverflowAnimSpeed = 200;  // ms (UI 0/100/200/400; 0 = instant, no anim)
 int gCoverflowDimCovers = 0;    // bool
 
@@ -41,9 +41,12 @@ static clock_t cfAnimStartTime = 0;
 static int cfAnimFrameCount = 0;
 
 // Arms a slide animation in direction dir (+1 next / -1 prev). No-op (instant move) when
-// animation speed is 0. Called from menusys.c via the themes.h extern.
+// animation speed is 0 (PSBBN Flow keeps its own fixed glide). Called from menusys.c via the themes.h extern.
 void thmTriggerCoverflowAnim(int dir)
 {
+    // A custom theme can use PSBBN Flow and Coverflow on different pages: arm both.
+    if (gTheme != NULL && gTheme->psbbnFlow != NULL)
+        psbbnFlowTrigger(dir);
     if (gCoverflowAnimSpeed <= 0)
         return;
     cfIsAnimating = 1;

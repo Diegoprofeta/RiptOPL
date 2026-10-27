@@ -17,12 +17,17 @@
 #include <unistd.h>
 #include <errno.h>  // errno/ENOENT in the absent-vs-contended split, mirroring vcdScanOpenDir
 #include <malloc.h> // memalign -- the published list matches sbReadList's alignment
+#include <sys/stat.h>
 
 #include "include/opl.h"        // pulls <dirent.h> (opendir/readdir/DIR) + strcasecmp, like vcdsupport.c
 #include "include/ioman.h"      // LOG
 #include "include/textures.h"   // texDiscoverLoad + ERR_BAD_FILE (folder cover fallback)
 #include "include/vcdsupport.h" // vcdFillGameList + vcdSortKey -- the POPSTARTER half of the union
 #include "include/cuesupport.h"
+#include "include/host.h"
+#include "include/lang.h"
+#include "include/retrogem.h"
+#include "include/saveicon.h"
 
 // The one CUE support instance (declared in include/cuesupport.h). Constant-initialized: it owns
 // only the extension table the launch-path image probe matches against.
@@ -112,9 +117,234 @@ int cueNameLaunchable(const char *name)
     return 1;
 }
 
+// A PS1 game's own folder, where its dedicated VMCs live: <root>POPS<sep><name> for POPSTARTER,
+// <root>EMBER<sep>games<sep><name> for Ember. Declared in saveicon.h; the 3D save icon reads from it.
+int saveIconPs1Directory(const char *root, const char *name, int ember, char *out, int outSize)
+{
+    char base[SAVEICON_PATH_SIZE];
+    int n, len = (int)strlen(root);
+    char sep = len > 0 && root[len - 1] == '\\' ? '\\' : '/';
+
+    if (name == NULL || name[0] == '\0' || strchr(name, '/') != NULL || strchr(name, '\\') != NULL ||
+        strchr(name, ':') != NULL || !strcmp(name, ".") || !strcmp(name, "..") ||
+        (ember && !cueNameLaunchable(name)))
+        return 0;
+    if (strlen(root) + strlen(cueEmberFolder()) + strlen("/games") >= sizeof(base))
+        return 0;
+    if (ember)
+        cueBuildGamesDir(root, base, sizeof(base));
+    else {
+        n = snprintf(base, sizeof(base), "%sPOPS", root);
+        if (n <= 0 || n >= (int)sizeof(base))
+            return 0;
+    }
+    n = snprintf(out, outSize, "%s%c%s", base, sep, name);
+    return n > 0 && n < outSize;
+}
+
+int cueBuildDiscArgument(const char *folder, const char *disc, char *out, int outSize)
+{
+    int length;
+
+    if (out == NULL || outSize <= 0)
+        return 0;
+    out[0] = '\0';
+    if (!cueNameLaunchable(folder) || !cueNameLaunchable(disc))
+        return 0;
+    length = (int)strlen(disc);
+    if (length <= 4 || strcasecmp(disc + length - 4, ".cue") != 0)
+        return 0;
+    length = snprintf(out, outSize, "%s/%s", folder, disc);
+    if (length < 0 || length >= outSize || length > CUE_NAME_LAUNCH_MAX) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
+}
+
+int cueBuildDiscPath(const char *devPrefix, const char *folder, const char *disc, char *out, int outSize)
+{
+    char games[288], argument[CUE_NAME_MAX];
+    int length;
+
+    if (out == NULL || outSize <= 0)
+        return 0;
+    out[0] = '\0';
+    if (devPrefix == NULL || !cueBuildDiscArgument(folder, disc, argument, sizeof(argument)))
+        return 0;
+    cueBuildGamesDir(devPrefix, games, sizeof(games));
+    length = snprintf(out, outSize, "%s%c%s%c%s", games, cueSep(devPrefix), folder, cueSep(devPrefix), disc);
+    if (length < 0 || length >= outSize) {
+        out[0] = '\0';
+        return 0;
+    }
+    return 1;
+}
+
+// One discs.txt line: a UTF-8 BOM on the first, CRLF and blank lines are accepted; anything that
+// is not a plain CUE filename refuses the whole list.
+static int cueAppendDiscLine(cue_disc_list_t *list, char *line, int first, const char *folder)
+{
+    char argument[CUE_NAME_MAX];
+    int length = (int)strlen(line);
+    unsigned char *bytes = (unsigned char *)line;
+
+    if (first && length >= 3 && bytes[0] == 0xef && bytes[1] == 0xbb && bytes[2] == 0xbf) {
+        line += 3;
+        length -= 3;
+    }
+    if (length > 0 && line[length - 1] == '\r')
+        line[--length] = '\0';
+    if (length == 0)
+        return 1;
+    for (int i = 0; i < length; i++) {
+        if ((unsigned char)line[i] < 32 || (unsigned char)line[i] == 127)
+            return 0;
+    }
+    if (list->count >= CUE_MAX_DISCS || !cueBuildDiscArgument(folder, line, argument, sizeof(argument)))
+        return 0;
+    memcpy(list->names[list->count++], line, length + 1);
+    return 1;
+}
+
+// Stock mmceman answers a bare -1 for a missing file too. A complete listing of the folder proves the
+// manifest absent; an unreadable one is never mistaken for "not present".
+static int cueConfirmDiscListAbsent(const char *manifest)
+{
+    char parent[640];
+    DIR *dir;
+    struct dirent *entry;
+    int length = (int)strlen(manifest) - 9; // strip the known "discs.txt" suffix
+    int error;
+
+    if (length <= 0 || length >= (int)sizeof(parent))
+        return -1;
+    memcpy(parent, manifest, length);
+    parent[length] = '\0';
+    dir = opendir(parent);
+    if (dir == NULL)
+        return -1;
+    for (;;) {
+        errno = 0;
+        entry = readdir(dir);
+        if (entry == NULL) {
+            error = errno;
+            closedir(dir);
+            return error == 0 ? 0 : -1;
+        }
+        if (strcasecmp(entry->d_name, "discs.txt") == 0) {
+            closedir(dir);
+            return -1;
+        }
+    }
+}
+
+int cueReadDiscList(const char *devPrefix, const char *folder, cue_disc_list_t **outList)
+{
+    char games[288], path[640], line[CUE_NAME_MAX + 3];
+    cue_disc_list_t *list;
+    FILE *file;
+    int c, length = 0, first = 1, bytes = 0, result;
+
+    if (outList == NULL)
+        return -1;
+    *outList = NULL;
+    if (devPrefix == NULL || !cueNameLaunchable(folder))
+        return -1;
+    cueBuildGamesDir(devPrefix, games, sizeof(games));
+    result = snprintf(path, sizeof(path), "%s%c%s%cdiscs.txt", games, cueSep(devPrefix), folder, cueSep(devPrefix));
+    if (result < 0 || result >= (int)sizeof(path))
+        return -1;
+    file = fopen(path, "rb");
+    if (file == NULL) {
+        if (errno == ENOENT || errno == ENOTDIR)
+            return 0;
+        return cueConfirmDiscListAbsent(path);
+    }
+    list = (cue_disc_list_t *)calloc(1, sizeof(*list));
+    if (list == NULL) {
+        fclose(file);
+        return -1;
+    }
+    // Bound both entries and total input, including blank lines. Never publish a partial list.
+    while ((c = fgetc(file)) != EOF) {
+        if (++bytes > 8192 || c == '\0')
+            goto invalid;
+        if (c == '\n') {
+            line[length] = '\0';
+            if (!cueAppendDiscLine(list, line, first, folder))
+                goto invalid;
+            length = 0;
+            first = 0;
+        } else {
+            if (length >= (int)sizeof(line) - 1)
+                goto invalid;
+            line[length++] = c;
+        }
+    }
+    line[length] = '\0';
+    if (ferror(file) || !cueAppendDiscLine(list, line, first, folder) || list->count == 0)
+        goto invalid;
+    fclose(file);
+    *outList = list;
+    return list->count;
+
+invalid:
+    LOG("[CUE] invalid or unreadable disc list: %s\n", path);
+    fclose(file);
+    free(list);
+    return -1;
+}
+
+int cuePrepareLaunch(const char *devPrefix, const char *folder, const char *emberElf, char *argument, int argumentSize)
+{
+    cue_disc_list_t *list = NULL;
+    char path[640];
+    int count, selected = 0, fd, length;
+
+    if (argument == NULL || argumentSize <= 0 || folder == NULL || emberElf == NULL)
+        return 0;
+    length = snprintf(argument, argumentSize, "%s", folder);
+    if (length < 0 || length >= argumentSize)
+        return 0;
+    count = cueReadDiscList(devPrefix, folder, &list);
+    if (count == 0)
+        return 1; // no manifest: the folder launch, unchanged
+    if (count < 0) {
+        host::ui().missingFile(_l(_STR_EMBER_DISCS_INVALID), folder);
+        return 0;
+    }
+    if (count > 1)
+        selected = host::ui().pickEmberDisc(folder, list);
+    if (selected < 0) {
+        free(list);
+        return 0;
+    }
+    if (!cueBuildDiscArgument(folder, list->names[selected], argument, argumentSize) ||
+        !cueBuildDiscPath(devPrefix, folder, list->names[selected], path, sizeof(path))) {
+        free(list);
+        host::ui().msgBox(_l(_STR_EMBER_DISC_ARGS_TOO_LONG), 0, NULL);
+        return 0;
+    }
+    free(list);
+    // The keep-IOP child also receives the ELF path as its own argv[0]: check the whole 256-byte
+    // string pool while the GUI and the device mounts are still live.
+    if (2 * strlen(emberElf) + strlen(argument) + 3 > 256) {
+        host::ui().msgBox(_l(_STR_EMBER_DISC_ARGS_TOO_LONG), 0, NULL);
+        return 0;
+    }
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        host::ui().missingFile(_l(_STR_ERR_FILE_INVALID), path);
+        return 0;
+    }
+    close(fd);
+    return 1;
+}
+
 // The extensions Ember's io_find_disc accepts, in ITS priority order (.cue beats .exe beats .bin).
-// We only test presence, so the order is documentation rather than logic -- but it is the reason a
-// folder holding just a .bin is still a valid game. Case-insensitive, as io_find_disc's own
+// The scan tests presence; cueResolveGameImage follows the order to pick the image Ember will use.
+// A folder holding just a .bin is still a valid game. Case-insensitive, as io_find_disc's own
 // strcasecmp is.
 static const char *const cueDiscExts[] = {".cue", ".exe", ".bin"};
 
@@ -155,12 +385,32 @@ static int cueEntryIsGame(const char *devPrefix, const char *gamesDir, const str
     // "smb0:\\EMBER\\games/NAME" -- mixed, and rejected by any handler that cares. Latent today
     // (no backslash device lists Ember yet) and load-bearing the moment one does.
     snprintf(probe, sizeof(probe), "%s%c%s", gamesDir, cueSep(devPrefix), de->d_name);
+    errno = 0;
     d = opendir(probe);
-    if (d == NULL)
-        return 0;
+    if (d == NULL) {
+        if (errno == 0 || errno == ENOENT || errno == ENOTDIR || errno == EPERM)
+            return 0;
+        // BDM FatFs answers a regular file with -FR_NO_PATH, which newlib turns into EIO. Only a
+        // confirmed file is "not a game"; a real folder read failure keeps the last-good list.
+        LOG("[CUE] cannot open '%s' (errno %d)\n", probe, errno);
+        struct stat st;
+        if (stat(probe, &st) == 0 && S_ISREG(st.st_mode))
+            return 0;
+        return -1;
+    }
 
-    while (!found && (sub = readdir(d)) != NULL)
+    while (!found) {
+        errno = 0;
+        sub = readdir(d);
+        if (sub == NULL) {
+            if (errno != 0) {
+                LOG("[CUE] cannot enumerate '%s' (errno %d)\n", probe, errno);
+                found = -1;
+            }
+            break;
+        }
         found = cueNameIsDiscImage(sub->d_name, (int)strlen(sub->d_name));
+    }
     closedir(d);
 
     if (!found)
@@ -171,10 +421,10 @@ static int cueEntryIsGame(const char *devPrefix, const char *gamesDir, const str
 int cueScanDir(const char *devPrefix, cue_entry_t **outList)
 {
     char gamesDir[288];
-    cue_entry_t *list;
+    cue_entry_t *list = NULL;
     struct dirent *de;
     DIR *dir;
-    int count = 0;
+    int count = 0, capacity = 0;
 
     if (outList == NULL)
         return 0;
@@ -187,7 +437,8 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
     // The absent-vs-contended split below reads errno to tell "this folder isn't here" (fine, 0 rows)
     // from "this device wouldn't answer" (a failure the caller must not mistake for emptiness). That
     // works only on drivers that actually report ENOENT, and this very file documents one that does
-    // not: mmceman collapses every failure, including the card's own not-found reply, into a bare -1.
+    // not: stock mmceman collapses every failure, including the card's own not-found reply, into a
+    // bare -1 (the embedded fork reports ENOENT, see modules/mmce/mmceman/ORIGIN.txt).
     // There was never any reason to assume other block drivers are better behaved.
     //
     // The cost of getting it wrong is severe and was reported from hardware (FifthFox, iLink): a
@@ -221,20 +472,20 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
             return 0;
         // Anything else: the directory could not be READ (bus contended, device mid-detach). Signal
         // failure so the caller preserves its last-good list rather than blanking the page.
-        // MMCE caveat, same as the VCD scan: mmceman's dopen collapses every failure into a bare -1
-        // (EE sees EPERM, not ENOENT) unless the paired mmceman patch is in the build, so on mmceN:
-        // an absent EMBER folder lands here. That costs a preserved list, never a wrong one.
         LOG("[CUE] cannot read '%s' (errno %d)\n", gamesDir, errno);
         return -1;
     }
 
-    list = (cue_entry_t *)calloc(CUE_MAX_ITEMS, sizeof(cue_entry_t));
-    if (list == NULL) {
-        closedir(dir);
-        return -1; // OOM: preserve the caller's current list rather than blank it
-    }
-
-    while (count < CUE_MAX_ITEMS && (de = readdir(dir)) != NULL) {
+    // Grow as rows are found instead of reserving CUE_MAX_ITEMS rows (several hundred KiB) for
+    // every scan: that allocation can fail on a full EE heap and leave the PS1 page unscanned.
+    while (count < CUE_MAX_ITEMS) {
+        errno = 0;
+        de = readdir(dir);
+        if (de == NULL) {
+            if (errno != 0)
+                goto scan_failed; // a listing cut short is not the whole library
+            break;
+        }
         if (!strcmp(de->d_name, ".") || !strcmp(de->d_name, ".."))
             continue;
 
@@ -251,9 +502,22 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
             LOG("[CUE] skip (name > %d chars): %s\n", ISO_GAME_NAME_MAX, de->d_name);
             continue;
         }
-        if (!cueEntryIsGame(devPrefix, gamesDir, de))
+        int isGame = cueEntryIsGame(devPrefix, gamesDir, de);
+        if (isGame < 0)
+            goto scan_failed;
+        if (!isGame)
             continue; // only folders with a top-level image Ember accepts are game rows
 
+        if (count == capacity) {
+            int grown = capacity ? capacity * 2 : 8;
+            if (grown > CUE_MAX_ITEMS)
+                grown = CUE_MAX_ITEMS;
+            cue_entry_t *next = (cue_entry_t *)realloc(list, (size_t)grown * sizeof(cue_entry_t));
+            if (next == NULL)
+                goto scan_failed; // OOM: preserve the caller's current list rather than blank it
+            list = next;
+            capacity = grown;
+        }
         snprintf(list[count].name, sizeof(list[count].name), "%s", de->d_name);
         count++;
     }
@@ -267,6 +531,12 @@ int cueScanDir(const char *devPrefix, cue_entry_t **outList)
 
     *outList = list;
     return count;
+
+scan_failed:
+    LOG("[CUE] incomplete scan of '%s' -- keeping last-good list\n", gamesDir);
+    free(list);
+    closedir(dir);
+    return -1;
 }
 
 typedef struct
@@ -591,15 +861,19 @@ void cueApplySettings(const char *devPrefix, const char *name, config_set_t *con
         cueSaveGameSettings(devPrefix, name, configSet);
 }
 
-int CueSupport::gameHasImage(const char *devPrefix, const char *name)
+// Ember's own choice of image for a folder, in io_find_disc's priority (.cue, then .exe, then .bin).
+int cueResolveGameImage(const char *devPrefix, const char *name, char *out, int outSize)
 {
     char gamesDir[288];
     char gameDir[320];
     struct dirent *de;
     DIR *dir;
+    int best = (int)(sizeof(cueDiscExts) / sizeof(cueDiscExts[0]));
     int found = 0;
-    unsigned int i;
 
+    if (out == NULL || outSize <= 0)
+        return 0;
+    out[0] = '\0';
     if (devPrefix == NULL || name == NULL || name[0] == '\0')
         return 0;
 
@@ -610,33 +884,106 @@ int CueSupport::gameHasImage(const char *devPrefix, const char *name)
 
     dir = opendir(gameDir);
     if (dir == NULL) {
-        // The probe itself failed -- the folder may be there and merely unreadable this instant.
-        // Never let a failed PROBE block a launch: report "has an image" and let Ember be the judge.
-        LOG("[CUE] cannot probe '%s' -- launching anyway\n", gameDir);
-        return 1;
+        LOG("[CUE] cannot probe '%s' while resolving Ember disc image\n", gameDir);
+        return -1;
     }
 
-    while (!found && (de = readdir(dir)) != NULL) {
+    while ((de = readdir(dir)) != NULL) {
         int len = (int)strlen(de->d_name);
+
         if (len < 5)
             continue; // shortest possible match is "x.cue"
-        for (i = 0; i < sizeof(discExts_) / sizeof(discExts_[0]); i++) {
-            if (strcasecmp(de->d_name + len - 4, discExts_[i]) == 0) {
-                found = 1;
+        for (int i = 0; i < best; i++) {
+            if (strcasecmp(de->d_name + len - 4, cueDiscExts[i]) == 0) {
+                int n = snprintf(out, outSize, "%s%c%s", gameDir, cueSep(devPrefix), de->d_name);
+                if (n > 0 && n < outSize) {
+                    best = i;
+                    found = 1;
+                }
                 break;
             }
         }
     }
     closedir(dir);
-
-    if (!found)
-        LOG("[CUE] '%s' holds no .cue/.bin/.exe\n", gameDir);
     return found;
+}
+
+int CueSupport::gameHasImage(const char *devPrefix, const char *name)
+{
+    char imagePath[640];
+    int result = cueResolveGameImage(devPrefix, name, imagePath, sizeof(imagePath));
+
+    // Never let a failed PROBE block a launch: the folder may be there and merely unreadable this
+    // instant, so report "has an image" and let Ember be the judge.
+    if (result < 0)
+        return 1;
+    if (!result)
+        LOG("[CUE] game folder '%s' holds no .cue/.bin/.exe\n", name);
+    return result;
+}
+
+int cueResolveFirstDiscImage(const char *devPrefix, const char *name, char *out, int outSize)
+{
+    cue_disc_list_t *list = NULL;
+    int count, resolved;
+
+    // A multi-disc folder is identified by disc 1 -- the first discs.txt entry -- whichever disc
+    // starts, matching the RetroGEM convention instead of whichever CUE readdir lists first.
+    count = cueReadDiscList(devPrefix, name, &list);
+    if (count > 0)
+        resolved = cueBuildDiscPath(devPrefix, name, list->names[0], out, outSize);
+    else
+        resolved = count == 0 && cueResolveGameImage(devPrefix, name, out, outSize) == 1;
+    free(list);
+    return resolved;
+}
+
+void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name)
+{
+    char imagePath[640];
+    char gameID[RETROGEM_GAMEID_MAX];
+
+    if (!gPopstarterRetroGemGameID || devPrefix == NULL || name == NULL || name[0] == '\0')
+        return;
+
+    // Best-effort launch metadata, never a gate. The art/CFG memo resolves the same image.
+    if (cueResolveFirstDiscImage(devPrefix, name, imagePath, sizeof(imagePath)) &&
+        retrogemGetPs1ImageGameID(imagePath, gameID, sizeof(gameID)) && gameID[0] != '\0')
+        displayRetroGemGameID(gameID, 2);
 }
 
 int cueGameHasImage(const char *devPrefix, const char *name)
 {
     return gCueSupport.gameHasImage(devPrefix, name);
+}
+
+// Info-screen #Size of an Ember row: the sum of the .bin tracks at the top of the game folder (a
+// multi-track .cue names several, so the .cue alone says nothing). Top level only, as Ember reads.
+unsigned int cueGameSizeMB(const char *devPrefix, const char *name)
+{
+    char gamesDir[288], gameDir[320], filePath[640];
+    struct dirent *de;
+    struct stat st;
+    u64 total = 0;
+
+    if (devPrefix == NULL || name == NULL || name[0] == '\0')
+        return 0;
+    cueBuildGamesDir(devPrefix, gamesDir, sizeof(gamesDir));
+    if (gamesDir[0] == '\0' || snprintf(gameDir, sizeof(gameDir), "%s%c%s", gamesDir, cueSep(devPrefix), name) >= (int)sizeof(gameDir))
+        return 0;
+    DIR *dir = opendir(gameDir);
+    if (dir == NULL)
+        return 0;
+    while ((de = readdir(dir)) != NULL) {
+        int len = (int)strlen(de->d_name);
+        if (len < 5 || strcasecmp(de->d_name + len - 4, ".bin") != 0)
+            continue;
+        if (snprintf(filePath, sizeof(filePath), "%s%c%s", gameDir, cueSep(devPrefix), de->d_name) < (int)sizeof(filePath) &&
+            stat(filePath, &st) == 0 && S_ISREG(st.st_mode))
+            total += (u64)st.st_size;
+    }
+    closedir(dir);
+    return (unsigned int)(total >> 20);
 }
 
 int cueRenameGame(const char *devPrefix, const char *oldName, const char *newName)
@@ -737,6 +1084,9 @@ static int cueFillGameListUnsorted(const char *devPrefix, base_game_info_t **out
         snprintf(games[i].extension, sizeof(games[i].extension), "%s", CUE_ROW_EXTENSION);
         games[i].parts = 1;
         games[i].format = GAME_FORMAT_ISO; // harmless; the row's extension gates the launch path
+        // Share the PS1-row id memo the VCD rows use: name + device root, string work only -- the
+        // RetroGEM art/CFG id for this row resolves lazily from here, never on the scan path.
+        gVcdSupport.noteScanDir(entries[i].name, devPrefix, PS1_ROW_CUE);
     }
 
     free(entries);

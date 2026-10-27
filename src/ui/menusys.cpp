@@ -21,6 +21,11 @@
 #include "include/system.h"
 #ifdef RETROACHIEVEMENTS
 #include "include/discsupport.h"
+#include "include/achievements.h"
+#include "include/ranet.h"
+#include "include/ethsupport.h"
+#include "include/udpfssupport.h"
+#include "include/texcache.h"
 #endif
 #include "include/ioman.h"
 #include "include/sound.h"
@@ -30,6 +35,7 @@
 #include "include/vcdsupport.h"   // VCD launches never use Neutrino
 #include "include/libview.h"      // libViewActive / libListViewActive -- which list this page shows
 #include "include/bdmsupport.h"   // bdmSupportIsUDPBD() -- UDPBD games are Neutrino-only
+#include "include/hddsupport.h"   // hdl_game_info_t -- the RA check hashes an HDLoader install
 #include <assert.h>
 #include <delaythread.h>
 
@@ -46,6 +52,7 @@ enum MENU_IDs {
     MENU_MMCE,
 #ifdef RETROACHIEVEMENTS
     MENU_RA_DISC_CHECK,
+    MENU_RA_ACHIEVEMENTS,
     MENU_RA_DISC_LAUNCH,
 #endif
 };
@@ -70,6 +77,7 @@ enum GAME_MENU_IDs {
     // on these enum positions, so RA entries must not shift the existing ones.
     GAME_RA_CHECK,
     GAME_RA_TEST,
+    GAME_RA_ACHIEVEMENTS,
 #endif
 };
 
@@ -409,6 +417,15 @@ void menuRequestInfoSize(void)
     item_list_t *list = static_cast<item_list_t *>(selected_item->item->userdata);
     int configId = selected_item->item->current->item.id;
 
+    // Folder rows have no size; HDL rows already carry it in APA metadata (total_size_in_kb), so the
+    // CFG+stat pass would be a redundant read. HDD PS1 rows go through: a one-game PP. partition is
+    // only measured on demand.
+    if (list == NULL || selected_item->item->current->item.isFolder ||
+        (list->mode == HDD_MODE && libListRowView(list, configId) != LIB_VIEW_PS1)) {
+        SignalSema(menuSemaId);
+        return;
+    }
+
     if (infoSizeWorkerPending && infoSizeRequestList == list && infoSizeRequestId == configId) {
         SignalSema(menuSemaId);
         return; // exact same work is already active/queued
@@ -461,7 +478,7 @@ static void _menuSaveConfig()
 
     WaitSema(menuSemaId);
     result = configWrite(itemConfig);
-    itemConfigId = -1;       // to invalidate cache and force reload
+    itemConfigId = -1; // to invalidate cache and force reload
     itemConfigGeneration++;
     menuSaveResult = result; // publish BEFORE actionStatus=0 -- that flag is the waiter's release signal
     actionStatus = 0;
@@ -679,12 +696,9 @@ int menuSaveEmberGameSettings(config_set_t *configSet)
     return gsOf(support)->saveCueSettings(support, id, name, configSet);
 }
 
-int menuSaveSettings(void)
+static int menuSaveAllSettings(void)
 {
     int result;
-
-    if (menuCheckParentalLock() != 0)
-        return 0;
 
     guiGameSaveOSDLanguageGlobalConfig(configGetByType(CONFIG_GAME));
 #ifdef PADEMU
@@ -698,6 +712,18 @@ int menuSaveSettings(void)
     result = saveConfig(CONFIG_OPL | CONFIG_NETWORK | CONFIG_GAME | CONFIG_LAST, 1);
     menuSetParentalLockCheckState(1); // Re-enable parental lock check.
 
+    return result;
+}
+
+int menuSaveSettings(void)
+{
+    int result;
+
+    if (menuCheckParentalLock() != 0)
+        return 0;
+
+    result = menuSaveAllSettings();
+
     // SMB, UDPFS and UDPBD share the one SMAP NIC and cannot coexist -- each loader refuses to
     // start while either of the others is resident, and each loads its IOP chain once per boot.
     // Once a stack is up, a changed protocol applies after a restart.
@@ -707,6 +733,225 @@ int menuSaveSettings(void)
     return result;
 }
 
+// The network page's "restart now?" Yes: the user already agreed, so save and restart without asking
+// again. A failed save stays in OPL -- restarting would throw the protocol change away.
+void menuSaveSettingsAndRestart(void)
+{
+    if (menuCheckParentalLock() != 0)
+        return;
+
+    if (menuSaveAllSettings() > 0)
+        sysExecExit();
+}
+
+#ifdef RETROACHIEVEMENTS
+/* The RA achievement browser (adapted from Rian6/caduceus-opl 2a98a9d, AFL-3.0, via the original):
+   the account library ('G') and one game's set ('A'), three rows a page, from a game card or the
+   main menu. The I/O thread fetches; this screen draws the latest snapshot. */
+static int achFromCard, achKind, achPage, achLibraryPage, achFilter, achSelected, achNeedsPage;
+static int achImageVcd, achReturnScreen; // the card's image is a PS1 VCD; the menu it was opened from
+static char achTarget[33], achImagePath[256], achImageStartup[16];
+static image_cache_t *achIcons;
+static int achIconIds[ACH_PAGE_SIZE] = {-1, -1, -1}, achIconUids[ACH_PAGE_SIZE];
+
+static void menuCardText(int x, int y, int w, int h, const char *text, u64 color)
+{
+    fntRenderString(gTheme->fonts[0], x, y, ALIGN_NONE, w, h, text, color);
+}
+
+// hash: NULL for the account library, "image" for the set of the image already requested.
+static void menuOpenAchievements(const char *hash)
+{
+    achFromCard = hash != NULL;
+    achReturnScreen = GUI_SCREEN_GAME_MENU;
+    achImageVcd = 0;
+    achKind = hash ? 'A' : 'G';
+    snprintf(achTarget, sizeof(achTarget), "%s", hash ? hash : "0");
+    achPage = achLibraryPage = achFilter = achSelected = 0;
+    achNeedsPage = hash == NULL;
+    guiSwitchScreen(GUI_SCREEN_ACHIEVEMENTS);
+}
+
+static void achievementReload(void)
+{
+    achNeedsPage = 1;
+    achSelected = 0;
+    for (int i = 0; i < ACH_PAGE_SIZE; i++)
+        achIconIds[i] = -1;
+}
+
+// Badge images live under ART/ on the same share as ART/CADUCEUS.KEY.
+static GSTEXTURE *achievementIcon(int row, const char *key)
+{
+    if (!key[0])
+        return NULL;
+    item_list_t *provider = gNetworkProtocol == NET_PROTO_UDPFS ? udpfsGetObject(0) : ethGetObject(0);
+    if (!provider)
+        return NULL;
+    if (!achIcons)
+        achIcons = cacheInitCache(-1, "ART", 1, "RA", ACH_PAGE_SIZE);
+    if (!achIcons)
+        return NULL;
+    return cacheGetTexture(achIcons, provider, &achIconIds[row], &achIconUids[row], (char *)key);
+}
+
+void menuRenderAchievements()
+{
+    const u64 text = gTheme->textColor, accent = gTheme->selTextColor, panel = gColDarker;
+    const char *filters[] = {_l(_STR_CAD_FILTER_ALL), _l(_STR_CAD_EARNED), _l(_STR_CAD_LOCKED), _l(_STR_CAD_HARDCORE)};
+    achievement_page_t page;
+    char line[160];
+
+    guiDrawBGPlasma();
+    if (achNeedsPage && !discCheckBusy() && achievementsRequest(achKind, achPage, achFilter, achTarget)) {
+        achNeedsPage = 0;
+        for (int i = 0; i < ACH_PAGE_SIZE; i++)
+            achIconIds[i] = -1;
+    }
+    achievementsSnapshot(&page);
+    if (achNeedsPage)
+        page.state = ACH_LOADING;
+    menuCardText(36, 28, 380, 24, _l(_STR_CAD_HEADING), accent);
+    menuCardText(436, 28, 170, 24, page.user, text);
+    rmDrawLine(36, 59, 604, 59, panel);
+    menuCardText(36, 74, 560, 42, achKind == 'G' ? _l(_STR_CAD_LIBRARY) : page.title, text);
+    if (page.state == ACH_READY) {
+        if (achFromCard && page.gameId > 0)
+            snprintf(achTarget, sizeof(achTarget), "%d", page.gameId);
+        int pages = (page.total + ACH_PAGE_SIZE - 1) / ACH_PAGE_SIZE;
+        snprintf(line, sizeof(line), "%d / %d", page.total ? page.page + 1 : 0, pages);
+        menuCardText(518, 132, 90, 20, line, text);
+        if (achKind == 'A') {
+            snprintf(line, sizeof(line), _l(_STR_CAD_PROGRESS), page.earned, page.maximum, filters[achFilter]);
+            menuCardText(36, 132, 470, 22, line, accent);
+            rmDrawRect(36, 120, 568, 3, panel);
+            if (page.maximum)
+                rmDrawRect(36, 120, (int)(568LL * page.earned / page.maximum), 3, accent);
+        } else {
+            snprintf(line, sizeof(line), _l(page.total == 1 ? _STR_CAD_ONE_GAME : _STR_CAD_GAMES), page.total);
+            menuCardText(36, 132, 460, 22, line, text);
+        }
+        if (achSelected >= page.count)
+            achSelected = 0;
+        for (int i = 0; i < page.count; i++) {
+            achievement_entry_t *entry = &page.entries[i];
+            int y = 164 + i * 65;
+            rmDrawRect(36, y, 568, 59, panel);
+            if (i == achSelected)
+                rmDrawRect(36, y, 3, 59, accent);
+            GSTEXTURE *icon = achievementIcon(i, entry->icon);
+            if (icon && icon->Mem)
+                rmDrawPixmap(icon, 45, y + 5, ALIGN_NONE, 48, 48, SCALING_RATIO, gDefaultCol, 0);
+            else { // a padlock
+                rmDrawRect(58, y + 13, 20, 17, text);
+                rmDrawRect(65, y + 30, 6, 10, text);
+                rmDrawRect(58, y + 40, 20, 3, text);
+            }
+            menuCardText(108, y + 7, 480, 20, entry->title, text);
+            if (achKind == 'G')
+                snprintf(line, sizeof(line), _l(_STR_CAD_GAME_PROGRESS), entry->earned, entry->total, entry->hardcore);
+            else
+                snprintf(line, sizeof(line), _l(_STR_CAD_POINTS), entry->points,
+                         _l(entry->hardcore ? _STR_CAD_HARDCORE : entry->earned ? _STR_CAD_EARNED :
+                                                                                  _STR_CAD_LOCKED));
+            menuCardText(108, y + 32, 480, 20, line, entry->earned ? accent : text);
+        }
+        if (page.count) {
+            achievement_entry_t *entry = &page.entries[achSelected];
+            menuCardText(36, 367, 560, 42, entry->description, text);
+            if (achKind == 'A' && entry->date[0])
+                menuCardText(36, 408, 560, 20, entry->date, text);
+        } else
+            menuCardText(36, 195, 555, 60, _l(achKind == 'G' ? _STR_CAD_EMPTY_LIBRARY : _STR_CAD_EMPTY_FILTER), text);
+    } else {
+        const int xera = gRAMode == RA_MODE_XERABORA;
+        int message = xera ? _STR_XERA_CONNECTION_ERROR : _STR_CAD_CONNECTION_ERROR;
+        if (page.state == ACH_LOADING)
+            message = _STR_CAD_LOADING;
+        else if (page.state == ACH_UNSUPPORTED)
+            message = xera ? _STR_XERA_UNKNOWN_GAME : _STR_CAD_UNKNOWN_GAME;
+        else if (page.state == ACH_NOT_PLAYED)
+            message = achievementsClockUnset() ? _STR_XERA_SET_CLOCK : _STR_XERA_NOT_PLAYED;
+        else if (page.state == ACH_OFFLINE) {
+            if (xera) // the xeRAbora list travels over TCP: no UDP transport may own the NIC
+                message = raNetNicReserved() ? _STR_RA_NET_BUSY : _STR_XERA_OPEN_NETWORK;
+            else if (raNetUdpfsNotLoaded())
+                message = _STR_RA_UDPFS_LOAD_FIRST;
+            else
+                message = gNetworkProtocol == NET_PROTO_UDPFS   ? _STR_CAD_PAIR_UDPFS :
+                          gNetworkProtocol == NET_PROTO_UDPFSBD ? _STR_CAD_UDPFS_IMG :
+                                                                  _STR_CAD_PAIR;
+        }
+        menuCardText(48, 188, 535, 110, _l(message), text);
+        menuCardText(48, 315, 535, 40, _l(_STR_CAD_BACK_REFRESH), text);
+    }
+    rmDrawLine(36, 433, 604, 433, panel);
+    menuCardText(36, 442, 465, 22, _l(achKind == 'G' ? _STR_CAD_LIBRARY_CONTROLS : _STR_CAD_GAME_CONTROLS), text);
+    GSTEXTURE *back = thmGetTexture(gSelectButton == KEY_CIRCLE ? CROSS_ICON : CIRCLE_ICON);
+    if (back && back->Mem)
+        rmDrawPixmap(back, 519, 442, ALIGN_NONE, 16, 16, SCALING_RATIO, gDefaultCol, 0);
+    menuCardText(542, 442, 65, 22, _l(_STR_CAD_BACK), text);
+}
+
+void menuHandleInputAchievements()
+{
+    achievement_page_t page;
+    achievementsSnapshot(&page);
+    if (getKeyOn(gSelectButton == KEY_CIRCLE ? KEY_CROSS : KEY_CIRCLE) || (getKeyOn(KEY_START) && !achFromCard && achKind == 'G')) {
+        if (achFromCard)
+            guiSwitchScreen(achReturnScreen);
+        else if (achKind == 'A') { // back from a game to the library page it was opened from
+            achKind = 'G';
+            achPage = achLibraryPage;
+            achFilter = 0;
+            strcpy(achTarget, "0");
+            achievementReload();
+        } else
+            guiSwitchScreen(GUI_SCREEN_MENU);
+        return;
+    }
+    if (discCheckBusy() || achNeedsPage)
+        return;
+    if (getKeyOn(KEY_SELECT)) {
+        if (achFromCard && !strcmp(achTarget, "image")) {
+            if (achImageVcd)
+                achievementsRequestVcd(achImagePath);
+            else
+                achievementsRequestImage(achImagePath, achImageStartup);
+        } else {
+            achievementsForget();
+            achievementReload();
+        }
+        return;
+    }
+    if (page.state != ACH_READY)
+        return;
+    if (getKeyOn(KEY_SQUARE) && achKind == 'A') {
+        achFilter = (achFilter + 1) % 4;
+        achPage = 0;
+        achievementReload();
+    } else if (getKeyOn(KEY_L1) && achPage > 0) {
+        achPage--;
+        achievementReload();
+    } else if (getKeyOn(KEY_R1) && (achPage + 1) * ACH_PAGE_SIZE < page.total) {
+        achPage++;
+        achievementReload();
+    } else if (getKey(KEY_UP) && page.count) {
+        achSelected = (achSelected + page.count - 1) % page.count;
+        sfxPlay(SFX_CURSOR);
+    } else if (getKey(KEY_DOWN) && page.count) {
+        achSelected = (achSelected + 1) % page.count;
+        sfxPlay(SFX_CURSOR);
+    } else if (getKeyOn(gSelectButton) && achKind == 'G' && page.count) {
+        achLibraryPage = achPage;
+        snprintf(achTarget, sizeof(achTarget), "%d", page.entries[achSelected].id);
+        achKind = 'A';
+        achPage = achFilter = 0;
+        achievementReload();
+    }
+}
+#endif
+
 static void menuInitMainMenu(void)
 {
     if (mainMenu)
@@ -715,6 +960,8 @@ static void menuInitMainMenu(void)
     // initialize the menu
     submenuAppendItem(&mainMenu, -1, NULL, MENU_LAUNCH_PS2_DISC, _STR_LAUNCH_PS2_DISC);
 #ifdef RETROACHIEVEMENTS
+    // The label follows RA Mode: a mode change rebuilds this menu (guisettings).
+    submenuAppendItem(&mainMenu, -1, NULL, MENU_RA_ACHIEVEMENTS, gRAMode == RA_MODE_CADUCEUS ? _STR_CAD_ACHIEVEMENTS : _STR_XERA_ACHIEVEMENTS);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_RA_DISC_CHECK, _STR_RA_DISC_CHECK);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_RA_DISC_LAUNCH, _STR_RA_DISC_LAUNCH);
 #endif
@@ -762,6 +1009,7 @@ void menuInitGameMenu(item_list_t *support)
 #ifdef RETROACHIEVEMENTS
     submenuAppendItem(&gameMenu, -1, NULL, GAME_RA_CHECK, _STR_RA_CHECK_GAME);
     submenuAppendItem(&gameMenu, -1, NULL, GAME_RA_TEST, _STR_RA_TEST_LINK);
+    submenuAppendItem(&gameMenu, -1, NULL, GAME_RA_ACHIEVEMENTS, _STR_CAD_VIEW_ACHIEVEMENTS);
 #endif
 
     gameMenuCurrent = gameMenu;
@@ -792,6 +1040,14 @@ void menuInitVcdMenu(int isEmber)
     if (isEmber)
         submenuAppendItem(&appMenu, -1, NULL, APP_EMBER_GAME_SETTINGS, _STR_EMBER_GAME_SETTINGS);
     submenuAppendItem(&appMenu, -1, NULL, APP_RENAME, _STR_RENAME);
+#ifdef RETROACHIEVEMENTS
+    // POPStarter VCDs can be tracked (USB only, said on use); Ember launches carry no telemetry.
+    if (!isEmber) {
+        submenuAppendItem(&appMenu, -1, NULL, GAME_RA_CHECK, _STR_RA_CHECK_GAME);
+        submenuAppendItem(&appMenu, -1, NULL, GAME_RA_TEST, _STR_RA_TEST_LINK);
+        submenuAppendItem(&appMenu, -1, NULL, GAME_RA_ACHIEVEMENTS, _STR_CAD_VIEW_ACHIEVEMENTS);
+    }
+#endif
 
     appMenuCurrent = appMenu;
 }
@@ -993,6 +1249,14 @@ static void refreshMenuPosition(void)
         selected_item = cur;
 }
 
+void menuResetPageStarts(void)
+{
+    for (menu_list_t *cur = menu; cur != NULL; cur = cur->next) {
+        if (cur->item != NULL)
+            cur->item->pagestart = cur->item->current;
+    }
+}
+
 void submenuRebuildCache(submenu_list_t *submenu)
 {
     while (submenu) {
@@ -1051,6 +1315,10 @@ static submenu_list_t *submenuAllocItem(int icon_id, char *text, int id, int tex
     it->item.cache_uid = NULL;
     it->item.favourited = 0;
     it->item.isFolder = 0;
+#ifdef RETROACHIEVEMENTS
+    it->item.raBadged = 0;
+    it->item.raText = NULL;
+#endif
     submenuRebuildCache(it);
 
     return it;
@@ -1083,6 +1351,9 @@ submenu_list_t *submenuAppendItem(submenu_list_t **submenu, int icon_id, char *t
 
 static void submenuDestroyItem(submenu_list_t *submenu)
 {
+#ifdef RETROACHIEVEMENTS
+    free(submenu->item.raText);
+#endif
     free(submenu->item.cache_id);
     free(submenu->item.cache_uid);
 
@@ -1147,6 +1418,10 @@ char *menuItemGetText(menu_item_t *it)
 
 char *submenuItemGetText(submenu_item_t *it)
 {
+#ifdef RETROACHIEVEMENTS
+    if (it->raText != NULL)
+        return it->raText;
+#endif
     if (it->text_id >= 0)
         return _l(it->text_id);
     else
@@ -1161,11 +1436,12 @@ static int submenuSortCompare(submenu_list_t *a, submenu_list_t *b, item_list_t 
     if (a->item.isFolder != b->item.isFolder)
         return a->item.isFolder ? -1 : 1;
 
-    txt1 = submenuItemGetText(&a->item);
-    txt2 = submenuItemGetText(&b->item);
+    // The source text, never the RA mark: badged and plain rows sort by the same clean title.
+    txt1 = a->item.text_id >= 0 ? _l(a->item.text_id) : a->item.text;
+    txt2 = b->item.text_id >= 0 ? _l(b->item.text_id) : b->item.text;
     if (!a->item.isFolder) {
-        txt1 = cfgTitleDisplayName(support, a->item.id, txt1);
-        txt2 = cfgTitleDisplayName(support, b->item.id, txt2);
+        txt1 = cfgTitleSortName(support, a->item.id, txt1);
+        txt2 = cfgTitleSortName(support, b->item.id, txt2);
     }
     return strcasecmp(txt1, txt2);
 }
@@ -1279,35 +1555,47 @@ static void menuFolderResetLeaving(struct menu_list *leaving)
 
 static void menuNextH()
 {
-    raii::SemaLock lock(menuSemaId);
-    struct menu_list *next = selected_item->next;
-    while (next != NULL && next->item->visible == 0)
-        next = next->next;
+    int moved = 0;
+    {
+        // Match the async config worker's snapshot/publish lock, including traversal.
+        raii::SemaLock lock(menuSemaId);
+        struct menu_list *next = selected_item != NULL ? selected_item->next : NULL;
+        while (next != NULL && next->item->visible == 0)
+            next = next->next;
 
-    // If we found a valid menu transition to it.
-    if (next != NULL) {
-        menuFolderResetLeaving(selected_item);
-        selected_item = next;
-        itemConfigId = -1;
-        itemConfigGeneration++;
-        sfxPlay(SFX_CURSOR);
+        // If we found a valid menu transition to it.
+        if (next != NULL) {
+            menuFolderResetLeaving(selected_item);
+            selected_item = next;
+            itemConfigId = -1;
+            itemConfigGeneration++;
+            moved = 1;
+        }
     }
+    if (moved)
+        sfxPlay(SFX_CURSOR); // audio RPCs must not hold up config publication
 }
 
 static void menuPrevH()
 {
-    raii::SemaLock lock(menuSemaId);
-    struct menu_list *prev = selected_item->prev;
-    while (prev != NULL && prev->item->visible == 0)
-        prev = prev->prev;
+    int moved = 0;
+    {
+        // Match the async config worker's snapshot/publish lock, including traversal.
+        raii::SemaLock lock(menuSemaId);
+        struct menu_list *prev = selected_item != NULL ? selected_item->prev : NULL;
+        while (prev != NULL && prev->item->visible == 0)
+            prev = prev->prev;
 
-    if (prev != NULL) {
-        menuFolderResetLeaving(selected_item);
-        selected_item = prev;
-        itemConfigId = -1;
-        itemConfigGeneration++;
-        sfxPlay(SFX_CURSOR);
+        if (prev != NULL) {
+            menuFolderResetLeaving(selected_item);
+            selected_item = prev;
+            itemConfigId = -1;
+            itemConfigGeneration++;
+            moved = 1;
+        }
     }
+    if (moved)
+        sfxPlay(SFX_CURSOR); // audio RPCs must not hold up config publication
 }
 
 static void menuFirstPage()
@@ -1657,7 +1945,9 @@ void menuHandleInputMenu()
         sfxPlay(SFX_CONFIRM);
 
 #ifdef RETROACHIEVEMENTS
-        if (id == MENU_RA_DISC_CHECK) {
+        if (id == MENU_RA_ACHIEVEMENTS) {
+            menuOpenAchievements(NULL);
+        } else if (id == MENU_RA_DISC_CHECK) {
             if (discCheckSupportDeferred())
                 guiShowRANotice(_l(_STR_RA_DISC_CHECKING), NULL);
             else
@@ -1757,7 +2047,8 @@ static void menuRenderElements(theme_elems_t *elems)
     // AttributeText, GameCountText and AttributeImage (themes.c), and those are precisely the only
     // three draw functions that consume the config argument. It is per-FAMILY, so the info screen
     // still loads what it needs the moment it is shown.
-    if (elems->needsItemConfig && menuCanRequestItemConfig(list))
+    // SaveIcon reads the row's VMC names from that config too -- but only while 3D Save Icons is on.
+    if ((elems->needsItemConfig || (elems->needsSaveIconConfig && gEnableSaveIcons)) && menuCanRequestItemConfig(list))
         _menuRequestConfig();
 
     // Deep VCD ID inspection is cosmetic and must be explicit-theme-demand only. ItemText is
@@ -2001,8 +2292,10 @@ void menuHandleInputInfo()
             selected_item->item->execCross(selected_item->item);
     } else if (getKey(KEY_UP)) {
         menuPrevV();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKey(KEY_DOWN)) {
         menuNextV();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKeyOn(KEY_CIRCLE)) {
         if (gSelectButton == KEY_CROSS)
             guiSwitchScreen(GUI_SCREEN_MAIN);
@@ -2010,12 +2303,16 @@ void menuHandleInputInfo()
             selected_item->item->execCircle(selected_item->item);
     } else if (getKey(KEY_L1)) {
         menuPrevPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKey(KEY_R1)) {
         menuNextPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKeyOn(KEY_L2)) {
         menuFirstPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     } else if (getKeyOn(KEY_R2)) {
         menuLastPage();
+        menuRequestInfoSize(); // each row reached from the info page needs its own #Size
     }
 }
 
@@ -2063,7 +2360,7 @@ void menuRenderGameMenu()
     int cp = 0; // current position
 
     // game title
-    fntRenderString(gTheme->fonts[0], 320, 20, ALIGN_CENTER, 0, 0, cfgTitleDisplayName((item_list_t *)selected_item->item->userdata, selected_item->item->current->item.id, selected_item->item->current->item.text), gTheme->selTextColor);
+    fntRenderString(gTheme->fonts[0], 320, 20, ALIGN_CENTER, 0, 0, cfgTitleDisplayName((item_list_t *)selected_item->item->userdata, selected_item->item->current->item.id, submenuItemGetText(&selected_item->item->current->item)), gTheme->selTextColor);
 
     // config source
     char *cfgSource = gameConfigSource();
@@ -2095,16 +2392,126 @@ static int gameMenuCoreIsNeutrino(void)
     // the wrong "not available under Neutrino" message. SMB is the same shape: ethsupport has no
     // Neutrino launch leg, the effective core is always <OPL>, so its panels ARE live and must not
     // be blocked under a Neutrino global default.
+    // HTTP and CF are native-only too; UDPFS and UDPBD are Neutrino-only whatever $CoreLoader says.
+    // Favorites follow the device that owns the row.
     if (selected_item != NULL && selected_item->item != NULL) {
         item_list_t *support = (item_list_t *)selected_item->item->userdata;
-        if (support != NULL && ((menuSelectedRowView(support) == LIB_VIEW_PS1) || support->mode == ETH_MODE))
-            return 0;
+        if (support != NULL) {
+            int sourceMode = menuConfigSourceMode(support);
+            if (menuSelectedRowView(support) == LIB_VIEW_PS1 || sourceMode == ETH_MODE || sourceMode == HTTP_MODE || bdmModeIsPCCF(sourceMode))
+                return 0;
+            if (sourceMode == UDPFS_MODE || bdmModeIsUDPBD(sourceMode))
+                return 1;
+        }
     }
-    // UDPBD games are Neutrino-only even while $CoreLoader is still its OPL default.
-    if (!coreLoader && selected_item != NULL && selected_item->item != NULL)
-        coreLoader = bdmSupportIsUDPBD(static_cast<const item_list_t *>(selected_item->item->userdata));
     return coreLoader;
 }
+
+#ifdef RETROACHIEVEMENTS
+static void menuCheckSelectedGameSupport(void)
+{
+    /* RA: hash the selected image, on demand. Hashing every image during the scan would
+       hold the console on the splash screen: the scan runs before the menu appears and
+       each image has to be opened and read.
+       Every refusal SAYS why -- a silent no-op reads as broken. OPL-core launches carry
+       ee_core's telemetry, Neutrino and UDPFS launches the RA kit's ORBIT agent, and USB VCDs
+       their own POPStarter module; Ember and the PC CARD CF device carry none. */
+    item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
+    int gid = selected_item->item->current->item.id;
+    int rowView = menuSelectedRowView(support);
+    item_list_t sourceView;
+
+    // A PS2 favourite is checked on its source device, by its current id there.
+    if (support->mode == FAV_MODE && rowView != LIB_VIEW_PS1) {
+        support = gFavSupport.sourceItem(gid, &sourceView, &gid);
+        if (support == NULL) {
+            guiShowRANotice(_l(gRAMode == RA_MODE_CADUCEUS ? _STR_CAD_USE_LIBRARY : _STR_XERA_USE_LIBRARY), NULL);
+            return;
+        }
+    }
+    if (rowView == LIB_VIEW_PS1) {
+        /* PS1 rows never reach ee_core. A USB VCD carries its own telemetry module into
+           POPStarter (rapopslaunch.cpp); Ember rows and other devices are untracked. */
+        item_list_t ownerView;
+        item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(gid, &ownerView) : support;
+        base_game_info_t *g = NULL;
+        const char *prefix = owner != NULL && gsOf(owner)->hasPrefix() ? gsOf(owner)->prefix(owner) : NULL;
+        base_game_info_t favorite;
+
+        if (support->mode == FAV_MODE) {
+            if (favGetItemKind(gid) == FAV_KIND_VCD) {
+                memset(&favorite, 0, sizeof(favorite));
+                snprintf(favorite.name, sizeof(favorite.name), "%s", gsOf(support)->name(support, gid));
+                strcpy(favorite.extension, ".VCD");
+                favorite.format = GAME_FORMAT_ISO;
+                g = &favorite;
+            }
+        } else if (gsOf(support)->hasGame())
+            g = (base_game_info_t *)gsOf(support)->game(support, gid);
+        if (owner != NULL && bdmModeIsUSB(owner->mode) && g && g->name[0] && prefix && !strcasecmp(g->extension, ".VCD")) {
+            if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
+                guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+            else
+                guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        } else
+            guiShowRANotice(_l(_STR_PS1_RA_USB_REQUIRED), NULL);
+    } else if (bdmModeIsPCCF(support->mode)) {
+        // CF owns DEV9 in game, so the RA network modules never load beside it.
+        guiShowRANotice(_l(_STR_PCCF_UNSUPPORTED_GAME), NULL);
+    } else if (support->mode == HDD_MODE) {
+        /* An HDLoader install has no image file: hash through its partition map, read-only,
+           on the I/O worker. */
+        hdl_game_info_t *g = gsOf(support)->hasGame() ? (hdl_game_info_t *)gsOf(support)->game(support, gid) : NULL;
+        const char *prefix = gsOf(support)->hasPrefix() ? gsOf(support)->prefix(support) : NULL;
+
+        if (g && g->start_sector && g->startup[0] && prefix && prefix[0]) {
+            if (sbHashHdlDeferred(prefix, g->name, g->startup, g->start_sector))
+                guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+            else
+                guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        } else
+            guiShowRANotice(_l(_STR_RA_NA_HDD), _l(_STR_RA_NA_HDD2));
+    } else if (gsOf(support)->hasGame() && gsOf(support)->hasPrefix()) {
+        base_game_info_t *g = (base_game_info_t *)gsOf(support)->game(support, gid);
+        const char *prefix = gsOf(support)->prefix(support);
+
+        if (g != NULL && prefix != NULL && g->format != GAME_FORMAT_FOLDER) {
+            if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
+                guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+            else
+                guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        }
+    }
+}
+
+// A USB VCD's set, from the PS1 menu (or a VCD favourite). Other PS1 rows cannot be tracked.
+static void menuOpenSelectedVcdAchievements(void)
+{
+    item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
+    int gid = selected_item->item->current->item.id;
+    item_list_t ownerView;
+    item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(gid, &ownerView) : support;
+    const char *prefix = owner != NULL && gsOf(owner)->hasPrefix() ? gsOf(owner)->prefix(owner) : NULL;
+    const char *name = gsOf(support)->name(support, gid);
+    const char *colon = prefix ? strchr(prefix, ':') : NULL;
+    char path[256];
+
+    if (owner == NULL || !bdmModeIsUSB(owner->mode) || colon == NULL || name == NULL || !name[0] ||
+        menuSelectedRowView(support) != LIB_VIEW_PS1 || (support->mode == FAV_MODE && favGetItemKind(gid) != FAV_KIND_VCD) ||
+        snprintf(path, sizeof(path), "%.*s/POPS/%s.VCD", (int)(colon - prefix) + 1, prefix, name) >= (int)sizeof(path)) {
+        guiShowRANotice(_l(_STR_CAD_HASH_UNSUPPORTED), NULL);
+        return;
+    }
+    if (achievementsRequestVcd(path)) {
+        snprintf(achImagePath, sizeof(achImagePath), "%s", path);
+        achImageStartup[0] = '\0';
+        menuOpenAchievements("image");
+        achImageVcd = 1;
+        achReturnScreen = GUI_SCREEN_APP_MENU;
+    } else
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+}
+#endif
 
 void menuHandleInputGameMenu()
 {
@@ -2139,39 +2546,30 @@ void menuHandleInputGameMenu()
 
 #ifdef RETROACHIEVEMENTS
         if (menuID == GAME_RA_CHECK) {
-            /* RA: hash the selected image, on demand. Hashing every image during the scan would
-               hold the console on the splash screen: the scan runs before the menu appears and
-               each image has to be opened and read.
-               Every refusal SAYS why -- a silent no-op reads as broken, and hashing an image
-               nothing will ever watch is worse. Only the four legs that reach sysLaunchLoaderElf
-               (BDM, ETH/SMB, HDD/APA, MMCE) can ever carry telemetry; the rest exec an external
-               ELF and ee_core never loads. */
+            menuCheckSelectedGameSupport();
+        } else if (menuID == GAME_RA_ACHIEVEMENTS) {
+            // A whole ISO hashes; HDLoader entries and PS1 rows have no image to read here.
             item_list_t *support = static_cast<item_list_t *>(selected_item->item->userdata);
-            int gid = selected_item->item->current->item.id;
-
-            if (menuSelectedRowView(support) == LIB_VIEW_PS1) {
-                // PS1/VCD rows launch through POPSTARTER or Ember, never ee_core.
-                guiShowRANotice(_l(_STR_RA_NA_PS1), NULL);
-            } else if (support->mode == UDPFS_MODE) {
-                // UDPFS is Neutrino-only in this fork.
-                guiShowRANotice(_l(_STR_RA_NA_UDPFS), NULL);
-            } else if (gameMenuCoreIsNeutrino()) {
-                guiShowRANotice(_l(_STR_RA_NA_NEUTRINO), NULL);
-            } else if (support->mode == HDD_MODE) {
-                /* HDLoader entries (hdl_game_info_t) have no filename and no extension, so there
-                   is nothing to hash. Watch lists still LOAD from RA/ at launch; the .wl has to
-                   be built on the PC. */
-                guiShowRANotice(_l(_STR_RA_NA_HDD), _l(_STR_RA_NA_HDD2));
-            } else if (gsOf(support)->hasGame() && gsOf(support)->hasPrefix()) {
-                base_game_info_t *g = (base_game_info_t *)gsOf(support)->game(support, gid);
-                const char *prefix = gsOf(support)->prefix(support);
-
-                if (g != NULL && prefix != NULL && g->format != GAME_FORMAT_FOLDER) {
-                    if (sbHashGameDeferred(prefix, g->name, g->extension, g->startup, g->format))
-                        guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
-                    else
-                        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
-                }
+            base_game_info_t *g = NULL;
+            const char *prefix = NULL;
+            if (menuSelectedRowView(support) != LIB_VIEW_PS1 && support->mode != HDD_MODE && gsOf(support)->hasGame() &&
+                gsOf(support)->hasPrefix()) {
+                g = (base_game_info_t *)gsOf(support)->game(support, selected_item->item->current->item.id);
+                prefix = gsOf(support)->prefix(support);
+            }
+            if (g == NULL || prefix == NULL)
+                guiShowRANotice(_l(gRAMode == RA_MODE_CADUCEUS ? _STR_CAD_USE_LIBRARY : _STR_XERA_USE_LIBRARY), NULL);
+            else if (g->format != GAME_FORMAT_ISO && g->format != GAME_FORMAT_OLD_ISO)
+                guiShowRANotice(_l(_STR_CAD_HASH_UNSUPPORTED), NULL);
+            else {
+                char path[256];
+                sbCreatePath(g, path, prefix, "/", 0);
+                if (achievementsRequestImage(path, g->startup)) {
+                    snprintf(achImagePath, sizeof(achImagePath), "%s", path);
+                    snprintf(achImageStartup, sizeof(achImageStartup), "%s", g->startup);
+                    menuOpenAchievements("image");
+                } else
+                    guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
             }
         } else if (menuID == GAME_RA_TEST) {
             sbTestPCLinkDeferred();
@@ -2181,10 +2579,8 @@ void menuHandleInputGameMenu()
             if (menuID == GAME_COMPAT_SETTINGS) {
             guiGameShowCompatConfig(selected_item->item->current->item.id, static_cast<item_list_t *>(selected_item->item->userdata), itemConfig);
         } else if (menuID == GAME_CHEAT_SETTINGS) {
-            if (gameMenuCoreIsNeutrino())
-                guiMsgBox(_l(_STR_NEUTRINO_SETTING_NA), 0, NULL);
-            else
-                guiGameShowCheatConfig();
+            // Both cores run cheats now; only the PS2RD .img row is OPL-core-only.
+            guiGameShowCheatConfig(gameMenuCoreIsNeutrino());
         } else if (menuID == GAME_GSM_SETTINGS) {
             if (gameMenuCoreIsNeutrino())
                 guiMsgBox(_l(_STR_NEUTRINO_SETTING_NA), 0, NULL);
@@ -2282,7 +2678,7 @@ void menuRenderAppMenu()
     int cp = 0; // current position
 
     // app title
-    fntRenderString(gTheme->fonts[0], 320, 20, ALIGN_CENTER, 0, 0, cfgTitleDisplayName((item_list_t *)selected_item->item->userdata, selected_item->item->current->item.id, selected_item->item->current->item.text), gTheme->selTextColor);
+    fntRenderString(gTheme->fonts[0], 320, 20, ALIGN_CENTER, 0, 0, cfgTitleDisplayName((item_list_t *)selected_item->item->userdata, selected_item->item->current->item.id, submenuItemGetText(&selected_item->item->current->item)), gTheme->selTextColor);
 
     // A PS1 row opens this smaller menu, not the PS2 VMC editor. Say why the missing PS2 control
     // is intentional without claiming that Ember and POPSTARTER store their cards identically.
@@ -2339,6 +2735,15 @@ void menuHandleInputAppMenu()
             guiShowPsEmulationSettings();
         } else if (menuID == APP_EMBER_GAME_SETTINGS) {
             guiShowEmberGameSettings();
+#ifdef RETROACHIEVEMENTS
+        } else if (menuID == GAME_RA_CHECK) {
+            menuCheckSelectedGameSupport();
+        } else if (menuID == GAME_RA_TEST) {
+            sbTestPCLinkDeferred();
+            guiShowRANotice(_l(_STR_RA_LOOKING_FOR_PC), NULL);
+        } else if (menuID == GAME_RA_ACHIEVEMENTS) {
+            menuOpenSelectedVcdAchievements();
+#endif
         }
         // so the exit press wont propagate twice
         readPads();

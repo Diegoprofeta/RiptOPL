@@ -4,9 +4,11 @@
 #include "include/lang.h"
 #include "include/gui.h"
 #include "include/supportbase.h"
+#include "include/nativevmc.h"
 #include "include/mmcesupport.h"
 #include "include/vcdsupport.h"
 #include "include/cuesupport.h" // PS1 rows can belong to either core; the ROW decides
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/folderbrowse.h"
 #include "include/util.h"
@@ -484,6 +486,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -494,6 +498,7 @@ public:
     void launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet) override;
     void launch(item_list_t *itemList, int id, config_set_t *configSet) override;
     config_set_t *config(item_list_t *itemList, int id) override;
+    void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config) override;
     int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) override;
     int textId(item_list_t *itemList) override;
     int iconId(item_list_t *itemList) override;
@@ -859,6 +864,7 @@ void MmceSource::rename(item_list_t *itemList, int id, char *newName)
 void MmceSource::launchCue(item_list_t *itemList, const char *cueName, config_set_t *configSet)
 {
     char emberElf[256], biosPath[288];
+    char launchName[CUE_NAME_MAX];
     char ps1Root[sizeof(gMmceSupport.prefix)];
 
     if (cueName == NULL || cueName[0] == '\0')
@@ -887,6 +893,8 @@ void MmceSource::launchCue(item_list_t *itemList, const char *cueName, config_se
         host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
+    if (!cuePrepareLaunch(ps1Root, cueName, emberElf, launchName, sizeof(launchName)))
+        return;
     // The scan lists folders without reading inside them -- that would be a directory read per row
     // on every refresh. Pay for it once, HERE, while a dialog can still be drawn: an empty or
     // mis-filled folder otherwise drops the user into the PS1 BIOS shell with no explanation.
@@ -899,9 +907,13 @@ void MmceSource::launchCue(item_list_t *itemList, const char *cueName, config_se
         return;
     }
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(ps1Root, cueName);
+
     // UNMOUNT_EXCEPTION is load-bearing: Ember cannot remount the card it reads the game from.
     host::app().deinit(UNMOUNT_EXCEPTION, itemList->mode);
-    sysLaunchEmber(emberElf, cueName);
+    sysLaunchEmber(emberElf, launchName);
 }
 
 // Launch a PS1/.VCD entry BY NAME via POPSTARTER (view-independent entry point: the in-view menu
@@ -927,7 +939,8 @@ void MmceSource::launchVcd(item_list_t *itemList, const char *vcdName, config_se
     gMmceSupport.getDeviceRoot(ps1Root, sizeof(ps1Root));
 
     if (!vcdResolvePopstarter(ps1Root, vcdElf, sizeof(vcdElf))) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        vcdDescribePopstarterLookup(ps1Root, vcdElf, sizeof(vcdElf));
+        host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
     vcdBuildSelector(ps1Root, VCD_PREFIX_MASS, vcdName, vcdSelector, sizeof(vcdSelector));
@@ -940,15 +953,19 @@ void MmceSource::launchVcd(item_list_t *itemList, const char *vcdName, config_se
 
     char vcdFullPath[256];
     snprintf(vcdFullPath, sizeof(vcdFullPath), "%sPOPS/%s.VCD", ps1Root, vcdName);
+    if (!vcdConfirmCleanLaunch(ps1Root)) // a module left by a tracked USB launch reports stale telemetry
+        return;
     vcdPrepareRetroGemBarcode(vcdFullPath);
     // Keep the MMCE game device plus any distinct custom POPSTARTER.ELF backend through handoff.
     host::app().deinitEx(sbLoaderDeinitException(vcdElf), itemList->mode, host::app().pathToMode(vcdElf));
     sysLaunchPopstarter(vcdElf, vcdSelector);
 }
 
+static int mmceMcemuSlots[2] = {-2, -2};
+
 void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 {
-    int i, index, compatmask = 0;
+    int index, compatmask = 0;
     int EnablePS2Logo = 0;
     int result;
 
@@ -1002,9 +1019,9 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     void *irx = &mmce_cdvdman_irx;
     int irx_size = size_mmce_cdvdman_irx;
     compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
+    if (compatmask < 0) // sbPrepare failed (patch zone not found): `index` is unset -- bail before using
+        return;         // it. (The old `if (settings == NULL)` guard was dead: irx + index is never NULL.)
     settings = (struct cdvdman_settings_mmce *)((u8 *)irx + index);
-    if (settings == NULL)
-        return;
 
     // Persist last-played BEFORE any card switch below: on an FMCB-on-MMCE setup this write goes to
     // the card's mcN: surface, and after a GameID switch it would land inside the per-game virtual
@@ -1075,15 +1092,33 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             }
         }
 
-        u32 max_words = size_mmce_mcemu_irx / sizeof(u32);
-        for (i = 0; i < max_words; i++) {
-            if (((u32 *)&mmce_mcemu_irx)[i] == (0xC0DEFAC0 + vmc_id)) {
-                if (mmce_vmc_infos.active)
-                    size_mcemu_irx = size_mmce_mcemu_irx;
-                memcpy(&((u32 *)&mmce_mcemu_irx)[i], &mmce_vmc_infos, sizeof(mmce_vmc_infos_t));
-                break;
-            }
+        // This write covers the slot's marker, so its position is found once and reused with a full-payload bound.
+        int slotWord = nativeVmcSlotWord(&mmce_mcemu_irx, size_mmce_mcemu_irx, vmc_id, mmceMcemuSlots, sizeof(mmce_vmc_infos_t));
+        if (slotWord >= 0) {
+            if (mmce_vmc_infos.active)
+                size_mcemu_irx = size_mmce_mcemu_irx;
+            memcpy(&((u32 *)&mmce_mcemu_irx)[slotWord], &mmce_vmc_infos, sizeof(mmce_vmc_infos_t));
         }
+    }
+
+    // Sum the size of all parts, for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763).
+    // One part that cannot be opened or sized makes the whole size unknown: a partial total would be
+    // too small a bound and refuse reads in the missing part, while an unknown size keeps the driver
+    // on the PVD, as before (sbGetMediaLsnCount).
+    u64 isoTotalBytes = 0;
+    int isoSizeKnown = 1;
+    for (int part = 0; part < game->parts; part++) {
+        sbCreatePath(game, partname, gMmceSupport.prefix, "/", part);
+        int fd = open(partname, O_RDONLY, 0666);
+        s64 partBytes = -1;
+        if (fd >= 0) {
+            partBytes = lseek64(fd, 0, SEEK_END);
+            close(fd);
+        }
+        if (partBytes > 0)
+            isoTotalBytes += (u64)partBytes;
+        else
+            isoSizeKnown = 0;
     }
 
     // Initialize layer 1 information.
@@ -1098,6 +1133,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     layer1_start = sbGetISO9660MaxLBA(partname);
+    settings->common.mediaLsnCount = sbGetMediaLsnCount(partname, isoSizeKnown ? isoTotalBytes : 0);
 
     switch (game->format) {
         case GAME_FORMAT_USBLD:
@@ -1125,7 +1161,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // launch. Absent is normal -- the game is simply not tracked.
     sbLoadWatchList(gMmceSupport.prefix, game->startup);
 #endif
-    if ((result = sbLoadCheats(gMmceSupport.prefix, game->startup)) < 0) {
+    if ((result = sbLoadCheats(gMmceSupport.prefix, game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
         // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
         if (!sbCheatsMissingContinue(&settings->common, result)) {
@@ -1164,6 +1200,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
                 fileXioClose(vmc_fds[0]);
             if (vmc_fds[1] >= 0)
                 fileXioClose(vmc_fds[1]);
+            sbUnprepare(&settings->common);
             return;
         }
         settings->port = detectedPort;
@@ -1217,6 +1254,8 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         // argument -- a use-after-free read. Copy startup onto this stack frame like mmcePartname.
         char mmceStartup[GAME_STARTUP_MAX + 1];
         snprintf(mmceStartup, sizeof(mmceStartup), "%s", game->startup);
+        // sbPrepare above resolved the OPL core's modes; a title default can be limited to one core.
+        compatmask = sbGetCompatModes(configSet, 1);
         // Neutrino bypasses OPL's mcemu, so the VMC fds opened above go unused on this path --
         // close them instead of leaking until the IOP reset (B3). Closed BEFORE the GameID push
         // below (Beta-2947 hardware report): the 0x8 switch physically re-mounts the card, and
@@ -1227,10 +1266,25 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             fileXioClose(vmc_fds[0]);
         if (vmc_fds[1] >= 0)
             fileXioClose(vmc_fds[1]);
-        if (sysNeutrinoPreflight("mmce", neutrinoPath, 0, NULL, -1) < 0) // D6 pre-teardown validation
+        // Every way back to the menu from here undoes the native preparation this leg shares
+        // (sbPrepare above): a zone left patched fails the next MMCE launch's sbPrepare.
+        if (sysNeutrinoPreflight("mmce", neutrinoPath, 0, NULL, -1) < 0) { // D6 pre-teardown validation
+            sbUnprepare(&settings->common);
             return;
-        if (sysNeutrinoArgsPreflight("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0)
+        }
+        // Cheats: loaded above with the native preparation; hand them to Neutrino.
+        if (sbNeutrinoHandCheats(mmceStartup, neutrinoPath, neutrinoExtraArgs) < 0) {
+            sbUnprepare(&settings->common);
             return;
+        }
+#ifdef RETROACHIEVEMENTS
+        sbNeutrinoPrepareRA(gMmceSupport.prefix, mmceStartup, "mmce", neutrinoPath, neutrinoExtraArgs);
+#endif
+        if (sysNeutrinoArgsPreflight("mmce", mmcePartname, mmceStartup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0) {
+            sbUnprepare(&settings->common);
+            return;
+        }
+        sysNeutrinoWarnPadEmu(configSet);
         // GameID for the NEUTRINO core (issue #68): the native OPL-core launch deliberately does
         // NOT push a launcher GameID (see the issue-#50 note below -- in OPL core the in-game
         // card is OPL's mcemu, and a mid-launch re-switch froze early-MC-probing games). That
@@ -1276,6 +1330,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         if (vmc_fds[1] >= 0)
             fileXioClose(vmc_fds[1]);
         host::ui().warning(_l(_STR_ERR_FILE_INVALID), 8); // batch S5: never bail silently
+        sbUnprepare(&settings->common);
         return;
     }
 
@@ -1322,7 +1377,17 @@ config_set_t *MmceSource::config(item_list_t *itemList, int id)
     // Config (CFG + #Format/#System/#DiscType badges) comes from the ACTIVE view's array;
     // gMmceSupport.activeGame picks it (VCD keys off the basename) and returns a safe empty entry
     // for any stale/invalid id, so this can never index the wrong/NULL array out of range.
-    return sbPopulateConfig(gMmceSupport.activeGame(itemList, id), gMmceSupport.prefix, "/");
+    base_game_info_t *game = gMmceSupport.activeGame(itemList, id);
+    config_set_t *config = sbPopulateConfig(game, gMmceSupport.prefix, "/");
+    ps1Size(itemList, game, config);
+    return config;
+}
+
+void MmceSource::ps1Size(item_list_t *, base_game_info_t *game, config_set_t *config)
+{
+    char root[sizeof(gMmceSupport.prefix)];
+    gMmceSupport.getDeviceRoot(root, sizeof(root)); // POPS/ and EMBER/ live at the card root
+    sbResolvePs1Size(game, root, config);
 }
 
 int MmceSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)
@@ -1391,6 +1456,18 @@ char *MmceSource::prefix(item_list_t *itemList)
     return gMmceSupport.prefix;
 }
 
+
+int MmceSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                           char *partition, int partitionSize)
+{
+    char root[64];
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    gMmceSupport.getDeviceRoot(root, sizeof(root));
+    return saveIconPs1Directory(root, name, *ember, directory, directorySize);
+}
 
 int MmceSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)
 {

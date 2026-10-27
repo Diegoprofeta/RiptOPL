@@ -2,7 +2,7 @@
 
 mcman_open2 only truncates an existing file in its O_CREAT branch. See
 ps2dev/ps2sdk iop/memorycard/mcman/src/ps2mc_fio.c and original OPL #1010/#1011.
-This tests new rewrites and their existing rollback, not damaged-tail recovery.
+Short reads, new rewrites and rollback; test_neutrino_toml_repair.py covers torn tails.
 """
 from pathlib import Path
 import subprocess
@@ -20,7 +20,7 @@ def function(signature):
 
 
 functions = "\n".join(function(s) for s in (
-    "static const char *sysLastPathSeparator(", "static int sysSyncNeutrinoUdpfsToml("))
+    "static const char *sysLastPathSeparator(", "static int sysTomlTornTailCut(", "static int sysSyncNeutrinoUdpfsToml("))
 program = r'''
 #include <cassert>
 #include <cstdio>
@@ -32,10 +32,11 @@ program = r'''
 #define O_CREAT 0x0200
 #define O_TRUNC 0x0400
 #define LOG(...) ((void)0)
+#define NEUTRINO_TOML_TORN_TAIL_MAX 32
 static int ps2_ip[4];
 static std::string bytes, openedPath;
 static bool mc, live;
-static int pos, opens, writes, closes, failOpen, failWrite, writeResult, readResult;
+static int pos, opens, writes, closes, failOpen, failWrite, writeResult, readResult, readChunk;
 
 static int fake_open(const char *path, int flags, ...) {
     assert(!live);
@@ -52,8 +53,11 @@ static int fake_open(const char *path, int flags, ...) {
 static int fake_read(int fd, void *buffer, int size) {
     assert(fd == 0 && live);
     if (readResult < 0) return readResult;
-    int count = (int)bytes.size() < size ? (int)bytes.size() : size;
-    memcpy(buffer, bytes.data(), count);
+    int left = (int)bytes.size() - pos;
+    int count = left < size ? left : size;
+    if (readChunk && count > readChunk) count = readChunk; // short reads must accumulate
+    memcpy(buffer, bytes.data() + pos, count);
+    pos += count;
     return count;
 }
 static int fake_write(int fd, const void *buffer, int size) {
@@ -79,7 +83,7 @@ static std::string config(const char *ip) {
 }
 static void reset(const std::string &text, bool card) {
     assert(!live); bytes = text; mc = card;
-    pos = opens = writes = closes = failOpen = failWrite = writeResult = readResult = 0;
+    pos = opens = writes = closes = failOpen = failWrite = writeResult = readResult = readChunk = 0;
     ps2_ip[0] = 10; ps2_ip[1] = 0; ps2_ip[2] = 0; ps2_ip[3] = 5;
 }
 static int sync(const char *path, const char *device) {
@@ -119,6 +123,8 @@ int main() {
         assert(sync(path, "udpfs") == 0 && bytes == original && writes == 0); // existing read-only contract
         reset(original, card); failOpen = 1;
         assert(sync(path, "udpfs") < 0 && writes == 0);
+        reset(config("192.168.100.123"), card); readChunk = 7;
+        assert(sync(path, "udpfs") == 0 && bytes == config("10.0.0.5")); // 7-byte reads keep the whole file
         reset(original, card); readResult = -1;
         assert(sync(path, "udpfs") < 0 && bytes == original && writes == 0);
         reset("", card);

@@ -144,6 +144,9 @@ typedef struct theme_elems
     // Set only when this family contains ItemText, the element that consumes the optional deep
     // VCD display ID. Keeps cosmetic disc-image inspection completely demand-driven.
     unsigned char needsVcdDisplayId;
+    // Set when this family contains a SaveIcon, which reads the row's per-game VMC names: the
+    // config is requested for it only while 3D Save Icons is on.
+    unsigned char needsSaveIconConfig;
 } theme_elems_t;
 
 typedef struct
@@ -202,6 +205,7 @@ typedef struct theme
     int parsingFavKindFamily; // parse-time only: addGUIElem must not claim an ItemsList slot
 
     theme_element_t *coverflow;
+    theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
     int coverflowCoverOffset;
 
     int gameCacheCount;
@@ -223,6 +227,9 @@ void thmTriggerCoverflowAnim(int dir);
 void thmInit(void);
 void thmReinit(const char *path);
 void thmReloadScreenExtents(void);
+// Recompute list rows and text rooms for the current menu font size (original #1038). Caller holds
+// guiLock. 1 when the geometry changed.
+int thmRefreshFontSize(void);
 int thmAddElements(char *path, const char *separator, int forceRefresh);
 const char *thmGetValue(void);
 GSTEXTURE *thmGetTexture(unsigned int id);

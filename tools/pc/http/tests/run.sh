@@ -5,7 +5,7 @@
 # header framing, Content-Range validation, encoding refusal and truncation detection run exactly
 # as they do on the IOP -- and because modules/network/common/httpstream.inc is shared with the
 # in-game driver, testing it here tests the reader device-http.c uses too. The catalog test runs
-# src/platform/httpcatalog.c unmodified and diffs it against pc/http/catalog_reference.py over the shared
+# src/platform/httpcatalog.cpp unmodified and diffs it against pc/http/catalog_reference.py over the shared
 # fixtures, in all three line-ending forms.
 #
 # Usage, from the repo root:

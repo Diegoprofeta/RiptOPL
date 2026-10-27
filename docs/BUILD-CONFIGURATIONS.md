@@ -5,6 +5,14 @@ and IncebtIon. `--configuration` selects optional controller, diagnostic or debu
 settings within an edition. GCC and LLVM select compilers. Configuration
 candidates are not extra release channels and cannot replace standard release kits.
 
+Releases carry them as the original did: the Korium channel publishes
+`RIPTOPL-VARIANTS.zip` (`pademu0`, `ds5`, `extras`, `extras_ds5`) and
+`RIPTOPL-DEBUG.zip` (every other nonstandard configuration), one folder per
+configuration with its GCC `RIPTOPL.ELF` and build manifest; the RetroAchievements
+channel publishes `RIPTOPL-RA-VARIANTS.zip` (`pademu0`, as `RIPTOPL-RA.ELF`). The
+publisher packs them only from builds of the released commit and SDK suite. Every channel
+also publishes `RIPTOPL-LANGS.zip`, the translations and their fonts.
+
 Prepare the SDK/ports and assets as described in [PS2BUILD-MIGRATION.md](PS2BUILD-MIGRATION.md),
 then use the existing builder:
 
@@ -34,6 +42,7 @@ version. Nonstandard version strings also name their configuration.
 | `eesio_debug` | EE serial logging via the installed SIOCookie package, plus the menu debug resources. |
 | `ingame_debug_uart` | PPC UART menu/in-game debug modules and CDVDMAN diagnostics. |
 | `iopcore_debug_uart` | Also enable memory-card module diagnostics. |
+| `ingamediag` | In-game freeze report: after a freeze, the IGR combo writes `mc0:/RIPTFRZ.TXT`. Refused with RetroAchievements. |
 
 Menu/core transport flags agree (`TTY_PPC_UART` versus `TTY_PPC` is the existing
 interface between those components). In-game debug removes SMSTCPIP's reduced
@@ -57,11 +66,11 @@ reserved for standard release packaging. Both the packager and publisher reject
 a manifest naming a nonstandard configuration, even if its checksums are valid.
 Historical standard manifests without this new field remain verifiable.
 
-The `ps2build-configurations` workflow covers all 13 nonstandard configurations
+The `ps2build-configurations` workflow covers all 14 nonstandard configurations
 on Korium, plus RA without PADEMU, RA with in-game UDP debug, and IncebtIon with
-extras/DS5, on both compilers. This is 32 selected builds, not every possible
+extras/DS5, on both compilers. This is 34 selected builds, not every possible
 edition/configuration cross-product. Host tests cover definition/ABI isolation
-across all three editions and all 14 configurations, separate stage paths and
+across all three editions and all 15 configurations, separate stage paths and
 negative packaging/publishing cases.
 
 With IGS enabled, LLVM `-Os` left only 2,712 bytes for the EE core's stack and
@@ -74,6 +83,6 @@ behavior and compiler performance still require hardware validation.
 
 There is no verified compile-time no-IGR switch in the compared legacy/current
 source. Its behavior/configuration audit remains in [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20),
-alongside DECI2 coverage, debug/language/font distribution bundles, console
+alongside DECI2 coverage, console
 acceptance and release publication. Do not infer those capabilities from a
 successful configuration build.

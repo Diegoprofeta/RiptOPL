@@ -65,11 +65,20 @@
 #define RESP_RESP(v)       (((v) >> 28) & 0x03)
 #define RESP_SRC(v)        (((v) >> 30) & 0x03)
 
+/* RiptOPL: iLinkman stores every quadlet the target writes in host order, the status block's
+ * included, so read its first detail quadlet as a number: sfmt:2 status:6 | V M E I sense key:4 |
+ * ASC:8 | ASCQ:8. Indexing it as bytes in wire order read the ASCQ as the status and the ASC as
+ * the sense key, and a CHECK CONDITION whose ASCQ was 0 passed as GOOD. */
+#define STATUS_SFMT(v)      (((v) >> 30) & 0x03)
+#define STATUS_SAM(v)       (((v) >> 24) & 0x3F)
+#define STATUS_SENSE_KEY(v) (((v) >> 16) & 0x0F)
+#define STATUS_UNWRITTEN    0xFFFFFFFF
+
 struct sbp2_status
 {
     u32 status;
     u32 ORB_low;
-    u8 data[24];
+    u32 data[6];
 } __attribute__((packed));
 
 struct sbp2_pointer
@@ -149,13 +158,19 @@ struct SBP2Device
     unsigned long int maxLBA;
     void *cache;
 
+    /* Resident memory: never reuse a slot while a management ORB is pending. */
+    int generation;
+    unsigned char configuring, managementPending, fetchAgentNeedsReset;
+    volatile struct sbp2_status statusFIFO __attribute__((aligned(4)));
+    struct management_ORB managementORB __attribute__((aligned(4)));
+    struct sbp2_login_response loginResponse __attribute__((aligned(4)));
+    struct sbp2_pointer managementPointer __attribute__((aligned(4)));
+
     struct scsi_interface scsi;
 };
 
 /* Function prototypes. */
-void init_ieee1394DiskDriver(void);
-int ieee1394_SendCommandBlockORB(struct SBP2Device *dev, struct CommandDescriptorBlock *firstCDB);
-int ieee1394_Sync(void);
+int init_ieee1394DiskDriver(void);
 void DeinitIEEE1394(void);
 
 

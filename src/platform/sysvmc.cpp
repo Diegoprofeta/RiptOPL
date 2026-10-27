@@ -60,19 +60,12 @@ constexpr int SYS_DISC_NODISC_MS = 2000;
 
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h>              // fileXioInit, fileXioExit, fileXioDevctl
-#include <usbhdfsd-common.h>          // USBMASS_IOCTL_GET_LBA / _CHECK_CHAIN -- VMC contiguity probe
+#include <usbhdfsd-common.h>          // USBMASS_IOCTL_GET_LBA / _GET_FRAGLIST -- VMC contiguity probe
 #include "include/ps2sdkapi_compat.h" // ps2sdk_get_iop_fd -- the ioctls above take the IOP-side fd
+#include "modules/vmc/genvmc/genvmc.h"     // createVMCparam_t, VMC_CREATE_PFS_RESERVE
 
 // VMC and memory-card checks for a launch (contiguity probe, creation via genvmc). Split out of system.cpp.
 
-typedef struct
-{
-    char VMC_filename[1024];
-    int VMC_size_mb;
-    int VMC_blocksize;
-    int VMC_thread_priority;
-    int VMC_card_slot;
-} createVMCparam_t;
 
 int sysCheckMC(void)
 {
@@ -102,13 +95,19 @@ static char gVMCCreatePath[256] = {0};
 // defragment, so on a used volume a fresh VMC can land in pieces -- which the user otherwise only
 // learns mid-launch, as an error about a card they thought they had just made.
 //
-// 1 contiguous, 0 FRAGMENTED, -1 unknown. GET_LBA is probed first because bdmfs_fatfs answers
-// CHECK_CHAIN with a bare 1/0 and never an error, so a store that cannot do LBA lookups at all
-// (mmce, pfs, SMB, udpfs) would otherwise return a 0 meaning only "not my ioctl".
+// 1 contiguous, 0 FRAGMENTED, -1 unknown. bdmfs_fatfs CHECK_CHAIN collapses every non-single-fragment
+// result to 0, so query the fragment count instead. GET_LBA is probed first because MMCE also returns
+// success for unsupported ioctls WITHOUT writing the output: require GET_LBA to replace its sentinel
+// before trusting GET_FRAGLIST, or an unsupported query looks exactly like a fragmented file.
+const char *sysVMCCreatePath(void)
+{
+    return gVMCCreatePath;
+}
+
 int sysVMCContiguity(void)
 {
-    u64 startingLBA;
-    int fd, iop_fd, chain;
+    u64 startingLBA = (u64)-1;
+    int fd, iop_fd, fragments;
 
     if (gVMCCreatePath[0] == '\0')
         return -1;
@@ -118,24 +117,25 @@ int sysVMCContiguity(void)
         return -1;
 
     iop_fd = ps2sdk_get_iop_fd(fd);
-    if (fileXioIoctl2(iop_fd, USBMASS_IOCTL_GET_LBA, NULL, 0, &startingLBA, sizeof(startingLBA)) != 0) {
+    if (fileXioIoctl2(iop_fd, USBMASS_IOCTL_GET_LBA, NULL, 0, &startingLBA, sizeof(startingLBA)) != 0 ||
+        startingLBA == (u64)-1) {
         close(fd);
-        return -1; // not a fatfs-backed device: CHECK_CHAIN below would be meaningless
+        return -1; // not a fatfs-backed device: the fragment query below would be meaningless
     }
 
-    chain = fileXioIoctl(iop_fd, USBMASS_IOCTL_CHECK_CHAIN, const_cast<char *>(""));
+    fragments = fileXioIoctl2(iop_fd, USBMASS_IOCTL_GET_FRAGLIST, NULL, 0, NULL, 0);
     close(fd);
 
-    LOG("SYSTEM VMC contiguity check on %s: chain=%d\n", gVMCCreatePath, chain);
-    if (chain == 1)
+    LOG("SYSTEM VMC contiguity check on %s: fragments=%d\n", gVMCCreatePath, fragments);
+    if (fragments == 1)
         return 1;
-    if (chain == 0)
+    if (fragments > 1)
         return 0;
     return -1; // anything else is the ioctl itself failing, not a verdict about the file
 }
 
 // -1: explicit delete, 0: size probe, SYS_VMC_PROBE_FORMAT: validated auto probe, >0: create.
-int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock)
+int sysCheckVMCEx(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock, int createFlags)
 {
     int size = -1;
     char path[256];
@@ -260,7 +260,7 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
         }
 
         if (createSize > 0 && createSize != size) {
-            createVMCparam_t createParam;
+            createVMCparam_t createParam = {};
             // Remember what is being built so the GUI can ask about its layout when genvmc finishes.
             snprintf(gVMCCreatePath, sizeof(gVMCCreatePath), "%s", path);
             strcpy(createParam.VMC_filename, path);
@@ -268,6 +268,7 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
             createParam.VMC_blocksize = 16;
             createParam.VMC_thread_priority = 0x0f;
             createParam.VMC_card_slot = -1;
+            createParam.VMC_flags = createFlags;
             if (fileXioDevctl("genvmc:", 0xC0DE0001, (void *)&createParam, sizeof(createParam), NULL, 0) < 0) {
                 gVMCCreatePath[0] = '\0';
                 return SYS_VMC_CREATE_FAILED;
@@ -276,3 +277,9 @@ int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize,
     }
     return size;
 }
+
+int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock)
+{
+    return sysCheckVMCEx(prefix, sep, name, createSize, vmc_superblock, 0);
+}
+

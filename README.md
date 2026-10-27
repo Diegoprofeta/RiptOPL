@@ -48,7 +48,7 @@ Review the LICENSE file for further details.<br><br>
 [![Discord](https://img.shields.io/discord/1275875800318476381?style=flat&logo=Discord)](https://tinyurl.com/PS2SPACE)
 [![Documentation](https://img.shields.io/badge/Documentation-RiptOPL-skyblue?style=flat&logo=githubpages&logoColor=white&labelColor=navy)](https://nathanneurotic.github.io/RiptOPL/)
 
-> **What is RiptOPL?** A downstream fork of Open PS2 Loader with a built-in cover-art **Coverflow** theme (optional), a **Favorites** tab, per-game **Neutrino** external-core launching, a reorganized category **settings layout**, DualSense support, and ready-to-use opinionated defaults. Fresh configurations use **`<OPL>`**, **16:9**, and **Auto** menu video; see [Fresh-start defaults](docs/DEFAULTS.md). Its settings live in their own **`settings_riptopl.cfg`** to keep its master settings separate from official OPL and wOPL. Other files, including network and per-game settings, can still be shared. Favorites import from uOPL/wOPL is **one-way**: the next save writes RiptOPL’s own format to `favourites.bin`. See [Where your files live](#where-your-files-live). See **[This Fork's Additions](#this-forks-additions)**. For the canonical project, use [ps2homebrew/Open-PS2-Loader](https://github.com/ps2homebrew/Open-PS2-Loader).
+> **What is RiptOPL?** A downstream fork of Open PS2 Loader with a built-in cover-art **Coverflow** theme (optional), a **Favorites** tab, per-game **Neutrino** external-core launching, a reorganized category **settings layout**, DualSense support, and ready-to-use opinionated defaults. Fresh configurations use **`<OPL>`**, **4:3**, and **Auto** menu video; see [Fresh-start defaults](docs/DEFAULTS.md). Its settings live in their own **`settings_riptopl.cfg`** to keep its master settings separate from official OPL and wOPL. Other files, including network and per-game settings, can still be shared. Favorites import from uOPL/wOPL is **one-way**: the next save writes RiptOPL’s own format to `favourites.bin`. See [Where your files live](#where-your-files-live). See **[This Fork's Additions](#this-forks-additions)**. For the canonical project, use [ps2homebrew/Open-PS2-Loader](https://github.com/ps2homebrew/Open-PS2-Loader).
 
 > 📖 **Full documentation & guides:** **<https://nathanneurotic.github.io/RiptOPL/>** — searchable setup and reference guides covering storage backends, the Neutrino core, PS1/VCD, the Theme Engine (with worked examples and an annotated sample theme), a full settings reference, and troubleshooting.
 
@@ -89,7 +89,7 @@ client and ORBIT integration remain in the [parity ledger](docs/UPSTREAM-PARITY-
 ### Known limitations
 
 - **HTTP:** implemented and host-tested, but not yet tested on PS2 hardware. ISO only; no VMC, Neutrino or PS1. DVD9 probing is implemented but unproven. [HTTP guide](docs/HTTP.md).
-- **RetroAchievements:** a separate development package; the console integration has not been hardware-tested. It requires [xeRAbora v0.1.0-alpha.10](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10) on a PC and OPL-core launching. The RA build includes main-menu actions to check and launch a physical PS2 disc with achievements; this path also needs hardware validation. Keep games you play with achievements on a local device — upstream reports on hardware that a game with an achievement set stops loading about a minute in from a network share. [RA guide](docs/RETROACHIEVEMENTS.md).
+- **RetroAchievements:** a separate development package; the console integration has not been hardware-tested. It requires [xeRAbora v0.1.0-alpha.17](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17) on a PC and OPL-core launching. The RA build includes main-menu actions to check and launch a physical PS2 disc with achievements; this path also needs hardware validation. Keep games you play with achievements on a local device — upstream reports on hardware that a game with an achievement set stops loading about a minute in from a network share. [RA guide](docs/RETROACHIEVEMENTS.md).
 - **iLink:** revision 2692 passed Ember on the tested SCPH-39001 but failed native OPL, Neutrino and POPSTARTER handoffs. The Neutrino `-qb` correction is implemented; a passing retest is still needed.
 - **Core switching is source-dependent:** SMB and HTTP use OPL; UDPFS/UDPBD use Neutrino. See the [source table](#introduction).
 
@@ -107,7 +107,8 @@ the PS2 and supported backward-compatible PS3 units (see [PS3 BC](#ps3-bc)). Rip
 | HTTP | OPL | ISO listed in `games.csv`; compressed images refuse to launch | No VMC; use physical memory cards |
 
 Neutrino does not read local ZSO or UL split images. A compatible UDPFS server can instead
-decompress an image on the PC and expose it to the console as an ISO; that is server-side support.
+decompress an image on the PC and expose it to the console as an ISO; that is server-side support
+([compressed images](docs/COMPRESSED-IMAGES.md)).
 ELF apps and PS1 games have their own launch paths, described below.
 
 >[!NOTE]
@@ -129,7 +130,7 @@ This section is a fast feature map to improve discoverability of core OPL capabi
 - **MMCE support:** OPL supports MMCE devices using the Memory Card Mass Storage protocol for SD-based loading through the Memory Card slot.
 - **MX4SIO support:** OPL supports MX4SIO adapters for SD-based loading through the Memory Card slot. See the **USB/MMCE/MX4SIO/iLink** section for filesystem and layout guidance.
 - **Internal HDD exFAT support:** the internal ATA HDD can be loaded as **exFAT** — mounted through the Block Device Manager (BDMAssault / "BDMA") into the same `massN:` namespace as USB/MX4SIO — in addition to APA/PFS, including GPT partitioning for large disks, for PS2 **and** PS1 (POPSTARTER) games. See the **HDD** section for formatting, the BDMA equip, and fragmentation guidance.
-- **Themes:** Place theme assets in the `THM` folder, then select and apply themes from OPL settings. **UDPFS Files** also reads `udpfs:/THM` once the server is reachable: with Network Connectivity **Auto** this is available during boot; with **Manual** it appears after the UDPFS page starts the connection. This fork ships a built-in **`<Coverflow>`** cover-carousel theme (optional; fresh configurations start with `<OPL>`) — see the [Theme Engine reference](docs/THEME_ENGINE.md) to author your own themes.
+- **Themes:** Place theme assets in the `THM` folder, then select and apply themes from OPL settings. **UDPFS Files** also reads `udpfs:/THM` once the server is reachable: with Network Connectivity **Auto** this is available during boot; with **Manual** it appears after the UDPFS page starts the connection. This fork ships built-in **`<Coverflow>`** and **`<PSBBN Flow>`** cover themes (optional; fresh configurations start with `<OPL>`) — see the [Theme Engine reference](docs/THEME_ENGINE.md) to author your own themes.
 - **Cheats / PS2RD:** OPL supports PS2RD `.cht` cheat files from the `CHT` folder, with both auto-apply and launch-time selection modes.
 - **Pad emulation (DS3/DS4):** On any build with PADEMU (the default), a DualShock 3 or DualShock 4 plugged into the console's USB port can navigate the OPL menu right away, with nothing to enable first. To play games with it, turn on **Pad Emulator** under **Settings**, then **Controller Settings** (globally, or per game via **Game Settings**). One caveat: pad emulation shares the SIO2 bus with MX4SIO SD-card loading, so running both can cause a game to hang on a black screen; leave Pad Emulator off if you boot from an MX4SIO card.
 - **GSM (video mode handling):** Builds that include GSM allow game video mode handling/overrides for display compatibility.
@@ -146,6 +147,10 @@ This build layers several features on top of upstream OPL:
   cover count, and aspect-correct covers in both 4:3 and widescreen. Tune it live under
   **Coverflow Settings** (shown while the Coverflow theme is active). Authoring details
   and every theme value live in the **[Theme Engine reference](docs/THEME_ENGINE.md)**.
+- **`<PSBBN Flow>` theme (built-in, optional):** the PSBBN Definitive Project Game Collection look: a
+  rounded square focal cover with a tail of covers turned away into the distance, adapted from
+  darkladark's LUNA Collection display (#733). Same pages, artwork, palette and controls as Coverflow.
+  See [PSBBN Flow](docs/THEME_ENGINE.md#psbbn-flow).
 - **Per-device theme placement (`devices=`):** themes can position the device icon, the games
   list and the button hints **differently per device page** (e.g. pin the MMCE icon top-right
   while every other page keeps the shared spot). Add `devices=usb,hdd,…` to a `MenuIcon`,
@@ -192,9 +197,11 @@ This build layers several features on top of upstream OPL:
 > **Credit and licence — Neutrino is created by [rickgaiser](https://github.com/rickgaiser), and its
 > official home is <https://github.com/rickgaiser/neutrino>.** Neutrino is an independent PS2 device
 > emulator. Release packaging normally bundles the official
-> latest build, re-fetched at publish time (download/extraction failures can omit it; check the release notes), under its **AFL-3.0** licence. We add exactly one file to
+> latest build, re-fetched at publish time (download/extraction failures can omit it; check the release notes), under its **AFL-3.0** licence. We add one file to
 > that folder — `config/bsd-udpfsbd.toml`, because Neutrino ships `udpfs_bd.irx` without a matching
-> `-bsd` token and RiptOPL launches UDPFS as `-bsd=udpfsbd`. Nothing of rickgaiser's is altered or
+> `-bsd` token and RiptOPL launches UDPFS as `-bsd=udpfsbd` — and replace its i.LINK driver
+> `modules/IEEE1394_bd_mini.irx` with RiptOPL's build of the same ps2sdk driver, which keeps its login
+> across an IOP reset ([details](docs/NEUTRINO.md)). Nothing else of rickgaiser's is altered or
 > removed. RiptOPL is one of several front-ends built on Neutrino, alongside
 > **[LUNA](https://github.com/dnunezx/LUNA)** by **[darkladark](https://github.com/dnunezx)** (our #1
 > recommended alternative, for lightweight, customized Neutrino gameplay), **NHDDL**, **XEB+
@@ -375,20 +382,21 @@ This build layers several features on top of upstream OPL:
   target a complete `neutrino/` folder on iLink explicitly. iLink is a FAT-model Neutrino backend;
   post-2692 builds automatically pair `-bsd=ilink` with `-qb` so Neutrino keeps the mounted iLink
   environment RiptOPL hands it. See **[docs/NEUTRINO.md](docs/NEUTRINO.md)**.
-- **Category settings layout:** the start menu's settings are organised into eight category pages
+- **Category settings layout:** the start menu's settings are organised into nine category pages
   instead of one flat list — **Game Sources** (device selection + start modes), **General & System**,
-  **Network**, **Interface** (theme, artwork, Coverflow, PS2/PS1 Game Display), **Game Launching**
-  (incl. the global Neutrino/OSD defaults), **PS Emulation Settings** (both PS1 cores: POPSTARTER
+  **Language** (the menu language and the game-facing OSD defaults), **Network**, **Interface** (theme,
+  artwork, Coverflow, PS2/PS1 Game Display), **Game Launching** (incl. the global Neutrino defaults), **PS Emulation Settings** (both PS1 cores: POPSTARTER
   and Ember, plus the same PS2/PS1 Game Display picker shown on Interface), **Controller Settings** and
   **Audio Settings** — each with chained sub-pages, plus a **Save Changes** entry at the foot of the
   index. Leaving the start/settings menu returns to the page you paused on when it is still visible;
   it no longer falls back to the first USB page.
-- **DualSense / DualShock 5 (USB):** optional controller support — available in the prebuilt
-  `RIPTOPL-VARIANTS-*.zip` release bundle (one ELF per SDK flavour), or build with `make DUALSENSE=1`.
+- **DualSense / DualShock 5 (USB):** optional controller support — available as `ds5/RIPTOPL.ELF` (and `extras_ds5/`) in the
+  Korium release's `RIPTOPL-VARIANTS.zip`, or build with
+  `python tools/build_edition.py korium --configuration ds5`.
 - **1080p GSM video mode:** forced progressive 1080p (1920×1080) GSM mode is built directly into all standard builds (`make GSM1080P=1`). Full GSM documentation: **[docs/GSM.md](docs/GSM.md)**. Selecting 1080p in the per-game GSM picker is guarded by a **three-step confirmation**; if a game loses the picture, disable/change its GSM override before relaunching. **Triangle + Cross** at boot affects only the OPL menu and requires a 480p-capable display/connection; **Triangle + Circle** forces the interlaced Auto mode instead.
 - **Ready-to-use defaults:** a fresh install boots with sensible options already enabled —
-  widescreen, cover art, notifications, sound effects + boot sound, delete/rename, and
-  the PS2 logo. Video mode stays **Auto**. Every storage device ships **off**, so the first boot
+  cover art, notifications and the PS2 logo; widescreen, sound effects and boot sound start
+  off (see [Fresh-start defaults](docs/DEFAULTS.md)). Video mode stays **Auto**. Every storage device ships **off**, so the first boot
   lands on the start menu with no tabs — enable exactly the devices your console has under
   **Game Sources**. Change any of it under Settings.
 - **Private master settings, shared support files:** `settings_riptopl.cfg` is separate from stock OPL's master file. Other configuration and data can still be shared; favorites migration from uOPL/wOPL is one-way. See [Where your files live](#where-your-files-live).
@@ -408,7 +416,7 @@ and then, still holding them, press the second half:
 | ---- | ---------- | ------ |
 | L1 + L2 + R1 + R2 | **Start + Select** | Reset - quit the game to the PS2 browser, or to the **IGR Path** ELF |
 | L1 + L2 + R1 + R2 | **L3 + R3** | Power off the console |
-| L1 + L2 + R1 + R2 | **Up** | In-game screenshot (needs GSM on **and** an `IGS=1` build: off in the main release loader, on in the `-extra1` loaders in `RIPTOPL-VARIANTS-*.zip` — see [docs/IGR.md](docs/IGR.md#in-game-screenshots-igs)) |
+| L1 + L2 + R1 + R2 | **Up** | In-game screenshot (needs GSM on **and** an `IGS=1` build: off in the main release loader, on in the `extras/` and `extras_ds5/` loaders in `RIPTOPL-VARIANTS.zip` — see [docs/IGR.md](docs/IGR.md#in-game-screenshots-igs)) |
 
 The console's own power button works too: **one press** powers off, **two presses** reset.
 
@@ -807,10 +815,10 @@ RiptOPL is intended to work with these maintained companion tools:
 - **[PS2-Servers](https://github.com/NathanNeurotic/PS2-Servers)** by **[Ripto](https://github.com/NathanNeurotic)** — all-in-one PC server launcher for **SMB, UDPFS, UDPBD and HTTP**.
 - **[udpfs-server](https://github.com/YouKnow-sys/udpfs-server)** by **[YouKnow-sys](https://github.com/YouKnow-sys)** — the same idea **from a phone**: an Android app that shares folders and disk images to the PS2 over **UDPFS**, found by broadcast so there is no server address to type in on the console. Works over a router or a direct cable. Built on **[udpfsd](https://github.com/pcm720/udpfsd)** by **[pcm720](https://github.com/pcm720)**; MIT licensed. An `android-udpfs-server.url` shortcut ships in installable packages.
 - **[OrbitPS2 Manager](https://github.com/Luden02/OrbitPS2-Manager)** by **[Luden](https://github.com/Luden02)** — cross-platform PC library manager for importing discs, artwork/screenshots, ZSO compression, per-game settings and VMC management.
-- **[LUNA](https://github.com/dnunezx/LUNA)** by **[darkladark](https://github.com/dnunezx)** — *Lightweight Unified Neutrino Access*, a visual PS2 loader built on NHDDL and Neutrino, and our **#1 recommended alternative** if RiptOPL is more loader than you need. darkladark also contributes to RiptOPL: its Collection cover-art screen came from LUNA (#733).
+- **[LUNA](https://github.com/dnunezx/LUNA)** by **[darkladark](https://github.com/dnunezx)** — *Lightweight Unified Neutrino Access*, a visual PS2 loader built on NHDDL and Neutrino, and our **#1 recommended alternative** if RiptOPL is more loader than you need. darkladark also contributes to RiptOPL: the PSBBN Flow theme adapts LUNA's Collection display (#733), keeping the normal R3 favorite action.
 - **[RIPPS2](https://github.com/akilluminati47/RIPPS2)** by **Akilluminati47** — our daughter project: a PS2-inspired front end with a **web-theme beta** at **[akilluminati47.github.io/RIPPS2](https://akilluminati47.github.io/RIPPS2/)**. A custom OPL theme and `RIPPS2.elf` are planned next; the project is still alpha, but we recommend it as an alternative with features intended to be on par with RiptOPL.
 - **[OPL PS1 AIO Converter GUI](https://github.com/shaanhomebrew-cloud/OPL-PS1-AIO-Converter-GUI)** by **[shaan](https://github.com/shaanhomebrew-cloud)** — Windows all-in-one PS1/POPStarter preparation tool for converting BIN/CUE backups to VCDs and installing them to USB, MX4SIO, MMCE, iLink, exFAT HDD, SMB and APA internal HDD.
-- **[xeRAbora](https://github.com/hacan359/xerabora)** by **[hacan359](https://github.com/hacan359)** — the PC client for **RetroAchievements** on real PS2 hardware. Required client: **[v0.1.0-alpha.10](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)**. RiptOPL's RA build is paired with and requires **xeRAbora v0.1.0-alpha.10** (which added console pointer-chain resolution and memory bounds safety). xeRAbora runs rcheevos, talks to the RetroAchievements servers and unlocks the achievements. It also builds the per-game watch list the console needs. Shipped as a shortcut inside `RIPTOPL-RetroAchievements-*.zip`; MIT licensed. RiptOPL’s RA stabilization on real hardware was driven by **[oMrRexD](https://github.com/oMrRexD)**, whose PRs #702–#705 fixed the ee_core stack squeeze, MMCE DEV9 path, cold-launch networking and settings placement.
+- **[xeRAbora](https://github.com/hacan359/xerabora)** by **[hacan359](https://github.com/hacan359)** — the PC client for **RetroAchievements** on real PS2 hardware. Required client: **[v0.1.0-alpha.17](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)**. RiptOPL's RA build is paired with and requires **xeRAbora v0.1.0-alpha.17** and its snapshot-only Mode 6 behavior. xeRAbora runs rcheevos, talks to the RetroAchievements servers and unlocks the achievements. It also builds the per-game watch list the console needs. Shipped as a shortcut inside `RIPTOPL-RetroAchievements-*.zip`; MIT licensed. RiptOPL’s RA stabilization on real hardware was driven by **[oMrRexD](https://github.com/oMrRexD)**, whose PRs #702–#705 fixed the ee_core stack squeeze, MMCE DEV9 path, cold-launch networking and settings placement.
 - **[OPL HTTP PC server](https://github.com/Docmine17/Open-PS2-Loader-HTTP)** by **[Docmine17](https://github.com/Docmine17)** — the PC side of RiptOPL’s **HTTP** protocol: a small static HTTP server with byte-range support that serves your `games.csv` catalog and streams the ISOs themselves. RiptOPL works with it **unmodified** — no new API, no catalog conversion, no changed folder layout — with host conformance checks against the upstream server. PS2 hardware validation is still pending.
 - **[PS2RD CHT Manager](https://github.com/TheRealNextria/PS2RD-CHT-Manager)** by **[TheRealNextria](https://github.com/TheRealNextria)** — PC manager for the PS2RD `.cht` cheat files RiptOPL reads from your device's `CHT` folder. A `PS2RD-CHT-Manager.url` shortcut ships in installable packages.
 - **[Ember](https://github.com/Gageformer/Ember)** by **[Gageformer](https://github.com/Gageformer)** — a PS1 emulator that runs natively on the PS2, used as RiptOPL's **second PS1 core** alongside POPSTARTER. Unlike the others this one is not just a shortcut: an `EMBER/` folder ships **inside** the release package, ready to drop onto a device. It is bundled unmodified under the Ember Public Beta Testing Licence (`EMBER/LICENSE-BETA.txt` in the package); releases: <https://github.com/Gageformer/Ember/releases>.
@@ -854,7 +862,7 @@ With special and sincere thanks to:
 - **bbsan2k** — for the **MMCE (Memory Card Mass Storage) protocol** that makes SD-via-memory-card
   loading through the PS2's memory-card slot possible. OPL's MMCE support builds directly on it.
 - **hacan359 (yoba)** — for **RetroAchievements on real PS2 hardware** and the
-  **[xeRAbora PC client (v0.1.0-alpha.10)](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)** (MIT). The console identifies the
+  **[xeRAbora PC client (v0.1.0-alpha.17)](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)** (MIT). The console identifies the
   game and streams the memory addresses its achievements watch; xeRAbora handles rcheevos, the
   RetroAchievements service, and login. RiptOPL implements the published wire protocol in its
   `RIPTOPL-RetroAchievements-*.zip` build, which includes a shortcut to xeRAbora.

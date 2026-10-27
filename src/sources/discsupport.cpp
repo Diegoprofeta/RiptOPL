@@ -19,6 +19,7 @@
 #include "include/iosupport.h"
 #include "include/mmcesupport.h"
 #include "include/discsupport.h"
+#include "include/achievements.h"
 
 // The disc-support state (the busy latch serialising the deferred check against launches) and the
 // operations on it. Defined in this translation unit rather than a header because the source-
@@ -28,7 +29,7 @@
 class DiscSupport
 {
 public:
-    int checkBusy() { return busy_ || sbHashGameBusy(); }
+    int checkBusy() { return busy_ || sbHashGameBusy() || achievementsBusy(); }
     int checkSupportDeferred();
     void launch(int (*progress)(void));
     void checkWorker();
@@ -127,7 +128,9 @@ void DiscSupport::checkWorker()
     else if (result == -7)
         host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
     else if (result == -8)
-        host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(_STR_RA_NET_BUSY_HASH));
+        host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(raNetUdpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY_HASH));
+    else if (result == -9)
+        host::ui().raNotice(_l(_STR_RA_CADUCEUS_OFFLINE), _l(_STR_RA_CADUCEUS_SIGN_IN));
     else
         host::ui().raNotice(_l(_STR_RA_PC_NO_ANSWER), _l(_STR_RA_PC_NO_ANSWER2));
 }

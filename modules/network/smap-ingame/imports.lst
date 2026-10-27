@@ -14,6 +14,11 @@ I_CreateSema
 I_WaitSema
 I_SignalSema
 thsemap_IMPORTS_end
+
+intrman_IMPORTS_start
+I_CpuSuspendIntr
+I_CpuResumeIntr
+intrman_IMPORTS_end
 #endif
 
 thbase_IMPORTS_start

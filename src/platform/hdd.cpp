@@ -1,33 +1,15 @@
 #include "include/opl.h"
 #include "include/hdd.h"
+#include "include/hdl_layout.h"
 #include "include/ioman.h"
 #include "include/hddsupport.h"
 
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h>
 
-typedef struct // size = 1024
-{
-    u32 checksum; // HDL uses 0xdeadfeed magic here
-    u32 magic;
-    char gamename[160];
-    u8 hdl_compat_flags;
-    u8 ops2l_compat_flags;
-    u8 dma_type;
-    u8 dma_mode;
-    char startup[60];
-    u32 layer1_start;
-    u32 discType;
-    int num_partitions;
-    struct
-    {
-        u32 part_offset; // in MB
-        u32 data_start;  // in sectors
-        u32 part_size;   // in KB
-    } part_specs[65];
-} hdl_apa_header;
+typedef hdl_layout_header_t hdl_apa_header;
 
-constexpr int HDL_GAME_DATA_OFFSET = 0x100000;  // Sector 0x800 in the extended attribute area.
+constexpr int HDL_GAME_DATA_OFFSET = 0x100000; // Sector 0x800 in the extended attribute area.
 constexpr int HDL_FS_MAGIC = 0x1337;
 
 u8 IOBuffer[2048] ALIGNED(64); // one sector
@@ -182,7 +164,7 @@ int hddGetHDLGamelist(hdl_games_list_t *game_list)
 
         pGameEntry = GetGameListRecord(head, dirent.name);
         if (pGameEntry == NULL) {
-            struct GameDataEntry *newEntry = static_cast<GameDataEntry*>(malloc(sizeof(struct GameDataEntry)));
+            struct GameDataEntry *newEntry = static_cast<GameDataEntry *>(malloc(sizeof(struct GameDataEntry)));
             if (newEntry == NULL) {
                 ret = -ENOMEM;
                 break;
@@ -221,7 +203,7 @@ int hddGetHDLGamelist(hdl_games_list_t *game_list)
         ret = readResult;
 
     if (ret == 0 && head != NULL) {
-        game_list->games = static_cast<hdl_game_info_t*>(malloc(sizeof(hdl_game_info_t) * count));
+        game_list->games = static_cast<hdl_game_info_t *>(malloc(sizeof(hdl_game_info_t) * count));
         if (game_list->games != NULL) {
             memset(game_list->games, 0, sizeof(hdl_game_info_t) * count);
 
@@ -448,7 +430,16 @@ int hddGetFileBlockInfo(const char *name, const apa_sub_t *subs, pfs_blockinfo_t
         inode = (pfs_inode_t *)IOBuffer;
 
         if (hddReadSectors(lba, sizeof(pfs_inode_t) / 512, inode) == 0) {
-            if (inode->number_data < max) {
+            const u32 *word = (const u32 *)inode;
+            u32 sum = 0;
+            for (unsigned int w = 1; w < sizeof(pfs_inode_t) / sizeof(u32); w++)
+                sum += word[w];
+
+            // This reads the disk, not PFS's cache: anything but a committed inode -- the magic and
+            // checksum PFS itself demands before it trusts one -- is a map nobody may write through.
+            if (inode->magic != PFS_SEGD_MAGIC || inode->checksum != sum)
+                result = -EIO;
+            else if (inode->number_data < max) {
                 memcpy(blocks, inode->data, inode->number_data * sizeof(pfs_blockinfo_t));
                 result = inode->number_data;
             } else

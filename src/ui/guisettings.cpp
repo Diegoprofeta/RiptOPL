@@ -10,10 +10,16 @@
 #include "include/cfgtitle.h"
 #include "include/plasma.h"
 #include "include/gui.h"
+#include "include/cuesupport.h"
 #include "include/guiint.h"
 #include "include/settingshell.h"
+#ifdef RETROACHIEVEMENTS
+#include "include/ranet.h" // raNetForgetPeer
+#include "include/achievements.h"
+#endif
 #include "include/diag.h" // gLastDeferredTimedOut -- a bounded wait that expired means the handler never ran
 #include "include/renderman.h"
+#include "include/saveicon.h" // saveIconReset -- 3D Save Icons switched off
 #include "include/menusys.h"
 #include "include/fntsys.h"
 #include "include/ioman.h"
@@ -144,11 +150,9 @@ int guiExitPathHandler(char *text, int maxLen)
 }
 
 // Legacy standalone General editor. The Settings peer shell is the normal route, but this stays
-// functional for callers outside it and shares the same Language/GSM backends.
+// functional for callers outside it and shares the same GSM backend.
 void guiShowConfig()
 {
-    const char **langNamesSnap = NULL;
-    int langID;
     int ret;
 
     // Exit To auto-resolves a built-in default when blank, so show a dim "Default" placeholder
@@ -165,12 +169,6 @@ void guiShowConfig()
     diaSetVisible(diaConfig, CFG_AUTOSTARTLAST, gRememberLastPlayed);
     diaSetVisible(diaConfig, CFG_LBL_AUTOSTARTLAST, gRememberLastPlayed);
 
-    guiLock();
-    langNamesSnap = guiCopyNameList((const char **)lngGetGuiList());
-    guiUnlock();
-    diaSetEnum(diaConfig, UICFG_LANG, langNamesSnap != NULL ? langNamesSnap : (const char **)lngGetGuiList());
-    diaSetInt(diaConfig, UICFG_LANG, lngGetGuiValue());
-
 reshow_config:
     ret = diaExecuteDialog(diaConfig, -1, 1, &guiUpdater);
     if (ret == GENERAL_GSM_DEFAULTS_BUTTON) {
@@ -178,7 +176,6 @@ reshow_config:
         goto reshow_config;
     }
     if (ret) {
-        diaGetInt(diaConfig, UICFG_LANG, &langID);
         snprintf(gExitPath, sizeof(gExitPath), "%s", exitPathEdit);
         diaGetString(diaConfig, CFG_CUSTOMCFGPATH, gCustomSettingsPath, sizeof(gCustomSettingsPath));
         diaGetInt(diaConfig, CFG_LASTPLAYED, &gRememberLastPlayed);
@@ -187,11 +184,9 @@ reshow_config:
 
         DisableCron = 1; // Disable Auto Start Last Played counter (we don't want to call it right after enable it on GUI)
 
-        applyConfig(-1, langID, 0);
+        applyConfig(-1, -1, 0);
         menuReinitMainMenu();
     }
-
-    guiFreeNameList(langNamesSnap);
 }
 
 // Game Sources page: device start modes, the default device, and the block-device enables
@@ -250,8 +245,8 @@ static int guiNetProtocolToPicker(int protocol)
     return 0;
 }
 
-// The Access row's value for a protocol: IMG (1) for the udpfs block backend AND for UDPBD (IMG-locked),
-// Files (0) otherwise. Both pages use it, so switching UDPBD -> UDPFS keeps IMG on either page.
+// Display-only Access for the currently shown protocol. UDPBD's IMG-locked value
+// must never become the saved UDPFS Access preference (gUdpfsAccessMode).
 static int guiNetProtocolAccess(int protocol)
 {
     return (protocol == NET_PROTO_UDPFSBD || protocol == NET_PROTO_UDPBD) ? 1 : 0;
@@ -273,13 +268,23 @@ static int guiNetProtocolFromPicker(int picker, int access)
 // Off -- then gNetworkProtocol is OFF (the stack does not run at all) and the pick waits for it.
 static void guiNetProtocolStore(int picker, int access)
 {
+    if (picker == 1)
+        gUdpfsAccessMode = access ? 1 : 0;
     gNetProtocolPick = guiNetProtocolFromPicker(picker, access);
     gNetworkProtocol = (gNetStartMode == START_MODE_DISABLED) ? NET_PROTO_OFF : gNetProtocolPick;
 }
 
+// The protocol the user picked differs from the stack already running. Yes saves every setting and
+// restarts; No keeps the choice pending, and Save Settings offers the restart again.
+static void guiNetProtocolOfferRestart(void)
+{
+    if (guiMsgBox(_l(_STR_NETBOOT_RESTART_NOW), 1, NULL))
+        menuSaveSettingsAndRestart();
+}
+
 // After either page set gNetworkProtocol: re-derive the legacy shadows downstream consumers read, then
-// give the same notices in the same order from both pages -- the UDP static-IP note, what to expect
-// from the new tab, and LAST the restart note when another stack is already resident.
+// give the same notices in the same order from both pages -- the UDP static-IP note, then EITHER the
+// restart offer (another stack is already resident) OR what to expect from the new page.
 static void guiNetProtocolApplied(int netProtocolWas)
 {
     gEnableUDPBD = (gNetworkProtocol == NET_PROTO_UDPBD || gNetworkProtocol == NET_PROTO_UDPFSBD);
@@ -298,6 +303,16 @@ static void guiNetProtocolApplied(int netProtocolWas)
     if (nowUdp && !wasUdp && ps2_ip_use_dhcp)
         guiMsgBox(_l(_STR_UDPBD_NEEDS_STATIC_IP), 0, NULL);
 
+    // Each network transport loads its IOP module chain once per boot (the load latch is not cleared
+    // live). If a stack is already up and the protocol changed away from the one actually running,
+    // the new protocol's page cannot connect until a restart -- so the "open its page" hints below
+    // would send the user to a page that does nothing. Offer the restart instead, saving first so the
+    // choice survives it.
+    if (guiNetProtocolNeedsRestart()) {
+        guiNetProtocolOfferRestart();
+        return;
+    }
+
     // "Nothing happens" guard: enabling a network protocol gives NO feedback -- the UDPFS tab joins the
     // ring silently (Manual start waits for a Confirm-press inside it), and the block transports show a
     // tab only once the PC server answers. Tell the user what to expect + which PC server to run.
@@ -307,14 +322,6 @@ static void guiNetProtocolApplied(int netProtocolWas)
         guiMsgBox(_l(_STR_NET_UDPFS_TAB_HINT), 0, NULL);
     else if (gNetworkProtocol == NET_PROTO_UDPFSBD || gNetworkProtocol == NET_PROTO_UDPBD)
         guiMsgBox(_l(_STR_NET_UDPBD_TAB_HINT), 0, NULL);
-
-    // Each network transport loads its IOP module chain once per boot (the load latch is not cleared
-    // live). If a stack is already up and the protocol changed away from the one actually running,
-    // the switch takes effect only after a restart -- say so instead of silently doing nothing. The
-    // OFFER to restart lives on the Save Settings path (see guiNetProtocolNeedsRestart): these
-    // dialogs only touch RAM, and acting now would tear OPL down before the choice was written.
-    if (guiNetProtocolNeedsRestart())
-        guiMsgBox(_l(_STR_NETBOOT_RESTART), 0, NULL);
 }
 
 // Game Sources: the indented Protocol row greys while Connectivity is Off.
@@ -335,12 +342,11 @@ static void guiSourcesNetRowsBegin(struct UIItem *ui, const char **deviceModes)
     guiSourcesNetRowsUpdate(ui); // the first frame renders before the updater runs
 }
 
-// Game Sources read-back. Access is not on this page, so UDPFS takes the Access the Network page would
-// show for the current protocol (guiNetProtocolAccess).
+// Game Sources has no Access row. Restore UDPFS's own preference, not UDPBD's IMG.
 static void guiSourcesNetRowsRead(struct UIItem *ui)
 {
     int netProtocolWas = gNetworkProtocol;
-    int access = guiNetProtocolAccess(guiNetProtocolShown());
+    int access = gUdpfsAccessMode;
     int picker = guiNetProtocolToPicker(guiNetProtocolShown());
 
     diaGetInt(ui, CFG_NETSTART, &gNetStartMode);
@@ -384,6 +390,8 @@ void guiShowDeviceConfig(void)
     diaSetInt(diaDeviceConfig, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(diaDeviceConfig, CFG_ENABLEILK, gEnableILK);
     diaSetInt(diaDeviceConfig, CFG_ENABLEMX4SIO, gEnableMX4SIO);
+    diaSetInt(diaDeviceConfig, CFG_ENABLEPCCF, gEnablePCCF);
+    diaSetInt(diaDeviceConfig, CFG_ENABLEDVR, gEnableDVR);
     diaSetInt(diaDeviceConfig, CFG_ENABLEBDMHDD, gEnableBdmHDD);
     diaSetEnabled(diaDeviceConfig, CFG_ENABLEBDMHDD, 1); // coexists with APA
     diaSetEnabled(diaDeviceConfig, CFG_HDDMODE, 1);
@@ -417,6 +425,11 @@ reshow_device:
         diaGetInt(diaDeviceConfig, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(diaDeviceConfig, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(diaDeviceConfig, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
+        int oldEnablePCCF = gEnablePCCF;
+        diaGetInt(diaDeviceConfig, CFG_ENABLEPCCF, &gEnablePCCF);
+        if (oldEnablePCCF != gEnablePCCF)
+            bdmRequestPccfProbe();
+        diaGetInt(diaDeviceConfig, CFG_ENABLEDVR, &gEnableDVR);
         diaGetInt(diaDeviceConfig, CFG_ENABLEBDMHDD, &gEnableBdmHDD);
 
         // Network Connectivity + the indented Protocol row (shared with the Network page).
@@ -621,12 +634,11 @@ static void guiRefreshAppsView(void)
 
 void guiShowUIConfig(void)
 {
-    int themeID = -1, langID = -1;
+    int themeID = -1;
     showCfgPopup = 0;
     guiResetNotifications();
 
     const char **themeNamesSnap = NULL;
-    const char **langNamesSnap = NULL;
 
     int previousTheme, previousVMode;
     const char *vmodeNames[] = {_l(_STR_AUTO), "PAL 640x512i @50Hz 24bit", "NTSC 640x448i @60Hz 24bit",
@@ -640,23 +652,18 @@ void guiShowUIConfig(void)
 reshow_ui:
     previousTheme = thmGetGuiValue();
     previousVMode = gVMode;
-    // Snapshot the theme/language name lists into dialog-owned copies: diaSetEnum stores raw
-    // pointers, and BOTH the outer arrays (thmRebuildGuiNames/lngRebuildLangNames free+realloc)
-    // AND the theme name strings (thmReinit frees them on device removal) are rebuilt on the IO
-    // worker when a deferred device update lands. Dialog frames render OUTSIDE guiStartFrame's
+    // Snapshot the theme name list into a dialog-owned copy: diaSetEnum stores raw pointers, and
+    // BOTH the outer array (thmRebuildGuiNames free+realloc) AND the theme name strings (thmReinit
+    // frees them on device removal) are rebuilt on the IO worker when a deferred device update lands. Dialog frames render OUTSIDE guiStartFrame's
     // lock, so a device event draining mid-dialog dereferenced freed memory. Re-snapshot on every
     // reshow pass (applyConfig below can legitimately change the lists); on OOM fall back to
     // the live list -- the pre-existing narrow race, not a new failure mode.
     guiFreeNameList(themeNamesSnap);
-    guiFreeNameList(langNamesSnap);
     guiLock(); // must cover the getter FETCH too, not just the copy (Gemini review of #165)
     themeNamesSnap = guiCopyNameList((const char **)thmGetGuiList());
-    langNamesSnap = guiCopyNameList((const char **)lngGetGuiList());
     guiUnlock();
     diaSetEnum(diaUIConfig, UICFG_THEME, themeNamesSnap != NULL ? themeNamesSnap : (const char **)thmGetGuiList());
-    diaSetEnum(diaUIConfig, UICFG_LANG, langNamesSnap != NULL ? langNamesSnap : (const char **)lngGetGuiList());
     diaSetInt(diaUIConfig, UICFG_THEME, thmGetGuiValue());
-    diaSetInt(diaUIConfig, UICFG_LANG, lngGetGuiValue());
     diaSetInt(diaUIConfig, UICFG_AUTOSORT, gAutosort);
     diaSetInt(diaUIConfig, UICFG_AUTOREFRESH, gAutoRefresh);
     diaSetInt(diaUIConfig, UICFG_NOTIFICATIONS, gEnableNotifications);
@@ -667,6 +674,9 @@ reshow_ui:
     guiSetAppsViewPicker(diaUIConfig);
     diaSetEnum(diaUIConfig, UICFG_VMODE, vmodeNames);
     diaSetInt(diaUIConfig, UICFG_VMODE, gVMode);
+    const char *fontSizeNames[] = {_l(_STR_SMALL), _l(_STR_DEFAULT), _l(_STR_LARGE), NULL};
+    diaSetEnum(diaUIConfig, UICFG_FONT_SIZE, fontSizeNames);
+    diaSetInt(diaUIConfig, UICFG_FONT_SIZE, gFontSize);
 
     int ret = diaExecuteDialog(diaUIConfig, -1, 1, NULL);
 
@@ -697,7 +707,6 @@ reshow_ui:
     padRumbleFlush();
 
     if (ret) {
-        diaGetInt(diaUIConfig, UICFG_LANG, &langID);
         diaGetInt(diaUIConfig, UICFG_THEME, &themeID);
         diaGetInt(diaUIConfig, UICFG_AUTOSORT, &gAutosort);
         diaGetInt(diaUIConfig, UICFG_AUTOREFRESH, &gAutoRefresh);
@@ -709,13 +718,14 @@ reshow_ui:
         int gameViewChanged = guiReadGameViewPicker(diaUIConfig);
         int appsViewChanged = guiReadAppsViewPicker(diaUIConfig);
         diaGetInt(diaUIConfig, UICFG_VMODE, &gVMode);
+        diaGetInt(diaUIConfig, UICFG_FONT_SIZE, &gFontSize);
 
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
 
         if (previousVMode != gVMode)
             guiFadeCurrentScreenToBlack();
-        applyConfig(themeID, langID, 1);
+        applyConfig(themeID, -1, 1);
         if (cfgTitlesChanged) {
             guiRefreshCfgTitles();
         } else if (gameViewChanged) {
@@ -738,7 +748,6 @@ reshow_ui:
     }
 
     guiFreeNameList(themeNamesSnap);
-    guiFreeNameList(langNamesSnap);
 }
 
 static int httpTestBusy;
@@ -750,6 +759,7 @@ static char httpTestBase[HTTP_BASE_PATH_MAX], httpTestMessage[128];
 // selecting a UDP protocol can force Static without permanently clobbering that preference.
 static int netConfigDhcpPreference;
 static int netConfigLastProtocol = -1;
+static int netConfigUdpfsAccess; // pending UDPFS Files/IMG preference, not UDPBD's forced IMG
 
 static void httpTestWorker(void)
 {
@@ -771,6 +781,13 @@ static int netConfigUpdater(int modified)
         isHTTP = netProto == 3;
         isUdp = netProto == 1 || netProto == 2;
 
+        // Preserve UDPFS Access across in-dialog switches. A forced UDPBD IMG
+        // never overwrites a user-selected UDPFS Files (or explicit IMG).
+        if (netConfigLastProtocol == 1 && netProto != 1)
+            diaGetInt(diaNetConfig, CFG_UDPFSMODE, &netConfigUdpfsAccess);
+        if (netProto == 1 && netConfigLastProtocol != 1)
+            diaSetInt(diaNetConfig, CFG_UDPFSMODE, netConfigUdpfsAccess);
+
         // UDPFS/UDPBD always bind the configured static PS2 IP; their ministack has no DHCP client.
         // Force the effective row to Static while either protocol is selected, but remember the
         // user's DHCP choice so switching back to SMB/HTTP restores it instead of silently changing
@@ -791,6 +808,13 @@ static int netConfigUpdater(int modified)
             diaSetEnabled(diaNetConfig, NETCFG_PS2_IP_ADDR_TYPE, 1);
         }
         netConfigLastProtocol = netProto;
+#ifdef RETROACHIEVEMENTS
+        // Cards are a Caduceus feature and need telemetry; the saved choice survives a switch away.
+        int raMode, raTelemetry;
+        diaGetInt(diaNetConfig, NETCFG_RA_MODE, &raMode);
+        diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &raTelemetry);
+        diaSetEnabled(diaNetConfig, NETCFG_RA_EXPERIMENTAL_CARDS, raMode == RA_MODE_CADUCEUS && raTelemetry);
+#endif
 
         diaSetVisible(diaNetConfig, NETCFG_SHARE_NB_ADDR, isNetBIOS);
 
@@ -900,6 +924,12 @@ static int guiSmbLinkChanged(const gui_smb_link_t *before)
 
 int guiShowNetConfig(void)
 {
+#ifdef RETROACHIEVEMENTS
+    if (achievementsBusy()) { // a browser page still owns the network and the share
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        return gSettingsShell.pageResult(UIID_BTN_CANCEL);
+    }
+#endif
     size_t i;
     // What the live SMB session was built from, before this page changes anything.
     gui_smb_link_t smbBefore;
@@ -957,8 +987,17 @@ int guiShowNetConfig(void)
     diaSetString(diaNetConfig, NETCFG_SHARE_PASSWORD, gPCPassword);
     diaSetInt(diaNetConfig, NETCFG_ETHOPMODE, gETHOpMode);
 #ifdef RETROACHIEVEMENTS
+    static const char *raModes[] = {"Xerabora", "Caduceus", NULL};
+    diaSetEnum(diaNetConfig, NETCFG_RA_MODE, raModes);
+    diaSetInt(diaNetConfig, NETCFG_RA_MODE, gRAMode);
+    for (i = 0; i < 4; ++i)
+        diaSetInt(diaNetConfig, NETCFG_RA_HOST_IP_0 + i, gRAHostIp[i]);
     diaSetInt(diaNetConfig, NETCFG_RA_TELEMETRY, gRATelemetry);
     diaSetInt(diaNetConfig, NETCFG_RA_BADGES, gRABadges);
+    const char *raBadgePos[] = {_l(_STR_RA_BADGE_PREFIX), _l(_STR_RA_BADGE_SUFFIX), NULL};
+    diaSetEnum(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, raBadgePos);
+    diaSetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, gRABadgeSuffix);
+    diaSetInt(diaNetConfig, NETCFG_RA_EXPERIMENTAL_CARDS, gRAExperimentalCards);
 #endif
 
     // Protocol rows, seeded from the authoritative gNetworkProtocol.
@@ -968,7 +1007,7 @@ int guiShowNetConfig(void)
     // default a user reaches when they switch the Game Sources Start row from Off to Manual/Auto.
     int netProtoVal = guiNetProtocolToPicker(guiNetProtocolShown()); // while Off: the remembered pick
     // IMG for the udpfs block backend AND UDPBD (IMG-locked), so the seed already matches the lock.
-    int netAccessVal = guiNetProtocolAccess(guiNetProtocolShown());
+    int netAccessVal = (netProtoVal == 1) ? gUdpfsAccessMode : guiNetProtocolAccess(guiNetProtocolShown());
     for (i = 0; i < 4; ++i)
         diaSetInt(diaNetConfig, NETCFG_HTTP_IP_0 + i, gHttpServerIp[i]);
     diaSetInt(diaNetConfig, NETCFG_HTTP_PORT, gHttpPort);
@@ -981,6 +1020,7 @@ int guiShowNetConfig(void)
     diaSetEnabled(diaNetConfig, CFG_UDPFSMODE, netProtoVal == 1);
     diaSetEnabled(diaNetConfig, CFG_SMBDIALECT, 0); // NOTE(rebuild): greyed until item 4
     netConfigDhcpPreference = ps2_ip_use_dhcp;
+    netConfigUdpfsAccess = gUdpfsAccessMode;
     netConfigLastProtocol = -1;
     netConfigUpdater(1);
 
@@ -1044,8 +1084,22 @@ reshow_network:
         }
         diaGetInt(diaNetConfig, NETCFG_ETHOPMODE, &gETHOpMode);
 #ifdef RETROACHIEVEMENTS
+        int raBadgeState = gRATelemetry << 2 | gRABadges << 1 | gRABadgeSuffix;
+        int raMode = gRAMode;
+        diaGetInt(diaNetConfig, NETCFG_RA_MODE, &gRAMode);
+        if (gRAMode != raMode)
+            menuReinitMainMenu(); // the browser's entry is named after the mode
+        for (i = 0; i < 4; ++i)
+            diaGetInt(diaNetConfig, NETCFG_RA_HOST_IP_0 + i, &gRAHostIp[i]);
         diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &gRATelemetry);
         diaGetInt(diaNetConfig, NETCFG_RA_BADGES, &gRABadges);
+        diaGetInt(diaNetConfig, NETCFG_RA_BADGE_SUFFIX, &gRABadgeSuffix);
+        diaGetInt(diaNetConfig, NETCFG_RA_EXPERIMENTAL_CARDS, &gRAExperimentalCards);
+        gRABadgeSuffix = (gRABadgeSuffix == 1);
+        // Badges are resolved on the I/O thread when rows are built: rebuild every list (HTTP and
+        // Favorites too) when visibility or placement changes, not on the next unrelated rescan.
+        if ((gRATelemetry << 2 | gRABadges << 1 | gRABadgeSuffix) != raBadgeState)
+            guiRefreshCfgTitles();
 #endif
 
         diaGetInt(diaNetConfig, NETCFG_SHARE_PORT, &gPCPort);
@@ -1066,8 +1120,19 @@ reshow_network:
         // NOTE(rebuild): the fork also reads the SMB dialect row back here (item 4).
         int netProtocolWas = gNetworkProtocol;
         guiNetProtocolStore(netProtoVal2, netAccessVal2);
+        if (netProtoVal2 != 1)
+            gUdpfsAccessMode = netConfigUdpfsAccess; // retain pending preference even if switching away
         guiNetProtocolApplied(netProtocolWas);
+        // OK is this page's apply button. A protocol change made on Game Sources (or declined here
+        // earlier) is still waiting on a restart, so OK offers it again rather than doing nothing.
+        if (gNetworkProtocol == netProtocolWas && (result == NETCFG_OK || result == NETCFG_RECONNECT) &&
+            guiNetProtocolNeedsRestart())
+            guiNetProtocolOfferRestart();
 
+#ifdef RETROACHIEVEMENTS
+        // Applied network/RA settings invalidate the peer a previous menu query verified.
+        raNetForgetPeer();
+#endif
         applyConfig(-1, -1, 0);
 
         // OK is an Apply action for the live SMB stack, not merely a RAM/config edit -- and after a
@@ -1143,10 +1208,48 @@ int guiShowVcdUsbMode(void)
     return diaExecuteDialog(diaVcdUsbMode, -1, 1, NULL);
 }
 
+static void guiDiscListItem(struct UIItem *item, UIItemType type, int id, const char *text, int stringId)
+{
+    memset(item, 0, sizeof(*item));
+    item->type = type;
+    item->id = id;
+    item->enabled = item->visible = 1;
+    item->hintId = -1;
+    item->label.text = text;
+    item->label.stringId = stringId;
+}
+
+int guiShowEmberDiscList(const char *folder, const cue_disc_list_t *list)
+{
+    struct UIItem *dialog = (struct UIItem *)calloc(list->count * 2 + 5, sizeof(*dialog));
+    char(*labels)[CUE_NAME_MAX + 32] = (char(*)[CUE_NAME_MAX + 32]) calloc(list->count, sizeof(*labels));
+    int index = 0, result;
+
+    if (dialog == NULL || labels == NULL) {
+        free(dialog);
+        free(labels);
+        return -1;
+    }
+    guiDiscListItem(&dialog[index++], UI_HEADER, 0, NULL, _STR_EMBER_SELECT_DISC);
+    guiDiscListItem(&dialog[index++], UI_SPLITTER, 0, NULL, -1);
+    guiDiscListItem(&dialog[index++], UI_LABEL, 0, folder, -1);
+    guiDiscListItem(&dialog[index++], UI_BREAK, 0, NULL, -1);
+    for (int i = 0; i < list->count; i++) {
+        snprintf(labels[i], sizeof(*labels), _l(_STR_EMBER_DISC_ENTRY), i + 1, list->names[i]);
+        guiDiscListItem(&dialog[index++], UI_BUTTON, i + 1, labels[i], -1);
+        guiDiscListItem(&dialog[index++], UI_BREAK, 0, NULL, -1);
+    }
+    guiDiscListItem(&dialog[index], UI_TERMINATOR, 0, NULL, -1);
+    result = diaExecuteDialog(dialog, 1, 1, NULL);
+    free(labels);
+    free(dialog);
+    return (result >= 1 && result <= list->count) ? result - 1 : -1;
+}
+
 static void guiSetBdmaSettings(struct UIItem *ui)
 {
     static const char *bdmaSourceStrs[] = {NULL, NULL, NULL, NULL, NULL, NULL};
-    static const char *bdmaModeStrs[] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+    static const char *bdmaModeStrs[VCD_BDMA_MODE_COUNT + 1];
     // Order matches enum VCD_USB_BDMA_MODE: Ask / exFAT / fat32. The two driver labels are the ones the
     // per-launch prompt already uses, so the row and the dialog it replaces read identically.
     static const char *vcdUsbBdmaStrs[] = {NULL, NULL, NULL, NULL};
@@ -1164,7 +1267,7 @@ static void guiSetBdmaSettings(struct UIItem *ui)
     bdmaModeStrs[3] = _l(_STR_BDMA_MODE_MMCE);
     bdmaModeStrs[4] = _l(_STR_BDMA_MODE_ATA);
     bdmaModeStrs[5] = _l(_STR_BDMA_MODE_ILINK);
-    bdmaModeStrs[6] = "UDPFS";
+    bdmaModeStrs[VCD_BDMA_UDPFS] = "UDPFS";
     vcdUsbBdmaStrs[0] = _l(_STR_VCD_USB_BDMA_ASK);
     vcdUsbBdmaStrs[1] = _l(_STR_VCD_USB_MODE_EXFAT);
     vcdUsbBdmaStrs[2] = _l(_STR_VCD_USB_MODE_FAT32);
@@ -1433,7 +1536,7 @@ static void guiShowPopsUdpfsConfig(void)
         suffix = _l(_STR_POPS_UDPFS_INVALID_SUFFIX);
     else if (!original.ipExists || !original.serverExists)
         suffix = _l(_STR_POPS_UDPFS_INCOMPLETE_SUFFIX);
-    snprintf(notice, sizeof(notice), "%s%s", _l(_STR_POPS_UDPFS_ALL_USB_FOLDERS), suffix);
+    snprintf(notice, sizeof(notice), "%s%s", original.home, suffix);
     diaSetLabel(diaPopsUdpfsConfig, NETCFG_POPS_NOTICE, notice);
     for (int i = 0; i < 4; i++) {
         diaSetInt(diaPopsUdpfsConfig, NETCFG_POPS_IP_0 + i, original.ps2Ip[i]);
@@ -1684,6 +1787,7 @@ void guiShowNeutrinoDefaults(void)
     diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
     diaSetEnabled(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, gNeutrinoVideoDefault != 0);
     diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
+    diaSetInt(diaNeutrinoDefaults, CFG_NEUTRINO_SHOW_ARGS, gNeutrinoShowArgs);
 
     int ret;
 reshow_neutrino:
@@ -1702,6 +1806,7 @@ reshow_neutrino:
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_VIDEO, &gNeutrinoVideoDefault);
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_GSMCOMP, &gNeutrinoGsmCompDefault);
         diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
+        diaGetInt(diaNeutrinoDefaults, CFG_NEUTRINO_SHOW_ARGS, &gNeutrinoShowArgs);
 
         applyConfig(-1, -1, 0);
     }
@@ -1791,6 +1896,7 @@ static void guiShowArtworkConfig(void)
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_DISCART, gEnableDiscArt);
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_LOGOART, gEnableLogoArt);
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_BGART, gEnableBGArt);
+    diaSetInt(diaArtworkConfig, UICFG_ENABLE_SAVE_ICONS, gEnableSaveIcons);
     diaSetInt(diaArtworkConfig, UICFG_ENABLE_ART_TAR, gEnableArtTar);
     diaSetEnum(diaArtworkConfig, UICFG_ART_DELAY, artDelayNames);
     diaSetInt(diaArtworkConfig, UICFG_ART_DELAY, artDelayToEnum(gArtDelay));
@@ -1801,6 +1907,9 @@ static void guiShowArtworkConfig(void)
         diaGetInt(diaArtworkConfig, UICFG_ENABLE_DISCART, &gEnableDiscArt);
         diaGetInt(diaArtworkConfig, UICFG_ENABLE_LOGOART, &gEnableLogoArt);
         diaGetInt(diaArtworkConfig, UICFG_ENABLE_BGART, &gEnableBGArt);
+        diaGetInt(diaArtworkConfig, UICFG_ENABLE_SAVE_ICONS, &gEnableSaveIcons);
+        if (!gEnableSaveIcons)
+            saveIconReset(); // hand back the model, its texture and the work buffers
         {
             // Re-arm the .tar probe when the toggle actually flips. tarFind's "no archive anywhere"
             // latch is write-once and process-wide, so a user who turns the loader on after boot would
@@ -1829,7 +1938,7 @@ static void guiShowArtworkConfig(void)
 void guiShowColorsConfig(void)
 {
     int themeID = thmGetGuiValue();
-    int editable = (themeID == 0 || themeID == thmFindGuiID("<Coverflow>"));
+    int editable = thmGetFilePath(themeID) == NULL; // <OPL> and the built-in flows take the picker's palette
 
     if (editable) {
         // Display the default theme's colours.
@@ -2194,12 +2303,25 @@ int SettingsShell::pageResult(int result)
     return DIA_RESULT_INDEX;
 }
 
+enum gui_settings_page {
+    SETTINGS_SOURCES = 0,
+    SETTINGS_GENERAL,
+    SETTINGS_LANGUAGE,
+    SETTINGS_NETWORK,
+    SETTINGS_INTERFACE,
+    SETTINGS_LAUNCH,
+    SETTINGS_POPSTARTER,
+    SETTINGS_CONTROLLERS,
+    SETTINGS_AUDIO,
+    SETTINGS_PAGE_COUNT
+};
+
 void SettingsShell::beginDialog(struct UIItem *ui)
 {
     if (!shellActive_)
         return;
 
-    snprintf(pageIndicator_, sizeof(pageIndicator_), "%d/8", currentPage_ + 1);
+    snprintf(pageIndicator_, sizeof(pageIndicator_), "%d/%d", currentPage_ + 1, (int)SETTINGS_PAGE_COUNT);
     diaSetSettingsShell(ui, pageIndicator_);
     diaSetSettingsContext(1);
 }
@@ -2227,21 +2349,10 @@ static int guiSettingsShowGeneral(void)
 {
     const struct UIItem *parts[] = {diaConfig, diaSecurityConfig, diaAdvancedConfig};
     struct UIItem *ui = gSettingsShell.compose(parts, 3, NULL, 0, -1, 1);
-    const char **langNamesSnap = NULL;
-    int langID;
     int result;
 
     if (ui == NULL)
         return 0;
-
-    // The General language row is intentionally the same enum/value as Interface, not a second
-    // setting. Snapshot ownership matches Interface so deferred language discovery cannot free a
-    // list while this dialog renders it.
-    guiLock();
-    langNamesSnap = guiCopyNameList((const char **)lngGetGuiList());
-    guiUnlock();
-    diaSetEnum(ui, UICFG_LANG, langNamesSnap != NULL ? langNamesSnap : (const char **)lngGetGuiList());
-    diaSetInt(ui, UICFG_LANG, lngGetGuiValue());
 
     guiExitPathBegin(ui);
     diaSetShowDefaultWhenEmpty(ui, CFG_CUSTOMCFGPATH, 1);
@@ -2266,7 +2377,6 @@ reshow_general:
     }
 
     if (result != UIID_BTN_CANCEL && result != -1 && !gSettingsShell.leftUntouched(ui, result, exitPathEdit, gExitPath)) {
-        diaGetInt(ui, UICFG_LANG, &langID);
         snprintf(gExitPath, sizeof(gExitPath), "%s", exitPathEdit);
         diaGetString(ui, CFG_CUSTOMCFGPATH, gCustomSettingsPath, sizeof(gCustomSettingsPath));
         diaGetInt(ui, CFG_LASTPLAYED, &gRememberLastPlayed);
@@ -2278,8 +2388,52 @@ reshow_general:
         guiSaveAdvancedSettings(ui);
 
         DisableCron = 1;
-        applyConfig(-1, langID, 0);
+        applyConfig(-1, -1, 0);
         menuReinitMainMenu();
+    }
+
+    gSettingsShell.endDialog();
+    gSettingsShell.setActiveDialog(NULL);
+    return gSettingsShell.pageResult(result);
+}
+
+// The one menu-language picker, plus the game-facing OSD defaults (original #1043).
+static int guiSettingsShowLanguage(void)
+{
+    const struct UIItem *parts[] = {diaLanguageConfig};
+    struct UIItem *ui = gSettingsShell.compose(parts, 1, NULL, 0, -1, 1);
+    const char **langNamesSnap;
+    int result, langID;
+
+    if (ui == NULL)
+        return DIA_RESULT_INDEX;
+
+    // Discovery can rebuild the live list while a dialog is open. Own the names until exit.
+    guiLock();
+    langNamesSnap = guiCopyNameList((const char **)lngGetGuiList());
+    guiUnlock();
+    if (langNamesSnap == NULL) {
+        gSettingsShell.setActiveDialog(NULL);
+        return DIA_RESULT_INDEX;
+    }
+    diaSetEnum(ui, UICFG_LANG, langNamesSnap);
+    diaSetInt(ui, UICFG_LANG, lngGetGuiValue());
+    gSettingsShell.beginDialog(ui);
+
+reshow_language:
+    result = diaExecuteDialog(ui, -1, 1, NULL);
+    if (result == LAUNCH_OSD_DEFAULTS_BUTTON) {
+        guiGameShowOSDLanguageConfig(1);
+        gSettingsShell.markSavePending();
+        goto reshow_language;
+    }
+
+    if (result != UIID_BTN_CANCEL && result != -1) {
+        diaGetInt(ui, UICFG_LANG, &langID);
+        if (langID != lngGetGuiValue()) {
+            applyConfig(-1, langID, 1);
+            menuReinitMainMenu();
+        }
     }
 
     guiFreeNameList(langNamesSnap);
@@ -2325,6 +2479,8 @@ static int guiSettingsShowSources(void)
     diaSetInt(ui, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(ui, CFG_ENABLEILK, gEnableILK);
     diaSetInt(ui, CFG_ENABLEMX4SIO, gEnableMX4SIO);
+    diaSetInt(ui, CFG_ENABLEPCCF, gEnablePCCF);
+    diaSetInt(ui, CFG_ENABLEDVR, gEnableDVR);
     diaSetInt(ui, CFG_ENABLEBDMHDD, gEnableBdmHDD);
     diaSetEnabled(ui, CFG_ENABLEBDMHDD, 1);
     diaSetEnabled(ui, CFG_HDDMODE, 1);
@@ -2360,6 +2516,11 @@ reshow_sources:
         diaGetInt(ui, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(ui, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(ui, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
+        int oldEnablePCCF = gEnablePCCF;
+        diaGetInt(ui, CFG_ENABLEPCCF, &gEnablePCCF);
+        if (oldEnablePCCF != gEnablePCCF)
+            bdmRequestPccfProbe();
+        diaGetInt(ui, CFG_ENABLEDVR, &gEnableDVR);
         diaGetInt(ui, CFG_ENABLEBDMHDD, &gEnableBdmHDD);
         guiSourcesNetRowsRead(ui);
 
@@ -2402,6 +2563,11 @@ static int guiSettingsDisplayUpdater(int modified)
         rmSetAspectRatio((gWideScreen == 0) ? RM_ARATIO_4_3 : RM_ARATIO_16_9);
         guiUpdateScreenScale();
     }
+    diaGetInt(activeDialog, UICFG_FONT_SIZE, &temp);
+    if (temp != gFontSize) {
+        gFontSize = temp;
+        guiUpdateScreenScale();
+    }
     return 0;
 }
 
@@ -2420,8 +2586,7 @@ static int guiSettingsShowInterface(void)
     // composed Interface page supplies its one copy at the top of diaUIConfig.
     struct UIItem *ui = gSettingsShell.compose(parts, 2, skipIDs, 1, 1, 1);
     const char **themeNamesSnap = NULL;
-    const char **langNamesSnap = NULL;
-    int themeID, langID, previousTheme, previousVMode, result;
+    int themeID, previousTheme, previousVMode, result;
     int gameViewChanged = 0;
     int appsViewChanged = 0;
 
@@ -2435,15 +2600,12 @@ static int guiSettingsShowInterface(void)
 
     guiLock();
     themeNamesSnap = guiCopyNameList((const char **)thmGetGuiList());
-    langNamesSnap = guiCopyNameList((const char **)lngGetGuiList());
     guiUnlock();
     diaSetEnum(ui, UICFG_THEME, themeNamesSnap != NULL ? themeNamesSnap : (const char **)thmGetGuiList());
-    diaSetEnum(ui, UICFG_LANG, langNamesSnap != NULL ? langNamesSnap : (const char **)lngGetGuiList());
     guiSetGameViewPicker(ui);
     guiSetAppsViewPicker(ui);
     diaSetEnum(ui, UICFG_VMODE, vmodeNames);
     diaSetInt(ui, UICFG_THEME, thmGetGuiValue());
-    diaSetInt(ui, UICFG_LANG, lngGetGuiValue());
     diaSetInt(ui, UICFG_AUTOSORT, gAutosort);
     diaSetInt(ui, UICFG_AUTOREFRESH, gAutoRefresh);
     diaSetInt(ui, UICFG_NOTIFICATIONS, gEnableNotifications);
@@ -2454,6 +2616,9 @@ static int guiSettingsShowInterface(void)
     diaSetVisible(ui, UICFG_COVERFLOW_BUTTON, 1);
     diaSetInt(ui, UICFG_VMODE, gVMode);
     diaSetInt(ui, UICFG_WIDESCREEN, gWideScreen);
+    const char *fontSizeNames[] = {_l(_STR_SMALL), _l(_STR_DEFAULT), _l(_STR_LARGE), NULL};
+    diaSetEnum(ui, UICFG_FONT_SIZE, fontSizeNames);
+    diaSetInt(ui, UICFG_FONT_SIZE, gFontSize);
     diaSetInt(ui, UICFG_XOFF, gXOff);
     diaSetInt(ui, UICFG_YOFF, gYOff);
     diaSetInt(ui, UICFG_OVERSCAN, gOverscan);
@@ -2488,7 +2653,6 @@ reshow_interface:
 
     padRumbleFlush();
     if (result != UIID_BTN_CANCEL && result != -1) {
-        diaGetInt(ui, UICFG_LANG, &langID);
         diaGetInt(ui, UICFG_THEME, &themeID);
         diaGetInt(ui, UICFG_AUTOSORT, &gAutosort);
         diaGetInt(ui, UICFG_AUTOREFRESH, &gAutoRefresh);
@@ -2501,6 +2665,7 @@ reshow_interface:
         appsViewChanged = guiReadAppsViewPicker(ui);
         diaGetInt(ui, UICFG_VMODE, &gVMode);
         diaGetInt(ui, UICFG_WIDESCREEN, &gWideScreen);
+        diaGetInt(ui, UICFG_FONT_SIZE, &gFontSize);
         diaGetInt(ui, UICFG_XOFF, &gXOff);
         diaGetInt(ui, UICFG_YOFF, &gYOff);
         diaGetInt(ui, UICFG_OVERSCAN, &gOverscan);
@@ -2514,7 +2679,7 @@ reshow_interface:
             bgmStop();
         if (previousVMode != gVMode)
             guiFadeCurrentScreenToBlack();
-        applyConfig(themeID, langID, 1);
+        applyConfig(themeID, -1, 1);
         if (cfgTitlesChanged) {
             guiRefreshCfgTitles();
         } else if (gameViewChanged) {
@@ -2533,7 +2698,6 @@ reshow_interface:
     }
 
     guiFreeNameList(themeNamesSnap);
-    guiFreeNameList(langNamesSnap);
     gSettingsShell.endDialog();
     gSettingsShell.setActiveDialog(NULL);
     return gSettingsShell.pageResult(result);
@@ -2575,14 +2739,11 @@ static int guiSettingsShowLaunch(void)
     diaSetInt(ui, CFG_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
     diaSetEnabled(ui, CFG_NEUTRINO_GSMCOMP, gNeutrinoVideoDefault != 0);
     diaSetInt(ui, CFG_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
+    diaSetInt(ui, CFG_NEUTRINO_SHOW_ARGS, gNeutrinoShowArgs);
     gSettingsShell.beginDialog(ui);
 
 reshow_launch:
     result = diaExecuteDialog(ui, -1, 1, &guiSettingsLaunchUpdater);
-    if (result == LAUNCH_OSD_DEFAULTS_BUTTON) {
-        guiGameShowOSDLanguageConfig(1);
-        goto reshow_launch;
-    }
     if (result == LAUNCH_GSM_DEFAULTS_BUTTON) {
         if (guiGameShowGSConfig(1))
             gSettingsShell.markSavePending();
@@ -2604,6 +2765,7 @@ reshow_launch:
         diaGetInt(ui, CFG_NEUTRINO_VIDEO, &gNeutrinoVideoDefault);
         diaGetInt(ui, CFG_NEUTRINO_GSMCOMP, &gNeutrinoGsmCompDefault);
         diaGetInt(ui, CFG_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
+        diaGetInt(ui, CFG_NEUTRINO_SHOW_ARGS, &gNeutrinoShowArgs);
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
     }
@@ -2743,18 +2905,6 @@ reshow_popstarter:
     gSettingsShell.setActiveDialog(NULL);
     return gSettingsShell.pageResult(result);
 }
-
-enum gui_settings_page {
-    SETTINGS_SOURCES = 0,
-    SETTINGS_GENERAL,
-    SETTINGS_NETWORK,
-    SETTINGS_INTERFACE,
-    SETTINGS_LAUNCH,
-    SETTINGS_POPSTARTER,
-    SETTINGS_CONTROLLERS,
-    SETTINGS_AUDIO,
-    SETTINGS_PAGE_COUNT
-};
 
 enum gui_settings_prompt_result {
     SETTINGS_PROMPT_SAVE = 1,
@@ -2908,6 +3058,7 @@ int SettingsShell::showIndex(int *page)
     const char *labels[SETTINGS_PAGE_COUNT + 1] = {
         _l(_STR_GAME_SOURCES),
         _l(_STR_GENERAL_SYSTEM),
+        _l(_STR_LANGUAGE),
         _l(_STR_MENU_NETWORK),
         _l(_STR_INTERFACE_SETTINGS),
         _l(_STR_GAME_LAUNCHING),
@@ -3016,6 +3167,9 @@ void SettingsShell::showFromPage(int page, int showIndexFirst)
         switch (page) {
             case SETTINGS_GENERAL:
                 result = guiSettingsShowGeneral();
+                break;
+            case SETTINGS_LANGUAGE:
+                result = guiSettingsShowLanguage();
                 break;
             case SETTINGS_SOURCES:
                 result = guiSettingsShowSources();

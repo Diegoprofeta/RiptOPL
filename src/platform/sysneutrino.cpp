@@ -280,6 +280,95 @@ static const char *sysLastPathSeparator(const char *path)
     return slash;
 }
 
+// The most a torn tail can be: one shortened ip loses at most 8 characters (15 down to 7), and a
+// card may have been through a few such rewrites before this fix.
+#define NEUTRINO_TOML_TORN_TAIL_MAX 32
+
+// Length of the toml with a torn tail cut off, `len` when there is none, or -1 when it is broken some
+// other way -- a hand-edited file is the user's to fix and is left alone. Reads just enough TOML for
+// this: comments, the four string forms and bracket depth. A line is complete at its end, or as soon
+// as its key's value or its table header closes; past that point only spaces and a comment may follow,
+// which is how a tear on a final line WITHOUT a newline (`env = ["EE"]"]`) is found. The cut is the
+// last complete point, and only a short tail is ever dropped.
+static int sysTomlTornTailCut(const char *text, int len)
+{
+    int depth = 0, complete = 0, i = 0;
+    int lineStart = 1, header = 0, assigned = 0, ended = 0;
+
+    while (i < len) {
+        char c = text[i];
+
+        if (c == '\n') {
+            i++;
+            if (depth == 0)
+                complete = i;
+            lineStart = 1;
+            ended = 0;
+            if (depth == 0) // a multi-line array keeps its key's line going until it closes
+                header = assigned = 0;
+            continue;
+        }
+        if (c == '#') {
+            while (i < len && text[i] != '\n')
+                i++;
+            continue;
+        }
+        if (c == ' ' || c == '\t' || c == '\r') {
+            i++;
+            continue;
+        }
+        if (ended)
+            goto broken; // something after a finished value or header on the same line
+        if (lineStart && depth == 0 && c == '[')
+            header = 1;
+        lineStart = 0;
+        if (c == '"' || c == '\'') {
+            if (i + 2 < len && text[i + 1] == c && text[i + 2] == c) {
+                // Multi-line string: runs to the next triple quote, across lines.
+                for (i += 3; i + 2 < len && !(text[i] == c && text[i + 1] == c && text[i + 2] == c); i++) {
+                    if (c == '"' && text[i] == '\\')
+                        i++;
+                }
+                if (i + 2 >= len)
+                    goto broken;
+                i += 3;
+            } else {
+                // Single-line string: must close before the line ends.
+                for (i++; i < len && text[i] != c && text[i] != '\n'; i++) {
+                    if (c == '"' && text[i] == '\\' && i + 1 < len && text[i + 1] != '\n')
+                        i++;
+                }
+                if (i >= len || text[i] != c)
+                    goto broken;
+                i++;
+            }
+            if (depth == 0 && assigned) {
+                ended = 1;
+                complete = i;
+            }
+            continue;
+        }
+        if (c == '=' && depth == 0)
+            assigned = 1;
+        if (c == '[' || c == '{')
+            depth++;
+        else if ((c == ']' || c == '}') && --depth < 0)
+            goto broken;
+        i++;
+        if ((c == ']' || c == '}') && depth == 0 && (assigned || header)) {
+            ended = 1;
+            complete = i;
+        }
+    }
+    if (depth == 0)
+        return len;
+
+broken:
+    if (complete == 0 || len - complete > NEUTRINO_TOML_TORN_TAIL_MAX)
+        return -1;
+    return complete;
+}
+
 static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *deviceName)
 {
     static char toml[4096]; // Δ6: raised from 2048 -- an annotated toml no longer gets skipped
@@ -299,7 +388,14 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         LOG("[NEUTRINO] no %s -- neutrino cannot boot this transport without it\n", tomlPath);
         return -1; // missing bsd toml = guaranteed post-teardown failure -> abort while GUI is alive
     }
-    len = read(fd, toml, sizeof(toml) - 1);
+    // Accumulate: a short read must not become a rewrite that drops the rest of the file.
+    len = 0;
+    for (int got; len < (int)sizeof(toml) - 1 && (got = read(fd, toml + len, sizeof(toml) - 1 - len)) != 0; len += got) {
+        if (got < 0) {
+            len = got;
+            break;
+        }
+    }
     close(fd);
     if (len <= 0)
         return -1; // unreadable/empty bsd toml -> same guaranteed failure
@@ -308,6 +404,17 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         return 0; // exotic hand-built toml: proceed on the old hand-edit contract
     }
     toml[len] = '\0';
+
+    // A tail torn by an earlier sync sits after the ip, so the ip already matches and nothing below
+    // would rewrite the file again: every later launch fails the same way. Cut it off here, and
+    // write the file back below even when the ip is unchanged (original #1011).
+    int cut = sysTomlTornTailCut(toml, len);
+    int repaired = cut >= 0 && cut < len;
+    if (repaired) {
+        LOG("[NEUTRINO] %s has %d stray byte(s) after its end -- removing them\n", tomlPath, len - cut);
+        len = cut;
+        toml[len] = '\0';
+    }
 
     char *tok = strstr(toml, "\"ip=");
     if (tok == NULL) {
@@ -320,7 +427,7 @@ static int sysSyncNeutrinoUdpfsToml(const char *neutrinoPath, const char *device
         valEnd++;
 
     snprintf(newIp, sizeof(newIp), "%d.%d.%d.%d", ps2_ip[0], ps2_ip[1], ps2_ip[2], ps2_ip[3]);
-    if ((int)strlen(newIp) == (int)(valEnd - valStart) && !strncmp(valStart, newIp, strlen(newIp)))
+    if (!repaired && (int)strlen(newIp) == (int)(valEnd - valStart) && !strncmp(valStart, newIp, strlen(newIp)))
         return 0; // already in sync -- don't touch the file
 
     snprintf(updated, sizeof(updated), "%.*s%s%s", (int)(valStart - toml), toml, newIp, valEnd);
@@ -361,7 +468,7 @@ static int sysNeutrinoDvrPreflight(const char *neutrinoPath, const char *extraAr
             return -1;
         }
         if (neutrinoArgHasActiveFlag(sources[i], "-bsd=") || neutrinoArgHasActiveFlag(sources[i], "-bsdfs=")) {
-            host::ui().warningId(_STR_NEUTRINO_DVR_BACKEND_ARGS, 6);
+            host::ui().warningId(_STR_NEUTRINO_DVR_BACKEND_OVERRIDE, 6);
             return -1;
         }
     }
@@ -438,6 +545,301 @@ int sysNeutrinoPreflight(const char *driver, const char *neutrinoPath, int neutr
         }
     }
     return 0;
+}
+
+// sysRunNeutrinoLaunch's preflight result when the user backed out of the argument preview: the
+// launch stops, but nothing is wrong with the arguments, so no overflow warning follows.
+#define NEUTRINO_LAUNCH_DECLINED -2
+
+// One readable line for the launch preview: entries joined by single spaces, and an entry that
+// itself contains a space or tab (a spaced ISO or VMC path) wrapped in quotes, so it still reads as
+// the ONE argument Neutrino receives. The budget check has already capped the strings at 256 bytes.
+static void sysFormatNeutrinoArgv(char *out, int outSize, int argc, char *const *argv)
+{
+    int len = 0;
+    int i;
+
+    if (out == NULL || outSize <= 0)
+        return;
+    out[0] = '\0';
+    for (i = 0; i < argc && len < outSize - 1; i++) {
+        int quote = strchr(argv[i], ' ') != NULL || strchr(argv[i], '\t') != NULL;
+        int n = snprintf(out + len, outSize - len, "%s%s%s%s", i ? " " : "", quote ? "\"" : "", argv[i], quote ? "\"" : "");
+        if (n < 0)
+            break;
+        len += n;
+    }
+}
+
+// Neutrino cheats. Neutrino reads PS2RD codes from a config file's eecore.cheats array (rickgaiser/neutrino
+// 0469cc31; the bundled build has it, v1.8.0 itself does not), so a launch with cheats writes one into
+// Neutrino's folder and names it with -cfg=. Set pre-teardown by sysNeutrinoHandCheats, read by
+// sysRunNeutrinoLaunch for its preflight and its real run alike, so both compose the same argv.
+#define NEUTRINO_CHEAT_CFG "riptopl-cheats"
+
+static char sysNeutrinoCheatArg[24];     // "-cfg=riptopl-cheats", or "" for no cheats
+static char sysNeutrinoCheatStartup[32]; // the game that file was written for
+
+// The value of the last ACTIVE `flag` (a key prefix such as "-cwd=") in the global then the per-game
+// args, read the way Neutrino reads them: last one wins, a $-prefixed token is switched off and --b
+// ends the options in each scope. 1 = found.
+static int neutrinoArgActiveValue(const char *extraArgs, const char *flag, char *out, int outSize)
+{
+    const char *sources[2] = {gNeutrinoArgs, extraArgs};
+    int flen = (int)strlen(flag), found = 0;
+
+    for (int s = 0; s < 2; s++) {
+        for (const char *p = sources[s]; p != NULL && *p != '\0';) {
+            while (*p == ' ' || *p == '\t')
+                p++;
+            const char *end = p;
+            while (*end != '\0' && *end != ' ' && *end != '\t')
+                end++;
+            int len = (int)(end - p);
+            if (len == 3 && !strncmp(p, "--b", 3))
+                break;
+            if (len > flen && !strncmp(p, flag, flen)) {
+                snprintf(out, outSize, "%.*s", len - flen, p + flen);
+                found = 1;
+            }
+            p = end;
+        }
+    }
+    return found;
+}
+
+// Where Neutrino will look for -cfg=NEUTRINO_CHEAT_CFG: config/ under its working directory -- the -cwd=
+// the user forwards, else the folder holding neutrino.elf, which is what sysRunNeutrinoLaunch passes --
+// or that directory itself in the flat layout, which Neutrino falls back to when config/system.toml is
+// absent. 0 = built; -1 = no directory to anchor on.
+static int sysNeutrinoCheatPath(const char *neutrinoPath, const char *extraArgs, char *out, int outSize)
+{
+    char dir[256], probe[300];
+    char sep = '/';
+    int fd, len;
+
+    if (neutrinoArgActiveValue(extraArgs, "-cwd=", dir, sizeof(dir))) {
+        len = (int)strlen(dir);
+        if (len == 0)
+            return -1;
+        if (strchr(dir, '\\') != NULL)
+            sep = '\\';
+        if (dir[len - 1] != '/' && dir[len - 1] != '\\' && dir[len - 1] != ':' && len + 1 < (int)sizeof(dir)) {
+            dir[len++] = sep;
+            dir[len] = '\0';
+        }
+    } else {
+        const char *slash = sysLastPathSeparator(neutrinoPath);
+        if (slash == NULL)
+            return -1;
+        snprintf(dir, sizeof(dir), "%.*s", (int)(slash - neutrinoPath) + 1, neutrinoPath);
+        sep = *slash;
+    }
+    // hddN: is the raw APA namespace, where O_CREAT CREATES A PARTITION (config.c's configPathIsRawApa
+    // guards its own writes the same way). A custom Neutrino path can name it; never open anything
+    // there -- only mounted filesystems (pfsN:, massN:, mcN:, ...) take the file.
+    if (!strncmp(dir, "hdd", 3) && dir[3] >= '0' && dir[3] <= '9' && dir[4] == ':')
+        return -1;
+
+    snprintf(probe, sizeof(probe), "%sconfig%csystem.toml", dir, sep);
+    fd = open(probe, O_RDONLY);
+    if (fd >= 0) {
+        close(fd);
+        snprintf(out, outSize, "%sconfig%c%s.toml", dir, sep, NEUTRINO_CHEAT_CFG);
+    } else
+        snprintf(out, outSize, "%s%s.toml", dir, NEUTRINO_CHEAT_CFG);
+    return 0;
+}
+
+// A -cfg name we can safely quote into a TOML string: no quote, backslash or control character.
+static int sysNeutrinoCfgNameSafe(const char *name)
+{
+    for (; *name != '\0'; name++) {
+        if (*name == '"' || *name == '\\' || (unsigned char)*name < 0x20)
+            return 0;
+    }
+    return 1;
+}
+
+// The enabled codes as a Neutrino config file. `depends` keeps a -cfg the user forwards: Neutrino reads
+// only the last -cfg -- this one -- and loads theirs through it. 0 = written in full.
+static int sysWriteNeutrinoCheats(const char *path, const char *startup, const char *userCfg, const u32 *list, int pairs)
+{
+    int size = 512 + pairs * 32, len, fd, written, i;
+    char *text = static_cast<char *>(malloc(size));
+
+    if (text == NULL)
+        return -1;
+    len = snprintf(text, size,
+                   "# Written by RiptOPL for every Neutrino launch with cheats on: the game's enabled\n"
+                   "# PS2RD codes. Rewritten each time; safe to delete.\n"
+                   "name = \"RiptOPL cheats for %s\"\n",
+                   startup);
+    if (userCfg[0] != '\0')
+        len += snprintf(text + len, size - len, "depends = [\"%s\"]\n", userCfg);
+    len += snprintf(text + len, size - len, "eecore.cheats = [\n");
+    for (i = 0; i < pairs; i++)
+        len += snprintf(text + len, size - len, "    0x%08X, 0x%08X,\n", (unsigned int)list[i * 2], (unsigned int)list[i * 2 + 1]);
+    len += snprintf(text + len, size - len, "]\n");
+
+    fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0) {
+        free(text);
+        return -1;
+    }
+    written = write(fd, text, len);
+    close(fd);
+    free(text);
+    if (written != len) {
+        unlink(path); // never leave half a list where a later launch could name it
+        return -1;
+    }
+    return 0;
+}
+
+int sysNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs, const u32 *list, int pairs)
+{
+    char path[320], userCfg[64];
+
+    sysNeutrinoCheatArg[0] = '\0';
+    sysNeutrinoCheatStartup[0] = '\0';
+    if (startup == NULL || neutrinoPath == NULL || list == NULL || pairs <= 0)
+        return 0;
+
+    if (!neutrinoArgActiveValue(extraArgs, "-cfg=", userCfg, sizeof(userCfg)) || !strcmp(userCfg, NEUTRINO_CHEAT_CFG) ||
+        !sysNeutrinoCfgNameSafe(userCfg))
+        userCfg[0] = '\0';
+    if (sysNeutrinoCheatPath(neutrinoPath, extraArgs, path, sizeof(path)) < 0 ||
+        sysWriteNeutrinoCheats(path, startup, userCfg, list, pairs) < 0) {
+        LOG("[NEUTRINO] cheats for %s could not be written next to %s\n", startup, neutrinoPath);
+        // A read-only share or a full card: an autolaunch has no one to ask and goes on without them.
+        if (!host::ui().active())
+            return 0;
+        return host::ui().confirmId(_STR_NEUTRINO_CHEATS_WRITE_FAILED, NULL) ? 0 : -1;
+    }
+    snprintf(sysNeutrinoCheatArg, sizeof(sysNeutrinoCheatArg), "-cfg=%s", NEUTRINO_CHEAT_CFG);
+    snprintf(sysNeutrinoCheatStartup, sizeof(sysNeutrinoCheatStartup), "%s", startup);
+    LOG("[NEUTRINO] %d cheat code(s) for %s -> %s\n", pairs, startup, path);
+    return 0;
+}
+
+#ifdef RETROACHIEVEMENTS
+// RA through Neutrino: the RA kit's neutrino/ is ORBIT's runtime (third_party/orbit-neutrino), whose
+// raagent.irx speaks xeRAbora's wire protocol. sbNeutrinoPrepareRA decides whether a game is tracked;
+// sysNeutrinoHandRA writes its files and sysRunNeutrinoLaunch appends -cfg=ript-ra and this argument.
+static char sysNeutrinoRAArg[336], sysNeutrinoRAStartup[32];
+
+// The effective -cwd, user overrides included, else the folder holding neutrino.elf; with a trailing '/'.
+// 0 = usable; -1 = none, or one we must not write under (hddN: is raw APA, where O_CREAT makes a partition).
+static int sysNeutrinoRADir(const char *neutrinoPath, const char *extraArgs, char *dir, int size)
+{
+    if (!neutrinoArgActiveValue(extraArgs, "-cwd=", dir, size)) {
+        const char *slash = sysLastPathSeparator(neutrinoPath);
+        if (slash == NULL || slash - neutrinoPath + 1 >= size)
+            return -1;
+        snprintf(dir, size, "%.*s", (int)(slash - neutrinoPath) + 1, neutrinoPath);
+    }
+    int len = (int)strlen(dir);
+    if (len == 0 || len + 1 >= size || strchr(dir, '\\') != NULL || strchr(dir, '"') != NULL ||
+        (!strncmp(dir, "hdd", 3) && dir[3] >= '0' && dir[3] <= '9' && dir[4] == ':'))
+        return -1;
+    if (dir[len - 1] != '/' && dir[len - 1] != ':')
+        strcpy(dir + len, "/");
+    return 0;
+}
+
+int sysNeutrinoRARuntime(const char *neutrinoPath, const char *extraArgs)
+{
+    char dir[256], path[300], text[40];
+    int fd, len;
+
+    if (neutrinoPath == NULL || sysNeutrinoRADir(neutrinoPath, extraArgs, dir, sizeof(dir)) < 0)
+        return 0;
+    // Only the RA kit's runtime carries this marker: a stock Neutrino is never sent unknown options.
+    snprintf(path, sizeof(path), "%sORBIT-RA.txt", dir);
+    if ((fd = open(path, O_RDONLY)) < 0)
+        return 0;
+    len = read(fd, text, sizeof(text));
+    close(fd);
+    if (len < 28 || memcmp(text, "RiptOPL ORBIT RA handoff v1\n", 28))
+        return 0;
+    snprintf(path, sizeof(path), "%smodules/raagent.irx", dir);
+    if ((fd = open(path, O_RDONLY)) < 0)
+        return 0;
+    close(fd);
+    return 1;
+}
+
+static int sysNeutrinoRAWrite(const char *path, const void *data, int size)
+{
+    int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+    if (fd < 0)
+        return -1;
+    int written = write(fd, data, size);
+    if (close(fd) < 0 || written != size) {
+        unlink(path);
+        return -1;
+    }
+    return 0;
+}
+
+int sysNeutrinoHandRA(const char *startup, const char *neutrinoPath, const char *extraArgs, int networkGame,
+                      const unsigned char *ip, const unsigned char *peer, const void *watch, int size)
+{
+    char dir[256], config[320], path[340], userCfg[64], text[1024];
+    int len;
+
+    sysNeutrinoRAArg[0] = '\0';
+    sysNeutrinoRAStartup[0] = '\0';
+    if (startup == NULL)
+        return 0;
+    // Next to the cheats file: config/ under the working directory, or the directory itself.
+    if (sysNeutrinoRADir(neutrinoPath, extraArgs, dir, sizeof(dir)) < 0 ||
+        sysNeutrinoCheatPath(neutrinoPath, extraArgs, config, sizeof(config)) < 0)
+        return -1;
+    config[strlen(config) - strlen(NEUTRINO_CHEAT_CFG ".toml")] = '\0'; // keep its directory
+    if (snprintf(path, sizeof(path), "%sript-ra.wl", config) >= (int)sizeof(path) || sysNeutrinoRAWrite(path, watch, size) < 0)
+        return -1;
+    // ript-ra is the -cfg Neutrino keeps (the last); it loads the cheats file or the user's own through depends.
+    if (sysNeutrinoCheatArg[0] && !strcmp(sysNeutrinoCheatStartup, startup))
+        snprintf(userCfg, sizeof(userCfg), "%s", NEUTRINO_CHEAT_CFG);
+    else if (!neutrinoArgActiveValue(extraArgs, "-cfg=", userCfg, sizeof(userCfg)))
+        userCfg[0] = '\0';
+    if (!sysNeutrinoCfgNameSafe(userCfg) || !strcmp(userCfg, "ript-ra"))
+        return -1;
+    len = snprintf(text, sizeof(text), "# Written by RiptOPL for an RA launch through ORBIT Neutrino. Safe to delete.\n"
+                                       "name = \"RiptOPL RA\"\ndepends = [%s%s%s%s%s]\n",
+                   networkGame ? "" : "\"i_dev9_hidden\"", userCfg[0] && !networkGame ? ", " : "",
+                   userCfg[0] ? "\"" : "", userCfg, userCfg[0] ? "\"" : "");
+    // A network game's own transport already loads SMAP and the stack.
+    if (!networkGame)
+        len += snprintf(text + len, sizeof(text) - len,
+                        "[[module]]\nfile = \"smap.irx\"\nenv = [\"EE\"]\n"
+                        "[[module]]\nfile = \"ministack.irx\"\nargs = [\"ip=%u.%u.%u.%u\"]\nenv = [\"EE\"]\n",
+                        ip[0], ip[1], ip[2], ip[3]);
+    len += snprintf(text + len, sizeof(text) - len,
+                    "[[module]]\nfile = \"raagent.irx\"\nargs = [\"srv=%u.%u.%u.%u\", \"me=%u.%u.%u.%u\"]\nenv = [\"EE\"]\nload_order = 30\n",
+                    peer[0], peer[1], peer[2], peer[3], ip[0], ip[1], ip[2], ip[3]);
+    if (snprintf(path, sizeof(path), "%sript-ra.toml", config) >= (int)sizeof(path) || sysNeutrinoRAWrite(path, text, len) < 0)
+        return -1;
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=%sript-ra.wl", config);
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "%s", startup);
+    return 0;
+}
+#endif
+
+// Settings > Game Launching > Show Launch Arguments: before the teardown, show the exact argv this
+// launch will hand to Neutrino -- the array sysRunNeutrinoLaunch just composed, not a reconstruction --
+// and let the user back out. Autolaunch has no menu to answer it, so it launches as configured.
+// Returns 1 = launch, 0 = the user chose Back.
+static int sysNeutrinoConfirmArgv(int argc, char *const *argv)
+{
+    char joined[384];
+
+    if (!gNeutrinoShowArgs || !host::ui().active())
+        return 1;
+    sysFormatNeutrinoArgv(joined, sizeof(joined), argc, argv);
+    return host::ui().confirmId(_STR_NEUTRINO_ARGS_CONFIRM, joined);
 }
 
 static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs, int checkOnly)
@@ -672,6 +1074,22 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
     int globalBreak = 0, gameBreak = 0;
     argc = appendArgTokens(argv, argc, argvMax, globalArgsBuf, sizeof(globalArgsBuf), gNeutrinoArgs, 0, &globalBreak);
     argc = appendArgTokens(argv, argc, argvMax, extraArgsBuf, sizeof(extraArgsBuf), extraArgs, 0, &gameBreak);
+    // Cheats (sysNeutrinoHandCheats): after the user's own options, so the -cfg Neutrino keeps -- its
+    // last -- is ours, which loads theirs through `depends`. Only for the game the file was written for.
+    if (sysNeutrinoCheatArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoCheatStartup)) {
+        if (argc >= argvMax)
+            return -1; // refuse in the preflight rather than boot without the cheats the user enabled
+        argv[argc++] = sysNeutrinoCheatArg;
+    }
+#ifdef RETROACHIEVEMENTS
+    static char raCfgArg[] = "-cfg=ript-ra";
+    if (sysNeutrinoRAArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoRAStartup)) {
+        if (argc + 2 > argvMax)
+            return -1;
+        argv[argc++] = raCfgArg;
+        argv[argc++] = sysNeutrinoRAArg;
+    }
+#endif
     static char breakArg[] = "--b"; // writable: argv is char *, and a literal would add a -Wwrite-strings warning
     if ((globalBreak || gameBreak) && argc < argvMax)
         argv[argc++] = breakArg;
@@ -699,7 +1117,7 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
     }
 
     if (checkOnly)
-        return 0;
+        return sysNeutrinoConfirmArgv(argc, argv) ? 0 : NEUTRINO_LAUNCH_DECLINED;
 
     // Log the FULL argv (not just bsd/dvd/compat) so the VMC -mc args are verifiable on hardware (#47).
     LOG("[NEUTRINO] elf=%s argc=%d\n", neutrinoPath, argc);
@@ -721,7 +1139,24 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
 
 int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs)
 {
-    if (sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 1) < 0) {
+    int result = sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 1);
+#ifdef RETROACHIEVEMENTS
+    // The RA handoff's two arguments must never cost the player the game: when they push the argv over
+    // the launch budget, launch without them. Warn only when they were the cause.
+    if (result < 0 && result != NEUTRINO_LAUNCH_DECLINED && sysNeutrinoRAArg[0] != '\0' && startup != NULL &&
+        !strcmp(startup, sysNeutrinoRAStartup)) {
+        sysNeutrinoRAArg[0] = '\0';
+        sysNeutrinoRAStartup[0] = '\0';
+        result = sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 1);
+        if (result == 0 || result == NEUTRINO_LAUNCH_DECLINED) {
+            LOG("[RA] handoff arguments exceed the launch budget for %s; launching untracked\n", startup);
+            host::ui().warningId(_STR_RA_NEUTRINO_UNTRACKED, 6);
+        }
+    }
+#endif
+    if (result == NEUTRINO_LAUNCH_DECLINED)
+        return -1; // Back on the argument preview: stay in the menu, nothing to warn about
+    if (result < 0) {
         host::ui().warningId(_STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW, 6);
         return -1;
     }

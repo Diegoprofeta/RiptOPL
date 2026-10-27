@@ -86,6 +86,26 @@
 #define CUE_NAME_MAX        192
 #define CUE_NAME_LAUNCH_MAX 180 // 192 less "games/" and the NUL, with headroom
 #define CUE_MAX_ITEMS       2048
+#define CUE_MAX_DISCS       16
+
+// A game folder's discs.txt (original #1034): its CUE files in disc order. Ember Beta 2 accepts
+// <folder>/<disc file> as its game argument; the folder stays the identity for settings, artwork,
+// saves and Favorites.
+typedef struct cue_disc_list
+{
+    int count;
+    char names[CUE_MAX_DISCS][CUE_NAME_MAX];
+} cue_disc_list_t;
+
+// Launch-time only: 0 = no discs.txt (folder launch), >0 = ordered CUE entries, -1 = unreadable or
+// malformed. Only a successful result allocates *outList; the caller frees it.
+int cueReadDiscList(const char *devPrefix, const char *folder, cue_disc_list_t **outList);
+// "<folder>/<disc>" for Ember, and the disc's device path, without changing the folder identity.
+int cueBuildDiscArgument(const char *folder, const char *disc, char *out, int outSize);
+int cueBuildDiscPath(const char *devPrefix, const char *folder, const char *disc, char *out, int outSize);
+// Before teardown: copy Ember's game argument into `argument` -- the folder, or the disc picked from
+// discs.txt. 0 when the user backed out or a message was shown; the caller then returns.
+int cuePrepareLaunch(const char *devPrefix, const char *folder, const char *emberElf, char *argument, int argumentSize);
 
 // Per-device folder holding ember.elf + bios.bin + games/, the peer of POPS_FOLDER. The NAME is the
 // only knob Ember's argument contract leaves us (the library must be the ember.elf's own
@@ -117,9 +137,9 @@ int cueResolveEmber(const char *devPrefix, char *out, int outSize);
 int cueResolveEmberBios(const char *devPrefix, char *out, int outSize);
 
 
-// 1 when `name` is legal as Ember's game argument. Mirrors Ember's own checks exactly rather than a
-// tidied version of them: any '/', ':' or '\\' refuses (its char scan at main+0x3d48), and so does
-// a name STARTING with ".." (main+0x4210 -- not only the exact string ".."). Pure string work.
+// 1 when `name` is a legal bare game-folder identity: any '/', ':' or '\\' refuses, and so does a
+// name STARTING with "..". A selected disc's <folder>/<disc> argument is composed separately
+// (cueBuildDiscArgument); library names, settings keys, renames and Favorites stay bare.
 int cueNameLaunchable(const char *name);
 
 // Scan "<devPrefix><EmberFolder>/games/" for game SUBDIRECTORIES. Returns the count; *outList is a
@@ -146,6 +166,21 @@ void cueApplySettings(const char *devPrefix, const char *name, config_set_t *con
 // Returns 1 when an image is present, 0 when the folder is readable and holds none, and 1 when the
 // folder cannot be read at all (never block a launch on a probe that itself failed).
 int cueGameHasImage(const char *devPrefix, const char *name);
+// Total MiB of the .bin tracks in an Ember game folder (info-screen #Size); 0 if unreadable.
+unsigned int cueGameSizeMB(const char *devPrefix, const char *name);
+
+// The exact image Ember would select for this folder (.cue, then .exe, then .bin). 1 and the full
+// path, 0 if readable but empty, -1 if the folder could not be probed. Identity stays the folder.
+int cueResolveGameImage(const char *devPrefix, const char *name, char *out, int outSize);
+
+// The image that identifies a game folder: disc 1 (the first discs.txt entry), else the image Ember
+// itself picks. 1 and the full path; 0 when unresolved or discs.txt is malformed. The barcode and the
+// RetroGEM art/CFG memo both use it, so metadata always matches the ID reported at launch.
+int cueResolveFirstDiscImage(const char *devPrefix, const char *name, char *out, int outSize);
+
+// Resolve the launched game's PS1 serial (disc 1: the first discs.txt entry, else Ember's image)
+// and emit the RetroGEM optical barcode. Best-effort: no GameID or read failure blocks Ember.
+void cuePrepareRetroGemBarcode(const char *devPrefix, const char *name);
 
 // 1 when a published row is an Ember title rather than a POPSTARTER one. THE row-kind test; use it
 // for launch dispatch and art fallback instead of asking which view the page is on.
@@ -178,9 +213,8 @@ int ps1GameListNeedsRetry(void);
 int ps1FillGameList(const char *devPrefix, base_game_info_t **outGames);
 
 // The CUE support instance (defined in src/sources/cuesupport.cpp). The module is deliberately
-// stateless -- every helper works on its parameters and the published lists live in the callers --
-// except the table of extensions Ember's io_find_disc accepts, which the launch-path image probe
-// matches against. That table and the probe are members of this one instance. The settings.txt
+// stateless -- every helper works on its parameters and the published lists live in the callers.
+// The launch-path image probe is its one member; it shares cueResolveGameImage with the barcode. The settings.txt
 // rewrite family and the scan/list builders stay free functions: cueApplySettings, cueNameLaunchable
 // and the cueRewriteSettings/cueLineSetsKey/cueWantSetting helpers are extracted into C test
 // harnesses by exact signature (.github/scripts/test_ember_settings.py) and must keep compiling
@@ -191,12 +225,6 @@ public:
     // Does this game folder actually hold something Ember can mount? Same contract as the
     // cueGameHasImage forwarder above; defined in src/sources/cuesupport.cpp.
     int gameHasImage(const char *devPrefix, const char *name);
-
-private:
-    // The extensions Ember's io_find_disc accepts, in ITS priority order (.cue beats .exe beats
-    // .bin). We only test presence, so the order is documentation rather than logic -- but it is
-    // the reason a folder holding just a .bin is still a valid game.
-    static constexpr const char *discExts_[] = {".cue", ".exe", ".bin"};
 };
 
 extern CueSupport gCueSupport;

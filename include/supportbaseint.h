@@ -13,8 +13,10 @@ class SupportBase
 {
 public:
     // Gate for sbPopulateConfig's per-game size stat (see sbSetConfigStatSize in supportbase.h).
-    void setConfigStatSize(int enable) { configStatSize_ = enable; }
-    int configStatSizeEnabled() const { return configStatSize_; }
+    // Held only by the thread that enabled it: menuLoadConfig runs itemGetConfig on the GUI thread
+    // while the IO worker may be resolving an info size, and must not take that stat/mount work too.
+    void setConfigStatSize(int enable);
+    int configStatSizeEnabled() const;
 
     // Offer FMCB's USB IGR driver pair once per session (see sbEnsureIgrUsbDrivers in supportbase.h).
     void ensureIgrUsbDrivers(int compatmask);
@@ -28,8 +30,8 @@ public:
 #endif
 
 private:
-    int configStatSize_ = 0;
-    int igrUsbAsked_ = 0; // ensureIgrUsbDrivers asks once per session
+    int configStatSizeThread_ = -1; // owner thread while enabled, else -1
+    int igrUsbAsked_ = 0;           // ensureIgrUsbDrivers asks once per session
 #ifdef RETROACHIEVEMENTS
     FILE *raHashlog_ = NULL;
 #endif

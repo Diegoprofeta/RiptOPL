@@ -7,6 +7,9 @@
 #include "include/gui.h"
 #include "include/ioman.h"
 #include "include/lang.h"
+#ifdef RETROACHIEVEMENTS
+#include "include/achievements.h"
+#endif
 #include "include/pad.h"
 #include "include/config.h"
 #include "include/ethsupport.h"
@@ -18,10 +21,12 @@
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/cheatman.h"
 #include "include/system.h"
+#include "include/hddsupport.h" // hddVMCMapFits
 #include "include/guigame.h"
 #include "include/ds34common.h"
 #include "include/vmc_groups.h"
 #include "include/gamesource.h"
+#include "include/vmcrebuild.h"
 
 #ifdef PADEMU
 #include <libds34bt.h>
@@ -138,6 +143,8 @@ static statusVMCparam_t vmc_status;
 // Armed when the user starts a creation, cleared if they abort it. Gates the one-shot contiguity
 // report below so an aborted job -- whose file is gone -- never draws a complaint about its layout.
 static short vmc_check_layout;
+// The card shown can be rebuilt (original #1015), and a rebuild job is the one running.
+static short vmc_rebuild_offer, vmc_rebuilding;
 
 int guiGameVmcNameHandler(char *text, int maxLen)
 {
@@ -193,6 +200,17 @@ static int guiGameRefreshVMCConfig(item_list_t *support, char *name)
     return size;
 }
 
+// What to tell the user about the VMC whose creation just finished for the native core: a language
+// string id, or -1 for nothing (usable, or the store cannot tell). BDM needs one unbroken file
+// (sysVMCContiguity); a card on the HDD needs a PFS block map native mcemu can hold (hddVMCMapFits).
+static int guiGameVMCLayoutWarning(void)
+{
+    const char *path = sysVMCCreatePath();
+    if (!strncmp(path, "pfs", 3))
+        return hddVMCMapFits(path) == 0 ? _STR_VMC_PFS_LIMIT_ON_CREATE : -1;
+    return sysVMCContiguity() == 0 ? _STR_VMC_FRAGMENTED_ON_CREATE : -1;
+}
+
 static int guiGameVMCUpdater(int modified)
 {
     if (vmc_refresh) {
@@ -243,6 +261,57 @@ int guiGameResolveEffectiveCore(config_set_t *configSet, item_list_t *support, i
     return core;
 }
 
+// <device>VMC/<name>.bin on the row's own device (a favourite's owner) -- the file the native launch
+// maps. The owner's mode goes to sourceMode. 0 if there is none.
+static int guiGameVMCCardPath(int id, item_list_t *support, const char *name, char *path, int size, int *sourceMode)
+{
+    item_list_t ownerView;
+    item_list_t *owner = support->mode == FAV_MODE ? gFavSupport.ownerView(id, &ownerView) : support;
+    const char *prefix = owner != NULL ? gsOf(owner)->prefix(owner) : NULL;
+    if (sourceMode != NULL)
+        *sourceMode = owner != NULL ? owner->mode : -1;
+    return prefix != NULL && (unsigned int)snprintf(path, size, "%sVMC/%s.bin", prefix, name) < (unsigned int)size;
+}
+
+// Offer Rebuild for a valid card the native core would skip at launch: a fragmented one on BDM, one
+// with too long a PFS map on the HDD. Only a definite verdict offers it; Neutrino maps cards its own
+// way, and other stores cannot say how a card lies.
+static void guiGameRefreshVMCRebuild(int id, item_list_t *support, config_set_t *configSet, const char *name, int sizeMb)
+{
+    char path[256];
+    int sourceMode = -1;
+
+    vmc_rebuild_offer = (sizeMb == 8 || sizeMb == 16 || sizeMb == 32 || sizeMb == 64) && gEnableWrite &&
+                        guiGameResolveEffectiveCore(configSet, support, id) != 1 &&
+                        guiGameVMCCardPath(id, support, name, path, sizeof(path), &sourceMode) &&
+                        (sourceMode == HDD_MODE || (sourceMode >= BDM_MODE && sourceMode <= BDM_MODE_LAST)) &&
+                        vmcRebuildLayout(path, sizeMb) == 0;
+    diaSetVisible(diaVMC, VMC_BUTTON_REBUILD, vmc_rebuild_offer);
+    diaSetEnabled(diaVMC, VMC_BUTTON_REBUILD, vmc_rebuild_offer);
+    if (vmc_rebuild_offer)
+        diaSetLabel(diaVMC, VMC_STATUS, _l(_STR_VMC_FILE_NEEDS_REBUILD));
+}
+
+static int guiGameVMCRebuildMessage(int outcome)
+{
+    switch (outcome) {
+        case VMC_REBUILD_DONE:
+            return _STR_VMC_REBUILD_DONE;
+        case VMC_REBUILD_NO_ROOM:
+            return _STR_VMC_REBUILD_NO_ROOM;
+        case VMC_REBUILD_ABORTED:
+            return _STR_VMC_REBUILD_ABORTED;
+        case VMC_REBUILD_LEFTOVER:
+            return _STR_VMC_REBUILD_LEFTOVER;
+        case VMC_REBUILD_STUCK:
+            return _STR_VMC_REBUILD_STUCK;
+        case VMC_REBUILD_UNSYNCED:
+            return _STR_VMC_REBUILD_UNSYNCED;
+        default:
+            return _STR_VMC_REBUILD_FAILED;
+    }
+}
+
 static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *configSet, char *VMCName, int slot, int validate)
 {
     int result = validate ? VMC_BUTTON_CREATE : 0;
@@ -260,6 +329,7 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
     }
 
     vmc_refresh = 0;
+    vmc_rebuilding = 0;
     vmc_operation = OPERATION_CREATE;
     diaSetEnabled(diaVMC, VMC_NAME, 1);
     diaSetEnabled(diaVMC, VMC_SIZE, 1);
@@ -268,6 +338,7 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
     const char *VMCSizes[] = {"8 Mb", "16 Mb", "32 Mb", "64 Mb", NULL};
     diaSetEnum(diaVMC, VMC_SIZE, VMCSizes);
     int size = guiGameRefreshVMCConfig(support, vmc);
+    guiGameRefreshVMCRebuild(id, support, configSet, vmc, validate ? 0 : size); // never offered while validating
     diaSetString(diaVMC, VMC_NAME, vmc);
 
     do {
@@ -285,7 +356,8 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
                     sizeUI = 8;
 
                 if (sizeUI != size) {
-                    int createResult = gsOf(support)->checkVmc(support, vmc, sizeUI);
+                    int effectiveCore = guiGameResolveEffectiveCore(configSet, support, id);
+                    int createResult = gsOf(support)->createVmc(support, vmc, sizeUI, effectiveCore != 1);
                     if (createResult == SYS_VMC_REPLACE_REQUIRES_DELETE) {
                         guiMsgBox(_l(_STR_VMC_REPLACE_REQUIRES_DELETE), 0, diaVMC);
                     } else if (createResult == SYS_VMC_CREATE_FAILED) {
@@ -299,20 +371,31 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
                     }
                 } else
                     break;
+            } else if (vmc_operation == OPERATION_ENDING && vmc_rebuilding) {
+                // The copy job is over. The swap (or the clean-up of a copy that cannot be used)
+                // happens here, once, and the dialog then shows the card as it now is.
+                int outcome = vmcRebuildFinish(vmc_status.VMC_error);
+                vmc_rebuilding = 0;
+                guiMsgBox(_l(guiGameVMCRebuildMessage(outcome)), 0, diaVMC);
+                vmc_operation = OPERATION_CREATE;
+                diaSetEnabled(diaVMC, VMC_NAME, 1);
+                size = guiGameRefreshVMCConfig(support, vmc);
+                guiGameRefreshVMCRebuild(id, support, configSet, vmc, size);
             } else if (vmc_operation == OPERATION_ENDING) {
-                // Creation finished: a fragmented VMC is silently dropped at launch, so say so now,
-                // in the dialog that made it. Raised from the loop, not guiGameVMCUpdater, which
+                // Creation finished: a fragmented VMC (on the HDD, one with too long a PFS map) is
+                // dropped at launch, so say so now, in the dialog that made it. Raised from the loop, not guiGameVMCUpdater, which
                 // runs inside diaExecuteDialog and cannot open a message box.
                 //
-                // Only a definite 0 speaks: -1 means the backing store cannot answer. VMC_error
+                // Only a definite verdict speaks: -1 means the backing store cannot answer. VMC_error
                 // must be clear too -- the updater lands here on a FAILED creation as well, and
                 // blaming "fragmented" for an out-of-space would point at the wrong fix.
                 if (vmc_check_layout) {
+                    int warning;
                     vmc_check_layout = 0;
                     coreLoader = guiGameResolveEffectiveCore(configSet, support, id);
                     if ((coreLoader == 2 ? gDefaultCoreLoader : coreLoader) != 1 &&
-                        vmc_status.VMC_error == 0 && sysVMCContiguity() == 0)
-                        guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, diaVMC);
+                        vmc_status.VMC_error == 0 && (warning = guiGameVMCLayoutWarning()) >= 0)
+                        guiMsgBox(_l(warning), 0, diaVMC);
                 }
 
                 if (validate)
@@ -326,7 +409,23 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
                 vmc_operation = OPERATION_ABORTING;
                 vmc_check_layout = 0; // nothing was finished; do not report on a cancelled file
             }
-        } else if (result == VMC_BUTTON_DELETE) {
+        } else if (result == VMC_BUTTON_REBUILD) {
+            if (vmc_operation == OPERATION_CREATE && vmc_rebuild_offer && guiMsgBox(_l(_STR_VMC_REBUILD_CONFIRM), 1, diaVMC)) {
+                char path[256];
+                int started = guiGameVMCCardPath(id, support, vmc, path, sizeof(path), NULL) ? vmcRebuildStart(path, size) : VMC_REBUILD_FAILED;
+                if (started == 0) {
+                    diaSetEnabled(diaVMC, VMC_NAME, 0);
+                    diaSetEnabled(diaVMC, VMC_SIZE, 0);
+                    diaSetEnabled(diaVMC, VMC_BUTTON_DELETE, 0);
+                    diaSetEnabled(diaVMC, VMC_BUTTON_REBUILD, 0);
+                    diaSetLabel(diaVMC, VMC_BUTTON_CREATE, _l(_STR_ABORT));
+                    diaSetEnabled(diaVMC, VMC_BUTTON_CREATE, 1);
+                    vmc_operation = OPERATION_CREATING;
+                    vmc_rebuilding = 1;
+                } else
+                    guiMsgBox(_l(guiGameVMCRebuildMessage(started)), 0, diaVMC);
+            }
+        } else if (result == VMC_BUTTON_DELETE && vmc_operation == OPERATION_CREATE) {
             if (guiMsgBox(_l(_STR_DELETE_WARNING), 1, diaVMC)) {
                 gsOf(support)->checkVmc(support, vmc, -1);
                 diaSetString(diaVMC, VMC_NAME, "");
@@ -335,6 +434,7 @@ static int guiGameShowVMCConfig(int id, item_list_t *support, config_set_t *conf
         } else if (result == VMC_REFRESH) { // User changed the VMC name
             diaGetString(diaVMC, VMC_NAME, vmc, sizeof(vmc));
             size = guiGameRefreshVMCConfig(support, vmc);
+            guiGameRefreshVMCRebuild(id, support, configSet, vmc, size);
         }
 
         result = diaExecuteDialog(diaVMC, result, 1, &guiGameVMCUpdater);
@@ -362,7 +462,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
         backing = gFavSupport.ownerView(id, &ownerView);
     } else if (support->mode == APP_MODE || libListRowView(support, id) == LIB_VIEW_PS1)
         return 1;
-    if (backing == NULL || !backing->enabled || !gsOf(backing)->hasCheckVmc() || backing->mode == HTTP_MODE)
+    if (backing == NULL || !backing->enabled || !gsOf(backing)->hasCheckVmc() || backing->mode == HTTP_MODE || bdmModeIsPCCF(backing->mode))
         return 1;
     int loader = gDefaultCoreLoader;
     configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &loader);
@@ -402,7 +502,7 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
     int size = gsOf(backing)->checkVmc(backing, vmc, SYS_VMC_PROBE_FORMAT);
     bool formatted = false;
     if (size == -1) {
-        int submitted = gsOf(backing)->checkVmc(backing, vmc, AUTO_VMC_SIZE_MB);
+        int submitted = gsOf(backing)->createVmc(backing, vmc, AUTO_VMC_SIZE_MB, loader != 1);
         if (submitted != -1 && submitted != AUTO_VMC_SIZE_MB) {
             guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
             return 1;
@@ -459,8 +559,9 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
         guiMsgBox(_l(_STR_AUTO_VMC_FAILED), 0, NULL);
         return 1;
     }
-    if (formatted && loader != 1 && sysVMCContiguity() == 0)
-        guiMsgBox(_l(_STR_VMC_FRAGMENTED_ON_CREATE), 0, NULL);
+    int warning = formatted && loader != 1 ? guiGameVMCLayoutWarning() : -1;
+    if (warning >= 0)
+        guiMsgBox(_l(warning), 0, NULL);
     configSetVMC(configSet, vmc, 0);
     configGetVMC(configSet, assigned, sizeof(assigned), 0);
     if (strcmp(assigned, vmc) != 0) {
@@ -486,6 +587,10 @@ void guiGameShowVMCMenu(int id, item_list_t *support, config_set_t *configSet)
                                                  support->mode;
     if (sourceMode == HTTP_MODE) {
         guiMsgBox(_l(_STR_HTTP_NO_VMC), 0, NULL);
+        return;
+    }
+    if (bdmModeIsPCCF(sourceMode)) {
+        guiMsgBox(_l(_STR_PCCF_UNSUPPORTED_GAME), 0, NULL);
         return;
     }
 
@@ -721,7 +826,7 @@ static int guiGameCheatUpdater(int modified)
     return 0;
 }
 
-void guiGameShowCheatConfig(void)
+void guiGameShowCheatConfig(int neutrinoCore)
 {
     // configure the enumerations
     const char *settingsSource[] = {_l(_STR_GLOBAL_SETTINGS), _l(_STR_PERGAME_SETTINGS), NULL};
@@ -730,6 +835,8 @@ void guiGameShowCheatConfig(void)
     diaSetEnum(diaCheatConfig, CHTCFG_CHEATSOURCE, settingsSource);
     diaSetEnum(diaCheatConfig, CHTCFG_CHEATMODE, cheatmodeNames);
     diaSetEnabled(diaCheatConfig, CHTCFG_CHEATMODE, EnableCheat);
+    // Neutrino takes .cht codes but has no PS2RD cheat image: that row only applies to the OPL core.
+    diaSetEnabled(diaCheatConfig, CHTCFG_ENABLEIMAGE, !neutrinoCore);
 
     diaExecuteDialog(diaCheatConfig, -1, 1, &guiGameCheatUpdater);
 }
@@ -1231,6 +1338,9 @@ static int bsdfsDeviceCapable = 1;
 // row greyed for a VCD game even when the global default core is Neutrino (the locked "Default" row
 // would otherwise resolve to the global and un-grey them).
 static int coreNeverNeutrino = 0;
+// The core whose title defaults filled the compatibility checkboxes in guiGameLoadConfig. Saving compares
+// against that core's defaults: the Loader row can change afterwards without refilling the checkboxes.
+static int compatShownNeutrino = 0;
 
 // Appended "Default" (follow the global) enum indices for the per-game Neutrino Video / GSM-comp
 // pickers: values 0..5 / 0..3 persist 1:1 (system.c gsmVideoTokens); "Default" removes the key so
@@ -1287,6 +1397,20 @@ static void guiGameSaveGSMGlobalConfig(config_set_t *configGame)
     configSetInt(configGame, CONFIG_ITEM_GSMFIELDFIX, GSMFIELDFix);
 }
 
+// The core the compatibility dialog's Loader row selects, resolving "Default" to the global core. Sources
+// that boot one core only (see guiGameResolveEffectiveCore) answer for themselves.
+static int guiGameDialogCoreIsNeutrino(item_list_t *support, int neverNeutrino)
+{
+    int coreChoice = 0;
+
+    if (neverNeutrino)
+        return 0;
+    if (support != NULL && (support->mode == UDPFS_MODE || bdmSupportIsUDPBD(support)))
+        return 1;
+    diaGetInt(diaCompatConfig, COMPAT_LOADER, &coreChoice);
+    return (coreChoice == 1) || (coreChoice == 2 && gDefaultCoreLoader == 1);
+}
+
 static void guiGameSetCoreAwareState(void)
 {
     int coreChoice = 0, neutrino = 0, neutrinoVideo = 0;
@@ -1314,6 +1438,7 @@ static void guiGameSetCoreAwareState(void)
     diaSetEnabled(diaCompatConfig, COMPAT_MODE_BASE + 3, !neutrino); // Mode 4 Skip Videos: OPL core only
     diaSetEnabled(diaCompatConfig, COMPAT_MODE_BASE + 5, !neutrino); // Mode 6 Disable IGR: OPL core only
     diaSetEnabled(diaCompatConfig, COMPAT_MODE_BASE + 6, neutrino);  // Mode 7 -gc=7 fix buffer overrun: Neutrino only
+    diaSetEnabled(diaCompatConfig, COMPAT_MODE_BASE + 7, !neutrino); // Mode 8 Slow Reads: OPL core only
 }
 
 static int guiGameCompatUpdater(int modified)
@@ -1374,7 +1499,8 @@ void guiGameShowCompatConfig(int id, item_list_t *support, config_set_t *configS
     // VCD games launch through POPSTARTER only, so the Loader Core is inert for them -- keep every
     // Neutrino-only row greyed even under a Neutrino global default (guiGameSetCoreAwareState reads
     // this). SMB likewise: ethsupport has no Neutrino launch leg, the effective core is always <OPL>.
-    coreNeverNeutrino = (support != NULL && ((libViewActive(support->mode) == LIB_VIEW_PS1) || support->mode == ETH_MODE || sourceMode == HTTP_MODE));
+    // CF too: external Neutrino cannot restore the CF bus.
+    coreNeverNeutrino = (support != NULL && ((libViewActive(support->mode) == LIB_VIEW_PS1) || support->mode == ETH_MODE || sourceMode == HTTP_MODE || bdmModeIsPCCF(sourceMode)));
 
     // UDPBD games have no OPL core backend -- they always launch via Neutrino
     // (bdmsupport.c forces it). Lock the selector to Neutrino so the screen matches;
@@ -1386,9 +1512,9 @@ void guiGameShowCompatConfig(int id, item_list_t *support, config_set_t *configS
         // could run under a different core.
         diaSetInt(diaCompatConfig, COMPAT_LOADER, 2);
         diaSetEnabled(diaCompatConfig, COMPAT_LOADER, 0);
-    } else if (support != NULL && (support->mode == ETH_MODE || sourceMode == HTTP_MODE)) {
-        // SMB has no Neutrino launch leg (ethsupport never builds Neutrino args) -- the effective
-        // core is ALWAYS <OPL>. Pin the row to the inert "Default" (index 2: saving removes any
+    } else if (support != NULL && (support->mode == ETH_MODE || sourceMode == HTTP_MODE || bdmModeIsPCCF(sourceMode))) {
+        // SMB and CF have no Neutrino launch leg (external Neutrino cannot restore the CF bus) --
+        // the effective core is ALWAYS <OPL>. Pin the row to the inert "Default" (index 2: saving removes any
         // stale $CoreLoader key, self-healing old Neutrino selections) and lock it. Launch-time
         // honesty for keys set elsewhere (e.g. via Favourites) is the toast in ethLaunchGame.
         diaSetInt(diaCompatConfig, COMPAT_LOADER, 2);
@@ -1466,12 +1592,13 @@ static int guiGameApplyConfig(config_set_t *configSet, item_list_t *support)
             configRemoveKey(configSet, CONFIG_ITEM_DMA);
     }
 
-    if (compatMode != 0)
-        result = configSetInt(configSet, CONFIG_ITEM_COMPAT, compatMode);
-    else if (sbTitleCompatDefault(configSet) != 0) // "none" must be saved explicitly, or the title default comes back
-        result = configSetInt(configSet, CONFIG_ITEM_COMPAT, 0);
-    else
+    // The screen showed the title default for the core it was loaded with. Saving that unchanged keeps following the
+    // defaults (a default limited to one core must not become a saved value that applies to both); anything
+    // else is saved, including an explicit 0 ("none"), or the title default would come back.
+    if (compatMode == sbTitleCompatDefault(configSet, compatShownNeutrino))
         configRemoveKey(configSet, CONFIG_ITEM_COMPAT);
+    else
+        result = configSetInt(configSet, CONFIG_ITEM_COMPAT, compatMode);
 
     diaGetInt(diaCompatConfig, COMPAT_LOADER, &coreLoader);
     if (coreLoader == 2) // "Default" -> drop the per-game key so the game follows gDefaultCoreLoader
@@ -1511,6 +1638,10 @@ static int guiGameApplyConfig(config_set_t *configSet, item_list_t *support)
         else
             configRemoveKey(configSet, CONFIG_ITEM_ENABLEGSM);
 
+        // The legacy arm has no inherit state (an absent key means mode 0), so "Default" here is
+        // resolved to the global mode at save time instead of storing its out-of-range row index.
+        if (GSMVMode == GSM_VMODE_DEFAULT_IDX && !configGetInt(configGame, CONFIG_ITEM_GSMVMODE, &GSMVMode))
+            GSMVMode = 0;
         if (GSMVMode != 0)
             result = configSetInt(configSet, CONFIG_ITEM_GSMVMODE, GSMVMode);
         else
@@ -1532,7 +1663,10 @@ static int guiGameApplyConfig(config_set_t *configSet, item_list_t *support)
             configRemoveKey(configSet, CONFIG_ITEM_GSMFIELDFIX);
     } else if (gGSMSource == SETTINGS_GLOBAL) {
         configSetInt(configGame, CONFIG_ITEM_ENABLEGSM, EnableGSM);
-        configSetInt(configGame, CONFIG_ITEM_GSMVMODE, GSMVMode);
+        // "Default" (follow the global) on the global itself changes nothing: keep the stored mode
+        // rather than writing the Default row's out-of-range index.
+        if (GSMVMode != GSM_VMODE_DEFAULT_IDX)
+            configSetInt(configGame, CONFIG_ITEM_GSMVMODE, GSMVMode);
         configSetInt(configGame, CONFIG_ITEM_GSMXOFFSET, GSMXOffset);
         configSetInt(configGame, CONFIG_ITEM_GSMYOFFSET, GSMYOffset);
         configSetInt(configGame, CONFIG_ITEM_GSMFIELDFIX, GSMFIELDFix);
@@ -1644,6 +1778,9 @@ static int guiGameApplyConfig(config_set_t *configSet, item_list_t *support)
 
 int guiGameSaveConfig(config_set_t *configSet, item_list_t *support)
 {
+    if (configSet == NULL)
+        return -1;
+
     int parentalLock = 0;
     diaGetInt(diaCompatConfig, COMPAT_PARENTAL_LOCK, &parentalLock);
     // Authorize removal before any live/global configuration is changed.
@@ -1691,6 +1828,8 @@ void guiGameRemoveGlobalSettings(config_set_t *configGame)
 
 void guiGameRemoveSettings(config_set_t *configSet)
 {
+    if (configSet == NULL)
+        return;
     if ((menuGameRequiresParentalLock(configSet) ? menuCheckGameParentalLock(configSet) : menuCheckParentalLock()) == 0) {
         configRemoveKey(configSet, CONFIG_ITEM_CONFIGSOURCE);
         configRemoveKey(configSet, CONFIG_ITEM_DMA);
@@ -1741,6 +1880,12 @@ void guiGameRemoveSettings(config_set_t *configSet)
 
 void guiGameTestSettings(int id, item_list_t *support, config_set_t *configSet)
 {
+#ifdef RETROACHIEVEMENTS
+    if (achievementsBusy()) { // a browser page still owns the network and the share
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        return;
+    }
+#endif
     // Test launch: apply the in-dialog edits to a throwaway CLONE and boot from that, so the live
     // per-game config is never modified -- "Test" must not persist. (The old code wrote the edits
     // straight into the live configSet, which could later be flushed to disk by an unrelated Save.)
@@ -1984,6 +2129,12 @@ void guiGameShowOSDLanguageConfig(int forceGlobal)
         if (result == UIID_BTN_OK)
             break;
     }
+
+    // Keep global edits in memory for reopening and launching; Save Changes owns the disk write.
+    if (forceGlobalOSDLanguage)
+        guiGameSaveOSDLanguageGlobalConfig(configGetByType(CONFIG_GAME));
+    // This editor's scope must not suppress the next game's per-game overrides (original #1043).
+    forceGlobalOSDLanguage = 0;
 }
 static int guiGameSaveOSDLanguageGameConfig(config_set_t *configSet, int result)
 {
@@ -2055,6 +2206,9 @@ void guiGameLoadConfig(item_list_t *support, config_set_t *configSet)
     int i;
     config_set_t *configGame = configGetByType(CONFIG_GAME);
 
+    if (configSet == NULL)
+        return;
+
     configSource[0] = '\0';
     configSourceID = CONFIG_SOURCE_DEFAULT;
     configGetInt(configSet, CONFIG_ITEM_CONFIGSOURCE, &configSourceID);
@@ -2070,15 +2224,20 @@ void guiGameLoadConfig(item_list_t *support, config_set_t *configSet)
     } else
         diaSetInt(diaCompatConfig, COMPAT_DMA, 0);
 
-    compatMode = sbGetCompatModes(configSet); // includes a title default, so the screen matches what launches
-    for (i = 0; i < COMPAT_MODE_COUNT; ++i)
-        diaSetInt(diaCompatConfig, COMPAT_MODE_BASE + i, (compatMode & (1 << i)) > 0 ? 1 : 0);
-
     // COMPAT_LOADER index == the stored $CoreLoader value when present (0=<OPL>, 1=Neutrino); a missing
     // key maps to index 2 "Default" so the game defers its core to the global gDefaultCoreLoader.
     if (!configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &coreLoader))
         coreLoader = 2;
     diaSetInt(diaCompatConfig, COMPAT_LOADER, coreLoader);
+
+    // Includes a title default for the selected core, so the screen matches what launches.
+    // coreNeverNeutrino belongs to the last dialog, so work out the sources that only boot the OPL core here.
+    int neverNeutrino = support != NULL && (libViewActive(support->mode) == LIB_VIEW_PS1 || support->mode == ETH_MODE ||
+                                            support->mode == HTTP_MODE || bdmModeIsPCCF(support->mode));
+    compatShownNeutrino = guiGameDialogCoreIsNeutrino(support, neverNeutrino);
+    compatMode = sbGetCompatModes(configSet, compatShownNeutrino);
+    for (i = 0; i < COMPAT_MODE_COUNT; ++i)
+        diaSetInt(diaCompatConfig, COMPAT_MODE_BASE + i, (compatMode & (1 << i)) > 0 ? 1 : 0);
 
     guiGameLoadGSMConfig(configSet, configGame);
 

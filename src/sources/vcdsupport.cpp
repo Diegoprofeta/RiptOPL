@@ -32,7 +32,8 @@
 #include "include/lang.h"        // _l + _STR_BDMA_ERR_* (same texts the Settings-screen equip shows)
 #include "include/textures.h"    // texDiscoverLoad + ERR_BAD_FILE (VCD POPS cover fallback)
 #include "include/vcdsupport.h"
-#include "include/libview.h" // which list a page is showing (the L3 ring)
+#include "include/cuesupport.h" // cueResolveFirstDiscImage -- the Ember half of the PS1-row id memo
+#include "include/libview.h"    // which list a page is showing (the L3 ring)
 #include "include/retrogem.h"
 
 VcdSupport gVcdSupport;
@@ -274,7 +275,8 @@ struct vcd_id_memo
 {
     vcd_id_memo *next;
     char id[VCD_ID_MAX];     // resolved disc id; empty once absent
-    char *dir;               // directory this VCD was scanned from -- the ONLY correct path source
+    char *dir;               // directory this row was scanned from -- the ONLY correct path source
+    unsigned char kind;      // PS1_ROW_VCD (POPS dir) or PS1_ROW_CUE (device root)
     unsigned char state;     // vcd_id_state_t
     unsigned char retries;   // count of failed read attempts before transitioning to ABSENT
     unsigned int retryFrame; // guiFrameId when deferred retry is next permitted
@@ -283,10 +285,10 @@ struct vcd_id_memo
 
 typedef struct vcd_id_memo vcd_id_memo_t;
 
-vcd_id_memo_t *VcdSupport::idMemoFind(const char *name)
+vcd_id_memo_t *VcdSupport::idMemoFind(const char *name, int kind)
 {
     for (vcd_id_memo_t *m = memoHead_; m != NULL; m = m->next) {
-        if (!strcmp(m->name, name))
+        if (m->kind == kind && !strcmp(m->name, name))
             return m;
     }
     return NULL;
@@ -297,13 +299,13 @@ vcd_id_memo_t *VcdSupport::idMemoFind(const char *name)
 // is remember which directory a VCD came from, because that is the one thing the lazy resolver
 // cannot work out for itself: vcdScanDir appends POPS/ to a device root while vcdScanDirRoot takes a
 // directory directly (the APA/PFS HDD), so any attempt to reconstruct the path later can only be
-// right about one of the two layouts.
-void VcdSupport::noteScanDir(const char *name, const char *dirPath)
+// right about one of the two layouts. The Ember scan notes its rows here too, with the device root.
+void VcdSupport::noteScanDir(const char *name, const char *dirPath, int kind)
 {
     if (name == NULL || dirPath == NULL || name[0] == '\0')
         return;
 
-    vcd_id_memo_t *m = idMemoFind(name);
+    vcd_id_memo_t *m = idMemoFind(name, kind);
     if (m != NULL) {
         if (m->dir == NULL || strcmp(m->dir, dirPath) != 0) {
             free(m->dir); // same name on a different device: re-point, and re-ask the disc
@@ -324,6 +326,7 @@ void VcdSupport::noteScanDir(const char *name, const char *dirPath)
     if (m == NULL)
         return;
     memcpy(m->name, name, len + 1);
+    m->kind = (unsigned char)kind;
     m->id[0] = '\0';
     m->state = VCD_ID_UNREQUESTED;
     m->retries = 0;
@@ -356,7 +359,7 @@ void vcdInvalidateGameIds(void)
 //
 // The caption renders ONE id shape: AAAA_NNN.NN -- the PS2 page's form (g->startup) and the
 // filename parser's strict output. The disc resolver can legitimately hand back the SAME id as
-// "AAAA-NNNNN" (dash naming from partitions / some SYSTEM.CNF files survives RetroGEM::cleanTitleId
+// "AAAA-NNNNN" (dash naming from partitions / some SYSTEM.CNF files survives retrogemCleanTitleID
 // verbatim for several input shapes); without this step the caption would visibly change shape when
 // the disc read landed (step-171). Display-layer only: the memo stores the canonical form, and the
 // RetroGEM launch/barcode path keeps its own resolver output -- it never reads the memo.
@@ -405,19 +408,15 @@ static int vcdCanonDisplayId(const char *idIn, char *idOut, int idSize)
     return 0; // not a recognisable id shape: the caller keeps the resolver's string untouched
 }
 
-// Called from the per-game CONFIG path, which is where a value like this belongs: that path is
-// already asynchronous, already runs on the io worker, already fires once per SETTLED row, and since
-// rebuild-155 is gated on the theme actually having an element that displays it. So a theme that
-// shows the id pays one disc read per game per session, and a theme that does not pays nothing --
-// exactly how #Size behaves, and exactly what Nathan asked for: it may arrive late, it must never
-// hold anything up.
-int VcdSupport::resolveDisplayId(const char *name, char *idOut, int idSize)
+// The io worker's device read for the memo, shared by the caption and the art/CFG metadata. It runs
+// once per row per session and may arrive late; it never holds anything up.
+int VcdSupport::resolveRowId(const char *name, int kind, char *idOut, int idSize)
 {
     if (name == NULL || idOut == NULL || idSize <= 0)
         return 0;
     idOut[0] = '\0';
 
-    vcd_id_memo_t *m = idMemoFind(name);
+    vcd_id_memo_t *m = idMemoFind(name, kind);
     if (m == NULL || m->dir == NULL)
         return 0; // never scanned (or the table was full): caller falls back to the filename
 
@@ -428,19 +427,29 @@ int VcdSupport::resolveDisplayId(const char *name, char *idOut, int idSize)
     if (m->state == VCD_ID_ABSENT)
         return 0;
 
-    char vcdPath[256];
     char discId[RETROGEM_GAMEID_MAX];
-    size_t dl = strlen(m->dir);
-    const char *sep = (dl > 0 && m->dir[dl - 1] == '/') ? "" : "/";
+    int found = 0;
 
-    if (snprintf(vcdPath, sizeof(vcdPath), "%s%s%s.VCD", m->dir, sep, name) >= (int)sizeof(vcdPath)) {
-        m->state = VCD_ID_ABSENT;
-        return 0;
+    // The image is ground truth, and this is the SAME resolver (and, for Ember, the same disc-1
+    // image) the RetroGEM barcode uses at launch, so a game reports one id to the theme, to the
+    // scanner and to art/CFG metadata.
+    if (m->kind == PS1_ROW_CUE) {
+        char imagePath[640];
+        found = cueResolveFirstDiscImage(m->dir, name, imagePath, sizeof(imagePath)) &&
+                retrogemGetPs1ImageGameID(imagePath, discId, sizeof(discId)) && discId[0] != '\0';
+    } else {
+        char vcdPath[256];
+        size_t dl = strlen(m->dir);
+        const char *sep = (dl > 0 && m->dir[dl - 1] == '/') ? "" : "/";
+
+        if (snprintf(vcdPath, sizeof(vcdPath), "%s%s%s.VCD", m->dir, sep, name) >= (int)sizeof(vcdPath)) {
+            m->state = VCD_ID_ABSENT;
+            return 0;
+        }
+        found = retrogemGetVcdGameID(vcdPath, discId, sizeof(discId)) && discId[0] != '\0';
     }
 
-    // The image is ground truth, and this is the SAME resolver the RetroGEM barcode uses at launch,
-    // so a game reports one id to the theme and to the scanner.
-    if (retrogemGetVcdGameID(vcdPath, discId, sizeof(discId)) && discId[0] != '\0') {
+    if (found) {
         // Canonicalise BEFORE the memo stores it: the caption renders one id shape whether this id
         // came from the disc or from the filename fallback (step-171). The barcode's own launch
         // resolver never reads the memo and is untouched.
@@ -475,7 +484,7 @@ int VcdSupport::resolveDisplayId(const char *name, char *idOut, int idSize)
 // never meet directly:
 //
 //   menuRenderElements (settled row, GUI thread) -> vcdRequestDisplayId -> one-slot request
-//   -> ioman worker (IO_CUSTOM_SIMPLEACTION) -> VcdSupport::resolveDisplayId (the IO) -> the memo
+//   -> ioman worker (IO_CUSTOM_SIMPLEACTION) -> VcdSupport::resolveRowId (the IO) -> the memo
 //   -> next frame's drawItemText -> vcdDisplayIdCached (memo only, NO IO) -> the id on screen.
 //
 // This is deliberately NOT the per-game config path: that path is gated on the theme having
@@ -492,7 +501,7 @@ int VcdSupport::displayIdCached(const char *name, char *idOut, int idSize)
         return 0;
     idOut[0] = '\0';
 
-    vcd_id_memo_t *m = idMemoFind(name);
+    vcd_id_memo_t *m = idMemoFind(name, PS1_ROW_VCD);
     if (m == NULL || m->state != VCD_ID_RESOLVED || m->id[0] == '\0')
         return 0;
     snprintf(idOut, idSize, "%s", m->id);
@@ -516,6 +525,7 @@ void VcdSupport::resolveQueuedDisplayId()
 {
     char name[256];
     char id[VCD_ID_MAX];
+    int kind;
 
     DIntr();
     if (!idReqPending_) {
@@ -523,10 +533,11 @@ void VcdSupport::resolveQueuedDisplayId()
         return;
     }
     snprintf(name, sizeof(name), "%s", idReqName_);
+    kind = idReqKind_;
     idReqPending_ = 0;
     EIntr();
 
-    vcd_id_memo_t *m = idMemoFind(name);
+    vcd_id_memo_t *m = idMemoFind(name, kind);
 
     // Async is not enough by itself: a device read can still starve the same USB/PFS channel
     // used by artwork and BGM. If either pipeline is busy, transition to DEFERRED with a throttled
@@ -539,10 +550,10 @@ void VcdSupport::resolveQueuedDisplayId()
         return;
     }
 
-    resolveDisplayId(name, id, sizeof(id));
+    resolveRowId(name, kind, id, sizeof(id));
 }
 
-void VcdSupport::requestDisplayId(const char *name)
+void VcdSupport::requestRowId(const char *name, int kind, int verifyParsedName)
 {
     char parsed[VCD_ID_MAX];
 
@@ -550,10 +561,10 @@ void VcdSupport::requestDisplayId(const char *name)
         return;
 
     // Filename already supplies exactly what ItemText needs: zero IO
-    if (vcdExtractGameId(name, parsed, sizeof(parsed)))
+    if (!verifyParsedName && vcdExtractGameId(name, parsed, sizeof(parsed)))
         return;
 
-    vcd_id_memo_t *m = idMemoFind(name);
+    vcd_id_memo_t *m = idMemoFind(name, kind);
     if (m == NULL || m->dir == NULL)
         return;
 
@@ -574,6 +585,7 @@ void VcdSupport::requestDisplayId(const char *name)
         return;
     }
     snprintf(idReqName_, sizeof(idReqName_), "%s", name);
+    idReqKind_ = (unsigned char)kind;
     idReqPending_ = 1;
     m->state = VCD_ID_QUEUED;
     EIntr();
@@ -590,13 +602,48 @@ void VcdSupport::requestDisplayId(const char *name)
 
 void vcdRequestDisplayId(const char *name)
 {
-    gVcdSupport.requestDisplayId(name);
+    gVcdSupport.requestRowId(name, PS1_ROW_VCD, 0);
+}
+
+void ps1RowIdRequest(const char *name, int kind)
+{
+    gVcdSupport.requestRowId(name, kind, 1);
+}
+
+int VcdSupport::rowIdCached(const char *name, int kind, char *idOut, int idSize)
+{
+    char parsed[VCD_ID_MAX];
+
+    if (name == NULL || idOut == NULL || idSize <= 0)
+        return 0;
+    idOut[0] = '\0';
+
+    // Disc-verified answer first: metadata must match the id the RetroGEM barcode reports at launch.
+    vcd_id_memo_t *m = idMemoFind(name, kind);
+    if (m != NULL && m->state == VCD_ID_RESOLVED && m->id[0] != '\0') {
+        snprintf(idOut, idSize, "%s", m->id);
+        return 1;
+    }
+    // Zero-IO provisional id from a PSBBN/BatchKit-style row name (Ember folder names too). A
+    // queued verify corrects it later if the name lies.
+    if (vcdExtractGameId(name, parsed, sizeof(parsed))) {
+        snprintf(idOut, idSize, "%s", parsed);
+        return 1;
+    }
+    return 0;
+}
+
+int ps1RowIdCached(const char *name, int kind, char *idOut, int idSize)
+{
+    return gVcdSupport.rowIdCached(name, kind, idOut, idSize);
 }
 
 // dirPath is the directory that was just opened; fileName is what readdir returned (with ".VCD");
 // baseName is that name with the extension stripped. Writes the id, or an empty string when none.
 
-static int vcdScanOpenDir(const char *dirPath, vcd_entry_t **outList)
+static int vcdJoinDirFile(char *out, int outSize, const char *dirPath, const char *fileName);
+
+static int vcdScanOpenDir(const char *dirPath, vcd_entry_t **outList, int statSize)
 {
     errno = 0; // clear BEFORE opendir so the NULL branch reads THIS call's errno, not a stale one
     DIR *dir = opendir(dirPath);
@@ -616,12 +663,10 @@ static int vcdScanOpenDir(const char *dirPath, vcd_entry_t **outList)
         // PRESERVES its last-good list instead of blanking it on a transient wedge. Mirrors
         // scanForISO (the ISO path) -- the #120 fix: the VCD & ISO views share one backing store,
         // and returning 0 here zeroed BOTH on a contended bus.
-        // MMCE caveat: mmceman's dopen collapses EVERY failure -- including the card's explicit
-        // not-found reply -- into a bare -1 (EE sees EPERM, not ENOENT), so on mmceN: an absent
-        // POPS still lands on this -1 path unless the paired mmceman-fs-dopen-enoent.patch is in
-        // the build (install_coherent_mmce.sh applies it, same doctrine as the fs-open ENOENT
-        // patch behind textures.c's classifier). Without it, MMCE behavior is exactly the old one:
-        // bounded retries, then quiesce -- never worse.
+        // MMCE: stock mmceman's dopen collapses EVERY failure -- including the card's explicit
+        // not-found reply -- into a bare -1 (EE sees EPERM, not ENOENT). The embedded fork carries
+        // mmceman-fs-dopen-enoent.patch (modules/mmce/mmceman/ORIGIN.txt), so an absent POPS on
+        // mmceN: reaches the ENOENT branch above like every other device.
         return -1;
     }
 
@@ -661,6 +706,14 @@ static int vcdScanOpenDir(const char *dirPath, vcd_entry_t **outList)
         memcpy(list[count].name, de->d_name, baseLen);
         list[count].name[baseLen] = '\0';
         gVcdSupport.noteScanDir(list[count].name, dirPath); // string only -- NO device IO on the scan path
+        if (statSize) {
+            // HDD only: one PFS stat per VCD while the pooled container is mounted anyway. Every other
+            // device keeps the zero-IO scan and resolves #Size on the info screen (sbResolvePs1Size).
+            char filePath[320];
+            struct stat st;
+            if (vcdJoinDirFile(filePath, sizeof(filePath), dirPath, de->d_name) == 0 && stat(filePath, &st) == 0)
+                list[count].sizeMB = (u32)(st.st_size >> 20);
+        }
         count++;
     }
     closedir(dir);
@@ -696,7 +749,7 @@ static int vcdScanDir(const char *devPrefix, vcd_entry_t **outList)
     char dirPath[256];
     snprintf(dirPath, sizeof(dirPath), "%s%s", devPrefix, POPS_FOLDER); // "<prefix>POPS" (prefix ends in '/')
 
-    return vcdScanOpenDir(dirPath, outList);
+    return vcdScanOpenDir(dirPath, outList, 0);
 }
 
 // Scan a directory path DIRECTLY (no POPS/ subfolder) for *.VCD -- used for the APA/PFS HDD, where
@@ -709,7 +762,7 @@ int vcdScanDirRoot(const char *dirPath, vcd_entry_t **outList)
     if (dirPath == NULL)
         return 0;
 
-    return vcdScanOpenDir(dirPath, outList);
+    return vcdScanOpenDir(dirPath, outList, 1);
 }
 
 // POPStarter path separator for a device prefix: '\\' for SMB (ethPrefix ends in '\\'), else '/'.
@@ -991,7 +1044,7 @@ int vcdFillGameList(const char *devPrefix, base_game_info_t **outGames)
             // IDENTITY, and it stays the FILENAME. Art, per-game CFG and the launch all key off this
             // (bdmGetGameStartup returns g->name for the VCD view), and the files on disk are named
             // after the VCD, not after the disc's internal id. The disc-derived id is a DISPLAY value
-            // only, resolved lazily on the config path -- see VcdSupport::resolveDisplayId. Putting it here
+            // only, resolved lazily on the config path -- see VcdSupport::resolveRowId. Putting it here
             // would have pointed every art lookup at a name nothing on disk is called.
             snprintf(games[kept].startup, sizeof(games[kept].startup), "%s", vcds[i].name);
             snprintf(games[kept].extension, sizeof(games[kept].extension), ".VCD");
@@ -1169,13 +1222,100 @@ static const char *vcdBdmaModule[2] = {"usbd.irx", "usbhdfsd.irx"};
 
 #define VCD_BDMA_MARKER "bdma_config.txt"
 
-// Resolve the memory-card POPSTARTER folder (where the modules live). Prefer an existing folder;
-// otherwise create it on the first present card. A slot-2-only first-time setup must not silently
-// select absent mc0:, and mkdir/probe failure must reach the caller.
-static int vcdResolvePopstarterMc(char *out, int outSize)
+// RiptOPL's own save icon (src/platform/util.cpp), retitled for a POPSTARTER folder that has none.
+extern unsigned char icon_sys[];
+extern unsigned int size_icon_sys;
+extern unsigned char save_icn[];
+extern unsigned int size_save_icn;
+
+// icon.sys layout: the Shift-JIS title (68 bytes) and the three icon file names (64 bytes each).
+#define VCD_ICON_SYS_TITLE 0xC0
+#define VCD_ICON_SYS_NAMES 0x104
+
+// POPStarter's own icon set, as its release ships it in POPS/.
+static const char *vcdPopsIconFile[3] = {"list.icn", "del.icn", "icon.sys"};
+
+// 1 when a and b name the same file: the card driver reads "mc0:/X/y" and "mc0:X/y" alike.
+static int vcdSamePath(const char *a, const char *b)
+{
+    const char *ca = strchr(a, ':'), *cb = strchr(b, ':');
+
+    if (ca == NULL || cb == NULL || ca - a != cb - b || strncmp(a, b, (size_t)(ca - a)) != 0)
+        return 0;
+    ca += ca[1] == '/' ? 2 : 1;
+    cb += cb[1] == '/' ? 2 : 1;
+    return strcmp(ca, cb) == 0;
+}
+
+// A POPSTARTER folder the browser can draw: icon.sys and the .icn files it names. One already there is
+// the user's (or POPStarter's own install) and is left alone. Otherwise POPStarter's own set from
+// srcDir (a POPS/ folder, separator included), and failing that RiptOPL's built-in icon retitled
+// POPSTARTER, its three views all naming one list.icn. Best effort: a folder without icons still
+// works, it just draws as Corrupted Data.
+static void vcdStampPopstarterIcons(const char *mcDir, const char *srcDir)
+{
+    unsigned char sys[1024];
+    char src[320], dst[96];
+    int fd, i, n = 0;
+    const char *title = "POPSTARTER";
+
+    snprintf(dst, sizeof(dst), "%s/icon.sys", mcDir);
+    fd = open(dst, O_RDONLY);
+    if (fd >= 0) {
+        close(fd);
+        return;
+    }
+    if (srcDir != NULL && srcDir[0] != '\0') {
+        for (i = 0; i < 3; i++) {
+            snprintf(src, sizeof(src), "%s%s", srcDir, vcdPopsIconFile[i]);
+            snprintf(dst, sizeof(dst), "%s/%s", mcDir, vcdPopsIconFile[i]);
+            // srcDir can be this very folder (a driver pair beside a POPSTARTER.ELF on the card). A file
+            // there is already in place, and copying it onto itself would truncate -- then unlink -- it.
+            if (vcdSamePath(src, dst)) {
+                if ((fd = open(dst, O_RDONLY)) < 0)
+                    break;
+                close(fd);
+                continue;
+            }
+            if (vcdSafeCopyFile(src, dst) != 0)
+                break;
+        }
+        if (i == 3)
+            return;
+    }
+
+    if (size_icon_sys < VCD_ICON_SYS_NAMES + 3 * 0x40 || size_icon_sys > sizeof(sys))
+        return;
+    // A list.icn already here (POPStarter's own, with no icon.sys beside it) serves the retitled
+    // icon.sys just as well: keep it, write RiptOPL's only when there is none.
+    snprintf(dst, sizeof(dst), "%s/list.icn", mcDir);
+    fd = open(dst, O_RDONLY);
+    if (fd >= 0)
+        close(fd);
+    else if (vcdSafeWriteFile(dst, save_icn, (int)size_save_icn) != 0)
+        return;
+    memcpy(sys, icon_sys, size_icon_sys);
+    memset(sys + VCD_ICON_SYS_TITLE, 0, 68);
+    for (; *title != '\0' && n + 2 <= 68; title++) { // A-Z as full-width Shift-JIS (0x8260 = 'A')
+        sys[VCD_ICON_SYS_TITLE + n++] = 0x82;
+        sys[VCD_ICON_SYS_TITLE + n++] = (unsigned char)(0x60 + (*title - 'A'));
+    }
+    sys[6] = (unsigned char)n; // one line: the break falls after the whole title
+    sys[7] = 0;
+    for (i = 0; i < 3; i++) {
+        memset(sys + VCD_ICON_SYS_NAMES + 0x40 * i, 0, 0x40);
+        memcpy(sys + VCD_ICON_SYS_NAMES + 0x40 * i, "list.icn", 8);
+    }
+    snprintf(dst, sizeof(dst), "%s/icon.sys", mcDir);
+    vcdSafeWriteFile(dst, sys, (int)size_icon_sys);
+}
+
+// The memory-card POPSTARTER folder that already exists (mc0 first). Never creates one: reading a
+// setting -- the BDMA page, a launch's environment check -- must not sprout a folder on a card that
+// never had POPStarter. That empty folder shows up in the browser as Corrupted Data.
+static int vcdFindPopstarterMc(char *out, int outSize)
 {
     static const char *cards[2] = {"mc0:/POPSTARTER", "mc1:/POPSTARTER"};
-    static const char *roots[2] = {"mc0:/", "mc1:/"};
 
     if (out == NULL || outSize <= 0)
         return 0;
@@ -1189,6 +1329,22 @@ static int vcdResolvePopstarterMc(char *out, int outSize)
             return 1;
         }
     }
+    return 0;
+}
+
+// The POPSTARTER folder for something that must WRITE there: the existing one, else a new one on the
+// first present card. A slot-2-only first-time setup must not silently select absent mc0:, and
+// mkdir/probe failure must reach the caller. Whoever writes into it also gives it its icons
+// (vcdStampPopstarterIcons), so the browser never shows it as Corrupted Data.
+static int vcdResolvePopstarterMc(char *out, int outSize)
+{
+    static const char *cards[2] = {"mc0:/POPSTARTER", "mc1:/POPSTARTER"};
+    static const char *roots[2] = {"mc0:/", "mc1:/"};
+
+    if (vcdFindPopstarterMc(out, outSize))
+        return 1;
+    if (out == NULL || outSize <= 0)
+        return 0;
 
     for (int i = 0; i < 2; i++) {
         DIR *root = opendir(roots[i]);
@@ -1224,7 +1380,7 @@ static int vcdWriteBdmaMarker(const char *mcDir, int mode)
 int vcdReadBdmaMode(void)
 {
     char mcDir[64];
-    if (!vcdResolvePopstarterMc(mcDir, sizeof(mcDir)))
+    if (!vcdFindPopstarterMc(mcDir, sizeof(mcDir)))
         return VCD_BDMA_FAT32;
     char path[96];
     snprintf(path, sizeof(path), "%s/%s", mcDir, VCD_BDMA_MARKER);
@@ -1239,6 +1395,8 @@ int vcdReadBdmaMode(void)
     buf[r] = '\0';
     while (r > 0 && (buf[r - 1] == '\n' || buf[r - 1] == '\r' || buf[r - 1] == ' ' || buf[r - 1] == '\t'))
         buf[--r] = '\0'; // trim trailing whitespace/newline
+    if (strcmp(buf, "udpfsnet") == 0)
+        return VCD_BDMA_UDPFS; // accept the interim PR marker for this same network driver
     for (int m = 0; m < VCD_BDMA_MODE_COUNT; m++) {
         if (strcmp(buf, vcdBdmaSuffix[m]) == 0)
             return m;
@@ -1246,7 +1404,33 @@ int vcdReadBdmaMode(void)
     return VCD_BDMA_FAT32;
 }
 
-int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir)
+static int vcdBdmaPairIsShipped(const char *src0, const char *src1, int mode); // beside vcdBdmaPairSig below
+
+// Probe one folder's variant pair (src0 + src1): 1 = a pair to install. A launch (shippedOnly) passes
+// over a pair whose sizes are not the ones this release ships -- a device POPS/ folder an older release
+// left behind -- and notes the first such file in stale, so a pair later in the seek order still wins.
+static int vcdProbeBdmaPair(const char *src0, const char *src1, int mode, int shippedOnly, char *stale, int staleSize)
+{
+    int fd = open(src0, O_RDONLY);
+    LOG("[BDMA] probe %s -> %d\n", src0, fd);
+    if (fd < 0)
+        return 0;
+    close(fd);
+    fd = open(src1, O_RDONLY);
+    LOG("[BDMA] probe %s -> %d\n", src1, fd);
+    if (fd < 0)
+        return 0;
+    close(fd);
+    if (!shippedOnly || vcdBdmaPairIsShipped(src0, src1, mode))
+        return 1;
+    if (stale[0] == '\0')
+        snprintf(stale, staleSize, "%s", src1);
+    return 0;
+}
+
+// shippedOnly: a launch installs only the pair this release ships (-5 when the seek path holds only
+// another one, which is never copied). The Settings page passes 0: a manually chosen pair is the user's.
+int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir, int shippedOnly)
 {
     if (diag != NULL && diagSize > 0)
         diag[0] = '\0';
@@ -1254,18 +1438,19 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
     if (mode < 0 || mode >= VCD_BDMA_MODE_COUNT || source < 0 || source >= VCD_BDMA_SRC_COUNT)
         return -1;
 
+    // The POPSTARTER folder is only MADE once there is a driver pair to put in it (below). Until then
+    // only an existing one is used: an equip that finds nothing must not leave an empty folder behind.
     char mcDir[64];
-    if (!vcdResolvePopstarterMc(mcDir, sizeof(mcDir))) {
-        if (diag != NULL && diagSize > 0)
-            snprintf(diag, diagSize, "No writable PS2 memory card is available.");
-        return -3;
-    }
-
+    int haveDir = vcdFindPopstarterMc(mcDir, sizeof(mcDir));
     char dst0[96], dst1[96];
-    snprintf(dst0, sizeof(dst0), "%s/%s", mcDir, vcdBdmaModule[0]);
-    snprintf(dst1, sizeof(dst1), "%s/%s", mcDir, vcdBdmaModule[1]);
 
     if (mode == VCD_BDMA_FAT32) {
+        // FAT32 is POPStarter's built-in driver: nothing to install. A card with no POPSTARTER folder
+        // is already in that state, so only an existing folder has a pair to remove.
+        if (!haveDir)
+            return 0;
+        snprintf(dst0, sizeof(dst0), "%s/%s", mcDir, vcdBdmaModule[0]);
+        snprintf(dst1, sizeof(dst1), "%s/%s", mcDir, vcdBdmaModule[1]);
         // FAT32 fallback: remove the exFAT modules so POPStarter uses its built-in driver.
         unlink(dst0);
         unlink(dst1);
@@ -1274,7 +1459,7 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
     }
 
     const char *suffix = vcdBdmaSuffix[mode];
-    char src0[96], src1[96];
+    char src0[96], src1[96], stale[96] = "";
     int found = 0;
 
     // FifthFox's adaptive seek order (maintainer-approved): look for the variant pair at the CUSTOM
@@ -1283,7 +1468,12 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
     // This is also the FAST order: both pre-candidates live on ALREADY-LOADED stacks (we booted from
     // one and are launching from the other), so a hit here costs a few open() probes and skips the
     // family search's transport force-loads and bounded mount waits entirely.
-    {
+    if (popsDir != NULL) {
+        // An explicit game-device POPS source is authoritative.
+        snprintf(src0, sizeof(src0), "%s%s.%s", popsDir, vcdBdmaModule[0], suffix);
+        snprintf(src1, sizeof(src1), "%s%s.%s", popsDir, vcdBdmaModule[1], suffix);
+        found = vcdProbeBdmaPair(src0, src1, mode, shippedOnly, stale, sizeof(stale));
+    } else {
         char preBuf[2][96];
         const char *pre[4];
         int npre = 0;
@@ -1325,24 +1515,12 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
             }
         }
 
-        if (popsDir != NULL)
-            pre[npre++] = popsDir;
         if (mode == VCD_BDMA_UDPFS)
             pre[npre++] = "udpfs:/POPS/";
         for (int i = 0; i < npre && !found; i++) {
             snprintf(src0, sizeof(src0), "%s%s.%s", pre[i], vcdBdmaModule[0], suffix);
             snprintf(src1, sizeof(src1), "%s%s.%s", pre[i], vcdBdmaModule[1], suffix);
-            int f0 = open(src0, O_RDONLY);
-            LOG("[BDMA] pre-probe %s -> %d\n", src0, f0);
-            if (f0 < 0)
-                continue;
-            close(f0);
-            int f1 = open(src1, O_RDONLY);
-            LOG("[BDMA] pre-probe %s -> %d\n", src1, f1);
-            if (f1 < 0)
-                continue;
-            close(f1);
-            found = 1;
+            found = vcdProbeBdmaPair(src0, src1, mode, shippedOnly, stale, sizeof(stale));
         }
     }
 
@@ -1357,8 +1535,8 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
     const char *cands[MAX_BDM_DEVICES];
     char bdmRoots[MAX_BDM_DEVICES][BDM_DEVICE_ROOT_MAX + 2];
     int nc = 0;
-    if (found) {
-        // Adaptive pre-probe already located the pair -- no transport force-loads needed.
+    if (found || popsDir != NULL) {
+        // Explicit POPS sources never fall back to another device.
     } else if (source == VCD_BDMA_SRC_MMCE) {
         // Ensure mmceman is loaded even when MMCE games are off / Manual-not-started -- otherwise mmce0:/
         // mmce1:/ are dead and nothing can be read. Then offer only slots that actually have a card, so
@@ -1395,27 +1573,46 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
     for (int i = 0; i < nc && !found; i++) {
         snprintf(src0, sizeof(src0), "%s" POPS_FOLDER "/%s.%s", cands[i], vcdBdmaModule[0], suffix);
         snprintf(src1, sizeof(src1), "%s" POPS_FOLDER "/%s.%s", cands[i], vcdBdmaModule[1], suffix);
-        int f0 = open(src0, O_RDONLY);
-        LOG("[BDMA] probe %s -> %d\n", src0, f0);
-        if (f0 < 0)
-            continue;
-        close(f0);
-        int f1 = open(src1, O_RDONLY);
-        LOG("[BDMA] probe %s -> %d\n", src1, f1);
-        if (f1 < 0)
-            continue;
-        close(f1);
-        found = 1;
-        break;
+        found = vcdProbeBdmaPair(src0, src1, mode, shippedOnly, stale, sizeof(stale));
+    }
+    if (!found && stale[0] != '\0') {
+        // Copying it would only fail the launch's size check afterwards and report a card write error.
+        LOG("[BDMA] only another release's %s.%s pair was found (%s) -- card left as it is\n", vcdBdmaModule[1], suffix, stale);
+        if (diag != NULL && diagSize > 0)
+            snprintf(diag, diagSize, "%s is not this release's driver; copy the release's POPS/ folder there.", stale);
+        return -5;
     }
     if (!found) {
         LOG("[BDMA] %s.%s + %s.%s not found in any seek-path POPS/ folder (%s)\n",
             vcdBdmaModule[0], suffix, vcdBdmaModule[1], suffix, nc ? cands[0] : "no matching device");
         if (diag != NULL && diagSize > 0)
             snprintf(diag, diagSize, "Need %s.%s + %s.%s in a device POPS/ folder; searched %s.",
-                     vcdBdmaModule[0], suffix, vcdBdmaModule[1], suffix, nc ? cands[0] : "no matching device");
+                     vcdBdmaModule[0], suffix, vcdBdmaModule[1], suffix, popsDir != NULL ? popsDir : (nc ? cands[0] : "no matching device"));
         return -4;
     }
+
+    // A pair to install: now the folder has to exist, made with its icons before anything else lands
+    // in it -- POPStarter's own from the folder the pair came from, else RiptOPL's.
+    if (!haveDir && !vcdResolvePopstarterMc(mcDir, sizeof(mcDir))) {
+        if (diag != NULL && diagSize > 0)
+            snprintf(diag, diagSize, "No writable PS2 memory card is available.");
+        return -3;
+    }
+    {
+        char srcDir[96];
+        const char *s1 = strrchr(src0, '/');
+        const char *s2 = strrchr(src0, '\\');
+        const char *sl = s1;
+        if (s2 != NULL && (sl == NULL || s2 > sl))
+            sl = s2;
+        if (sl != NULL && (int)(sl - src0) + 1 < (int)sizeof(srcDir))
+            snprintf(srcDir, sizeof(srcDir), "%.*s", (int)(sl - src0) + 1, src0);
+        else
+            srcDir[0] = '\0';
+        vcdStampPopstarterIcons(mcDir, srcDir);
+    }
+    snprintf(dst0, sizeof(dst0), "%s/%s", mcDir, vcdBdmaModule[0]);
+    snprintf(dst1, sizeof(dst1), "%s/%s", mcDir, vcdBdmaModule[1]);
 
     // Stage BOTH replacements before touching either live module. vcdSafeCopyFile removes a partial
     // destination on failure, which is safe for these private staging names but not for a live driver.
@@ -1457,6 +1654,17 @@ int VcdSupport::equipBdma(int source, int mode, char *diag, int diagSize, const 
     }
 
     int mr = vcdWriteBdmaMarker(mcDir, mode);
+    if (mr == 0 && mode == VCD_BDMA_UDPFS) {
+        // The network driver reads its DAT files from SYS-CONF: copy any missing ones from the
+        // POPS folder the pair came from.
+        char sourcePops[96];
+        snprintf(sourcePops, sizeof(sourcePops), "%s", src0);
+        char *slash = strrchr(sourcePops, '/');
+        if (slash != NULL) {
+            slash[1] = '\0';
+            return vcdInstallPopsUdpfsNet(sourcePops);
+        }
+    }
     return (mr != 0) ? mr : 0;
 }
 
@@ -1467,7 +1675,7 @@ int vcdEquipBdma(int source, int mode, char *diag, int diagSize)
 
 int vcdEquipBdmaFromPops(const char *popsDir, int mode, char *diag, int diagSize)
 {
-    return gVcdSupport.equipBdma(VCD_BDMA_SRC_USB, mode, diag, diagSize, popsDir);
+    return gVcdSupport.equipBdma(VCD_BDMA_SRC_USB, mode, diag, diagSize, popsDir, 1);
 }
 
 // 1.0.1-style fast path for the launch equip: a card with NO marker but BOTH driver modules present is
@@ -1491,19 +1699,18 @@ static const bdma_pair_sig_t vcdBdmaPairSig[VCD_BDMA_MODE_COUNT] = {
     {48500, 14993}, // mx4sio
     {11841, 19733}, // mmce
     {42749, 21837}, // ata
-    {48500, 21609}, // iLink
-    {76365, 34508}  // UDPFS Alpha
+    {48500, 27129}, // iLink (27145 before the SBP-2 status decode fix, 21609 before #1018/#1042)
+    {44597, 34508}  // UDPFS Assault 1.0.0 (network read/write)
 };
 
-// Keep recognizing the older iLink pair accepted before the shipped-size fix.
-// This preserves the existing size-based policy; it does not authenticate a module.
+// Size-based, as before; it does not authenticate a module. Only the CURRENT pair matches: every
+// older iLink driver (21609, the legacy 23452, ...) loses its login after POPSTARTER's IOP reset, so a
+// card holding one must re-equip rather than be accepted.
 static int vcdBdmaPairMatches(int mode, int usbdSize, int hdfsdSize)
 {
     if (mode <= VCD_BDMA_FAT32 || mode >= VCD_BDMA_MODE_COUNT)
         return 0;
-    if (usbdSize == vcdBdmaPairSig[mode].usbdSize && hdfsdSize == vcdBdmaPairSig[mode].hdfsdSize)
-        return 1;
-    return mode == VCD_BDMA_ILINK && usbdSize == 48500 && hdfsdSize == 23452;
+    return usbdSize == vcdBdmaPairSig[mode].usbdSize && hdfsdSize == vcdBdmaPairSig[mode].hdfsdSize;
 }
 
 // Returns file size in bytes, or -1 if absent / unreadable.
@@ -1519,6 +1726,42 @@ static int vcdGetFileSize(const char *path)
     return sz;
 }
 
+// vcdGetFileSize for a SOURCE device: MMCE's newlib has no SEEK_END (see vcdSafeCopyFile), so there
+// the file is counted by reading it through. -1 if absent / unreadable.
+static int vcdSourceFileSize(const char *path)
+{
+    int fd = open(path, O_RDONLY);
+    if (fd < 0)
+        return -1;
+    int sz = lseek(fd, 0, SEEK_END);
+    if (sz < 0) {
+        char *buf = (char *)malloc(VCD_COPY_CHUNK);
+        int r = -1;
+        sz = 0;
+        if (buf != NULL) {
+            while ((r = read(fd, buf, VCD_COPY_CHUNK)) > 0)
+                sz += r;
+            free(buf);
+        }
+        if (r < 0)
+            sz = -1;
+    }
+    close(fd);
+    return sz;
+}
+
+// Is the device pair src0 + src1 the one this release ships for mode? A size that cannot be read is
+// left to the copy, which reports it.
+static int vcdBdmaPairIsShipped(const char *src0, const char *src1, int mode)
+{
+    int sz0 = vcdSourceFileSize(src0), sz1 = vcdSourceFileSize(src1);
+    if ((sz0 < 0 || sz0 == vcdBdmaPairSig[mode].usbdSize) && (sz1 < 0 || sz1 == vcdBdmaPairSig[mode].hdfsdSize))
+        return 1;
+    LOG("[BDMA] %s + %s are %d + %d bytes, this release's are %d + %d\n", src0, src1, sz0, sz1,
+        vcdBdmaPairSig[mode].usbdSize, vcdBdmaPairSig[mode].hdfsdSize);
+    return 0;
+}
+
 // Strict BDMA environment validation: verifies that the MC environment matches the requested family.
 static int vcdBdmaEnvironmentValid(int mode)
 {
@@ -1526,8 +1769,8 @@ static int vcdBdmaEnvironmentValid(int mode)
         return 0;
 
     char mcDir[64];
-    if (!vcdResolvePopstarterMc(mcDir, sizeof(mcDir)))
-        return 0;
+    if (!vcdFindPopstarterMc(mcDir, sizeof(mcDir)))
+        return mode == VCD_BDMA_FAT32; // no folder = no external pair = exactly the FAT32 environment
 
     char p0[96], p1[96];
     snprintf(p0, sizeof(p0), "%s/%s", mcDir, vcdBdmaModule[0]);
@@ -1558,7 +1801,7 @@ static int vcdBdmaManualPairMatches(int mode)
         return 0;
 
     char mcDir[64], markerPath[96];
-    if (!vcdResolvePopstarterMc(mcDir, sizeof(mcDir)))
+    if (!vcdFindPopstarterMc(mcDir, sizeof(mcDir)))
         return 0;
 
     snprintf(markerPath, sizeof(markerPath), "%s/%s", mcDir, VCD_BDMA_MARKER);
@@ -1608,15 +1851,24 @@ void vcdEnsureBdmaForLaunch(int source, int mode)
         return;
     }
 
-    // 2. Perform transactional equip
-    int er = gVcdSupport.equipBdma(source, mode, diag, sizeof(diag));
+    // 2. Perform transactional equip of the pair this release ships
+    int er = gVcdSupport.equipBdma(source, mode, diag, sizeof(diag), NULL, 1);
     if (mode == VCD_BDMA_UDPFS) {
-        // Source chooses the driver family; support files can live on another device.
-        for (int candidate = 0; er == -4 && candidate < VCD_BDMA_SRC_COUNT; candidate++)
-            if (candidate != source)
-                er = gVcdSupport.equipBdma(candidate, mode, diag, sizeof(diag));
-        if (er == -4)
+        // Source chooses the driver family; support files can live on another device. Another source
+        // can still hold this release's pair when an earlier one had only an older release's (-5).
+        int older = (er == -5);
+        for (int candidate = 0; (er == -4 || er == -5) && candidate < VCD_BDMA_SRC_COUNT; candidate++) {
+            if (candidate == source)
+                continue;
+            er = gVcdSupport.equipBdma(candidate, mode, diag, sizeof(diag), NULL, 1);
+            older |= (er == -5);
+        }
+        if (er == -4 || er == -5) {
             er = hddEquipPopstarterBdmaFromCommon(mode, diag, sizeof(diag));
+            older |= (er == -5);
+        }
+        if (er == -4 && older)
+            er = -5; // the older pair is what to fix; the LOG above names it
     }
     if (er == 0 && vcdBdmaEnvironmentValid(mode))
         return;
@@ -1624,6 +1876,8 @@ void vcdEnsureBdmaForLaunch(int source, int mode)
     LOG("VCD BDMA equip failed (%d: %s) -- launching as-is (card keeps its current driver pair)\n", er, diag);
     if (er == -4)
         host::ui().warning(_l(_STR_BDMA_ERR_SRC), 6);
+    else if (er == -5)
+        host::ui().warning(_l(_STR_BDMA_ERR_OLD), 6);
     else if (er == -2)
         host::ui().warning(_l(_STR_BDMA_ERR_SPACE), 6);
     else
@@ -1642,13 +1896,15 @@ void vcdApplyUsbModeForLaunch(int mode)
     if (vcdBdmaEnvironmentValid(mode) || (mode == VCD_BDMA_USBEXFAT && vcdBdmaManualPairMatches(mode)))
         return;
 
-    int er = gVcdSupport.equipBdma(VCD_BDMA_SRC_USB, mode, diag, sizeof(diag));
+    int er = gVcdSupport.equipBdma(VCD_BDMA_SRC_USB, mode, diag, sizeof(diag), NULL, 1);
     if (er == 0 && vcdBdmaEnvironmentValid(mode))
         return;
 
     LOG("VCD USB-mode equip failed (%d: %s) -- launching as-is (card keeps its current driver pair)\n", er, diag);
     if (er == -4)
         host::ui().warning(_l(_STR_BDMA_ERR_SRC), 6);
+    else if (er == -5)
+        host::ui().warning(_l(_STR_BDMA_ERR_OLD), 6);
     else if (er == -2)
         host::ui().warning(_l(_STR_BDMA_ERR_SPACE), 6);
     else
@@ -1699,13 +1955,46 @@ static int vcdInstallPopstarterMcAt(const char *devPrefix, const char *mcDir)
     return firstError;
 }
 
+// 1 when <devPrefix>POPS/ holds at least one of POPStarter's card modules -- the only reason an install
+// may MAKE a POPSTARTER folder. Icons alone are not one: they exist to draw a folder, not to need it.
+static int vcdPopstarterModulesAt(const char *devPrefix)
+{
+    char src[320];
+
+    if (devPrefix == NULL || devPrefix[0] == '\0')
+        return 0;
+    for (unsigned int i = 0; i < sizeof(vcdPopstarterMcFile) / sizeof(vcdPopstarterMcFile[0]); i++) {
+        if (strstr(vcdPopstarterMcFile[i], ".irx") == NULL)
+            continue;
+        snprintf(src, sizeof(src), "%s%s%c%s", devPrefix, POPS_FOLDER, vcdSep(devPrefix), vcdPopstarterMcFile[i]);
+        int fd = open(src, O_RDONLY);
+        if (fd >= 0) {
+            close(fd);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int vcdInstallPopstarterMc(const char *devPrefix)
 {
     char mcDir[64];
+    int result;
 
-    if (!vcdResolvePopstarterMc(mcDir, sizeof(mcDir)))
-        return -3;
-    return vcdInstallPopstarterMcAt(devPrefix, mcDir);
+    // A card that has the folder gets whatever it is missing. One without it only gets a folder when
+    // this device has POPStarter modules to put there: a POPS/ folder without them needs nothing on the
+    // card, and an empty folder draws in the browser as Corrupted Data.
+    if (!vcdFindPopstarterMc(mcDir, sizeof(mcDir))) {
+        if (!vcdPopstarterModulesAt(devPrefix))
+            return 0;
+        if (!vcdResolvePopstarterMc(mcDir, sizeof(mcDir)))
+            return -3;
+    }
+    result = vcdInstallPopstarterMcAt(devPrefix, mcDir);
+    // The install brings POPStarter's own icons when this device's POPS/ has them; when it did not, the
+    // folder still gets one (RiptOPL's, retitled) rather than drawing as Corrupted Data.
+    vcdStampPopstarterIcons(mcDir, NULL);
+    return result;
 }
 
 static int vcdSmbModulesPresentAt(const char *mcDir)
@@ -1802,82 +2091,6 @@ int vcdPopsUdpfsNetValid(const vcd_pops_udpfs_t *cfg)
                            (server & mask) == (ip & mask));
 }
 
-// Every USB volume gets the same pair: POPSTARTER re-enumerates USB after reset
-// and the supplied IRX reads bare mass:, not OPL's current massN: identity.
-static int vcdPopsUdpfsUsbHomes(char homes[][96])
-{
-    int slots[MAX_BDM_DEVICES];
-    bdmEnsureSourceModules(BDM_TYPE_USB, 2000);
-    int count = bdmGetDeviceSlotsByType(BDM_TYPE_USB, slots, MAX_BDM_DEVICES);
-    for (int i = 0; i < count; i++)
-        snprintf(homes[i], 96, "mass%d:/POPS", slots[i]);
-    return count;
-}
-
-// A production RA build may have left its USB-only POPS telemetry module on a shared stick.
-// Bare mass: can resolve to any re-enumerated USB volume. Check every volume, without modifying
-// modules owned by the user or silently deleting an existing RA installation.
-int vcdPopsUdpfsCleanModules(void)
-{
-    char homes[MAX_BDM_DEVICES][96], path[128];
-    unsigned char buf[4096];
-    const char magic[] = "RIPTRA01";
-    int count = vcdPopsUdpfsUsbHomes(homes);
-    if (count <= 0)
-        return 0;
-    for (int volume = 0; volume < count; volume++) {
-        snprintf(path, sizeof(path), "%s/MODULE_9.IRX", homes[volume]);
-        errno = 0;
-        int fd = open(path, O_RDONLY);
-        if (fd < 0) {
-            if (errno == ENOENT)
-                continue;
-            // Original #975: FatFs can leak FR_NO_FILE (4) as EINTR. Only
-            // accept absence after a complete readable-directory enumeration.
-            // Real IO errors and an existing but unreadable module stay guarded.
-            if (errno != EINTR)
-                return 0;
-            DIR *dir = opendir(homes[volume]);
-            if (dir == NULL)
-                return 0;
-            struct dirent *entry;
-            int found = 0;
-            errno = 0;
-            while ((entry = readdir(dir)) != NULL) {
-                if (strcasecmp(entry->d_name, "MODULE_9.IRX") == 0) {
-                    found = 1;
-                    break;
-                }
-                errno = 0;
-            }
-            int readErr = errno;
-            int closeErr = closedir(dir);
-            if (found || readErr != 0 || closeErr < 0)
-                return 0;
-            continue;
-        }
-        int got, matched = 0, owned = 0;
-        while ((got = read(fd, buf, sizeof(buf))) > 0) {
-            for (int i = 0; i < got; i++) {
-                if (buf[i] == (unsigned char)magic[matched]) {
-                    if (++matched == 8) {
-                        owned = 1;
-                        break;
-                    }
-                } else {
-                    matched = buf[i] == (unsigned char)magic[0] ? 1 : 0;
-                }
-            }
-            if (owned)
-                break;
-        }
-        int closeResult = close(fd);
-        if (owned || got < 0 || closeResult < 0)
-            return 0;
-    }
-    return 1;
-}
-
 // Accept the upstream config syntax: BOM, leading blank/comment lines, CRLF and
 // an optional gateway. All octets and the subnet are checked before use.
 static const char *vcdUdpfsConfigLine(const char *buf)
@@ -1916,21 +2129,110 @@ static int vcdUdpfsParseQuad(const char **text, int quad[4])
     return 1;
 }
 
-static int vcdReadPopsUdpfsNetAt(const char *home, vcd_pops_udpfs_t *out)
+// Resolve each file independently in the same order as the upstream module.
+// An unreadable existing file is an error, never permission to overwrite it.
+static int vcdPopsUdpfsConfigPath(const char *name, char *path, int pathSize)
 {
-    char path[128], buf[256];
+    static const char *homes[] = {"mc0:/SYS-CONF", "mc1:/SYS-CONF"};
+    for (int i = 0; i < 2; i++) {
+        snprintf(path, pathSize, "%s/%s", homes[i], name);
+        int fd = open(path, O_RDONLY);
+        if (fd >= 0) {
+            close(fd);
+            return 1;
+        }
+        if (errno != ENOENT && errno != ENODEV)
+            return -3;
+    }
+    char card[64];
+    if (vcdFindPopstarterMc(card, sizeof(card))) {
+        snprintf(path, pathSize, "%.4s/SYS-CONF/%s", card, name);
+        return 0;
+    }
+    for (int i = 0; i < 2; i++) {
+        DIR *root = opendir(i == 0 ? "mc0:/" : "mc1:/");
+        if (root != NULL) {
+            closedir(root);
+            snprintf(path, pathSize, "%s/%s", homes[i], name);
+            return 0;
+        }
+    }
+    return -3;
+}
+
+static int vcdWritePopsUdpfsFile(const char *path, const void *data, int size)
+{
+    char verify[256];
+    int result = vcdSafeWriteFile(path, data, size);
+    if (result != 0)
+        return result;
+    if (vcdReadNetFile(path, verify, sizeof(verify)) != size || memcmp(verify, data, size) != 0)
+        return -3;
+    return 0;
+}
+
+// Missing configs are optional. Each is copied only from the game's POPS folder,
+// independently of whether the BDMA pair is already equipped.
+int vcdInstallPopsUdpfsNet(const char *popsDir)
+{
+    static const char *names[] = {"IPCONFIG.DAT", "UDPFSCONFIG.DAT"};
+    if (popsDir == NULL || popsDir[0] == '\0')
+        return -1;
+    for (int i = 0; i < 2; i++) {
+        char src[320], dst[128], home[128], data[121];
+        int present = vcdPopsUdpfsConfigPath(names[i], dst, sizeof(dst));
+        if (present < 0)
+            return present;
+        if (present)
+            continue;
+        snprintf(src, sizeof(src), "%s%s", popsDir, names[i]);
+        int fd = open(src, O_RDONLY);
+        if (fd < 0) {
+            if (errno == ENOENT)
+                continue;
+            return -3;
+        }
+        // Small bounded read also works on MMCE sources without SEEK_END.
+        int size = 0, got = 0;
+        while (size < (int)sizeof(data) && (got = read(fd, data + size, sizeof(data) - size)) > 0)
+            size += got;
+        close(fd);
+        if (got < 0 || size > 120)
+            return -3;
+        char backup[132], check[256];
+        snprintf(backup, sizeof(backup), "%s.bak", dst);
+        if (vcdReadNetFile(backup, check, sizeof(check)) != -1)
+            return -3; // interrupted editor save needs recovery, not automatic population
+        snprintf(home, sizeof(home), "%s", dst);
+        *strrchr(home, '/') = '\0';
+        if (mkdir(home, 0777) != 0 && errno != EEXIST)
+            return -3;
+        int result = vcdWritePopsUdpfsFile(dst, data, size);
+        if (result != 0) {
+            unlink(dst); // only this call's newly created file
+            return result;
+        }
+        LOG("[POPSTARTER] installed %s from %s\n", dst, src);
+    }
+    return 0;
+}
+
+int vcdReadPopsUdpfsNet(vcd_pops_udpfs_t *out)
+{
+    char paths[2][128], buf[256];
     if (out == NULL)
         return -1;
     memset(out, 0, sizeof(*out));
-    snprintf(out->home, sizeof(out->home), "%s", home);
-    snprintf(path, sizeof(path), "%s/IPCONFIG.DAT", out->home);
-    int r = vcdReadNetFile(path, buf, sizeof(buf));
+    if (vcdPopsUdpfsConfigPath("IPCONFIG.DAT", paths[0], sizeof(paths[0])) < 0 ||
+        vcdPopsUdpfsConfigPath("UDPFSCONFIG.DAT", paths[1], sizeof(paths[1])) < 0)
+        return -3;
+    int r = vcdReadNetFile(paths[0], buf, sizeof(buf));
     if (r < -1)
         return -3;
     out->ipExists = r >= 0;
-    if (r >= 0) {
+    if (out->ipExists) {
         const char *line = vcdUdpfsConfigLine(buf);
-        out->invalid = !vcdUdpfsParseQuad(&line, out->ps2Ip);
+        out->invalid = r > 120 || !vcdUdpfsParseQuad(&line, out->ps2Ip);
         while (*line == ' ' || *line == '\t')
             line++;
         out->invalid |= !vcdUdpfsParseQuad(&line, out->mask);
@@ -1938,133 +2240,95 @@ static int vcdReadPopsUdpfsNetAt(const char *home, vcd_pops_udpfs_t *out)
             line++;
         if (*line && *line != '\r' && *line != '\n')
             out->invalid |= !vcdUdpfsParseQuad(&line, out->gateway);
+    } else {
+        int address[4] = {192, 168, 1, 10}, mask[4] = {255, 255, 255, 0};
+        memcpy(out->ps2Ip, address, sizeof(address));
+        memcpy(out->mask, mask, sizeof(mask));
     }
-    snprintf(path, sizeof(path), "%s/UDPFSCONFIG.DAT", out->home);
-    r = vcdReadNetFile(path, buf, sizeof(buf));
+    r = vcdReadNetFile(paths[1], buf, sizeof(buf));
     if (r < -1)
         return -3;
     out->serverExists = r >= 0;
-    if (r >= 0) {
+    if (out->serverExists) {
         const char *line = vcdUdpfsConfigLine(buf);
-        if (*line && !vcdUdpfsParseQuad(&line, out->server))
+        if (r > 120 || (*line && !vcdUdpfsParseQuad(&line, out->server)))
             out->invalid = 1;
     }
-    if (out->ipExists && !vcdPopsUdpfsNetValid(out))
-        out->invalid = 1;
+    out->invalid |= !vcdPopsUdpfsNetValid(out);
+    *strrchr(paths[0], '/') = '\0';
+    *strrchr(paths[1], '/') = '\0';
+    snprintf(out->home, sizeof(out->home), "%.95s", strcmp(paths[0], paths[1]) == 0 ? paths[0] : "mc0:/SYS-CONF + mc1:/SYS-CONF");
     return 0;
 }
 
-static int vcdPopsUdpfsSame(const vcd_pops_udpfs_t *a, const vcd_pops_udpfs_t *b)
-{
-    return !memcmp(a->ps2Ip, b->ps2Ip, sizeof(a->ps2Ip)) &&
-           !memcmp(a->mask, b->mask, sizeof(a->mask)) &&
-           !memcmp(a->gateway, b->gateway, sizeof(a->gateway)) &&
-           !memcmp(a->server, b->server, sizeof(a->server));
-}
-
-int vcdReadPopsUdpfsNet(vcd_pops_udpfs_t *out)
-{
-    char homes[MAX_BDM_DEVICES][96];
-    vcd_pops_udpfs_t cfg;
-    int count = vcdPopsUdpfsUsbHomes(homes);
-    if (out == NULL || count <= 0)
-        return -1;
-    if (vcdReadPopsUdpfsNetAt(homes[0], out) != 0)
-        return -3;
-    if (count > 1 && (!out->ipExists || !out->serverExists))
-        out->invalid = 1;
-    for (int i = 1; i < count; i++) {
-        if (vcdReadPopsUdpfsNetAt(homes[i], &cfg) != 0)
-            return -3;
-        // Show one representative editor, but detect any incomplete/different USB
-        // copy so OK cannot incorrectly treat it as an unchanged complete setup.
-        out->invalid |= cfg.invalid || !cfg.ipExists || !cfg.serverExists ||
-                        !vcdPopsUdpfsSame(out, &cfg);
-        out->ipExists |= cfg.ipExists;
-        out->serverExists |= cfg.serverExists;
-    }
-    return 0;
-}
-
-// Stage both files on every USB volume before replacing any original. Retain
-// backups until all replacements succeed; a failure restores the previous copies.
+// MC does not support rename. Back up originals before writing either live file;
+// restore from those snapshots on failure and retain a backup if restoration fails.
 int vcdWritePopsUdpfsNet(const vcd_pops_udpfs_t *cfg)
 {
-    char homes[MAX_BDM_DEVICES][96], paths[MAX_BDM_DEVICES * 2][128];
-    char staged[MAX_BDM_DEVICES * 2][132], backup[MAX_BDM_DEVICES * 2][132], buf[2][128];
-    int old[MAX_BDM_DEVICES * 2] = {0}, committed[MAX_BDM_DEVICES * 2] = {0};
-    int count = vcdPopsUdpfsUsbHomes(homes), files = count * 2;
-    if (!vcdPopsUdpfsNetValid(cfg) || count <= 0 || strcmp(homes[0], cfg->home) != 0)
+    char paths[2][128], backup[2][132], oldData[2][256], buf[2][128];
+    int oldSize[2], committed[2] = {0, 0}, backed[2] = {0, 0};
+    if (!vcdPopsUdpfsNetValid(cfg))
         return -1;
-    for (int i = 0; i < count; i++)
-        if (mkdir(homes[i], 0777) != 0 && errno != EEXIST)
-            return -3;
+    if (vcdPopsUdpfsConfigPath("IPCONFIG.DAT", paths[0], sizeof(paths[0])) < 0 ||
+        vcdPopsUdpfsConfigPath("UDPFSCONFIG.DAT", paths[1], sizeof(paths[1])) < 0)
+        return -3;
     int len[2];
     len[0] = snprintf(buf[0], sizeof(buf[0]), "%d.%d.%d.%d %d.%d.%d.%d %d.%d.%d.%d\n",
                       cfg->ps2Ip[0], cfg->ps2Ip[1], cfg->ps2Ip[2], cfg->ps2Ip[3],
                       cfg->mask[0], cfg->mask[1], cfg->mask[2], cfg->mask[3],
                       cfg->gateway[0], cfg->gateway[1], cfg->gateway[2], cfg->gateway[3]);
+    // An empty server file explicitly selects discovery and shadows lower cards.
     len[1] = vcdUdpfsAddress(cfg->server) == 0 ? 0 :
                                                  snprintf(buf[1], sizeof(buf[1]), "%d.%d.%d.%d\n", cfg->server[0], cfg->server[1], cfg->server[2], cfg->server[3]);
-    for (int i = 0; i < files; i++) {
-        snprintf(paths[i], sizeof(paths[i]), "%s/%s", homes[i / 2], (i % 2) ? "UDPFSCONFIG.DAT" : "IPCONFIG.DAT");
-        snprintf(staged[i], sizeof(staged[i]), "%s.tmp", paths[i]);
+    for (int i = 0; i < 2; i++) {
         snprintf(backup[i], sizeof(backup[i]), "%s.bak", paths[i]);
-        // An interrupted previous save needs recovery, not deletion of its backup.
-        if (vcdGetFileSize(backup[i]) >= 0)
+        char check[256];
+        if (vcdReadNetFile(backup[i], check, sizeof(check)) != -1)
+            return -3;
+        oldSize[i] = vcdReadNetFile(paths[i], oldData[i], sizeof(oldData[i]));
+        if (oldSize[i] < -1)
             return -3;
     }
-    for (int i = 0; i < files; i++) {
-        if (vcdSafeWriteFile(staged[i], buf[i % 2], len[i % 2]) != 0)
+    for (int i = 0; i < 2; i++) {
+        char home[128];
+        snprintf(home, sizeof(home), "%s", paths[i]);
+        *strrchr(home, '/') = '\0';
+        if (mkdir(home, 0777) != 0 && errno != EEXIST)
             goto rollback;
-    }
-    for (int i = 0; i < files; i++) {
-        if (vcdGetFileSize(paths[i]) >= 0) {
-            if (rename(paths[i], backup[i]) != 0)
+        if (oldSize[i] >= 0) {
+            if (vcdWritePopsUdpfsFile(backup[i], oldData[i], oldSize[i]) != 0) {
+                unlink(backup[i]); // this call's failed backup; live original is intact
                 goto rollback;
-            old[i] = 1;
+            }
+            backed[i] = 1;
         }
-        if (rename(staged[i], paths[i]) != 0)
-            goto rollback;
-        committed[i] = 1;
     }
-    for (int i = 0; i < files; i++)
-        if (old[i])
+    for (int i = 0; i < 2; i++) {
+        committed[i] = 1; // the failed write may already have removed a partial file
+        int result = vcdWritePopsUdpfsFile(paths[i], buf[i], len[i]);
+        if (result == -2)
+            committed[i] = 0; // free-space gate left the original intact
+        if (result != 0)
+            goto rollback;
+    }
+    for (int i = 0; i < 2; i++)
+        if (backed[i])
             unlink(backup[i]);
     return 0;
 rollback:
-    for (int i = 0; i < files; i++) {
-        if (old[i]) {
-            // USB rename need not replace an existing destination. Park the new
-            // copy in its now-vacant staging path before restoring the original.
-            if (committed[i] && rename(paths[i], staged[i]) != 0)
-                continue; // retain the live replacement and original backup
-            if (rename(backup[i], paths[i]) != 0) {
-                LOG("POPS UDPFS: restoration failed for %s (backup at %s)\n", paths[i], backup[i]);
-                if (committed[i] && rename(staged[i], paths[i]) != 0)
-                    continue; // retain both .tmp and .bak for manual recovery
+    for (int i = 0; i < 2; i++) {
+        if (committed[i]) {
+            if (oldSize[i] >= 0) {
+                if (vcdWritePopsUdpfsFile(paths[i], oldData[i], oldSize[i]) != 0)
+                    continue; // retain .bak for manual recovery
+            } else {
+                unlink(paths[i]);
             }
-        } else if (committed[i]) {
-            // A newly created file has no previous version to preserve.
-            unlink(paths[i]);
         }
-        unlink(staged[i]);
+        if (backed[i])
+            unlink(backup[i]);
     }
     return -3;
-}
-
-int vcdPreparePopsUdpfsLaunch(char *usbRoot, int rootSize)
-{
-    vcd_pops_udpfs_t cfg;
-    if (vcdReadPopsUdpfsNet(&cfg) != 0 || !cfg.ipExists || !cfg.serverExists ||
-        cfg.invalid || !vcdPopsUdpfsNetValid(&cfg))
-        return 0;
-    int n = (int)strlen(cfg.home) - 4; // strip POPS, retain trailing '/'
-    if (n <= 0 || n >= rootSize)
-        return 0;
-    memcpy(usbRoot, cfg.home, n);
-    usbRoot[n] = '\0';
-    return 1;
 }
 
 static int vcdParseIpConfig(const char *buf, vcd_popsnet_t *out)
@@ -2465,6 +2729,7 @@ int vcdWritePopstarterNetFiles(const vcd_popsnet_t *cfg, int writeSmb, int write
     dir = cfg->home[0] != '\0' ? cfg->home : cfg->createDir;
     if (dir[0] == '\0' || !vcdEnsurePopstarterNetDir(dir))
         return -3;
+    vcdStampPopstarterIcons(dir, NULL); // a folder this save may just have made must draw in the browser
 
     if (writeSmb) {
         int len = vcdBuildSmbConfig(cfg, buf, sizeof(buf));
@@ -2598,10 +2863,18 @@ vcd_popsnet_ensure_t vcdPreparePopstarterSmbLaunch(const char *smbPrefix)
         return VCD_POPSNET_IO_ERROR;
     if (cfg.ipInvalid || cfg.smbInvalid)
         return VCD_POPSNET_INVALID;
+    // No POPSTARTER folder yet and no modules on the share to fill one: the launch cannot run, and a
+    // folder made now would sit empty -- drawn in the browser as Corrupted Data.
+    DIR *homeDir = opendir(cfg.home);
+    if (homeDir != NULL)
+        closedir(homeDir);
+    else if (errno == ENOENT && !vcdPopstarterModulesAt(smbPrefix))
+        return VCD_POPSNET_SMB_MISSING;
     if (!vcdEnsurePopstarterNetDir(cfg.home))
         return VCD_POPSNET_IO_ERROR;
     if (smbPrefix != NULL && smbPrefix[0] != '\0')
         installRes = vcdInstallPopstarterMcAt(smbPrefix, cfg.home);
+    vcdStampPopstarterIcons(cfg.home, NULL); // POPStarter's own icons came with the install when the share has them
     if (!vcdSmbModulesPresentAt(cfg.home)) {
         if (installRes == -2 || installRes == -3)
             return VCD_POPSNET_IO_ERROR;
@@ -2620,4 +2893,84 @@ void vcdPrepareRetroGemBarcode(const char *vcdPath)
     if (retrogemGetVcdGameID(vcdPath, gameID, sizeof(gameID)) && gameID[0] != '\0') {
         displayRetroGemGameID(gameID, 2);
     }
+}
+
+/* POPS/MODULE_9.IRX is the slot the RA edition writes rapops into for a tracked USB VCD launch.
+   Only a file carrying rapops' block magic is RiptOPL's; anything else belongs to the user and is
+   never deleted or overwritten. 0: absent, 1: ours (kept), -1: the user's, -2: cannot tell. */
+static int vcdRaModuleStatus(const char *root, int removeOwned)
+{
+    char path[256];
+    static unsigned char buf[4096];
+    const char magic[] = "RIPTRA01";
+    int fd, got, matched = 0, owned = 0;
+
+    if (snprintf(path, sizeof(path), "%sPOPS%cMODULE_9.IRX", root, vcdSep(root)) >= (int)sizeof(path))
+        return -2;
+    errno = 0;
+    fd = open(path, O_RDONLY);
+    if (fd < 0) {
+        char dirPath[256];
+        DIR *dir;
+        struct dirent *entry;
+        int readErr;
+
+        if (errno == ENOENT)
+            return 0;
+        // Only FatFs's leaked FR_NO_FILE (4) is ambiguous here: libcglue maps -4 to errno 4
+        // (EINTR). Any other error is a real I/O error and keeps the warning.
+        if (errno != EINTR)
+            return -2;
+        // Confirm absence from the readable POPS directory; a failed open never proves it.
+        if (snprintf(dirPath, sizeof(dirPath), "%sPOPS", root) >= (int)sizeof(dirPath))
+            return -2;
+        dir = opendir(dirPath);
+        if (dir == NULL)
+            return -2;
+        do {
+            errno = 0;
+            entry = readdir(dir);
+            if (entry != NULL && strcasecmp(entry->d_name, "MODULE_9.IRX") == 0) {
+                closedir(dir);
+                return -2; // a module exists but cannot be opened: keep the warning
+            }
+        } while (entry != NULL);
+        readErr = errno;
+        if (closedir(dir) < 0 || readErr != 0)
+            return -2; // unreadable or incomplete listing: absence is not proven
+        return 0;
+    }
+    while (!owned && (got = read(fd, buf, sizeof(buf))) > 0) {
+        for (int i = 0; i < got && !owned; i++) {
+            if (buf[i] == (unsigned char)magic[matched])
+                owned = ++matched == 8;
+            else
+                matched = buf[i] == (unsigned char)magic[0] ? 1 : 0;
+        }
+    }
+    close(fd);
+    if (!owned)
+        return got < 0 ? -2 : -1;
+    if (!removeOwned)
+        return 1;
+    return unlink(path) == 0 ? 0 : -2;
+}
+
+int vcdRemoveRaModule(const char *root)
+{
+    return vcdRaModuleStatus(root, 1);
+}
+
+int vcdConfirmCleanLaunch(const char *root)
+{
+    int status = vcdRaModuleStatus(root, 0);
+
+    if (status == 0 || status == -1)
+        return 1; // absent or the user's: ordinary modules stay untouched
+    if (status == 1 && host::ui().msgBox(_l(_STR_PS1_RA_CLEAN_DELETE), 1, NULL)) {
+        if (vcdRemoveRaModule(root) == 0)
+            return 1;
+        host::ui().msgBox(_l(_STR_PS1_RA_CLEAN_FAILED), 0, NULL);
+    }
+    return host::ui().msgBox(_l(_STR_PS1_RA_CLEAN_CONTINUE), 1, NULL);
 }

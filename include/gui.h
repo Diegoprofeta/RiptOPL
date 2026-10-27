@@ -42,6 +42,7 @@ struct gui_update_t
             int isFolder;  // folder-browse row marker (checklist item 34)
 #ifdef RETROACHIEVEMENTS
             int raBadged; // RA watch list present -- resolved on the I/O thread, see submenu_item_t
+            char *raText; // owned badge snapshot until transferred to the row
 #endif
         } submenu;
 
@@ -63,6 +64,9 @@ constexpr int GUI_SCREEN_MENU = 1;
 constexpr int GUI_SCREEN_INFO = 2;
 constexpr int GUI_SCREEN_GAME_MENU = 3;
 constexpr int GUI_SCREEN_APP_MENU = 4;
+#ifdef RETROACHIEVEMENTS
+constexpr int GUI_SCREEN_ACHIEVEMENTS = 5;
+#endif
 
 void guiSwitchScreen(int target);
 
@@ -162,6 +166,9 @@ int guiNetProtocolNeedsRestart(void);
 // One-shot POPSTARTER USB driver pick (FAT32 vs exFAT), shown on EVERY USB VCD launch
 // (maintainer directive 2026-08-01: the user picks per launch, never a sticky default).
 int guiShowVcdUsbMode(void);
+struct cue_disc_list;
+// The discs.txt starting-disc picker: the chosen index, or -1 for Back.
+int guiShowEmberDiscList(const char *folder, const struct cue_disc_list *list);
 void guiShowPopsNetConfig(void); // POPSTARTER's OWN IPCONFIG.DAT/SMBCONFIG.DAT editor
 
 void guiCheckNotifications(int checkTheme, int checkLang);
@@ -218,7 +225,7 @@ void guiWarning(const char *text, int count);
 
 int guiGameShowRemoveSettings(config_set_t *configSet, config_set_t *configGame);
 
-void guiManageCheats(void);
+void guiManageCheats(config_set_t *configSet);
 
 #ifdef RETROACHIEVEMENTS
 /* RA: two-line notice popup, set from the I/O thread (the check/test actions run

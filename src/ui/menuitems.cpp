@@ -47,6 +47,7 @@
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #ifdef RETROACHIEVEMENTS
 #include "include/rabadge.h" // RA: "tracked game" badge in the list
+#include "include/achievements.h"
 #endif
 
 #include "include/cheatman.h"
@@ -82,6 +83,12 @@ static void itemInitSupport(item_list_t *support)
 
 static void itemExecSelect(struct menu_item *curMenu)
 {
+#ifdef RETROACHIEVEMENTS
+    if (achievementsBusy()) { // a browser page still owns the network and the share
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        return;
+    }
+#endif
     item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
     sfxPlay(SFX_CONFIRM);
     // That confirm just armed a rumble pulse, and everything below blocks the GUI thread without
@@ -230,6 +237,13 @@ void itemExecToggleView(struct menu_item *curMenu)
     if (!libViewStageAdvance(support->mode))
         return;
 
+    // L3 changes the displayed library without changing the device generation or its ISO
+    // file stats. At the device root folderReset() leaves no dirty flag, so bdmNeedsUpdate()
+    // can reject this queued update as unchanged. That commits PS1 with an empty, never-scanned
+    // list. Force one scan of the selected view; the worker consumes this flag before its
+    // generation cache gate. No extra background polls or module reloads are needed.
+    libViewMarkDirty(support->mode);
+
     // Every cover already queued belongs to the view being discarded, and none of them will be
     // cancelled on their own: the loader's per-row cancellation keys on a row having scrolled away,
     // and here nothing scrolls -- the old rows keep being drawn until the rebuild below lands, so
@@ -304,20 +318,10 @@ void itemExecSquare(struct menu_item *curMenu)
     if (curMenu->current && curMenu->current->item.isFolder)
         return;
     if (curMenu->current && gTheme->infoElems.first) {
-        // #Size is skipped while scrolling so the badges paint instantly; resolve it now (async) --
-        // but NEVER for a VCD (PS1) list. A VCD carries no meaningful #Size: vcdFillGameList tags the
-        // entry .VCD/GAME_FORMAT_ISO (vcdsupport.c), so sbPopulateConfig stats the CD/DVD folder while
-        // .VCDs actually live in POPS/ -- the stat always misses, game->sizeMB stays 0 and never
-        // caches, so it re-runs on EVERY entry. That makes the resolve a pure redundant CFG re-read +
-        // failing stat on the shared MMCE/fileXio channel whose only visible effect is raising the
-        // busy spinner (Andrew, #120). Skipping it for VCD strictly REDUCES channel traffic and drops
-        // no displayed data (the info page shows no size for a VCD anyway).
-        item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
-        // Direct HDD/HDL rows already carry their size in APA metadata (total_size_in_kb), so the
-        // generic CFG+stat pass is redundant there. VCD rows likewise have no meaningful #Size.
-        // Avoid putting either no-op read onto the shared IO worker merely for opening Info.
-        if (support == NULL || (itemSelectedView(curMenu, support) != LIB_VIEW_PS1 && support->mode != HDD_MODE))
-            menuRequestInfoSize();
+        // #Size is skipped while scrolling so the badges paint instantly; resolve it now (async).
+        // menuRequestInfoSize decides which rows need it (and is re-run on every info-page move).
+        // PS1 rows are measured under their PS1 root and cached, so a revisit costs no IO.
+        menuRequestInfoSize();
         guiSwitchScreen(GUI_SCREEN_INFO);
     }
 }
@@ -454,9 +458,13 @@ void itemExecTriangle(struct menu_item *curMenu)
 
         if (!(flags & MODE_FLAG_NO_COMPAT)) {
             if (menuCheckParentalLock() == 0) {
+                // No config (allocation failed): stay on the list rather than open a menu of stale values.
+                config_set_t *configSet = gameMenuLoadConfig(NULL);
+                if (configSet == NULL)
+                    return;
                 menuInitGameMenu(support);
                 guiSwitchScreen(GUI_SCREEN_GAME_MENU);
-                guiGameLoadConfig(support, gameMenuLoadConfig(NULL));
+                guiGameLoadConfig(support, configSet);
             }
         } else {
             if (menuCheckParentalLock() == 0 && gEnableWrite) {

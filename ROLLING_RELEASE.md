@@ -8,6 +8,9 @@ This repository uses **one SDK: ps2build**. Its three release editions are:
 | RetroAchievements | `rolling-ra` | Korium Komblete | RA enabled |
 | IncebtIon | `rolling-incebtion` | IncebtIon | Standard |
 
+The RetroAchievements channel also carries the same kit built with the IncebtIon theme
+(edition `ra_incebtion`), as the original's RA release carries one kit per theme.
+
 GCC is the release compiler. GCC and LLVM are both validated by `ps2build.yml`;
 they are compiler choices within ps2build, not separate SDK release flavours.
 The old ps2dev/official pinned and rolling container releases are production
@@ -25,6 +28,7 @@ python tools/assets.py lang
 python tools/build_edition.py korium
 python tools/build_edition.py ra
 python tools/build_edition.py incebtion
+python tools/build_edition.py ra_incebtion
 ```
 
 Local edition builds must run sequentially: generated assets and the version
@@ -52,7 +56,7 @@ Download the official Neutrino `latest` release's `neutrino_*.7z` archive and ru
 python tools/package_edition.py korium --neutrino-archive path/to/neutrino_BUILD.7z
 ```
 
-Repeat for `ra` and `incebtion`. Python, PyYAML, Git and 7z are required.
+Repeat for `ra`, `incebtion` and `ra_incebtion`. Python, PyYAML, Git and 7z are required.
 Use a fresh output directory/workspace for a new package attempt; packaging
 refuses to mix assets with an earlier attempt. The companion archive filename
 and SHA-256 are recorded, along with the complete installed file inventory.
@@ -68,13 +72,21 @@ Each channel carries exactly these assets (the app/ELF names differ for RA):
 - `APP_RIPTOPL.psu` / `APP_RIPTOPL-RA.psu`: only the app's direct files, with
   deterministic SAS timestamps and metadata matching the packaged ELF.
 - `RIPTOPL-src.zip`: Git's source archive of the exact built commit.
+- `RIPTOPL-LANGS.zip`: every translation and the font its script needs, one folder per language.
 - `BUILD-MANIFEST.json` and `SHA256SUMS.txt`: build identity and asset checksums.
+
+The Korium channel also carries `RIPTOPL-VARIANTS.zip` (pademu0, ds5, extras, extras_ds5) and
+`RIPTOPL-DEBUG.zip` (every debug and diagnostic configuration): one folder per configuration with
+its RIPTOPL.ELF and manifest, each checked against the Korium kit's commit and SDK components.
+The RetroAchievements channel also carries `RIPTOPL-RA-VARIANTS.zip` (pademu0) and the
+IncebtIon-theme kit as `RIPTOPL-RetroAchievements-IncebtIon.zip`, `RIPTOPL-RA-IncebtIon.ELF`
+and `APP_RIPTOPL-RA-IncebtIon.psu`; inside that kit the app is still `APP_RIPTOPL-RA`.
+See [Build configurations](docs/BUILD-CONFIGURATIONS.md).
 
 Standard kits reject RA resources. The RA kit adds the xeRAbora client shortcut;
 the newer production RA browser/client and ORBIT adapter are still tracked in
 the parity ledger and are not implied by a successful RA compile. No BIOS is
-redistributed. Translation/debug/extra-feature bundles are pending parity work;
-the three release channels do not imply those configurations are implemented.
+redistributed.
 
 ## Preview and publication
 
@@ -89,7 +101,7 @@ source SHA, clean state, SDK consistency, exact file inventory, source ZIP
 commit, installed ELF/PSU bytes and all checksums before touching GitHub.
 An integration branch that advanced during the build must be rebuilt instead.
 GitHub-reported asset sizes/digests and final tag SHA are verified on publication.
-Korium owns GitHub's Latest marker; RA and IncebtIon have their own stable URLs.
+IncebtIon owns GitHub's Latest marker; Korium and RA have their own stable URLs.
 
 The three GitHub release updates are sequential, not an atomic transaction.
 A network/API failure can leave a partial publication and must be inspected

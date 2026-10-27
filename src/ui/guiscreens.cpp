@@ -15,11 +15,16 @@
 
 ScreenManager gScreens;
 
-static const ScreenManager::Handler screenHandlers[] = {{&menuHandleInputMain, &menuRenderMain, 0},
-                                                        {&menuHandleInputMenu, &menuRenderMenu, 1},
-                                                        {&menuHandleInputInfo, &menuRenderInfo, 1},
-                                                        {&menuHandleInputGameMenu, &menuRenderGameMenu, 1},
-                                                        {&menuHandleInputAppMenu, &menuRenderAppMenu, 1}};
+static const ScreenManager::Handler screenHandlers[] = {
+    {&menuHandleInputMain, &menuRenderMain, 0},
+    {&menuHandleInputMenu, &menuRenderMenu, 1},
+    {&menuHandleInputInfo, &menuRenderInfo, 1},
+    {&menuHandleInputGameMenu, &menuRenderGameMenu, 1},
+    {&menuHandleInputAppMenu, &menuRenderAppMenu, 1},
+#ifdef RETROACHIEVEMENTS
+    {&menuHandleInputAchievements, &menuRenderAchievements, 1},
+#endif
+};
 
 const ScreenManager::Handler *ScreenManager::current()
 {

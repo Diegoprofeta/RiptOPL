@@ -50,6 +50,8 @@ public:
     virtual void shutdown(item_list_t *itemList) = 0;
     // createSize also accepts SYS_VMC_PROBE_FORMAT for read-only auto-assignment validation.
     virtual int checkVmc(item_list_t *itemList, char *name, int createSize);
+    // Creation that knows the launch core: native BDM cards need one reserved extent (original #994).
+    virtual int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous);
     virtual int iconId(item_list_t *itemList) = 0;
 
     // Optional capabilities (declared through Caps).
@@ -59,6 +61,22 @@ public:
     virtual int rowView(item_list_t *itemList, int id);
     virtual int sourceId(item_list_t *itemList, int id);
     virtual int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet);
+    // A PS1 row's own folder, which holds its dedicated VMCs, for the 3D save icon: 1 with directory
+    // set, *ember = 1 for an Ember row, and partition = the APA partition to mount on pfs1: first
+    // ("" when the folder is already reachable). 0 when the source has none. String work only.
+    // The device prefix a row's files live under (its VMC folder), or NULL. Favourites answer for
+    // the source the row belongs to.
+    virtual char *rowPrefix(item_list_t *itemList, int id);
+    // Info-screen #Size of a PS1 row, measured under the source's PS1 root (supportbase.h
+    // sbResolvePs1Size). Defaults to the source prefix; BDM/MMCE use the device root, HDD its rows.
+    virtual void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config);
+    virtual int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                           char *partition, int partitionSize);
+
+    // RetroGEM art key for a PS1 row on a device page (original #1049): 1 and the row's disc id --
+    // disc-verified, or the free filename parse until the queued background verify lands. 0 for
+    // PS2 rows, Favourites and Apps. Never device IO on the calling (render) thread.
+    int ps1ArtId(item_list_t *itemList, int id, const char *startup, char *out, int outSize);
 
     bool hasPrefix() const { return !(caps_ & OMIT_PREFIX); }
     bool hasGame() const { return !(caps_ & OMIT_GAME); }
@@ -73,6 +91,8 @@ public:
 
 protected:
     ~GameSource() = default; // sources are static objects; never deleted through the base
+    // 1 and *ember for the PS1 row behind id (an Ember .CUE row or a POPSTARTER .VCD row), else 0.
+    int ps1RowKind(item_list_t *itemList, int id, int *ember);
 
 private:
     unsigned caps_;

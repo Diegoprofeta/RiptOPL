@@ -273,9 +273,14 @@ GSTEXTURE *cacheGetTextureEx(image_cache_t *cache, item_list_t *list, int *cache
                     }
                     return NULL;
                 } else if (entry->lastUsed == 0) {
-                    *cacheId = -2;
-                    *UID = (int)gArtW.failEpoch;
-                    return NULL;
+                    // A request started before cacheInvalidateFailMemo() can finish after it, parking
+                    // an absent answer from the OLD generation. Honour only this generation's
+                    // (original #1037); a stale one falls through and is asked again.
+                    if (entry->failEpoch == gArtW.failEpoch) {
+                        *cacheId = -2;
+                        *UID = (int)gArtW.failEpoch;
+                        return NULL;
+                    }
                 } else {
                     entry->lastUsed = guiFrameId;
                     return &entry->texture;

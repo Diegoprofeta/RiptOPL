@@ -15,6 +15,7 @@
 #include "include/extern_irx.h" // usbd_irx + usbhdfsd_irx, written to SYS-CONF for a USB IGR Path
 #include "modules/iopcore/common/cdvd_config.h"
 #include "include/cheatman.h"
+#include "include/cheatconfig.h"
 #include "include/tar.h" // CHT/cht.tar cheat archives (#154)
 #ifdef RETROACHIEVEMENTS
 #include "include/rawatch.h" // RA watch lists, loaded next to the cheats
@@ -737,6 +738,26 @@ static int ProbeZISO(int fd)
     }
 }
 
+u32 sbGetMediaLsnCount(const char *path, u64 totalBytes)
+{
+    size_t len = strlen(path);
+    u32 lsnCount = 0;
+    int fd;
+
+    if ((fd = open(path, O_RDONLY, 0666)) < 0)
+        return 0; // cannot tell what the image is
+
+    if (ProbeZISO(fd))
+        lsnCount = ziso_total_block;
+    // A ZSO file's size is its COMPRESSED size, so only its header's block count bounds the image.
+    // ProbeZISO also fails on a header it could not read, so a .zso it rejects stays at 0.
+    else if (len < 4 || strcasecmp(&path[len - 4], ".zso") != 0)
+        lsnCount = (u32)(totalBytes / 2048);
+    close(fd);
+
+    return lsnCount;
+}
+
 u32 sbGetISO9660MaxLBA(const char *path)
 {
     u32 maxLBA;
@@ -795,20 +816,26 @@ int sbProbeISO9660(const char *path, base_game_info_t *game, u32 layer1_offset)
 // game has no saved $Compatibility key, and every reader goes through sbGetCompatModes() -- the launch
 // paths and the per-game screen alike -- so the screen always shows what will actually launch. Keep each
 // entry evidence-backed: it changes launches for everyone who never opened that game's settings.
+// `cores` says which loader core the default applies to, for fixes known good on one core only.
+#define TITLE_CORE_OPL      0x1
+#define TITLE_CORE_NEUTRINO 0x2
+#define TITLE_CORE_ALL      (TITLE_CORE_OPL | TITLE_CORE_NEUTRINO)
 static const struct
 {
     const char *startup;
     int compatModes;
+    int cores;
 } sbTitleCompatDefaults[] = {
-    {"SLES_511.14", COMPAT_MODE_1}, // Pro Evolution Soccer 2 (Europe): streamed audio breaks without Accurate Reads (upstream OPL #1686)
-    {"SLUS_212.42", COMPAT_MODE_2}, // Beat Down: Fists of Vengeance (USA): hangs after "Now Loading" without Synchronous Reads (#831)
-    {"SLES_535.58", COMPAT_MODE_2}, // Beat Down: Fists of Vengeance (Europe): hangs after "Now Loading" without Synchronous Reads (#831)
-    {"SLPM_660.94", COMPAT_MODE_2}, // Beat Down: Fists of Vengeance (Japan): hangs after "Now Loading" without Synchronous Reads (#831)
-    {"SLKA_253.13", COMPAT_MODE_2}, // Beat Down: Fists of Vengeance (Korea): hangs after "Now Loading" without Synchronous Reads (#831)
+    {"SLES_511.14", COMPAT_MODE_1, TITLE_CORE_ALL}, // Pro Evolution Soccer 2 (Europe): streamed audio breaks without Accurate Reads (upstream OPL #1686)
+    {"SLUS_210.41", COMPAT_MODE_1, TITLE_CORE_ALL}, // Shadow Hearts: Covenant (USA) disc 1: black screens / lock-ups on area changes and save loads (PCSX2 #7139: Mode 1 fixes it under OPL)
+    {"SLUS_210.44", COMPAT_MODE_1, TITLE_CORE_ALL}, // Shadow Hearts: Covenant (USA) disc 2: same engine and streaming as disc 1
+    {"SLUS_201.51", COMPAT_MODE_2, TITLE_CORE_OPL}, // Klonoa 2 (USA): gameplay micro-stutter on the OPL core, fixed by Synchronous reads (PSX-Place "Klonoa 2 & OPL"); smooth on Neutrino, so left alone there
+    {"SLUS_217.23", COMPAT_MODE_6, TITLE_CORE_ALL}, // Fatal Fury: Battle Archives Volume 2 (USA): black screen with IGR's VBLANK_END handler (upstream OPL #1762)
 };
 
-int sbTitleCompatDefault(config_set_t *configSet)
+int sbTitleCompatDefault(config_set_t *configSet, int neutrino)
 {
+    int core = neutrino ? TITLE_CORE_NEUTRINO : TITLE_CORE_OPL;
     const char *startup = NULL;
     unsigned int i;
 
@@ -817,20 +844,20 @@ int sbTitleCompatDefault(config_set_t *configSet)
 
     for (i = 0; i < sizeof(sbTitleCompatDefaults) / sizeof(sbTitleCompatDefaults[0]); i++) {
         if (!strcmp(startup, sbTitleCompatDefaults[i].startup))
-            return sbTitleCompatDefaults[i].compatModes;
+            return (sbTitleCompatDefaults[i].cores & core) ? sbTitleCompatDefaults[i].compatModes : 0;
     }
 
     return 0;
 }
 
-int sbGetCompatModes(config_set_t *configSet)
+int sbGetCompatModes(config_set_t *configSet, int neutrino)
 {
     int compatModes = 0;
 
     // A saved key wins even when it is 0: the per-game screen saves an explicit 0 for a title that has a
     // default, which is the only way to turn that default off.
     if (configSet != NULL && !configGetInt(configSet, CONFIG_ITEM_COMPAT, &compatModes))
-        compatModes = sbTitleCompatDefault(configSet);
+        compatModes = sbTitleCompatDefault(configSet, neutrino);
 
     return compatModes;
 }
@@ -935,7 +962,7 @@ int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman,
     int i;
     struct cdvdman_settings_common *settings;
 
-    int compatmask = sbGetCompatModes(configSet);
+    int compatmask = sbGetCompatModes(configSet, 0); // OPL core: sbPrepare patches its CDVDMAN
 
     char gameid[5];
     configGetDiscIDBinary(configSet, gameid);
@@ -961,6 +988,11 @@ int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman,
         settings->flags |= IOPCORE_COMPAT_ACCU_READS;
     }
 
+    // Slow Reads is Accurate Reads at the CD rate, so it turns Accurate Reads on by itself (#924).
+    if (compatmask & COMPAT_MODE_8) {
+        settings->flags |= IOPCORE_COMPAT_ACCU_READS | IOPCORE_COMPAT_SLOW_READS;
+    }
+
     if (compatmask & COMPAT_MODE_2) {
         settings->flags |= IOPCORE_COMPAT_ALT_READ;
     }
@@ -977,6 +1009,7 @@ int sbPrepare(base_game_info_t *game, config_set_t *configSet, int size_cdvdman,
         settings->flags |= IOPCORE_ENABLE_POFF;
     }
 
+    settings->mediaLsnCount = 0; // each device leg measures it after sbPrepare; 0 = trust the PVD
     settings->fakemodule_flags = 0;
     settings->fakemodule_flags |= FAKE_MODULE_FLAG_CDVDFSV;
     settings->fakemodule_flags |= FAKE_MODULE_FLAG_CDVDSTM;
@@ -1044,37 +1077,77 @@ void sbUnprepare(void *pCommon)
     memcpy(pCommon, &cdvdman_settings_common_sample, sizeof(struct cdvdman_settings_common));
 }
 
-static void sbRebuildULCfg(base_game_info_t **list, const char *prefix, int gamecount, int excludeID)
+// Writes the USBLD games of list, except excludeID, to path. 0 only when every entry was written and the
+// file closed cleanly: a buffered write can first fail at fclose.
+static int sbWriteULCfg(const char *path, base_game_info_t **list, int gamecount, int excludeID)
 {
-    char path[256];
     USBExtreme_game_entry_t GameEntry;
-    snprintf(path, sizeof(path), "%sul.cfg", prefix);
+    int i, ok = 1;
 
     FILE *file = fopen(path, "wb");
-    if (file != NULL) {
-        int i;
-        base_game_info_t *game;
+    if (file == NULL)
+        return -1;
 
-        memset(&GameEntry, 0, sizeof(GameEntry));
-        GameEntry.Byte08 = 0x08; // just to be compatible with original ul.cfg
-        memcpy(GameEntry.magic, "ul.", 3);
+    memset(&GameEntry, 0, sizeof(GameEntry));
+    GameEntry.Byte08 = 0x08; // just to be compatible with original ul.cfg
+    memcpy(GameEntry.magic, "ul.", 3);
 
-        for (i = 0; i < gamecount; i++) {
-            game = &(*list)[i];
+    for (i = 0; ok && i < gamecount; i++) {
+        base_game_info_t *game = &(*list)[i];
 
-            if (game->format == GAME_FORMAT_USBLD && (i != excludeID)) {
-                memcpy(GameEntry.startup, game->startup, GAME_STARTUP_MAX);
-                memcpy(GameEntry.name, game->name, UL_GAME_NAME_MAX);
-                // don't fill last symbol with zero, cause trailing symbol can be useful character
-                GameEntry.parts = game->parts;
-                GameEntry.media = game->media;
+        if (game->format == GAME_FORMAT_USBLD && (i != excludeID)) {
+            memcpy(GameEntry.startup, game->startup, GAME_STARTUP_MAX);
+            memcpy(GameEntry.name, game->name, UL_GAME_NAME_MAX);
+            // don't fill last symbol with zero, cause trailing symbol can be useful character
+            GameEntry.parts = game->parts;
+            GameEntry.media = game->media;
 
-                fwrite(&GameEntry, sizeof(GameEntry), 1, file);
-            }
+            ok = fwrite(&GameEntry, sizeof(GameEntry), 1, file) == 1;
         }
-
-        fclose(file);
     }
+
+    if (fclose(file) != 0)
+        ok = 0;
+    return ok ? 0 : -1;
+}
+
+// ul.cfg lists every USBLD game on the device, so it is never truncated in place (#1068): the new list
+// goes to ul.cfg.new and replaces ul.cfg only after every entry and the close succeeded. A failed write
+// (a full device, a drive or share dropping out) leaves ul.cfg as it was: -1. A driver that refuses to
+// rename onto an existing file gets the old list removed first. If the old list cannot be removed (a
+// read-only ul.cfg), it still stands: -1. If the second rename fails too, ul.cfg is written directly, as
+// before. 0 = ul.cfg holds the new list; 1 = only ul.cfg.new does (rename it on a PC before the next UL
+// delete or rename, which rewrites ul.cfg.new). The menu shows no error; failures are logged.
+static int sbRebuildULCfg(base_game_info_t **list, const char *prefix, int gamecount, int excludeID)
+{
+    char path[256], staged[264];
+    snprintf(path, sizeof(path), "%sul.cfg", prefix);
+    snprintf(staged, sizeof(staged), "%s.new", path);
+
+    if (sbWriteULCfg(staged, list, gamecount, excludeID) != 0) {
+        unlink(staged);
+        LOG("sbRebuildULCfg: writing %s failed; %s left as it was\n", staged, path);
+        return -1;
+    }
+    if (rename(staged, path) == 0)
+        return 0;
+    if (unlink(path) != 0) {
+        FILE *old = fopen(path, "rb");
+        if (old != NULL) {
+            fclose(old);
+            unlink(staged);
+            LOG("sbRebuildULCfg: %s cannot be replaced or removed; left as it was\n", path);
+            return -1;
+        }
+    }
+    if (rename(staged, path) == 0)
+        return 0;
+    if (sbWriteULCfg(path, list, gamecount, excludeID) == 0) {
+        unlink(staged);
+        return 0;
+    }
+    LOG("sbRebuildULCfg: replacing %s failed; the new list is in %s\n", path, staged);
+    return 1;
 }
 
 static void sbCreatePath_name(const base_game_info_t *game, char *path, const char *prefix, const char *sep, int part, const char *game_name)
@@ -1128,23 +1201,40 @@ void sbDelete(base_game_info_t **list, const char *prefix, const char *sep, int 
     }
 }
 
+// Renames parts [0, count) of a game from one name to another; returns how many were renamed.
+static int sbRenameParts(const base_game_info_t *game, const char *prefix, const char *sep, int count, const char *from, const char *to)
+{
+    char oldpath[256], newpath[256];
+    int part;
+    for (part = 0; part < count; part++) {
+        sbCreatePath_name(game, oldpath, prefix, sep, part, from);
+        sbCreatePath_name(game, newpath, prefix, sep, part, to);
+        if (rename(oldpath, newpath) != 0)
+            break;
+    }
+    return part;
+}
+
 void sbRename(base_game_info_t **list, const char *prefix, const char *sep, int gamecount, int id, char *newname)
 {
-    int part;
-    char oldpath[256], newpath[256];
     base_game_info_t *game = &(*list)[id];
+    char oldname[UL_GAME_NAME_MAX + 1];
 
-    for (part = 0; part < game->parts; part++) {
-        sbCreatePath_name(game, oldpath, prefix, sep, part, game->name);
-        sbCreatePath_name(game, newpath, prefix, sep, part, newname);
-        rename(oldpath, newpath);
-    }
-
-    if (game->format == GAME_FORMAT_USBLD) {
+    int renamed = sbRenameParts(game, prefix, sep, game->parts, game->name, newname);
+    if (renamed == game->parts) {
+        if (game->format != GAME_FORMAT_USBLD)
+            return;
+        memcpy(oldname, game->name, sizeof(oldname));
         memset(game->name, 0, UL_GAME_NAME_MAX + 1);
         memcpy(game->name, newname, UL_GAME_NAME_MAX);
-        sbRebuildULCfg(list, prefix, gamecount, -1);
+        if (sbRebuildULCfg(list, prefix, gamecount, -1) >= 0)
+            return; // 1: the old ul.cfg is gone and ul.cfg.new lists the new name, so keep it
+
+        memcpy(game->name, oldname, sizeof(oldname));
     }
+    // A split game whose parts carry two names, or whose ul.cfg entry names neither, cannot be
+    // found: put the renamed parts back and keep the old name.
+    sbRenameParts(game, prefix, sep, renamed, newname, game->name);
 }
 
 // When 0 (the default, used while scrolling the game list) sbPopulateConfig skips the
@@ -1153,6 +1243,16 @@ void sbRename(base_game_info_t **list, const char *prefix, const char *sep, int 
 // The info screen flips this on via menuRequestInfoSize() so #Size still resolves on demand;
 // game->sizeMB is cached after the first resolve, so later scrolls show the size for free.
 // The gate itself lives in gSupportBase (include/supportbaseint.h).
+void SupportBase::setConfigStatSize(int enable)
+{
+    configStatSizeThread_ = enable ? GetThreadId() : -1;
+}
+
+int SupportBase::configStatSizeEnabled() const
+{
+    return configStatSizeThread_ >= 0 && configStatSizeThread_ == GetThreadId();
+}
+
 void sbSetConfigStatSize(int enable)
 {
     gSupportBase.setConfigStatSize(enable);
@@ -1161,6 +1261,31 @@ void sbSetConfigStatSize(int enable)
 int sbConfigStatSizeEnabled(void)
 {
     return gSupportBase.configStatSizeEnabled();
+}
+
+// Info-screen #Size for a PS1 row. sbPopulateConfig never stats one: its prefix is the OPL config
+// root, while PS1 games live under the device's PS1 root (POPS/<name>.VCD or EMBER/games/<name>/).
+// ps1Root ends in its separator. No-op off the info path, for non-PS1 rows, or once sizeMB is cached.
+void sbResolvePs1Size(base_game_info_t *game, const char *ps1Root, config_set_t *config)
+{
+    char gamepath[256];
+    struct stat st;
+
+    if (!gSupportBase.configStatSizeEnabled() || game == NULL || ps1Root == NULL || config == NULL || game->sizeMB != 0)
+        return;
+
+    if (!strcasecmp(game->extension, ".VCD")) {
+        int len = (int)strlen(ps1Root);
+        snprintf(gamepath, sizeof(gamepath), "%s%s%c%s%s", ps1Root, POPS_FOLDER,
+                 (len > 0 && ps1Root[len - 1] == '\\') ? '\\' : '/', game->name, game->extension);
+        if (stat(gamepath, &st) == 0)
+            game->sizeMB = st.st_size >> 20;
+    } else if (cueIsCueEntry(game))
+        game->sizeMB = cueGameSizeMB(ps1Root, game->name);
+    else
+        return;
+
+    configSetInt(config, CONFIG_ITEM_SIZE, game->sizeMB);
 }
 
 config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const char *sep)
@@ -1204,6 +1329,44 @@ config_set_t *sbPopulateConfig(base_game_info_t *game, const char *prefix, const
                     config->clearModified();
                 }
                 configFree(fallback);
+            }
+        }
+    }
+
+    // PS1 metadata fallback (both cores), TITLE ONLY (original #1049): an installer-written
+    // CFG/<RetroGEM id>.cfg may carry Title (the CFG Titles list override) for every row of the same
+    // game, whatever the row is called. Title only -- a settings key never crosses from an id-keyed
+    // file; read-only -- CFG/<name>.cfg stays the save target; zero disc IO -- the memo answers from
+    // the free filename parse or an id the art path already verified in the background, which
+    // keeps the CFG Titles all-rows pass from opening disc images. It runs even when the name cfg
+    // exists without a Title: a settings file must not silence display metadata.
+    if (isPs1) {
+        const char *title = NULL;
+        char metaKey[VCD_ID_MAX];
+        int haveMetaKey = 0;
+
+        if (!configGetStr(config, "Title", &title) || title == NULL || title[0] == '\0') {
+            haveMetaKey = ps1RowIdCached(game->name, isVcd ? PS1_ROW_VCD : PS1_ROW_CUE, metaKey, sizeof(metaKey));
+            if (haveMetaKey && isVcd && !configLoaded) {
+                // The compatibility fallback above already read this parsed-id CFG. A different
+                // verified id can still supply Title when that fallback had none.
+                char fallbackKey[VCD_ID_MAX];
+                if (vcdExtractGameId(game->name, fallbackKey, sizeof(fallbackKey)) && !strcmp(metaKey, fallbackKey))
+                    haveMetaKey = 0;
+            }
+        }
+        if (haveMetaKey) {
+            snprintf(path, sizeof(path), "%sCFG%s%s.cfg", prefix, sep, metaKey);
+            config_set_t *meta = configAlloc(0, NULL, path);
+            if (meta != NULL) {
+                const char *metaTitle = NULL;
+                if (configRead(meta) && configGetStr(meta, "Title", &metaTitle) && metaTitle != NULL && metaTitle[0] != '\0') {
+                    bool wasModified = config->modified();
+                    configSetStr(config, "Title", metaTitle);
+                    if (!wasModified)
+                        config->clearModified(); // metadata only: never dirties the name cfg
+                }
+                configFree(meta);
             }
         }
     }
@@ -1458,7 +1621,9 @@ int sbCheatsMissingContinue(void *pCommon, int cheatResult)
     if (host::ui().msgBox(text, 1, NULL))
         return 1;
 
-    sbUnprepare(pCommon);
+    // NULL from the lean Neutrino legs, which prepare nothing.
+    if (pCommon != NULL)
+        sbUnprepare(pCommon);
     LOG("Cheats error: user cancelled the launch\n");
 
     return 0;
@@ -1493,7 +1658,18 @@ void sbSetDiscAttributes(config_set_t *config, int isPS1, int isCD)
     configSetStr(config, CONFIG_ITEM_DISCTYPE, isPS1 ? "PS1CD" : (isCD ? "PS2CD" : "PS2DVD"));
 }
 
-int sbLoadCheats(const char *path, const char *file)
+// Select mode (cheatMode 1): the game's remembered picks first (upstream #1748), then the picker --
+// except on an autolaunch, which has no one at the pad and runs the remembered picks as they are.
+static void sbCheatsSelect(int cheatMode, config_set_t *configSet)
+{
+    if (cheatMode != 1)
+        return;
+    cheatConfigLoadSelections(configSet);
+    if ((gAutoLaunchGame == NULL) && (gAutoLaunchBDMGame == NULL))
+        host::ui().manageCheats(configSet);
+}
+
+int sbLoadCheats(const char *path, const char *file, config_set_t *configSet)
 {
     // 256, not 64: the path prefix here is a full device root (e.g. "mass0:/" plus an OPL data
     // folder), and a 64-byte buffer silently TRUNCATED the "<path>CHT/<file>.cht" it builds -- so
@@ -1537,8 +1713,7 @@ int sbLoadCheats(const char *path, const char *file)
                         free(tarBuf);
                         if (cheatMode >= 0) {
                             LOG("Cheats found in CHT/cht.tar (%s)\n", tarGetDevicePrefix(TAR_KIND_CHT));
-                            if ((gAutoLaunchGame == NULL) && (gAutoLaunchBDMGame == NULL) && (cheatMode == 1))
-                                host::ui().manageCheats();
+                            sbCheatsSelect(cheatMode, configSet);
                             return cheatMode;
                         }
                     }
@@ -1593,13 +1768,113 @@ int sbLoadCheats(const char *path, const char *file)
             LOG("Error: failed to load cheats\n");
         } else {
             LOG("Cheats found\n");
-            if ((gAutoLaunchGame == NULL) && (gAutoLaunchBDMGame == NULL) && (cheatMode == 1))
-                host::ui().manageCheats();
+            sbCheatsSelect(cheatMode, configSet);
         }
     }
 
     return cheatMode;
 }
+
+int sbNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs)
+{
+    const u32 *list;
+    int pairs;
+
+    if (!GetCheatsEnabled() || startup == NULL)
+        return sysNeutrinoHandCheats(NULL, neutrinoPath, extraArgs, NULL, 0); // clears the last hand-over
+    set_cheats_list();
+    list = GetCheatsList();
+    for (pairs = 0; pairs < MAX_CHEATLIST / 2 && list[pairs * 2] != 0; pairs++)
+        ;
+    if (pairs == 0)
+        LOG("[NEUTRINO] cheats on, but none enabled for %s -- nothing to hand over\n", startup);
+    return sysNeutrinoHandCheats(startup, neutrinoPath, extraArgs, list, pairs);
+}
+
+int sbNeutrinoLoadCheats(const char *prefix, const char *startup, config_set_t *configSet, const char *neutrinoPath, const char *extraArgs)
+{
+    int result;
+
+    InitCheatsConfig(configSet);
+    // No data home mounted (an APA disk without its OPL partition): there is no CHT/ folder to read,
+    // so launch without cheats, as the native HDD leg does. The NULL startup still clears the last
+    // launch's hand-over, so its file cannot ride along on this one.
+    if (prefix == NULL)
+        return sbNeutrinoHandCheats(NULL, neutrinoPath, extraArgs);
+    if (GetCheatsEnabled() && (result = sbLoadCheats(prefix, startup, configSet)) < 0 && !sbCheatsMissingContinue(NULL, result))
+        return -1;
+    return sbNeutrinoHandCheats(startup, neutrinoPath, extraArgs);
+}
+
+#ifdef RETROACHIEVEMENTS
+#define RA_ORBIT_SNAPSHOT_MAX 1216 // ORBIT v1.0.2's one-packet snapshot (third_party/orbit-neutrino)
+
+void sbNeutrinoPrepareRA(const char *prefix, const char *startup, const char *driver, const char *neutrinoPath, const char *extraArgs)
+{
+    unsigned char ip[4], mask[4], gateway[4], peer[4];
+    int networkGame;
+
+    sysNeutrinoHandRA(NULL, NULL, NULL, 0, NULL, NULL, NULL, 0);
+    // Both modes: Caduceus's engine receives the same wire protocol as the xeRAbora PC.
+    if (!gRATelemetry || (gRAMode != RA_MODE_XERABORA && gRAMode != RA_MODE_CADUCEUS) || prefix == NULL ||
+        startup == NULL || driver == NULL || neutrinoPath == NULL)
+        return;
+    // No saved watch list: nothing to track, so launch quietly before any runtime check could warn.
+    if (sbReadWatchList(prefix, startup) <= 0)
+        return;
+    // raagent sends each snapshot in ONE packet and skips anything larger. It reads the direct entries
+    // only and ignores a pointer-chain tail (xeRAbora PROTOCOL.md), so chain-based achievements do not
+    // track; the hand-over below carries the direct entries.
+    if (!sysNeutrinoRARuntime(neutrinoPath, extraArgs) || GetWatchBytes() > RA_ORBIT_SNAPSHOT_MAX)
+        goto untracked;
+    networkGame = !strcmp(driver, "udpfs") || !strcmp(driver, "udp") || !strcmp(driver, "udpbd") || !strcmp(driver, "udpfsbd");
+    if (networkGame) {
+        // The game's transport brings the adapter up with the static address; DHCP has none to hand over.
+        if (ps2_ip_use_dhcp)
+            goto untracked;
+        for (int i = 0; i < 4; i++)
+            ip[i] = ps2_ip[i];
+    } else {
+        // A resident UDP transport owns the NIC: raLaunchNetworkUp would drop the list without a word.
+        if (raNetNicBusy())
+            goto untracked;
+        // Raises the network and, for Caduceus, rechecks the session; when it clears the list it has
+        // already said why.
+        raLaunchNetworkUp();
+        if (GetWatchCount() <= 0)
+            return;
+        if (ethGetNetConfig(ip, mask, gateway) < 0)
+            goto untracked;
+    }
+    if (!(ip[0] | ip[1] | ip[2] | ip[3]))
+        goto untracked;
+    if (gRAHostIp[0] | gRAHostIp[1] | gRAHostIp[2] | gRAHostIp[3]) {
+        for (int i = 0; i < 4; i++)
+            peer[i] = gRAHostIp[i];
+    } else {
+        unsigned int verified = raNetPeerIP();
+        memcpy(peer, &verified, sizeof(peer)); // network byte order
+    }
+    if (!(peer[0] | peer[1] | peer[2] | peer[3]) || peer[0] >= 224 || peer[0] == 127)
+        goto untracked;
+    {
+        struct ra_watch_file header = {RA_WATCH_MAGIC, RA_WATCH_VERSION, (unsigned int)GetWatchCount(), (unsigned int)GetWatchBytes()};
+        int size = (int)sizeof(header) + (int)header.count * (int)sizeof(unsigned int);
+        unsigned char *file = static_cast<unsigned char *>(malloc(size));
+        if (file == NULL)
+            goto untracked;
+        memcpy(file, &header, sizeof(header));
+        memcpy(file + sizeof(header), GetWatchList(), size - sizeof(header));
+        int result = sysNeutrinoHandRA(startup, neutrinoPath, extraArgs, networkGame, ip, peer, file, size);
+        free(file);
+        if (result == 0)
+            return;
+    }
+untracked:
+    LOG("[RA] ORBIT Neutrino handoff unavailable for %s; launch remains untracked\n", startup);
+    host::ui().warningId(_STR_RA_NEUTRINO_UNTRACKED, 6);
+}
+#endif
 
 // Δ1 (NHDDL-parity): a resolved neutrino.elf is only USABLE if its install is complete. Neutrino
 // chdir()s to the elf's dir (our -cwd) then opens config/system.toml; if absent it falls back to a
@@ -2389,7 +2664,7 @@ void sbBuildVmcNeutrinoArgs(config_set_t *configSet, const char *vmcPrefix, neut
   deliberately quiet and its result is advisory. Returns the entry count, or
   negative when there is no usable list.
 */
-int sbLoadWatchList(const char *path, const char *file)
+int sbReadWatchList(const char *path, const char *file)
 {
     static const char *wlExt[] = {"wl", "WL"};
     unsigned int ext;
@@ -2410,9 +2685,14 @@ int sbLoadWatchList(const char *path, const char *file)
 
     if (result < 0)
         LOG("RA: no watch list for %s under %sRA/\n", file, path);
-    else
-        raLaunchNetworkUp(); // the in-game DEV9 driver needs the adapter already up
+    return result;
+}
 
+int sbLoadWatchList(const char *path, const char *file)
+{
+    int result = sbReadWatchList(path, file);
+    if (result >= 0)
+        raLaunchNetworkUp(); // the in-game DEV9 driver needs the adapter already up
     return result;
 }
 
@@ -2495,6 +2775,40 @@ void SupportBase::hashLogClose()
 /* on the splash screen. The image's folder is not known in advance,   */
 /* so DVD is tried first, then CD, the way OPL itself lays them out.   */
 
+/* One result-to-notice mapping for ISO, VCD and HDL support checks. The hash-log steps tell a
+   failed transport apart from a companion that ignored the request. */
+static void sbShowAskResult(int q, const char *hash, const char *info, const char *info2)
+{
+    if (q == 0) {
+        raHashStep("7-list-received");
+        host::ui().raNotice(info[0] ? info : _l(_STR_RA_SUPPORTED),
+                            info2[0] ? info2 : _l(_STR_RA_START_TO_TRACK));
+    } else if (q == 1) {
+        raHashStep("7-pc-does-not-know-image");
+        host::ui().raNotice(_l(_STR_RA_UNKNOWN_IMAGE), hash);
+    } else if (q == -9) {
+        raHashStep("7-caduceus-session-offline");
+        host::ui().raNotice(_l(_STR_RA_CADUCEUS_OFFLINE), _l(_STR_RA_CADUCEUS_SIGN_IN));
+    } else if (q == -7) {
+        raHashStep("7-pc-still-identifying");
+        host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
+    } else if (q == -8) {
+        /* NIC owned by a UDP transport (the settlement): the ask was
+           refused without touching the network. The hash is already in
+           the log, so the PC-side path to a .wl stays open. */
+        raHashStep("7-nic-busy-udp-transport");
+        host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(raNetUdpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY_HASH));
+    } else if (q == -1) {
+        /* The console could not open a UDP socket, so nothing was
+           ever sent -- report that, not a PC that never heard us. */
+        raHashStep("7-no-socket-on-console");
+        host::ui().raNotice(_l(_STR_RA_NO_SOCKET), _l(_STR_RA_NO_SOCKET2));
+    } else {
+        raHashStep("7-pc-did-not-answer");
+        host::ui().raNotice(_l(_STR_RA_PC_NO_ANSWER), _l(_STR_RA_PC_NO_ANSWER2));
+    }
+}
+
 static void sbHashGame(const char *path, const char *name, const char *ext, const char *startup, int format)
 {
     static const char *dirs[] = {"DVD", "CD", NULL};
@@ -2513,6 +2827,37 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
         raHashStep("1-ul-format-not-supported");
         raHashLogAdd(name, startup, "UL: not an image, not supported yet");
         host::ui().raNotice(_l(_STR_RA_UL_UNSUPPORTED), _l(_STR_RA_UL_UNSUPPORTED2));
+        raHashSetStepLog(NULL);
+        raHashLogClose();
+        return;
+    }
+
+    if (!strcasecmp(ext, ".VCD")) {
+        /* A USB PS1 VCD lives in <root>/POPS/. Its list is keyed by the image's path
+           (raVcdWatchKey), since a BOOT name is shared by many PS1 images. */
+        char root[64], boot[16], watchKey[16];
+        const char *colon = strchr(path, ':');
+        int n = colon ? (int)(colon - path) + 1 : 0;
+        int ret = -1;
+
+        if (n && n + 2 <= (int)sizeof(root)) {
+            memcpy(root, path, n);
+            root[n++] = '/';
+            root[n] = '\0';
+            if (snprintf(iso, sizeof(iso), "%sPOPS/%s%s", root, name, ext) < (int)sizeof(iso))
+                ret = raHashVcd(iso, boot, sizeof(boot), hash);
+            if (ret == 0)
+                ret = raVcdWatchKey(iso, watchKey, sizeof(watchKey));
+        }
+        if (ret == 0) {
+            int q = raAskPC(hash, watchKey, path, info, sizeof(info), info2, sizeof(info2));
+            raHashLogAdd(name, boot, hash);
+            sbShowAskResult(q, hash, info, info2);
+        } else {
+            snprintf(last_err, sizeof(last_err), "VCD: code %d", ret);
+            raHashLogAdd(name, startup && startup[0] ? startup : "PS1", last_err);
+            host::ui().raNotice(_l(_STR_RA_HASH_FAILED), _l(_STR_RA_HASH_FAILED2));
+        }
         raHashSetStepLog(NULL);
         raHashLogClose();
         return;
@@ -2549,31 +2894,7 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
             raHashStep("6-asking-pc");
             q = raAskPC(hash, startup, path, info, sizeof(info), info2, sizeof(info2));
 
-            if (q == 0) {
-                raHashStep("7-list-received");
-                host::ui().raNotice(info[0] ? info : _l(_STR_RA_SUPPORTED),
-                                    info2[0] ? info2 : _l(_STR_RA_START_TO_TRACK));
-            } else if (q == 1) {
-                raHashStep("7-pc-does-not-know-image");
-                host::ui().raNotice(_l(_STR_RA_UNKNOWN_IMAGE), hash);
-            } else if (q == -7) {
-                raHashStep("7-pc-still-identifying");
-                host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
-            } else if (q == -8) {
-                /* NIC owned by a UDP transport (the settlement): the ask was
-                   refused without touching the network. The hash is already in
-                   the log, so the PC-side path to a .wl stays open. */
-                raHashStep("7-nic-busy-udp-transport");
-                host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(_STR_RA_NET_BUSY_HASH));
-            } else if (q == -1) {
-                /* The console could not open a UDP socket, so nothing was
-                   ever sent -- report that, not a PC that never heard us. */
-                raHashStep("7-no-socket-on-console");
-                host::ui().raNotice(_l(_STR_RA_NO_SOCKET), _l(_STR_RA_NO_SOCKET2));
-            } else {
-                raHashStep("7-pc-did-not-answer");
-                host::ui().raNotice(_l(_STR_RA_PC_NO_ANSWER), _l(_STR_RA_PC_NO_ANSWER2));
-            }
+            sbShowAskResult(q, hash, info, info2);
 
             raHashSetStepLog(NULL);
             raHashLogClose();
@@ -2615,6 +2936,8 @@ static char ra_hash_name[128];
 static char ra_hash_ext[16];
 static char ra_hash_startup[16];
 static int ra_hash_format = -1; /* GAME_FORMAT_USBLD is 0: never default to it */
+static int ra_hash_hdl = 0;
+static unsigned int ra_hash_hdl_sector;
 
 static void sbHashGameDeferredWorker(void);
 
@@ -2639,6 +2962,49 @@ int sbHashGameDeferred(const char *path, const char *name, const char *ext, cons
     snprintf(ra_hash_ext, sizeof(ra_hash_ext), "%s", ext ? ext : "");
     snprintf(ra_hash_startup, sizeof(ra_hash_startup), "%s", startup ? startup : "");
     ra_hash_format = format;
+    ra_hash_hdl = 0;
+
+    if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&sbHashGameDeferredWorker)) != IO_OK) {
+        ra_hash_busy = 0;
+        return 0;
+    }
+    return 1;
+}
+
+/* An HDLoader install has no image file: its descriptor maps the ISO's logical sectors across
+   APA extents, and raHashHdl reads through that map without mounting or writing anything. */
+static void sbHashHdlGame(const char *path, const char *name, const char *startup, unsigned int start_sector)
+{
+    char hash[33], info[96] = "", info2[96] = "", result[64];
+    int status;
+
+    raHashLogOpen(path);
+    raHashSetStepLog(&raHashStep);
+    status = raHashHdl(start_sector, startup, hash);
+    if (status == 0) {
+        raHashLogAdd(name, startup, hash);
+        raHashStep("6-asking-pc");
+        sbShowAskResult(raAskPC(hash, startup, path, info, sizeof(info), info2, sizeof(info2)), hash, info, info2);
+    } else {
+        snprintf(result, sizeof(result), "HDL: read/map/hash error %d", status);
+        raHashLogAdd(name, startup, result);
+        host::ui().raNotice(_l(_STR_RA_HASH_FAILED), _l(_STR_RA_HASH_FAILED2));
+    }
+    raHashSetStepLog(NULL);
+    raHashLogClose();
+}
+
+int sbHashHdlDeferred(const char *path, const char *name, const char *startup, unsigned int start_sector)
+{
+    if (ra_hash_busy || !path || !path[0] || !startup || !startup[0] || !start_sector)
+        return 0;
+    ra_hash_busy = 1;
+
+    snprintf(ra_hash_path, sizeof(ra_hash_path), "%s", path);
+    snprintf(ra_hash_name, sizeof(ra_hash_name), "%s", name ? name : "");
+    snprintf(ra_hash_startup, sizeof(ra_hash_startup), "%s", startup);
+    ra_hash_hdl_sector = start_sector;
+    ra_hash_hdl = 1;
 
     if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&sbHashGameDeferredWorker)) != IO_OK) {
         ra_hash_busy = 0;
@@ -2649,7 +3015,10 @@ int sbHashGameDeferred(const char *path, const char *name, const char *ext, cons
 
 static void sbHashGameDeferredWorker(void)
 {
-    sbHashGame(ra_hash_path, ra_hash_name, ra_hash_ext, ra_hash_startup, ra_hash_format);
+    if (ra_hash_hdl)
+        sbHashHdlGame(ra_hash_path, ra_hash_name, ra_hash_startup, ra_hash_hdl_sector);
+    else
+        sbHashGame(ra_hash_path, ra_hash_name, ra_hash_ext, ra_hash_startup, ra_hash_format);
     ra_hash_busy = 0;
 }
 
@@ -2666,3 +3035,24 @@ void sbTestPCLinkDeferred(void)
     ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&sbTestPCLinkWorker));
 }
 #endif
+
+void sysNeutrinoWarnPadEmu(config_set_t *configSet)
+{
+#ifdef PADEMU
+    // Match sbPrepare's inheritance: a present per-game source key selects the per-game values.
+    // Read the config directly: APA's Neutrino path need not have called sbPrepare for this game.
+    int source = 0, enabled = 0;
+    config_set_t *settings = configGetByType(CONFIG_GAME);
+    if (configGetInt(configSet, CONFIG_ITEM_PADEMUSOURCE, &source))
+        settings = configSet;
+    configGetInt(settings, CONFIG_ITEM_ENABLEPADEMU, &enabled);
+    if (enabled) {
+        LOG("[NEUTRINO] pad emulation configured but unsupported\n");
+        // Autolaunch runs before the interactive menu: never leave it waiting for a modal.
+        if (gAutoLaunchGame == NULL && gAutoLaunchBDMGame == NULL)
+            host::ui().msgBox(_l(_STR_NEUTRINO_PADEMU_WARN), 0, NULL);
+    }
+#else
+    (void)configSet;
+#endif
+}

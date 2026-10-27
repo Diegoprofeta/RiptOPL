@@ -100,13 +100,6 @@ void rmDrawPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, sho
 void rmDrawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned, int w, int h, short scaled, u64 color,
                          GSTEXTURE *inlay, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry, int reflection);
 
-#ifdef RETROACHIEVEMENTS
-/** RA cover mark: the same inlay-quad mapping as rmDrawOverlayPixmap, for a badge drawn
-    inside the cover's own (possibly slanted) coordinate system. No reflection. */
-void rmDrawInlayPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color,
-                       int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry);
-#endif
-
 /** Vertical pixel offset applied to the coverflow reflection (0 = flush under the cover, - = up, + = down). */
 void rmSetReflectionYOffset(int yoff);
 
@@ -119,6 +112,13 @@ void rmDrawFramedRect(int x, int y, int w, int h, int border, u64 frameColor, u6
 
 /** Queues a single color line to be rendered */
 void rmDrawLine(int x1, int y1, int x2, int y2, u64 color);
+
+/** Queues count triangles: xy holds 3 virtual 640x480 points per triangle, colors one gouraud colour
+ * per point. Textured from txt with uv in texels when txt is not NULL (uv may be NULL otherwise).
+ * rmDrawTriangles draws them opaque; rmDrawBlendedTriangles blends by vertex alpha (0x80 = opaque),
+ * and a texture without an alpha channel fades by the first vertex's alpha. */
+void rmDrawTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors);
+void rmDrawBlendedTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors);
 
 /** Starts the frame - first to call every frame */
 void rmStartFrame(void);

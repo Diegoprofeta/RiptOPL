@@ -98,6 +98,8 @@ public:
     // priv, callbacks, flags and owner all come from the current source object. The returned
     // pointer is valid only as long as `view` remains in scope.
     item_list_t *ownerView(int id, item_list_t *view);
+    // The live source of an id-addressed (PS2/ELF) favourite and its current id there, or NULL.
+    item_list_t *sourceItem(int id, item_list_t *view, int *sourceId);
 
     // R3 toggle API.
     int addItem(int mode, int id, int icon_id, int text_id, const char *text, int kind);

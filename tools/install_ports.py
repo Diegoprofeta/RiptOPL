@@ -23,14 +23,15 @@ LIBRARIES = {"ogg": ("libogg.a",), "vorbis": ("libvorbis.a", "libvorbisfile.a")}
 
 def download(url):
     request = urllib.request.Request(url, headers={"User-Agent": "RiptOPL-build/1.0"})
-    for attempt in range(3):
+    for attempt in range(5):
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 return response.read()
         except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
-            if isinstance(error, urllib.error.HTTPError) and error.code not in (408, 429, 500, 502, 503, 504):
+            # Any 5xx is transient here, including Cloudflare's 520-524 when the origin is briefly down.
+            if isinstance(error, urllib.error.HTTPError) and error.code not in (408, 429) and error.code < 500:
                 raise
-            if attempt == 2:
+            if attempt == 4:
                 raise
             print(f"retrying {url} after {type(error).__name__}: {error}", flush=True)
             time.sleep(1 << attempt)
@@ -63,10 +64,21 @@ def unpack(data, destination, package):
 def install(sdk, package, toolchain):
     version = os.environ.get(f"{package.upper()}_VERSION", "latest")
     release_path = "latest" if version == "latest" else "tags/" + urllib.parse.quote(version, safe="")
-    release = json.loads(download(f"{HOST}/api/v1/repos/ps2/{package}/releases/{release_path}"))
-    url = select_asset(release, package, toolchain)
-    data = download(url)
     world = sdk / ("packages-llvm" if toolchain == "llvm" else "packages") / "world"
+    try:
+        release = json.loads(download(f"{HOST}/api/v1/repos/ps2/{package}/releases/{release_path}"))
+        url = select_asset(release, package, toolchain)
+        data = download(url)
+    except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
+        # The package host has outages of several minutes. A complete package restored from the SDK
+        # cache is the one a previous run installed, so build with it rather than fail; a pinned
+        # version is never substituted.
+        installed = world / package
+        if version != "latest" or isinstance(error, urllib.error.HTTPError) and error.code < 500 \
+                or not all((installed / name).is_file() for name in ("package.yaml", *(f"lib/{lib}" for lib in LIBRARIES[package]))):
+            raise
+        print(f"warning: {HOST} unreachable ({error}); keeping the installed {package} ({toolchain})", flush=True)
+        return
     world.mkdir(parents=True, exist_ok=True)
     world = world.resolve()
     target = world / package

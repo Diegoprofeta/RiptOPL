@@ -50,7 +50,7 @@ Rating_1 Rating_2 Rating_3 Rating_4 Rating_5 Scan_240p Scan_240p1 Scan_480i Scan
 Scan_480p1 Scan_480p2 Scan_480p3 Scan_480p4 Scan_480p5 Scan_576i Scan_576p Scan_720p
 Scan_1080i Scan_1080i2 Scan_1080p Vmode_multi Vmode_ntsc Vmode_pal logo
 logo0 logo1 logo2 logo3 case
-Index_0 Index_1 Index_2 Index_3 Index_4 fav fav_mark R3 L3 L1 R1 PS1 PS2 case_overlay techwritescode""".split()
+Index_0 Index_1 Index_2 Index_3 Index_4 fav fav_mark R3 L3 L1 R1 PS1 PS2 case_overlay psbbn_bg techwritescode""".split()
 
 AUDIO = "boot cancel confirm cursor message transition bd_connect bd_disconnect".split()
 
@@ -63,6 +63,7 @@ MISC = [
     ("icon_sys_C", "misc/icon_C.sys", "icon_sys_C"),
     ("conf_theme_OPL", "misc/conf_theme_OPL.cfg", "conf_theme_OPL_cfg"),
     ("theme_coverflow", "misc/theme_coverflow.cfg", "theme_coverflow_cfg"),
+    ("theme_psbbn_flow", "misc/theme_psbbn_flow.cfg", "theme_psbbn_flow_cfg"),
 ]
 
 
@@ -121,11 +122,11 @@ def embed():
     for stale in os.listdir(ASM_DIR):  # asm/*.c is globbed by ps2.yaml: drop leftovers
         if stale.endswith(".c"):
             os.remove(os.path.join(ASM_DIR, stale))
-    edition = os.environ.get("RIPTOPL_EDITION", "incebtion")
-    if edition not in ("korium", "ra", "incebtion"):
-        sys.exit(f"unknown RIPTOPL_EDITION: {edition}")
+    theme = os.environ.get("RIPTOPL_THEME", "incebtion")
+    if theme not in ("korium", "incebtion"):
+        sys.exit(f"unknown RIPTOPL_THEME: {theme}")
     theme_dir = None
-    if edition in ("korium", "ra"):
+    if theme == "korium":
         vendor = Path(ROOT) / "third_party/korium"
         archive = vendor / "assets.zip"
         manifest = json.loads((vendor / "UPSTREAM.json").read_text(encoding="utf-8"))
@@ -145,9 +146,15 @@ def embed():
                 destination.write_bytes(data)
     pngs = list(PNG_ASSETS)
     if theme_dir:
+        # inceBtion's app placeholder and foliage layer: Korium maps neither (src/gfx/textures.cpp).
+        pngs = [p for p in pngs if p not in ("coverapp", "case_overlay")]
         pngs += ["apps_case", "case_ps1", "disc_ps1", "Players_1", "Players_2", "Players_3", "Players_4"]
-    if edition == "ra":
+    if os.environ.get("RIPTOPL_RA") == "1":
         pngs += ["ra_mark"]
+        # The HTTPS lookup's trust anchors (src/sources/ratls_ps2.cpp): ratls_root_<name>.
+        for der in sorted((Path(ROOT) / "third_party/ca-roots").glob("*.der")):
+            name = "ratls_root_" + der.stem.replace("-", "")
+            bin2c(str(der), name, name)
     for a in pngs:
         name = {"incebtion": "background", "ip": "background_info"}.get(a, a) if theme_dir else a
         themed = theme_dir / f"gfx/{name}.png" if theme_dir else None

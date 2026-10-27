@@ -1,9 +1,31 @@
 # Interface behaviours
 
 Menu behaviours that are configured from *Settings* but need more than a one-line description:
-folder browsing, the parental lock, and the audio system.
+the language page, folder browsing, the parental lock, and the audio system.
 
 For the button map, see [CONTROLS.md](CONTROLS.md).
+
+---
+
+## Language
+
+**Settings → Language** holds the one menu-language picker and the **OSD Defaults** action. The picker
+changes RiptOPL's interface. OSD Defaults opens the editor for the console language, screen size and
+video mode the OPL core passes to games; it changes neither the menu language nor the console's own
+OSDSYS settings. Per-game overrides stay in each game's settings, and leaving the global editor no longer
+hides them. Back and L1/R1 keep edits for the session; **Save Changes** keeps them after a restart. See
+[Languages](LANGUAGES.md) for installing translation files and fonts.
+
+---
+
+## Menu font size
+
+**Settings → Interface → Font Size.** Choose **Small**, **Default** or **Large**.
+
+The size change applies immediately and is saved with your settings. Standard menu text uses
+15, 17 or 19 pixels, with list rows and dialog spacing adjusted to match. Theme and language fonts
+using the standard 17-pixel size follow this choice, and so does a `font_CJK.ttf` fallback.
+Explicit custom theme point sizes stay unchanged.
 
 ---
 
@@ -86,8 +108,8 @@ track costs no extra RAM. It looks in this order and takes the first that works:
 
 1. `<theme>/sound/bgm.ogg` — a disk theme's own music.
 2. The **Default Theme Music** path from Audio Settings.
-3. `THM/bgm.ogg` under the active settings home — **built-in themes only** (`<OPL>` and
-   `<Coverflow>`). A disk theme never falls through to this.
+3. `THM/bgm.ogg` under the active settings home — **built-in themes only** (`<OPL>`,
+   `<Coverflow>` and `<PSBBN Flow>`). A disk theme never falls through to this.
 
 That order is why a disk theme with its own `sound/bgm.ogg` ignores your Default Theme Music setting:
 the theme wins. To use your own track everywhere, pick a theme that ships no music of its own.
@@ -113,7 +135,7 @@ eight:
 | `bd_connect.adp` | A block device is connected |
 | `bd_disconnect.adp` | A block device is removed |
 
-The two built-in themes use effects embedded in the ELF and read nothing from the card. A disk theme
+The built-in themes use effects embedded in the ELF and read nothing from the card. A disk theme
 supplying only some of the eight falls back to the built-in sound for the rest.
 
 Sound effects, the boot sound, and background music each have their own on/off switch and their own

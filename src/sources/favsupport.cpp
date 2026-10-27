@@ -948,6 +948,15 @@ item_list_t *FavSupport::ownerView(int id, item_list_t *view)
     return view;
 }
 
+item_list_t *FavSupport::sourceItem(int id, item_list_t *view, int *sourceId)
+{
+    item_list_t *owner = ownerView(id, view);
+
+    if (owner == NULL || sourceId == NULL || !favResolveStoredId(owner, array_[id].id, array_[id].text, array_[id].kind, sourceId))
+        return NULL;
+    return owner;
+}
+
 int FavSupport::addItem(int mode, int id, int icon_id, int text_id, const char *text, int kind)
 {
     if (text == NULL || text[0] == '\0')
@@ -1062,6 +1071,9 @@ public:
     int count(item_list_t *itemList) override;
     int rowView(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    char *rowPrefix(item_list_t *itemList, int id) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
     char *startup(item_list_t *itemList, int id) override;
@@ -1073,6 +1085,7 @@ public:
     void cleanUp(item_list_t *itemList, int exception) override;
     void shutdown(item_list_t *itemList) override;
     int checkVmc(item_list_t *itemList, char *name, int createSize) override;
+    int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous) override;
 };
 
 static FavSource *favInstance()
@@ -1192,7 +1205,9 @@ config_set_t *FavSource::config(item_list_t *itemList, int id)
                  (fav->kind == FAV_KIND_CUE) ? CUE_ROW_EXTENSION : ".VCD");
         game.parts = 1;
         game.format = GAME_FORMAT_ISO; // matches the device scans; the extension drives the PS1 badge
-        return sbPopulateConfig(&game, prefix, sep);
+        config_set_t *config = sbPopulateConfig(&game, prefix, sep);
+        gsOf(o)->ps1Size(o, &game, config); // the owner's PS1 root; a stack copy, so per Info open
+        return config;
     }
     if (!favOwnerHasId(o, fav->id))
         return NULL;
@@ -1325,7 +1340,7 @@ unsigned char favGetFlags(item_list_t *itemList)
 
 // VMC check proxy: itemCheckVMC is device-context (no id), so forward to the current FAV
 // item's SOURCE device. Without this, the game-Options VMC menu would call a NULL callback.
-int FavSource::checkVmc(item_list_t *itemList, char *name, int createSize)
+static int favVmcForward(char *name, int createSize, int requireContiguous)
 {
     opl_io_module_t *mod = oplGetModule(FAV_MODE);
     if (mod == NULL || mod->menuItem.current == NULL)
@@ -1338,7 +1353,17 @@ int FavSource::checkVmc(item_list_t *itemList, char *name, int createSize)
     item_list_t *o = gFavSupport.ownerView(id, &ownerView);
     if (o == NULL || !gsOf(o)->hasCheckVmc())
         return -1;
-    return gsOf(o)->checkVmc(o, name, createSize);
+    return requireContiguous < 0 ? gsOf(o)->checkVmc(o, name, createSize) : gsOf(o)->createVmc(o, name, createSize, requireContiguous);
+}
+
+int FavSource::checkVmc(item_list_t *itemList, char *name, int createSize)
+{
+    return favVmcForward(name, createSize, -1);
+}
+
+int FavSource::createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous)
+{
+    return favVmcForward(name, createSize, requireContiguous);
 }
 
 // ---- public toggle / refresh API (forwarders to the store) --------------------
@@ -1386,6 +1411,29 @@ item_list_t *favGetObject(int initOnly)
     if (initOnly && !(*favInstance()).enabled)
         return NULL;
     return &(*favInstance());
+}
+
+int FavSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    item_list_t ownerView;
+    (void)itemList;
+    const fav_rec_t *entry = gFavSupport.entry(id);
+    if (entry == NULL || (entry->kind != FAV_KIND_VCD && entry->kind != FAV_KIND_CUE))
+        return 0;
+    item_list_t *owner = gFavSupport.ownerView(id, &ownerView);
+    return owner != NULL &&
+           gsOf(owner)->ps1SaveDir(owner, entry->id, name, ember, directory, directorySize, partition, partitionSize) &&
+           *ember == (entry->kind == FAV_KIND_CUE);
+}
+
+char *FavSource::rowPrefix(item_list_t *itemList, int id)
+{
+    item_list_t ownerView;
+    (void)itemList;
+    const fav_rec_t *entry = gFavSupport.entry(id);
+    item_list_t *owner = gFavSupport.ownerView(id, &ownerView);
+    return entry != NULL && owner != NULL ? gsOf(owner)->rowPrefix(owner, entry->id) : NULL;
 }
 
 int FavSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

@@ -1,4 +1,5 @@
 #include "sys/fcntl.h"
+#include <sys/stat.h> // stat -- PP. partition IMAGE0.VCD #Size
 #include <new>
 #include "include/host.h"
 #include "include/opl.h"
@@ -8,6 +9,7 @@
 #include "include/hddsupport.h"
 #include "include/hddint.h"
 #include "include/cuesupport.h" // Ember rows share the HDD PS1 list with the VCD ones
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/vcdsupport.h" // HDD VCD view: vcdScanDirRoot + vcd_entry_t
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/util.h"
@@ -22,6 +24,7 @@
 #include "include/gamesource.h"
 #include "include/mmcesupport.h" // mmceSendGameID() cross-device game-id (#261)
 #include "modules/iopcore/common/cdvd_config.h"
+#include "modules/vmc/genvmc/genvmc.h" // VMC_CREATE_PFS_RESERVE
 
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h> // fileXioFormat, fileXioMount, fileXioUmount, fileXioDevctl
@@ -29,6 +32,7 @@
 
 #include <hdd-ioctl.h>
 #include <delaythread.h> // DelayThread for the post-ATAD settle in hddLoadModules
+#include <speedregs.h>   // SPD_CAPS_DVR: the DESR DVRP capability bit
 
 constexpr int OPL_HDD_MODE_PS2LOGO_OFFSET = 0x17F8;
 
@@ -44,6 +48,261 @@ extern u8 IOBuffer[2048];
 static char *hddPrefix = "pfs0:";
 
 HddSupport gHddSupport;
+
+/*
+ * DESR DVR ISO view. A DESR's dvr_hdd0:/dvr_pfsN: belongs to the DVRP and
+ * is NOT the normal hdd0: HDL partition namespace. Only use read-only directory
+ * operations, and never create or format a DVR partition. When the PSX DVR
+ * driver has not been initialized, this path is inert on ordinary PS2 models.
+ *
+ * TODO (DESR hardware gate): load DVRP modules after switching to PSX mode
+ * without destroying the GUI's other IOP clients. The read-only scanner below
+ * works only when those namespaces are already available. Do not claim general
+ * DESR boot compatibility before that initialization has been validated.
+ */
+#define HDD_DVR_MAX_ISOS 128
+typedef struct
+{
+    hdl_game_info_t game; /* same menu metadata layout as other HDD PS2 rows */
+    char path[224];       /* complete dvr_pfsN:/... path for -dvd */
+} hdd_dvr_iso_t;
+static hdd_dvr_iso_t *hddDvrGames = NULL;
+static int hddDvrGameCount = 0;
+static unsigned char hddDvrMounted[2] = {0, 0};
+static unsigned char hddDvrDriverTried = 0;
+static unsigned char hddDvrDrvLoaded = 0;
+static unsigned char hddDvrDriverReady = 0;
+static unsigned char hddDvrReadableDirs = 0;
+
+/* Read the hardware capability bit, not the console name or a guessed ROMVER.
+ * The DVRP exists only on Sony PSX DESR hardware; normal PS2 HDDs skip this
+ * branch without loading a module, probing a partition or changing IOP state.
+ */
+static int hddDvrHardwarePresent(void)
+{
+    USE_SPD_REGS;
+    return (SPD_REG16(SPD_R_REV_3) & SPD_CAPS_DVR) != 0;
+}
+
+/* Same safe module ordering used by wLaunchELF's load_ps2dvr():
+ * existing DEV9/ATAD stack, then dvrdrv, then dvrfile. The bundled SDK
+ * dvrfile is used by the GUI only to enumerate files; external Neutrino
+ * carries pcm720's modified dvrfile plus dvrfile_fhi for the actual game.
+ * No DVRP firmware flash or modification is involved.
+ */
+static int hddDvrEnsureDrivers(void)
+{
+    if (!gEnableDVR)
+        return 0;
+    if (hddDvrDriverReady)
+        return 1;
+    if (!hddDvrHardwarePresent())
+        return 0;
+    if (!hddLoadModulesReady()) {
+        LOG("[DVR] ATA/DEV9 modules unavailable; DVR namespace not probed\n");
+        return 0; // a transient ATA readiness failure can retry next refresh
+    }
+    if (!hddDvrDrvLoaded) {
+        if (hddDvrDriverTried)
+            return 0;
+        hddDvrDriverTried = 1;
+        if (sysLoadModuleBuffer(&dvrdrv_irx, size_dvrdrv_irx, 0, NULL) != 0) {
+            LOG("[DVR] dvrdrv.irx failed to start\n");
+            return 0;
+        }
+        hddDvrDrvLoaded = 1;
+    }
+    if (sysLoadModuleBuffer(&dvrfile_irx, size_dvrfile_irx, 0, NULL) != 0) {
+        LOG("[DVR] dvrfile.irx failed to start\n");
+        return 0;
+    }
+    sceCdNoticeGameStart(0, NULL);
+    hddDvrDriverReady = 1;
+    LOG("[DVR] DVRP filesystem drivers initialized (DESR capability detected)\n");
+    return 1;
+}
+
+/* Publishing under the GUI lock follows the existing HDL/VCD list contract.
+ * A refresh may free the prior array while the menu is reading its rows. */
+static void hddDvrPublish(hdd_dvr_iso_t *next, int count)
+{
+    hdd_dvr_iso_t *old;
+    host::ui().lock();
+    old = hddDvrGames;
+    hddDvrGames = next;
+    hddDvrGameCount = count;
+    free(old);
+    host::ui().unlock();
+}
+
+static int hddDvrIsIsoName(const char *name)
+{
+    size_t len = strlen(name);
+    return len > 4 && strcasecmp(name + len - 4, ".iso") == 0;
+}
+
+/* Stable fallback key for ISOs without a conventional game-ID filename. */
+static void hddDvrNameToStartup(const char *name, char *out, int outSize)
+{
+    unsigned int hash = 2166136261u;
+    const unsigned char *p;
+    const char *basename = strrchr(name, '/');
+    if (basename != NULL)
+        basename++;
+    else
+        basename = name;
+    int valid = strlen(basename) >= 11 && basename[4] == '_' && basename[8] == '.';
+    if (valid) {
+        for (int i = 0; i < 11; i++) {
+            if (i == 4 || i == 8)
+                continue;
+            if ((i < 4 && !((basename[i] >= 'A' && basename[i] <= 'Z') || (basename[i] >= '0' && basename[i] <= '9'))) ||
+                (i > 4 && (basename[i] < '0' || basename[i] > '9'))) {
+                valid = 0;
+                break;
+            }
+        }
+    }
+    if (valid) {
+        snprintf(out, outSize, "%.*s", 11, basename);
+        return;
+    }
+    for (p = (const unsigned char *)name; *p; p++)
+        hash = (hash ^ *p) * 16777619u;
+    snprintf(out, outSize, "DVR_%07X", hash & 0x0FFFFFFFu);
+}
+
+static int hddDvrCollectDir(const char *dir, int media, hdd_dvr_iso_t *out, int count)
+{
+    iox_dirent_t entry;
+    int fd = fileXioDopen(dir);
+    int n;
+    if (fd < 0)
+        return -1; /* unreadable is not a proven-empty directory */
+    while ((n = fileXioDread(fd, &entry)) > 0) {
+        entry.name[sizeof(entry.name) - 1] = '\0';
+        if (!hddDvrIsIsoName(entry.name))
+            continue;
+        if (count >= HDD_DVR_MAX_ISOS) {
+            LOG("[DVR] scan capped at %d ISO files (no partial publish)\n", HDD_DVR_MAX_ISOS);
+            fileXioDclose(fd);
+            return -2;
+        }
+        char path[sizeof(out[0].path)];
+        int len = snprintf(path, sizeof(path), "%s%s%s", dir,
+                           dir[strlen(dir) - 1] == '/' ? "" : "/", entry.name);
+        if (len <= 0 || len >= (int)sizeof(path)) {
+            fileXioDclose(fd);
+            return -2; /* never launch a truncated path */
+        }
+        hdd_dvr_iso_t *dst = &out[count];
+        memset(dst, 0, sizeof(*dst));
+        snprintf(dst->path, sizeof(dst->path), "%s", path);
+        size_t titleLen = strlen(entry.name) - 4;
+        if (titleLen >= sizeof(dst->game.name))
+            titleLen = sizeof(dst->game.name) - 1;
+        memcpy(dst->game.name, entry.name, titleLen);
+        dst->game.name[titleLen] = '\0';
+        hddDvrNameToStartup(path, dst->game.startup, sizeof(dst->game.startup));
+        dst->game.disctype = media;
+        dst->game.total_size_in_kb = (u32)((((u64)entry.stat.hisize << 32) | entry.stat.size) >> 10);
+        count++;
+    }
+    fileXioDclose(fd);
+    return n < 0 ? -3 : count;
+}
+
+/* Updates only after a complete read. Never touches the HDL cache or its array. */
+static void hddDvrScan(void)
+{
+    static const char *const roots[] = {"dvr_pfs0:", "dvr_pfs1:"};
+    static const char *const subdirs[] = {"/", "/DVD", "/CD"};
+    hdd_dvr_iso_t *candidate;
+    int scanned = 0, count = 0, available = 0;
+    unsigned char readableDirs = 0;
+    int probe;
+    if (!gEnableDVR) {
+        hddDvrPublish(NULL, 0);
+        hddDvrReadableDirs = 0;
+        return; // Withdraw rows without unmounting beneath outstanding readers.
+    }
+    if (!hddDvrEnsureDrivers())
+        return;
+    probe = fileXioDopen("dvr_hdd0:");
+    if (probe < 0)
+        return; // a transient DVRP error must not invalidate the last-good menu
+    fileXioDclose(probe);
+    candidate = (hdd_dvr_iso_t *)calloc(HDD_DVR_MAX_ISOS, sizeof(*candidate));
+    if (candidate == NULL)
+        return; /* preserve last good list on allocation failure */
+
+    for (int part = 0; part < 2; part++) {
+        char root[32], src[40];
+        int fd = fileXioDopen(roots[part]);
+        if (fd < 0) {
+            snprintf(src, sizeof(src), "dvr_hdd0:%s", part ? "__xdata" : "__xcontents");
+            if (fileXioMount(roots[part], src, FIO_MT_RDONLY) == 0)
+                hddDvrMounted[part] = 1;
+        } else
+            fileXioDclose(fd);
+        snprintf(root, sizeof(root), "%s", roots[part]);
+        for (int sub = 0; sub < 3; sub++) {
+            char dir[40];
+            int result;
+            snprintf(dir, sizeof(dir), "%s%s", root, subdirs[sub]);
+            result = hddDvrCollectDir(dir, sub == 2 ? SCECdPS2CD : SCECdPS2DVD, candidate, count);
+            if (result == -2 || result == -3 ||
+                (result < 0 && (hddDvrReadableDirs & (1 << (part * 3 + sub))))) {
+                free(candidate);
+                return; /* truncated library or failed read: preserve last-good list */
+            }
+            if (result >= 0) {
+                readableDirs |= 1 << (part * 3 + sub);
+                available++;
+                count = result;
+            }
+            scanned++;
+        }
+    }
+    if (available > 0) {
+        hddDvrPublish(candidate, count);
+        hddDvrReadableDirs = readableDirs;
+        LOG("[DVR] read-only scan: %d ISO(s), %d/%d readable directories\n", count, available, scanned);
+    } else
+        free(candidate); /* unavailable/transient read failure: retain last-good list */
+}
+
+static int hddPs2GameCount(void)
+{
+    return (int)gHddSupport.hdlGames.count + hddDvrGameCount;
+}
+
+static hdd_dvr_iso_t *hddActiveDvr(int id)
+{
+    id -= (int)gHddSupport.hdlGames.count;
+    if (hddDvrGames == NULL || id < 0 || id >= hddDvrGameCount)
+        return NULL;
+    return &hddDvrGames[id];
+}
+
+static void hddDvrCleanUp(int keepMounts)
+{
+    hddDvrPublish(NULL, 0);
+    hddDvrReadableDirs = 0;
+    // Neutrino resets the IOP, but DVRP owns these mounts and its file handles.
+    // Its LE phase opens the image using the supplied dvr_pfsN: path. Unmounting
+    // here removes that namespace before it can obtain its persistent handle.
+    if (keepMounts)
+        return;
+    for (int i = 0; i < 2; i++) {
+        if (hddDvrMounted[i]) {
+            if (fileXioUmount(i ? "dvr_pfs1:" : "dvr_pfs0:") >= 0)
+                hddDvrMounted[i] = 0;
+            else
+                LOG("[DVR] unmount failed for partition %d; retain ownership for retry\n", i);
+        }
+    }
+}
 
 // How long the HDD VCD launch waits for the art worker to let go before it remounts pfs0: under it.
 // Milliseconds (cacheCancelPendingImageLoadsTimed sleeps via DelayThread(1000), NOT util.c's delay(),
@@ -66,6 +325,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -74,6 +335,7 @@ public:
     void launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet) override;
     void launch(item_list_t *itemList, int id, config_set_t *configSet) override;
     config_set_t *config(item_list_t *itemList, int id) override;
+    void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config) override;
     int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) override;
     int textId(item_list_t *itemList) override;
     int iconId(item_list_t *itemList) override;
@@ -335,18 +597,28 @@ int HddSupport::loadModules()
 
     LOG("[HDD STARTUP DIAG] hddLoadModules entry count=%u loaded=%u\n", modulesLoadCount, modulesLoaded);
 
-    if (modulesLoaded)
+    // The ATA modules are resident for the lifetime of this IOP generation. A readiness
+    // probe is NOT a new DEV9 owner: all HDD entry points share the one sysInitDev9()
+    // reference acquired by the first successful load. A prior non-terminal HDD-page
+    // shutdown may have released the logical page latch, but did not stop DEV9.
+    if (modulesLoaded) {
+        modulesLoadCount = 1;
         retStatus = HDD_LOADMODULES_STATUS_ALREADYLOADED;
-
-    if (modulesLoadCount == 0) {
+    } else if (modulesLoadCount == 0) {
         // Increment the load count as soon as possible to prevent thread scheduling from allowing another thread to
         // call into here and try to double load modules.
         modulesLoadCount = 1;
 
         // DEV9 must be loaded, as HDD.IRX depends on it. Even if not required by the I/F (i.e. HDPro)
         diagBootStageBegin("HDD:DEV9");
-        sysInitDev9();
+        int dev9Ready = sysInitDev9();
         diagBootStageEndVoid("HDD:DEV9");
+        if (!dev9Ready) {
+            sysShutdownDev9();
+            modulesLoadCount = 0;
+            host::app().setError(_STR_HDD_NOT_CONNECTED_ERROR, ERROR_HDD_IF_NOT_DETECTED);
+            return HDD_LOADMODULES_STATUS_ERROR;
+        }
 
         // try to detect HD Pro Kit (not the connected HDD),
         // if detected it loads the specific ATAD module
@@ -411,9 +683,9 @@ int HddSupport::loadModules()
             diagBootStageEndVoid("HDD:SETTLE");
         }
     } else {
-        modulesLoadCount++;
-        if (!modulesLoaded)
-            retStatus = HDD_LOADMODULES_STATUS_BUSYLOADING;
+        // Another caller is still loading the first ATA generation. Do not acquire
+        // a reference or claim success until it publishes modulesLoaded.
+        retStatus = HDD_LOADMODULES_STATUS_BUSYLOADING;
     }
 
     LOG("[HDD STARTUP DIAG] hddLoadModules exit count=%u loaded=%u ret=%d bdm=%d atad=%d xhdd=%d\n",
@@ -1367,6 +1639,7 @@ int HddSupport::buildVcdGameList()
             snprintf(g->extension, sizeof(g->extension), ".VCD");
             g->parts = 1;
             g->format = GAME_FORMAT_ISO;
+            g->sizeMB = vcds[i].sizeMB; // #Size: measured by the scan while the container was mounted
             snprintf(newParts[total + kept], APA_IDMAX + 1, "%s", parts.names[p]);
             kept++;
         }
@@ -1402,20 +1675,28 @@ int HddSupport::buildVcdGameList()
             // not actually hold an install costs this mount plus one failed open and returns 0.
             cue_entry_t *cues = NULL;
             int n = cueScanDir("pfs1:/", &cues);
+            // #Size: the partition is only mounted here, so measure each folder now. A failed
+            // allocation just leaves the sizes at 0.
+            u32 *cueSizes = n > 0 ? static_cast<u32 *>(calloc(n, sizeof(u32))) : NULL;
+            for (int i = 0; cueSizes != NULL && i < n; i++)
+                cueSizes[i] = cueGameSizeMB("pfs1:/", cues[i].name);
             fileXioUmount("pfs1:");
             if (n < 0) {
                 free(cues);
+                free(cueSizes);
                 scanIncomplete = 1;
                 continue;
             }
             if (n == 0) {
                 free(cues);
+                free(cueSizes);
                 continue;
             }
 
             base_game_info_t *grownGames = static_cast<base_game_info_t *>(realloc(newGames, (total + n) * sizeof(base_game_info_t)));
             if (grownGames == NULL) {
                 free(cues);
+                free(cueSizes);
                 scanIncomplete = 1;
                 break;
             }
@@ -1423,6 +1704,7 @@ int HddSupport::buildVcdGameList()
             char(*grownParts)[APA_IDMAX + 1] = static_cast<char(*)[APA_IDMAX + 1]>(realloc(newParts, (total + n) * sizeof(*newParts)));
             if (grownParts == NULL) {
                 free(cues);
+                free(cueSizes);
                 scanIncomplete = 1;
                 break;
             }
@@ -1456,10 +1738,12 @@ int HddSupport::buildVcdGameList()
                 snprintf(g->extension, sizeof(g->extension), "%s", CUE_ROW_EXTENSION);
                 g->parts = 1;
                 g->format = GAME_FORMAT_ISO; // harmless; the row's extension gates the launch path
+                g->sizeMB = cueSizes != NULL ? cueSizes[i] : 0;
                 snprintf(newParts[total + kept], APA_IDMAX + 1, "%s", emberParts.names[p]);
                 kept++;
             }
             free(cues);
+            free(cueSizes);
             total += kept;
         }
         hddFreePopsPartitionList(&emberParts);
@@ -1574,29 +1858,31 @@ int HddSource::update(item_list_t *itemList)
     hddFreeHDLGamelist(&cachedGames);
     hddFreeHDLGamelist(&hddGamesNew);
     gHddSupport.forceUpdate = 1; // Subsequent refresh operations will cause the HDD to be scanned.
+    // Independent read-only DVR namespace; never part of the HDL games.bin cache.
+    hddDvrScan();
 
-    return view == LIB_VIEW_MIXED ? (int)gHddSupport.hdlGames.count + gHddSupport.vcdGameCount : (int)gHddSupport.hdlGames.count;
+    return view == LIB_VIEW_MIXED ? hddPs2GameCount() + gHddSupport.vcdGameCount : hddPs2GameCount();
 }
 
 int HddSource::count(item_list_t *itemList)
 {
     int view = host::library().listViewActive(itemList);
-    return view == LIB_VIEW_MIXED ? (int)gHddSupport.hdlGames.count + gHddSupport.vcdGameCount :
+    return view == LIB_VIEW_MIXED ? hddPs2GameCount() + gHddSupport.vcdGameCount :
            view == LIB_VIEW_PS1   ? gHddSupport.vcdGameCount :
-                                    (int)gHddSupport.hdlGames.count;
+                                    hddPs2GameCount();
 }
 
 int HddSource::rowView(item_list_t *itemList, int id)
 {
     int view = host::library().listViewActive(itemList);
     if (view == LIB_VIEW_MIXED)
-        return id >= 0 && id < (int)gHddSupport.hdlGames.count ? LIB_VIEW_ISO : LIB_VIEW_PS1;
+        return id >= 0 && id < hddPs2GameCount() ? LIB_VIEW_ISO : LIB_VIEW_PS1;
     return view;
 }
 
 int HddSource::sourceId(item_list_t *itemList, int id)
 {
-    return host::library().listViewActive(itemList) == LIB_VIEW_MIXED && id >= (int)gHddSupport.hdlGames.count ? id - (int)gHddSupport.hdlGames.count : id;
+    return host::library().listViewActive(itemList) == LIB_VIEW_MIXED && id >= hddPs2GameCount() ? id - hddPs2GameCount() : id;
 }
 
 // Split-store resolvers, mirroring mmceActiveGame. L3 stages its destination until
@@ -1621,14 +1907,18 @@ void *HddSource::game(item_list_t *itemList, int id)
 {
     int ps1 = rowView(itemList, id) == LIB_VIEW_PS1;
     id = sourceId(itemList, id);
-    return ps1 ? (void *)gHddSupport.activeVcd(id) : (void *)gHddSupport.activeHdl(id);
+    hdd_dvr_iso_t *dvr = ps1 ? NULL : hddActiveDvr(id);
+    return ps1 ? (void *)gHddSupport.activeVcd(id) : dvr ? (void *)&dvr->game :
+                                                           (void *)gHddSupport.activeHdl(id);
 }
 
 char *HddSource::name(item_list_t *itemList, int id)
 {
     int ps1 = rowView(itemList, id) == LIB_VIEW_PS1;
     id = sourceId(itemList, id);
-    return ps1 ? gHddSupport.activeVcd(id)->name : gHddSupport.activeHdl(id)->name;
+    hdd_dvr_iso_t *dvr = ps1 ? NULL : hddActiveDvr(id);
+    return ps1 ? gHddSupport.activeVcd(id)->name : dvr ? dvr->game.name :
+                                                         gHddSupport.activeHdl(id)->name;
 }
 
 int HddSource::nameLength(item_list_t *itemList, int id)
@@ -1641,7 +1931,9 @@ char *HddSource::startup(item_list_t *itemList, int id)
     // VCD (PS1) view keys per-game CFG/art off the VCD filename (game->name), not a disc id.
     int ps1 = rowView(itemList, id) == LIB_VIEW_PS1;
     id = sourceId(itemList, id);
-    return ps1 ? gHddSupport.activeVcd(id)->name : gHddSupport.activeHdl(id)->startup;
+    hdd_dvr_iso_t *dvr = ps1 ? NULL : hddActiveDvr(id);
+    return ps1 ? gHddSupport.activeVcd(id)->name : dvr ? dvr->game.startup :
+                                                         gHddSupport.activeHdl(id)->startup;
 }
 
 void HddSupport::renameVcd(int id, const char *newName)
@@ -1816,9 +2108,21 @@ static void hddInstallPopstarterMcFromCommon(void)
 //   the IOP -- harmless before an IOP reset, fatal before a handoff that does not reset.
 #define HDD_PFS_MT_WRITETHROUGH 0x02 // ps2sdk libpfs PFS_FIO_ATTR_WRITEABLE: commit on every write/close
 
+// A missing Ember file is named by its partition, not by pfs0: -- an internal mount point the user
+// never sees: "hdd0:__.EMBER/EMBER/ember.elf". pfsPath is what the resolver tried ("pfs0:/EMBER/...").
+static void hddShowEmberMissing(int msgId, const char *mountSrc, const char *pfsPath)
+{
+    char shown[APA_IDMAX + 6 + 288];
+    const char *rest = strchr(pfsPath, ':');
+
+    snprintf(shown, sizeof(shown), "%s%s", mountSrc, rest != NULL ? rest + 1 : pfsPath);
+    host::ui().missingFile(_l(msgId), shown);
+}
+
 static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char *part, config_set_t *configSet)
 {
     char emberElf[256], biosPath[288], mountSrc[APA_IDMAX + 6];
+    char launchName[CUE_NAME_MAX];
 
     if (name == NULL || name[0] == '\0' || part == NULL || part[0] == '\0')
         return;
@@ -1845,7 +2149,9 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     if (fileXioMount(hddPrefix, mountSrc, FIO_MT_RDWR | HDD_PFS_MT_WRITETHROUGH) < 0) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
+        // The partition itself would not mount: nothing was looked up inside it yet, so this is not
+        // "Missing ember.elf". Say the item could not be run, and name the partition.
+        host::ui().missingFile(_l(_STR_ERR_FILE_INVALID), mountSrc);
         return;
     }
 
@@ -1854,13 +2160,18 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     if (!cueResolveEmber("pfs0:/", emberElf, sizeof(emberElf))) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().missingFile(_l(_STR_EMBER_NOT_FOUND), emberElf);
+        hddShowEmberMissing(_STR_EMBER_NOT_FOUND, mountSrc, emberElf);
         return;
     }
     if (!cueResolveEmberBios("pfs0:/", biosPath, sizeof(biosPath))) {
         hddRestoreDataHome();
         ioBlockOps(0);
-        host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
+        hddShowEmberMissing(_STR_EMBER_BIOS_MISSING, mountSrc, biosPath);
+        return;
+    }
+    if (!cuePrepareLaunch("pfs0:/", name, emberElf, launchName, sizeof(launchName))) {
+        hddRestoreDataHome();
+        ioBlockOps(0);
         return;
     }
     if (!cueGameHasImage("pfs0:/", name)) {
@@ -1871,9 +2182,13 @@ static void hddDoLaunchEmber(item_list_t *itemList, const char *name, const char
     }
     cueApplySettings("pfs0:/", name, configSet); // best-effort marker, never a launch gate -- needs the RDWR mount
 
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode("pfs0:/", name);
+
     // Past this point pfs0: stays where it is and IO stays blocked; deinit re-blocks anyway.
     host::app().deinit(UNMOUNT_EXCEPTION | KEEPIOP_EXCEPTION, itemList->mode);
-    sysLaunchEmber(emberElf, name);
+    sysLaunchEmber(emberElf, launchName);
 }
 
 // Shared POPSTARTER handoff for an HDD VCD. argv[0] differs by partition shape: PP.<name> / __.<name>
@@ -1925,7 +2240,10 @@ static void hddDoLaunchVcd(item_list_t *itemList, const char *name, const char *
             // or queue BDM work during teardown preparation.
             if (!vcdResolvePopstarterMcElf(vcdElf, sizeof(vcdElf))) {
                 ioBlockOps(0);
-                host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+                // Name what the user can fix: their own path when set, else the APA home of
+                // POPSTARTER (hdd0:__common/POPS/POPSTARTER.ELF), not the internal pfs0: mount.
+                vcdDescribePopstarterLookup("hdd0:__common/", vcdElf, sizeof(vcdElf));
+                host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
                 return;
             }
         }
@@ -1975,7 +2293,9 @@ void HddSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set
     }
     ioBlockOps(0); // resolvedName/resolvedPart are now independent of the mutable backing arrays
     if (idx < 0) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        // The game itself is not on any PS1 partition (a favourite of a removed or renamed title),
+        // which is not a missing POPSTARTER.ELF -- and is wrong outright for an Ember title.
+        host::ui().msgBox(_l(_STR_ERR_FILE_INVALID), 0, NULL);
         return;
     }
     if (isEmber) {
@@ -2021,7 +2341,7 @@ static int hddTryNeutrinoLaunch(hdl_game_info_t *game, config_set_t *configSet)
     int compatMode = 0, neutrinoVideo = gNeutrinoVideoDefault, neutrinoGsmComp = gNeutrinoGsmCompDefault; // absent per-game keys = follow the globals
     char neutrinoExtraArgs[256] = "";
     char apaPart[APA_IDMAX + 1];
-    compatMode = sbGetCompatModes(configSet);
+    compatMode = sbGetCompatModes(configSet, 1);
     configGetStrCopy(configSet, CONFIG_ITEM_NEUTRINO_ARGS, neutrinoExtraArgs, sizeof(neutrinoExtraArgs));
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_VIDEO, &neutrinoVideo);
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_GSMCOMP, &neutrinoGsmComp);
@@ -2037,9 +2357,17 @@ static int hddTryNeutrinoLaunch(hdl_game_info_t *game, config_set_t *configSet)
     // the autolaunch teardown -- aborting here instead would leak gAutoLaunchGame/configSet.
     if (sysNeutrinoPreflight("apa", neutrinoPath, 0, NULL, -1) < 0)
         return 0;
+    // Cheats, as on BDM: this game's settings, its pfs0:CHT/ file and the picker, handed to Neutrino.
+    // Backing out stays in the menu; an autolaunch never reaches that question.
+    if (sbNeutrinoLoadCheats(gHDDPrefix, game->startup, configSet, neutrinoPath, neutrinoExtraArgs) < 0)
+        return gAutoLaunchGame == NULL ? 1 : 0;
+#ifdef RETROACHIEVEMENTS
+    sbNeutrinoPrepareRA(gHDDPrefix, game->startup, "apa", neutrinoPath, neutrinoExtraArgs);
+#endif
     if (sysNeutrinoArgsPreflight("apa", apaPart, game->startup, compatMode, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, NULL) < 0)
         return gAutoLaunchGame == NULL ? 1 : 0; // autolaunch needs the native path to own its teardown
 
+    sysNeutrinoWarnPadEmu(configSet);
     // Honesty toast: the OPL core honors $VMC_N on HDD (mcemu over pfs0:VMC/), but Neutrino has no
     // APA/pfs backing store to open the .bin from post-reset -- its APA support is -bsd=ata
     // -bsdfs=hdl, game image only (NHDDL's HDL backend has the same no-VMC rule). No -mc args can
@@ -2097,6 +2425,45 @@ static int hddTryNeutrinoLaunch(hdl_game_info_t *game, config_set_t *configSet)
 
 static int hddMcemuSlots[2] = {-2, -2};
 
+/* DVR ISO rows must NEVER fall through to the APA/raw-HDLoader launch path.
+ * No substitute OPL core exists: the external pcm720 bsd-dvr Neutrino is required.
+ */
+static void hddLaunchDvrIso(int id, config_set_t *configSet)
+{
+    hdd_dvr_iso_t copy;
+    host::ui().lock();
+    hdd_dvr_iso_t *entry = hddActiveDvr(id);
+    if (entry != NULL)
+        copy = *entry;
+    host::ui().unlock();
+    if (!entry)
+        return;
+    const char *neutrinoPath = sbResolveNeutrinoPath(gHDDPrefix);
+    if (!neutrinoPath) {
+        host::ui().warning(_l(_STR_NEUTRINO_NOT_FOUND), 6);
+        return;
+    }
+    char dvdPath[sizeof(copy.path)];
+    char startup[sizeof(copy.game.startup)];
+    char args[256] = "";
+    int video = gNeutrinoVideoDefault, gsmComp = gNeutrinoGsmCompDefault;
+    int compat = sbGetCompatModes(configSet, 1);
+    snprintf(dvdPath, sizeof(dvdPath), "%s", copy.path);
+    snprintf(startup, sizeof(startup), "%s", copy.game.startup);
+    configGetStrCopy(configSet, CONFIG_ITEM_NEUTRINO_ARGS, args, sizeof(args));
+    configGetInt(configSet, CONFIG_ITEM_NEUTRINO_VIDEO, &video);
+    configGetInt(configSet, CONFIG_ITEM_NEUTRINO_GSMCOMP, &gsmComp);
+    if (sysNeutrinoPreflight("dvr", neutrinoPath, 0, args, -1) < 0)
+        return;
+    if (sysNeutrinoArgsPreflight("dvr", dvdPath, startup, compat, 0, neutrinoPath, args, video, gsmComp, 0, -1, NULL) < 0)
+        return;
+    sysNeutrinoWarnPadEmu(configSet);
+    mmceSendGameID(startup, neutrinoPath, 0);
+    int mode = host::app().pathToMode(neutrinoPath);
+    host::app().deinitEx(sbNeutrinoDeinitException(neutrinoPath) | KEEP_DVR_MOUNTS_EXCEPTION, HDD_MODE, mode);
+    sysLaunchNeutrino("dvr", dvdPath, startup, compat, 0, neutrinoPath, args, video, gsmComp, 0, -1, NULL);
+}
+
 // A mini argv launch carries only startup + data LBA. Resolve the complete HDL
 // row through the same read-only walk as the HDD tab before either core sees it.
 static int hddResolveAutoLaunchGame(hdl_game_info_t *game)
@@ -2122,6 +2489,45 @@ static int hddResolveAutoLaunchGame(hdl_game_info_t *game)
     }
     hddFreeHDLGamelist(&list);
     return found ? 0 : -1;
+}
+
+// pfs0: is mounted write-back (FIO_MT_RDWR), so a card genvmc made this session can have its inode
+// only in PFS's RAM cache, while hddGetFileBlockInfo reads the inode sector off the disk. Commit the
+// cache before reading a VMC's block map; 1 = committed, 0 = not, and then no map is trusted.
+static int hddSyncForVMCMap(void)
+{
+    int result = fileXioSync(hddPrefix, 0);
+    if (result < 0)
+        LOG("HDDSUPPORT PFS sync before the VMC map read failed: %d\n", result);
+    return result >= 0;
+}
+
+// Launch verdict on a hddGetFileBlockInfo() count: the inode's own segment plus at least one data
+// segment, and no more than native mcemu's map holds (-ENOMEM). Anything else cannot be trusted.
+static int hddClassifyVMCMap(int nparts)
+{
+    if (nparts > 1)
+        return NATIVE_VMC_OK;
+    return nparts == -ENOMEM ? NATIVE_VMC_PFS_LIMIT : NATIVE_VMC_LAYOUT_UNKNOWN;
+}
+
+int hddVMCMapFits(const char *path)
+{
+    apa_sub_t parts[APA_MAXSUB + 1];
+    pfs_blockinfo_t blocks[HDD_VMC_MAP_ENTRIES];
+    int nparts, verdict;
+
+    if (gHDDPrefix == NULL || !hddSyncForVMCMap())
+        return -1;
+    nparts = hddGetPartitionInfo(gOPLPart, parts);
+    if (nparts <= 0 || nparts > 5)
+        return -1; // the launch check would not map this partition either
+    nparts = hddGetFileBlockInfo(path, parts, blocks, HDD_VMC_MAP_ENTRIES);
+    verdict = hddClassifyVMCMap(nparts);
+    LOG("HDDSUPPORT VMC map check on %s: %d\n", path, nparts);
+    if (verdict == NATIVE_VMC_OK)
+        return 1;
+    return verdict == NATIVE_VMC_PFS_LIMIT ? 0 : -1;
 }
 
 void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
@@ -2161,6 +2567,12 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             hddDoLaunchEmber(itemList, vcdName, vcdPart, configSet);
         else
             hddDoLaunchVcd(itemList, vcdName, vcdPart);
+        return;
+    }
+
+    if (gAutoLaunchGame == NULL && id >= (int)gHddSupport.hdlGames.count && id < hddPs2GameCount() &&
+        rowView(itemList, id) == LIB_VIEW_ISO) {
+        hddLaunchDvrIso(id, configSet);
         return;
     }
 
@@ -2207,7 +2619,9 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         char vmc_path[256];
         int vmc_id, have_error = 0;
         vmc_superblock_t vmc_superblock;
-        pfs_blockinfo_t blocks[11];
+        pfs_blockinfo_t blocks[HDD_VMC_MAP_ENTRIES];
+        // The block map is read off the disk; commit PFS's cache first (see hddSyncForVMCMap).
+        int synced = hddSyncForVMCMap();
 
         for (vmc_id = 0; vmc_id < 2; vmc_id++) {
             if (vmc_name[vmc_id][0]) {
@@ -2222,8 +2636,8 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 
                     // Check vmc inode block chain (write operation can cause damage)
                     snprintf(vmc_path, sizeof(vmc_path), "%sVMC/%s.bin", gHDDPrefix, vmc_name[vmc_id]);
-                    if ((nparts = hddGetFileBlockInfo(vmc_path, parts, blocks, 11)) > 0) {
-                        have_error = 0;
+                    nparts = synced ? hddGetFileBlockInfo(vmc_path, parts, blocks, HDD_VMC_MAP_ENTRIES) : -EIO;
+                    if ((have_error = hddClassifyVMCMap(nparts)) == NATIVE_VMC_OK) {
                         hdd_vmc_infos.active = 1;
                         for (i = 0; i < nparts - 1; i++) {
                             hdd_vmc_infos.blocks[i].number = blocks[i + 1].number;
@@ -2233,10 +2647,8 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
                             LOG("HDDSUPPORT hdd_vmc_infos.blocks[%d].subpart    : 0x%X\n", i, hdd_vmc_infos.blocks[i].subpart);
                             LOG("HDDSUPPORT hdd_vmc_infos.blocks[%d].count      : 0x%X\n", i, hdd_vmc_infos.blocks[i].count);
                         }
-                    } else {
+                    } else
                         LOG("HDDSUPPORT VMC slot %d block mapping failed: %d\n", vmc_id, nparts);
-                        have_error = nparts == -ENOMEM ? NATIVE_VMC_PFS_LIMIT : NATIVE_VMC_LAYOUT_UNKNOWN;
-                    }
                 }
 
                 if (have_error) {
@@ -2274,7 +2686,7 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     char gid[5];
     configGetDiscIDBinary(configSet, gid);
 
-    int dmaType = 0, dmaMode = 7, compatMode = sbGetCompatModes(configSet);
+    int dmaType = 0, dmaMode = 7, compatMode = sbGetCompatModes(configSet, 0);
     configGetInt(configSet, CONFIG_ITEM_DMA, &dmaMode);
     if (dmaMode < 3)
         dmaType = 0x20;
@@ -2294,7 +2706,10 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         irx = &hdd_cdvdman_irx;
     }
 
-    sbPrepare(NULL, configSet, size_irx, static_cast<void **>(irx), &i);
+    // sbPrepare sets `i` only when it finds the patch zone. Without one, `i` is uninitialised or left over
+    // from the VMC loops above, and every settings write below would land at that offset.
+    if (sbPrepare(NULL, configSet, size_irx, static_cast<void **>(irx), &i) < 0)
+        return;
     sbEnsureIgrUsbDrivers(compatMode);
 
     if (gHDDPrefix != NULL) {
@@ -2304,7 +2719,7 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         // launch. Absent is normal -- the game is simply not tracked.
         sbLoadWatchList(gHDDPrefix, game->startup);
 #endif
-        if ((result = sbLoadCheats(gHDDPrefix, game->startup)) < 0) {
+        if ((result = sbLoadCheats(gHDDPrefix, game->startup, configSet)) < 0) {
             // #265: let the user back out instead of sitting through the whole load. The helper does
             // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
             // `settings` is not assigned until below, so derive the common block from the IRX base.
@@ -2324,6 +2739,11 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // patch start_sector
     settings->lba_start = game->start_sector;
 
+    // Real media size, for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763). The ISO9660
+    // PVD cannot be trusted for this: badly mastered discs understate it and read data past the end
+    // of the volume by raw LBA.
+    settings->common.mediaLsnCount = game->total_size_in_kb / 2;
+
     if (configGetStrCopy(configSet, CONFIG_ITEM_ALTSTARTUP, filename, sizeof(filename)) == 0)
         strcpy(filename, game->startup);
 
@@ -2337,11 +2757,13 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         probed_fd = 0;
         probed_lba = game->start_sector + OPL_HDD_MODE_PS2LOGO_OFFSET;
         ziso_init((ZISO_header *)IOBuffer, *(u32 *)((u8 *)IOBuffer + sizeof(ZISO_header)));
-        ziso_read_sector(IOBuffer, 16, 1);
-        u32 maxLBA = *(u32 *)(IOBuffer + 80);
+        // A failed read leaves the ZSO header in IOBuffer; keep the APA header's layer-1 start then.
+        u32 maxLBA = (ziso_read_sector(IOBuffer, 16, 1) == 1) ? *(u32 *)(IOBuffer + 80) : 0;
         if (maxLBA > 0 && maxLBA < ziso_total_block) {   // dual layer check
             settings->common.layer1_start = maxLBA - 16; // adjust second layer start
         }
+        // For compressed images the partition size does not match the media size.
+        settings->common.mediaLsnCount = ziso_total_block;
     }
 
     // D8: Neutrino never reaches this point (hddTryNeutrinoLaunch handled it at the top) --
@@ -2372,6 +2794,57 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     sysLaunchLoaderElf(filename, "HDD_MODE", size_irx, static_cast<void **>(irx), size_mcemu_irx, hdd_mcemu_irx, EnablePS2Logo, compatMode);
 }
 
+// #Size of an HDD PS1 row on the info screen. Pooled __.POPS and __.EMBER rows were measured by
+// the scan while their partition was mounted; a one-game PP. partition is never mounted by the scan,
+// so it is measured here, once: mount it read-only on the pfs1: scan slot, stat IMAGE0.VCD, unmount,
+// and cache the result in the row. Runs only on the thread holding the info-size gate (the IO
+// worker, which also owns the scan slot). The list can be republished meanwhile, so snapshot under
+// the UI lock and write back only if the same row is still there.
+static u32 hddVcdResolveSize(int id)
+{
+    char part[APA_IDMAX + 1], name[ISO_GAME_NAME_MAX + 1], mountSrc[64];
+    struct stat st;
+
+    host::ui().lock();
+    if (gHddSupport.vcdGames == NULL || gHddSupport.vcdParts == NULL || id < 0 || id >= gHddSupport.vcdGameCount) {
+        host::ui().unlock();
+        return 0;
+    }
+    u32 sizeMB = gHddSupport.vcdGames[id].sizeMB;
+    snprintf(part, sizeof(part), "%s", gHddSupport.vcdParts[id]);
+    snprintf(name, sizeof(name), "%s", gHddSupport.vcdGames[id].name);
+    host::ui().unlock();
+
+    if (sizeMB != 0 || !sbConfigStatSizeEnabled() || !hddIsPopsPartitionGame(part))
+        return sizeMB;
+
+    snprintf(mountSrc, sizeof(mountSrc), "hdd0:%s", part);
+    fileXioUmount("pfs1:");
+    if (fileXioMount("pfs1:", mountSrc, FIO_MT_RDONLY) < 0)
+        return 0;
+    if (stat("pfs1:/IMAGE0.VCD", &st) == 0)
+        sizeMB = (u32)(st.st_size >> 20);
+    fileXioUmount("pfs1:");
+
+    host::ui().lock();
+    if (gHddSupport.vcdGames != NULL && id < gHddSupport.vcdGameCount && strcmp(gHddSupport.vcdGames[id].name, name) == 0)
+        gHddSupport.vcdGames[id].sizeMB = sizeMB;
+    host::ui().unlock();
+    return sizeMB;
+}
+
+// HDD-backed PS1 favourites take the owner row's size by name.
+void HddSource::ps1Size(item_list_t *, base_game_info_t *game, config_set_t *config)
+{
+    if (game == NULL || config == NULL || !sbConfigStatSizeEnabled())
+        return;
+    host::ui().lock();
+    int id = gHddSupport.findVcdByName(game->name);
+    host::ui().unlock();
+    if (id >= 0)
+        configSetInt(config, CONFIG_ITEM_SIZE, hddVcdResolveSize(id));
+}
+
 config_set_t *HddSource::config(item_list_t *itemList, int id)
 {
     char path[256];
@@ -2382,7 +2855,9 @@ config_set_t *HddSource::config(item_list_t *itemList, int id)
     // APA even when the persistent config/art PFS home is temporarily unavailable. In that state
     // return a runtime-only config instead of dereferencing a NULL prefix or hiding the whole list.
     if (rowView(itemList, id) == LIB_VIEW_PS1) {
-        base_game_info_t *g = gHddSupport.activeVcd(sourceId(itemList, id));
+        int vcdRow = sourceId(itemList, id);
+        hddVcdResolveSize(vcdRow); // PP. rows: measured on the info screen only; cached in the row
+        base_game_info_t *g = gHddSupport.activeVcd(vcdRow);
         if (gHDDPrefix != NULL)
             return sbPopulateConfig(g, gHDDPrefix, "/");
 
@@ -2390,7 +2865,7 @@ config_set_t *HddSource::config(item_list_t *itemList, int id)
         if (config == NULL)
             return NULL;
         configSetStr(config, CONFIG_ITEM_NAME, g->name);
-        configSetInt(config, CONFIG_ITEM_SIZE, 0);
+        configSetInt(config, CONFIG_ITEM_SIZE, g->sizeMB);
         configSetStr(config, CONFIG_ITEM_FORMAT, "VCD");
         sbSetDiscAttributes(config, 1, 1);
         configSetStr(config, CONFIG_ITEM_STARTUP,
@@ -2398,7 +2873,14 @@ config_set_t *HddSource::config(item_list_t *itemList, int id)
         return config;
     }
 
-    hdl_game_info_t *game = gHddSupport.activeHdl(sourceId(itemList, id));
+    int hddId = sourceId(itemList, id);
+    hdl_game_info_t snapshot;
+    host::ui().lock();
+    hdd_dvr_iso_t *dvr = hddActiveDvr(hddId);
+    if (dvr != NULL)
+        snapshot = dvr->game;
+    host::ui().unlock();
+    hdl_game_info_t *game = dvr ? &snapshot : gHddSupport.activeHdl(hddId);
 
     if (gHDDPrefix != NULL) {
         snprintf(path, sizeof(path), "%sCFG/%s.cfg", gHDDPrefix, game->startup);
@@ -2413,7 +2895,7 @@ config_set_t *HddSource::config(item_list_t *itemList, int id)
 
     configSetStr(config, CONFIG_ITEM_NAME, game->name);
     configSetInt(config, CONFIG_ITEM_SIZE, game->total_size_in_kb >> 10);
-    configSetStr(config, CONFIG_ITEM_FORMAT, "HDL");
+    configSetStr(config, CONFIG_ITEM_FORMAT, dvr ? "ISO" : "HDL");
     sbSetDiscAttributes(config, 0, game->disctype == SCECdPS2CD);
     configSetStr(config, CONFIG_ITEM_STARTUP, game->startup);
 
@@ -2466,6 +2948,7 @@ void HddSource::cleanUp(item_list_t *itemList, int exception)
         if ((*hddInstance()).enabled) {
             hddFreeHDLGamelist(&gHddSupport.hdlGames);
             gHddSupport.freeVcdGameList();
+            hddDvrCleanUp(1); // never unmount beneath an abandoned reader
         }
         return;
     }
@@ -2473,6 +2956,7 @@ void HddSource::cleanUp(item_list_t *itemList, int exception)
     if ((*hddInstance()).enabled) {
         hddFreeHDLGamelist(&gHddSupport.hdlGames);
         gHddSupport.freeVcdGameList();
+        hddDvrCleanUp(exception & (KEEP_DVR_MOUNTS_EXCEPTION | KEEPIOP_EXCEPTION));
 
         // pfs1: is a scratch slot used by HDD scans/settings and historically gets torn down even
         // when pfs0: is deliberately spared. Do not broaden UNMOUNT_EXCEPTION to pfs1: -- Apps and
@@ -2509,7 +2993,9 @@ void HddSupport::cleanUpSupportModules(int exception)
 
 int HddSource::checkVmc(item_list_t *itemList, char *name, int createSize)
 {
-    return gHDDPrefix != NULL ? sysCheckVMC(gHDDPrefix, "/", name, createSize, NULL) : -1;
+    // A new card asks PFS for all of its zones up front (genvmc), the best chance of a block map
+    // short enough for native mcemu; the flag only affects creation.
+    return gHDDPrefix != NULL ? sysCheckVMCEx(gHDDPrefix, "/", name, createSize, NULL, VMC_CREATE_PFS_RESERVE) : -1;
 }
 
 // This may be called, even if hddInit() was not.
@@ -2520,6 +3006,7 @@ void HddSource::shutdown(item_list_t *itemList)
     if ((*hddInstance()).enabled) {
         hddFreeHDLGamelist(&gHddSupport.hdlGames);
         gHddSupport.freeVcdGameList();
+        hddDvrCleanUp(0);
         fileXioUmount("pfs1:");
         fileXioUmount(hddPrefix);
     }
@@ -2550,23 +3037,22 @@ void HddSupport::shutdownSupportModules()
 void HddSupport::shutdownBaseModules()
 {
     if (modulesLoadCount > 0) {
-        modulesLoadCount -= 1;
-        if (modulesLoadCount == 0) {
-            // DEV9 will remain active if ETH is in use, so put the HDD in IDLE state.
-            // The HDD should still enter standby state after 21 minutes & 15 seconds, as per the ATAD defaults.
-            hddSetIdleImmediate();
-        }
+        // The single logical ATA owner is released once per shutdown. A non-terminal game launch
+        // must NOT idle the HDD: the selected game may still need ATA via BDM (massN:) after this
+        // cleanup, as POPSTARTER's post-deinit ELF read does. The next page entry reuses the
+        // resident modules and the retained DEV9 owner.
+        modulesLoadCount = 0;
 
-        // Only shut down dev9 from here, if it was initialized from here before -- and only on a
-        // TERMINAL teardown (exit/poweroff). On the launch path this shutdown runs for every
-        // non-selected page, and powering DEV9 off here kills the ATA bus BEFORE bdmLaunchVcd's
-        // post-deinit POPSTARTER.ELF read from the ATA-backed massN: mount -- the elf-loader then
-        // returns into deinit'd OPL: the 4236edf6-class black-screen freeze (PCSX2 masks it; its
-        // emulated DEV9 power-off is inert). ee_core/POPSTARTER reset the IOP right after, so the
-        // launch path needs no power-off. Note the refcount asymmetry this also softens: N
-        // hddLoadModules calls take ONE dev9 reference, but every hddShutdown used to drop it.
-        if (gDeinitTerminal)
+        // Only power DEV9 down on a TERMINAL teardown (exit/poweroff). On the launch path this
+        // shutdown runs for every non-selected page, and powering DEV9 off here kills the ATA bus
+        // BEFORE bdmLaunchVcd's post-deinit POPSTARTER.ELF read from the ATA-backed massN: mount --
+        // the elf-loader then returns into deinit'd OPL: the 4236edf6-class black-screen freeze.
+        // On a real exit the flush happened in shutdownSupportModules; idle before dropping our
+        // DEV9 reference, since other users (ETH/UDPBD) may keep DEV9 itself powered.
+        if (gDeinitTerminal) {
+            hddSetIdleImmediate();
             sysShutdownDev9();
+        }
     }
 }
 
@@ -2779,6 +3265,46 @@ void hddLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
 int hddGetArtArchivePath(item_list_t *itemList, char *out, int outSize)
 {
     return hddInstance()->artArchivePath(itemList, out, outSize);
+}
+
+int HddSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    int i, n;
+    if (gHddSupport.vcdParts == NULL || name == NULL || !ps1RowKind(itemList, id, ember))
+        return 0;
+    i = sourceId(itemList, id);
+    if (gHddSupport.activeVcd(i) == &gHddSupport.emptyVcd || strcmp(gHddSupport.activeVcd(i)->name, name) != 0) {
+        // Favourites can keep a source id from before a refresh. Resolve a unique name, but never
+        // pick an arbitrary partition when names collide.
+        i = -1;
+        for (int candidate = 0; candidate < gHddSupport.vcdGameCount; candidate++) {
+            if (strcmp(gHddSupport.vcdGames[candidate].name, name) == 0) {
+                if (i >= 0)
+                    return 0;
+                i = candidate;
+            }
+        }
+        if (i < 0 || cueIsCueEntry(&gHddSupport.vcdGames[i]) != *ember)
+            return 0;
+    }
+    if (*ember) {
+        char mountSource[APA_IDMAX + 6];
+        snprintf(mountSource, sizeof(mountSource), "hdd0:%s", gHddSupport.vcdParts[i]);
+        if (gHDDPrefix != NULL && !strcmp(gOPLPart, mountSource)) {
+            partition[0] = '\0';
+            return saveIconPs1Directory("pfs0:/", name, 1, directory, directorySize);
+        }
+        n = snprintf(partition, partitionSize, "%s", mountSource);
+        return n > 0 && n < partitionSize && saveIconPs1Directory("pfs1:/", name, 1, directory, directorySize);
+    }
+    // POPSTARTER's VMC home is __common/POPS, whichever partition holds the VCD.
+    if (gHDDPrefix != NULL && !strcmp(gOPLPart, "hdd0:__common")) {
+        partition[0] = '\0';
+        return saveIconPs1Directory("pfs0:/", name, 0, directory, directorySize);
+    }
+    n = snprintf(partition, partitionSize, "hdd0:__common");
+    return n > 0 && n < partitionSize && saveIconPs1Directory("pfs1:/", name, 0, directory, directorySize);
 }
 
 int HddSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

@@ -49,6 +49,7 @@ extern void *R2_png; */
 extern void *L1_png;
 extern void *L3_png;
 extern void *R1_png;
+extern void *psbbn_bg_png;
 extern void *techwritescode_png;
 extern void *R3_png;
 extern void *fav_png;
@@ -59,7 +60,9 @@ extern void *disc_png;
 extern void *screen_png;
 extern void *incebtion_png;
 extern void *ip_png;
+#ifndef BUILTIN_KORIUM
 extern void *coverapp_png;
+#endif
 extern void *missing_png;
 extern void *screens_png;
 
@@ -118,7 +121,9 @@ extern void *Players_4_png;
 #endif
 extern void *PS1_png;
 extern void *PS2_png;
+#ifndef BUILTIN_KORIUM
 extern void *case_overlay_png;
+#endif
 #ifdef RETROACHIEVEMENTS
 extern void *ra_mark_png;
 #endif
@@ -215,7 +220,11 @@ static texture_t internalDefault[TEXTURES_COUNT] = {
     {INCEBTION_PICTURE, "incebtion", &incebtion_png}, // default theme background (conf_theme_OPL.cfg: default=incebtion)
     {IP_PICTURE, "ip", &ip_png},
 #endif
+#ifdef BUILTIN_KORIUM
+    {COVERAPP_DEFAULT, "coverapp", &cover_png}, // Korium has no app placeholder of its own; never show inceBtion's
+#else
     {COVERAPP_DEFAULT, "coverapp", &coverapp_png},
+#endif
     {MISSING_PICTURE, "missing", &missing_png},
     // no_Device fallback dropped with the device indicator; not embedded.
     {NO_DEVICE_PICTURE, "no_Device", NULL},
@@ -288,10 +297,15 @@ static texture_t internalDefault[TEXTURES_COUNT] = {
 #endif
     {PS1_SYSTEM, "PS1", &PS1_png}, // #System console glyphs (FR #49); names match the #System values
     {PS2_SYSTEM, "PS2", &PS2_png},
+#ifdef BUILTIN_KORIUM
+    {CASE_OVERLAY2, "case_overlay", NULL}, // inceBtion's foliage layer; Korium's case is one layer
+#else
     {CASE_OVERLAY2, "case_overlay", &case_overlay_png}, // b2 foliage layer (two-layer frame)
+#endif
     {UDPFS_ICON, "udp_fs", &udp_fs_png},
     {L1_ICON, "L1", &L1_png},
     {R1_ICON, "R1", &R1_png},
+    {PSBBN_BACKGROUND, "psbbn_bg", &psbbn_bg_png},
 #ifdef BUILTIN_KORIUM
     {CASE_PS1, "case_ps1", &case_ps1_png},
     {DISC_PS1, "disc_ps1", &disc_ps1_png},

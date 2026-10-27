@@ -173,10 +173,14 @@ int NetSupport::loadModules(int protocol)
     }
 
     if (!modulesLoaded_) {
+        // Do not load SMAP or latch residency while PC CARD CF owns the DEV9 slot.
+        if (!sysInitDev9()) {
+            sysShutdownDev9();
+            gNetworkStartup = ERROR_ETH_MODULE_NETIF_FAILURE;
+            return -1;
+        }
         modulesLoaded_ = 1;
         residentProtocol_ = protocol;
-
-        sysInitDev9();
 
         LOG("[NETMAN]:\n");
         if (sysLoadModuleBuffer(&netman_irx, size_netman_irx, 0, NULL) >= 0) {

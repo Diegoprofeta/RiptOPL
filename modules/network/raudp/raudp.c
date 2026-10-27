@@ -19,8 +19,8 @@
   still transmitting the previous frame, holding the mutex the whole
   time. Waiting there starves the stack thread and the game (audio,
   loading). So before sending we look at the transmitter's busy bit and
-  defer our snapshot when it is set and retry on the next poll. The game
-  has priority; deferrals are counted and reported in the packet header.
+  skip our frame when it is set. The game has priority; skipped frames
+  are counted and reported in the packet header.
 
   Finding the PC. Bypassing the stack also means no ARP, so the
   destination MAC must come from somewhere. Once, at start-up, this
@@ -36,12 +36,13 @@
   stays silent and the query repeats, every second at first and then
   every 30 seconds, so the PC client may start after the game.
 
-  The socket stays open afterwards for the one thing that travels the
-  other way: "RAU1 <id> <points>" from the PC when an achievement
-  unlocks. It is polled without waiting once per telemetry period, and
-  each unlock is handed to ee_core as a small record DMA'd into a buffer
-  there (struct ra_event), where the VBLANK handler picks it up and shows
-  the notice over the game.
+  The socket stays open afterwards for what travels the other way:
+  "RAU1 <id> <points>" from the PC when an achievement unlocks, and
+  "RAR1" when the PC asks the console to leave the game for the loader.
+  It is polled without waiting once per telemetry period, and each
+  message is handed to ee_core as a small record DMA'd into a buffer
+  there (struct ra_event), where the VBLANK handler picks it up: a
+  notice over the game, or the in-game reset.
 
   Licenced under Academic Free License version 3.0, like ee_core.
 */
@@ -68,8 +69,14 @@ extern struct irx_export_table _exp_raudp;
    gives SMAP). The PC's IP and MAC come from discovery. Own MAC is read
    from the controller registers. All IPs are in network byte order. */
 static u32 ra_src_ip = 0;
+static u32 ra_server_ip = 0, ra_gateway_ip = 0, ra_netmask_ip = 0;
 static u32 ra_dst_ip = 0;
 static u8 ra_dst_mac[6];
+
+#include "../common/ra_client.h"
+
+static int ra_caduceus;
+static int ra_host_pinned;
 
 #define RA_DST_PORT 18194 /* PC client listens here */
 #define RA_SRC_PORT 18195 /* our port: discovery socket and telemetry source */
@@ -79,7 +86,7 @@ static u8 ra_dst_mac[6];
 
 /* The EE lands a snapshot every frame, 16.7 ms. Polling four times a
    frame and sending only a new seq catches each one; sleeping a whole
-   frame plus the work per pass missed one in twelve (lab/skips, 08.09). */
+   frame plus the work per pass falls behind and misses one in twelve. */
 #define RA_POLL_US         4000
 #define RA_IDLE_TICKS      4    /* no snapshot: one header-only packet per frame */
 #define RA_KEEPALIVE_TICKS 250  /* a second without a new snapshot: repeat the last */
@@ -99,19 +106,16 @@ static u8 ra_dst_mac[6];
 static u8 ra_frame[RA_FRAME_LEN] __attribute__((aligned(16)));
 static u8 *ra_payload = &ra_frame[RA_HDR_LEN];
 
-/* May this module look for the PC while a game runs? Off when the game
-   streams its own disc over the same NIC -- a share (ETH_MODE) or an HTTP
-   host. Both roads to the PC take something the game needs: the raw one
-   frees every SMAP receive descriptor it walks, and the disc stream arrives
-   through that ring; the lwIP one posts to the stack mailbox the SMB or HTTP
-   client is waiting on. Either way the game reaches its first menu and loads
-   for ever. ee_core decides and says so in a load argument. Sending is
-   unaffected and stays on. */
+/* Looking for the PC while a game runs. Off on SMB and HTTP: both roads to
+   the PC read from resources the game needs. The raw one frees every
+   SMAP receive descriptor it walks, and the game streams its disc
+   through that ring; the lwIP one posts to the stack mailbox the SMB
+   client waits on. ee_core decides and says so in a load argument. */
 static int ra_rx_in_game = 1;
 
-/* The game's serial, from the same argument, so the very first packets carry
-   it instead of fifteen zeroes -- the snapshot has it too, but not before the
-   EE has written one. */
+/* The game's serial, from the same argument. The snapshot carries it
+   too, but a game RetroAchievements does not know has no watch list and
+   therefore no snapshot, and the PC would see a header of zeroes. */
 static char ra_game_id[16] = {0};
 
 /* Counters reported in every packet. */
@@ -137,24 +141,13 @@ static u32 ra_ee_event = 0;
 
 /* The record being sent, in IOP RAM: SIF DMA copies from here. Aligned
    for the DMA, and kept whole between sends. */
-static struct ra_event ra_event __attribute__((aligned(16)));
-
-/* Badge buffer in ee_core, third address in the load argument. 0 when
-   ee_core did not give one; badge chunks are then dropped. */
-static u32 ra_ee_badge = 0;
-
-/* The badge assembling in IOP RAM, one per game session: the PC repeats the
-   series against loss, later chunks add nothing. */
-static struct ra_badge ra_badge __attribute__((aligned(16)));
-static u32 ra_badge_mask = 0; /* bit per chunk received */
-static int ra_badge_done = 0;
+static struct ra_event ra_event __attribute__((aligned(64)));
 
 /* Counters for the heartbeat: what this side saw, said to the
    PC every ten seconds, because a silent link cannot be told apart
    from a dead one by staring at the screen. */
 static u32 ra_hb_rx = 0;  /* datagrams that reached ra_poll_pc */
 static u32 ra_hb_rau = 0; /* unlock notices among them */
-static u32 ra_hb_rab = 0; /* badge chunks accepted */
 
 /* Discovery socket, kept open for the PC's messages. */
 static int ra_sock = -1;
@@ -162,8 +155,8 @@ static int ra_sock = -1;
 /* ---- Packet header ---------------------------------------------------
    Text header, then the raw snapshot bytes. Fields are fixed width so
    the PC client can parse them without a tokenizer, and the layout is
-   computed here instead of by hand: hand-counted offsets kept going
-   wrong during development.
+   computed here instead of by hand, so a field change cannot leave an
+   offset stale.
 
      RA15 seq=000000 sz=0000 us=00000 mx=00000 rxq=000 fail=000000
           err=+000 sk=000000 lk=0000 sq=000000 ds=000000 bad=0000
@@ -178,6 +171,8 @@ static int ra_sock = -1;
    err  last error code           np   number of parts
    sk   sends deferred, tx busy   id   game serial, padded with '~'
    lk   link mode: speed (100/010/999) and duplex (F/H)
+   rc   EE ticks the reads for this snapshot took
+   fc   EE ticks between the last two VBLANKs: rc/fc is the share of a frame
 
    "id" must stay last: the PC client finds the binary tail as the
    offset of " id=" plus 4 plus 15 plus one space. */
@@ -205,6 +200,8 @@ static struct ra_field ra_fields[] = {
     {"vb", 4, 0},
     {"pt", 1, 0},
     {"np", 1, 0},
+    {"rc", 7, 0},
+    {"fc", 7, 0},
     {"id", 15, 0},
 };
 
@@ -227,6 +224,8 @@ enum ra_field_id {
     RA_F_VB,
     RA_F_PT,
     RA_F_NP,
+    RA_F_RC, /* EE ticks spent reading this snapshot */
+    RA_F_FC, /* EE ticks per frame, to read rc as a share of the frame */
     RA_F_ID,
 };
 
@@ -239,7 +238,7 @@ static int ra_head_len = 0;
 static u32 ra_chunk = RA_SNAP_CHUNK_BYTES;
 
 /* Serial as-is, padded with '~'. Not '_': serials contain underscores
-   (SLUS_210.65). Only valid once ra_head_build has set the field offsets. */
+   (SLUS_210.65). */
 static void ra_id_put(const char *src)
 {
     int i;
@@ -507,6 +506,43 @@ static int ra_tx_busy(void)
     return (SMAP_EMAC3_GET(SMAP_R_EMAC3_TxMODE0) & SMAP_E3_TX_GNP_0) != 0;
 }
 
+/* Passive mode must not consume the game's RX descriptors. A bounded raw ARP
+   request lets the existing receive stack learn a separate companion's MAC. */
+static int ra_request_mac(u32 ip)
+{
+    USE_SMAP_EMAC3_REGS;
+    static u8 frame[60] __attribute__((aligned(16)));
+    u32 hi, lo;
+    int i;
+
+    if (ra_tx_busy())
+        return 0;
+    for (i = 0; i < (int)sizeof(frame); i++)
+        frame[i] = i < 6 ? 0xff : 0;
+    hi = SMAP_EMAC3_GET32(SMAP_R_EMAC3_ADDR_HI);
+    lo = SMAP_EMAC3_GET32(SMAP_R_EMAC3_ADDR_LO);
+    frame[6] = hi >> 8;
+    frame[7] = hi;
+    frame[8] = lo >> 24;
+    frame[9] = lo >> 16;
+    frame[10] = lo >> 8;
+    frame[11] = lo;
+    frame[12] = 0x08;
+    frame[13] = 0x06;
+    frame[15] = 1;    // Ethernet
+    frame[16] = 0x08; // IPv4
+    frame[18] = 6;
+    frame[19] = 4;
+    frame[21] = 1; // request
+    for (i = 0; i < 6; i++)
+        frame[22 + i] = frame[6 + i];
+    for (i = 0; i < 4; i++) {
+        frame[28 + i] = ra_src_ip >> (i * 8);
+        frame[38 + i] = ip >> (i * 8);
+    }
+    return SMAPSendPacket(frame, sizeof(frame)) >= 0;
+}
+
 /* ---- Control messages to the PC: down the raw telemetry path, not lwIP,
    which puts nothing on the wire from a running game. Headers copied from
    the telemetry frame, lengths and checksum redone. */
@@ -597,10 +633,21 @@ static void ra_send_one(void)
 {
     USE_SMAP_REGS;
     iop_sys_clock_t t0, t1;
-    u32 nb = 0, parts = 1, part, staged_sq = 0;
-    int ret, sent = 1;
+    u32 nb = 0, parts = 1, part, sq = 0;
+    int sent = 1;
 
     ra_rxq = SMAP_REG8(SMAP_R_RXFIFO_FRAME_CNT);
+
+    /* In SMB/HTTP passive mode the game's disc stream owns SMAP RX.
+       Never inject an achievement snapshot while a received game packet
+       is waiting for the streaming driver. We only read the FIFO count;
+       do not advance descriptors or poll a socket. The unsent snapshot
+       stays pending and a later quiet poll may send the current values.
+       This is a safety improvement, not proof of SMB/HTTP RA compatibility. */
+    if (!ra_rx_in_game && ra_rxq != 0) {
+        ra_skip++;
+        return;
+    }
 
     /* Checked once per snapshot, not per part: dropping the last part
        of three would waste the two already sent. Busy means the whole
@@ -622,9 +669,9 @@ static void ra_send_one(void)
        taken from the header before the copy; the trailer word after the
        values is the last to arrive. A trailer or header that no longer
        matches after the copy means a newer snapshot overwrote part of
-       what was copied: retry the snapshot on the next poll. */
+       what was copied: the snapshot is torn and dropped. */
     if (ra_snap != NULL) {
-        u32 sq = ra_snap->seq;
+        sq = ra_snap->seq;
 
         if (ra_snap->magic == RA_SNAP_MAGIC) {
             const u8 *src = (const u8 *)ra_snap + RA_SNAP_HDR;
@@ -642,10 +689,11 @@ static void ra_send_one(void)
                 ra_snap_bad++;
                 return; /* the next poll copies it whole */
             } else {
-                staged_sq = sq;
                 ra_fmt(&ra_payload[RA_OFF(RA_F_SQ)], sq, 6);
                 ra_fmt(&ra_payload[RA_OFF(RA_F_DS)], ra_snap->dma_skip, 6);
                 ra_fmt(&ra_payload[RA_OFF(RA_F_N)], ra_snap->count, 4);
+                ra_fmt(&ra_payload[RA_OFF(RA_F_RC)], ra_snap->read_cycles > 9999999 ? 9999999 : ra_snap->read_cycles, 7);
+                ra_fmt(&ra_payload[RA_OFF(RA_F_FC)], ra_snap->frame_cycles > 9999999 ? 9999999 : ra_snap->frame_cycles, 7);
 
                 ra_id_put((const char *)ra_snap->game_id);
             }
@@ -667,6 +715,7 @@ static void ra_send_one(void)
     for (part = 0; part < parts; part++) {
         u32 off = part * ra_chunk;
         u32 len = nb > off ? nb - off : 0;
+        int ret;
 
         if (len > ra_chunk)
             len = ra_chunk;
@@ -695,11 +744,10 @@ static void ra_send_one(void)
     if (ra_us > ra_us_max)
         ra_us_max = ra_us;
 
-    /* Commit only the staged sequence, after every part was accepted.
-       The EE may already have DMAed the next snapshot while we sent this
-       one. A failed part leaves this sequence pending for the next poll. */
+    /* The seq taken before the copy, not the buffer's current one: a
+       snapshot that landed during the sends is still pending. */
     if (nb > 0 && sent) {
-        ra_sent_sq = staged_sq;
+        ra_sent_sq = sq;
         ra_sent_any = 1;
     }
 }
@@ -719,7 +767,7 @@ static int ra_snap_pending(void)
 #define RA_DISC_FAST    10                 /* attempts at 1 s intervals */
 #define RA_DISC_SLOW_US (30 * 1000 * 1000) /* then one attempt every 30 s */
 
-/* Time spent in discovery. Subtracted from the start-up hold-off. */
+/* Discovery elapsed time (retained for bounded diagnostic accounting). */
 static u32 ra_disc_us = 0;
 
 /* Broadcasts "RAP1 <own-ip> <port>" and waits for "RAO1".
@@ -732,12 +780,56 @@ static u32 ra_disc_us = 0;
    Returns 1 once both the PC's IP and MAC are known, 0 only if no
    socket could be opened. There is no timeout: while the PC is silent
    the query repeats, first every second, then every 30 seconds. */
+static int ra_resolve_mac(u32 ip)
+{
+    if (etharp_lookup_mac(ip, ra_dst_mac))
+        return 1;
+    /* Routed packets use the next hop's MAC, never the remote peer's. */
+    return ra_gateway_ip != 0 && ra_netmask_ip != 0 &&
+           ((ip ^ ra_src_ip) & ra_netmask_ip) != 0 &&
+           etharp_lookup_mac(ra_gateway_ip, ra_dst_mac);
+}
+
 static int ra_discover(void)
 {
     struct sockaddr_in me, to, from;
     socklen_t fromlen;
-    char req[48], rx[64];
+    char req[48], rx[192];
+    int bridge_found = 0, arp_requested = 0;
     int s, on = 1, len, tries = 0, w, got;
+
+    /* Caduceus has a single configured companion host, shared with its paired
+       browser. A missing address must not cause a broadcast to an arbitrary PC.
+       Xerabora's existing automatic LAN discovery remains unchanged. */
+    if ((ra_caduceus || ra_host_pinned) &&
+        (ra_server_ip == 0 || ra_server_ip == INADDR_BROADCAST))
+        return 0;
+
+    /* SMB owns the receive stack while loading/streaming the ISO. Never open
+       or poll a discovery socket in that mode. Use the stack's ARP table,
+       requesting a missing companion/next hop once without consuming RX.
+       Missing host/MAC disables telemetry rather than disturbing the game. */
+    if (!ra_rx_in_game) {
+        if (ra_server_ip == 0 || ra_server_ip == INADDR_BROADCAST)
+            return 0;
+        for (tries = 0; tries < RA_DISC_POLLS; tries++) {
+            int have_mac = ra_resolve_mac(ra_server_ip);
+            if (have_mac) {
+                ra_dst_ip = ra_server_ip;
+                return 1;
+            }
+            u32 nextHop = ra_server_ip;
+            if (ra_netmask_ip != 0 && ((ra_server_ip ^ ra_src_ip) & ra_netmask_ip) != 0) {
+                if (ra_gateway_ip == 0)
+                    return 0;
+                nextHop = ra_gateway_ip;
+            }
+            if (!arp_requested)
+                arp_requested = ra_request_mac(nextHop);
+            DelayThread(RA_DISC_POLL_US);
+        }
+        return 0;
+    }
 
     s = lwip_socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s < 0)
@@ -755,7 +847,7 @@ static int ra_discover(void)
 
     to.sin_family = AF_INET;
     to.sin_port = htons(RA_DST_PORT);
-    to.sin_addr.s_addr = INADDR_BROADCAST;
+    to.sin_addr.s_addr = (ra_caduceus || ra_host_pinned) ? ra_server_ip : INADDR_BROADCAST;
 
     req[0] = 'R';
     req[1] = 'A';
@@ -769,7 +861,14 @@ static int ra_discover(void)
     req[len] = '\0';
 
     for (;;) {
-        lwip_sendto(s, req, len, 0, (struct sockaddr *)&to, sizeof(to));
+        if (ra_caduceus && !bridge_found) {
+            to.sin_port = htons(RA_CADUCEUS_PORT);
+            lwip_sendto(s, RA_CADUCEUS_PROBE, sizeof(RA_CADUCEUS_PROBE) - 1, 0,
+                        (struct sockaddr *)&to, sizeof(to));
+        } else {
+            to.sin_port = htons(RA_DST_PORT);
+            lwip_sendto(s, req, len, 0, (struct sockaddr *)&to, sizeof(to));
+        }
 
         for (w = 0; w < RA_DISC_POLLS; w++) {
             DelayThread(RA_DISC_POLL_US);
@@ -778,17 +877,36 @@ static int ra_discover(void)
             /* Eight arguments: SMSTCPIP's recvfrom splits an SMB header
                from the payload. We want the whole datagram in rx. */
             fromlen = sizeof(from);
-            got = lwip_recvfrom(s, NULL, 0, rx, sizeof(rx), MSG_DONTWAIT,
+            got = lwip_recvfrom(s, NULL, 0, rx, sizeof(rx) - 1, MSG_DONTWAIT,
                                 (struct sockaddr *)&from, &fromlen);
 
-            if (got >= 4 && rx[0] == 'R' && rx[1] == 'A' && rx[2] == 'O' && rx[3] == '1') {
+            if (ra_caduceus && !bridge_found) {
+                if (got > 0) {
+                    rx[got] = '\0';
+                    if (from.sin_port == htons(RA_CADUCEUS_PORT) &&
+                        from.sin_addr.s_addr == ra_server_ip &&
+                        raCaduceusSessionReply(rx, RA_PROBE_HASH) == 0) {
+                        bridge_found = 1;
+                        tries = -1;
+                        to.sin_addr.s_addr = from.sin_addr.s_addr;
+                        break;
+                    }
+                }
+                continue;
+            }
+            if ((ra_caduceus || ra_host_pinned) &&
+                from.sin_addr.s_addr != to.sin_addr.s_addr)
+                continue;
+            /* A syntactically similar RAO1 error is not a verified peer.
+               Require the successful discovery reply in both RA modes. */
+            if (got >= 8 && raClientStarts(rx, "RAO1 OK ")) {
                 u32 ip = from.sin_addr.s_addr;
 
                 /* The reply came through the stack, so the stack has
                    already recorded the sender's IP/MAC pair. An IP
                    without a MAC is useless: a frame with no destination
                    would vanish silently. Keep asking in that case. */
-                if (ip != 0 && ip != INADDR_BROADCAST && etharp_lookup_mac(ip, ra_dst_mac)) {
+                if (ip != 0 && ip != INADDR_BROADCAST && ra_resolve_mac(ip)) {
                     ra_dst_ip = ip;
                     ra_sock = s; /* kept open: the PC's unlock notices arrive here */
                     return 1;
@@ -798,21 +916,10 @@ static int ra_discover(void)
 
         tries++;
         if (tries >= RA_DISC_FAST) {
-            /* The endless slow re-query exists so the PC client may start
-               after the game. On a share it must not: every poll posts to the
-               stack mailbox the SMB or HTTP client is waiting on, and there
-               that is the road the game's own disc arrives by -- the same
-               reason ra_rx_in_game shuts the in-play reads down. Discovery
-               runs before that gate is reached, so bound it here instead:
-               the fast phase gets ten seconds, inside the start-up hold-off,
-               and then the stack is left alone for the rest of the session.
-               Nothing that worked is lost -- with no PC there is no address
-               to send telemetry to either. */
             if (!ra_rx_in_game) {
                 lwip_close(s);
                 return 0;
             }
-
             DelayThread(RA_DISC_SLOW_US);
             if (ra_disc_us < 0xF0000000)
                 ra_disc_us += RA_DISC_SLOW_US;
@@ -828,132 +935,107 @@ static u32 ra_dec_at(const char *s, int max)
     u32 v = 0;
     int i;
 
-    for (i = 0; i < max && s[i] >= '0' && s[i] <= '9'; i++)
-        v = v * 10 + (u32)(s[i] - '0');
+    for (i = 0; i < max && s[i] >= '0' && s[i] <= '9'; i++) {
+        u32 digit = (u32)(s[i] - '0');
+        if (v > (0xFFFFFFFFu - digit) / 10)
+            return 0;
+        v = v * 10 + digit;
+    }
 
     return v;
 }
 
-/* A badge chunk: "RAB1 ii tt " (11 bytes) and 512 raw pixels. The sixteenth
-   distinct chunk goes to the EE in one SIF DMA, answered with "RAK2 <mask>
-   <dma>". */
-static void ra_take_badge(const char *rx, int got)
+/* Only the PC this console discovered may end the game or announce an
+   unlock; any other host on the LAN could otherwise forge both. ip is
+   the IPv4 source address in wire order. */
+static int ra_from_pc(const u8 *ip)
 {
-    u32 idx = ra_dec_at(&rx[5], 2);
-    u32 total = ra_dec_at(&rx[8], 2);
-    char ack[24];
-    int dma = 0, n;
-
-    if (got != 11 + RA_BADGE_CHUNK || total != RA_BADGE_CHUNKS || idx >= RA_BADGE_CHUNKS)
-        return;
-    if (ra_badge_done)
-        return;
-
-    {
-        u8 *dst = &ra_badge.px[idx * RA_BADGE_CHUNK];
-        int i;
-
-        for (i = 0; i < RA_BADGE_CHUNK; i++)
-            dst[i] = (u8)rx[11 + i];
-    }
-    ra_hb_rab++;
-    ra_badge_mask |= (u32)1 << idx;
-
-    if (ra_badge_mask != ((u32)1 << RA_BADGE_CHUNKS) - 1)
-        return;
-
-    ra_badge.magic = RA_BADGE_MAGIC;
-    ra_badge.len = RA_BADGE_BYTES;
-    ra_badge.seq++;
-    ra_badge_done = 1;
-
-    if (ra_ee_badge != 0) {
-        /* Two transfers, pixels first: SIF DMA fills memory upward, and
-           the EE takes the header's magic as "the badge is here". Sent
-           as one transfer the magic would land before the pixels. */
-        SifDmaTransfer_t dmat[2];
-
-        dmat[0].src = ra_badge.px;
-        dmat[0].dest = (void *)(ra_ee_badge + 16);
-        dmat[0].size = RA_BADGE_BYTES;
-        dmat[0].attr = 0;
-        dmat[1].src = &ra_badge;
-        dmat[1].dest = (void *)ra_ee_badge;
-        dmat[1].size = 16;
-        dmat[1].attr = 0;
-        dma = sceSifSetDma(dmat, 2);
-    }
-
-    n = 0;
-    ack[n++] = 'R';
-    ack[n++] = 'A';
-    ack[n++] = 'K';
-    ack[n++] = '2';
-    ack[n++] = ' ';
-    ra_fmt_hex8(&ack[n], ra_ee_badge);
-    n += 8;
-    ack[n++] = ' ';
-    ra_fmt_err((u8 *)&ack[n], dma);
-    n += 4;
-    ack[n] = '\0';
-    ra_ctl_send(ack, n);
+    return ((u32)ip[0] | (u32)ip[1] << 8 | (u32)ip[2] << 16 | (u32)ip[3] << 24) == ra_dst_ip;
 }
 
 /* One message from the PC, whichever road it came in on. */
 static void ra_handle_pc(char *rx, int got)
 {
+    static int pending_dma;
     char ack[48];
     int dma = 0, n;
-
     if (got < 5)
         return;
-
+    if (pending_dma > 0 && sceSifDmaStat(pending_dma) >= 0)
+        return;
     ra_hb_rx++;
-
-    if (rx[0] == 'R' && rx[1] == 'A' && rx[2] == 'B' && rx[3] == '1' && rx[4] == ' ') {
-        ra_take_badge(rx, got);
+    if (rx[0] != 'R' || rx[1] != 'A' || rx[3] != '1' || rx[4] != ' ')
         return;
-    }
-
-    if (rx[0] != 'R' || rx[1] != 'A' || rx[2] != 'U' || rx[3] != '1' || rx[4] != ' ')
-        return;
-
-    ra_hb_rau++;
-
-    /* Every notice arrives twice, unicast and broadcast (the console
-       answers no ARP in play). The same achievement within a few seconds is
-       one pulse. */
-    {
-        static u32 last_id = 0xFFFFFFFF;
-        static u32 last_sec = 0;
-        iop_sys_clock_t clk;
-        u32 sec, usec, id;
-
-        id = ra_dec_at(&rx[5], 10);
-        GetSystemTime(&clk);
-        SysClock2USec(&clk, &sec, &usec);
-
-        if (id == last_id && sec - last_sec < 3)
-            return;
-        last_id = id;
-        last_sec = sec;
-
+    if (rx[2] == 'R') {
+        /* "RAR1": leave the game for the loader. The second copy of the
+           datagram never matters: the first one ends this module. */
         ra_event.magic = RA_EVENT_MAGIC;
         ra_event.seq++;
-        ra_event.kind = RA_EVENT_UNLOCK;
+        ra_event.kind = RA_EVENT_RESET;
+        ra_event.arg = 0;
+    } else if (rx[2] == 'U') {
+        /* Every notice arrives twice, unicast and broadcast (the console
+           answers no ARP in play). The same achievement within a few
+           seconds is one pulse. */
+        static u32 last_id = 0xFFFFFFFF;
+        static u32 last_sec = 0;
+        static int last_title = 0;
+        iop_sys_clock_t clk;
+        u32 sec, usec, id, points;
+        ra_hb_rau++;
+        if (got <= 5 || rx[5] < '0' || rx[5] > '9')
+            return;
+        id = ra_dec_at(&rx[5], got - 5);
+        if (!id)
+            return;
+        points = 0;
+        {
+            int pos = 5;
+            while (pos < got && rx[pos] >= '0' && rx[pos] <= '9')
+                pos++;
+            while (pos < got && rx[pos] == ' ')
+                pos++;
+            if (pos < got)
+                points = ra_dec_at(&rx[pos], got - pos);
+            while (pos < got && rx[pos] >= '0' && rx[pos] <= '9')
+                pos++;
+            while (pos < got && rx[pos] == ' ')
+                pos++;
+            {
+                int i = 0;
+                while (pos < got && rx[pos] && i < 63) {
+                    unsigned char c = rx[pos++];
+                    ra_event.title[i++] = (c >= 32 && c < 127) ? c : ' ';
+                }
+                ra_event.title[i] = 0;
+            }
+            if (points > 0xFFFFFF)
+                points = 0xFFFFFF;
+        }
+        GetSystemTime(&clk);
+        SysClock2USec(&clk, &sec, &usec);
+        if (id == last_id && sec - last_sec < 3 && (last_title || !ra_event.title[0]))
+            return;
+        last_title = ra_event.title[0] != 0;
+        last_id = id;
+        last_sec = sec;
+        ra_event.magic = RA_EVENT_MAGIC;
+        ra_event.seq++;
+        ra_event.kind = RA_EVENT_MAKE_UNLOCK(points);
         ra_event.arg = id;
+    } else {
+        return;
     }
-
+    ra_event.commit = ra_event.seq;
     if (ra_ee_event != 0) {
         SifDmaTransfer_t dmat;
-
         dmat.src = &ra_event;
         dmat.dest = (void *)ra_ee_event;
         dmat.size = sizeof(ra_event);
         dmat.attr = 0;
         dma = sceSifSetDma(&dmat, 1);
+        pending_dma = dma;
     }
-
     /* "RAK1 <seq> <ee-buffer> <dma-id>": the PC logs it, which is how a
        notice that never showed is traced to its link. */
     n = 0;
@@ -980,8 +1062,7 @@ static void ra_poll_pc(void)
 {
     struct sockaddr_in from;
     socklen_t fromlen = sizeof(from);
-    /* Room for the largest message: a badge chunk of 11 + 512 bytes. */
-    char rx[576];
+    char rx[128]; /* an unlock notice is a few dozen bytes */
     int got;
 
     if (ra_sock < 0)
@@ -989,17 +1070,24 @@ static void ra_poll_pc(void)
 
     got = lwip_recvfrom(ra_sock, NULL, 0, rx, sizeof(rx) - 1, MSG_DONTWAIT,
                         (struct sockaddr *)&from, &fromlen);
-    if (got < 5)
+    if (got < 5 || !ra_from_pc((const u8 *)&from.sin_addr.s_addr))
         return;
     rx[got] = '\0';
 
     ra_handle_pc(rx, got);
 }
 
-/* The raw receive road: in play nothing drains the SMAP RX FIFO (it sits
-   full, ARP dies with it), so this thread walks the receive BDs itself, as
-   HandleRxIntr does. It must be the ring's only consumer while a game runs. */
-static u8 ra_rxfrm[608] __attribute__((aligned(4)));
+/* The raw receive road. Once the game runs, the in-game SMAP driver's
+   interrupt path no longer drains the receive FIFO: the frame counter
+   climbs to 64 and stays there, and with it lwIP receive and ARP are
+   dead. So this thread walks the receive descriptors itself, the way
+   HandleRxIntr does: read the frame at the descriptor's pointer, hand a
+   UDP datagram for our port to ra_handle_pc, drop everything else, mark
+   the descriptor empty, decrement the counter. It must be the ring's
+   only consumer while a game runs. */
+/* An unlock notice is a frame of about 60 bytes; anything longer is
+   not for us and is dropped unread. */
+static u8 ra_rxfrm[256] __attribute__((aligned(4)));
 static int ra_rx_bdi = 0;
 
 static void ra_drain_rx(void)
@@ -1011,7 +1099,6 @@ static void ra_drain_rx(void)
     for (budget = 0; budget < 16; budget++) {
         volatile smap_bd_t *bd;
         u16 cs, len, ptr;
-        int words, i, up;
 
         if (SMAP_REG8(SMAP_R_RXFIFO_FRAME_CNT) == 0)
             return;
@@ -1031,6 +1118,7 @@ static void ra_drain_rx(void)
 
         if (!(cs & SMAP_BD_RX_ERROR) && len >= 60 && len <= (u16)sizeof(ra_rxfrm)) {
             u32 *w = (u32 *)ra_rxfrm;
+            int words, i, up;
 
             SMAP_REG16(SMAP_R_RXFIFO_RD_PTR) = ptr;
             words = ((int)len + 3) / 4;
@@ -1043,9 +1131,9 @@ static void ra_drain_rx(void)
             if (ra_rxfrm[12] == 0x08 && ra_rxfrm[13] == 0x00 &&
                 ra_rxfrm[14] == 0x45 && ra_rxfrm[23] == 17 &&
                 ra_rxfrm[36] == (RA_SRC_PORT >> 8) &&
-                ra_rxfrm[37] == (RA_SRC_PORT & 0xFF)) {
+                ra_rxfrm[37] == (RA_SRC_PORT & 0xFF) && ra_from_pc(&ra_rxfrm[26])) {
                 up = (((int)ra_rxfrm[38] << 8) | ra_rxfrm[39]) - RA_UDP_HLEN;
-                if (up > 0 && RA_HDR_LEN + up < (int)sizeof(ra_rxfrm)) {
+                if (up > 0 && RA_HDR_LEN + up <= len && RA_HDR_LEN + up < (int)sizeof(ra_rxfrm)) {
                     char *pay = (char *)&ra_rxfrm[RA_HDR_LEN];
 
                     pay[up] = '\0';
@@ -1060,9 +1148,10 @@ static void ra_drain_rx(void)
     }
 }
 
-/* Every ten seconds: "RAH1 <datagrams> <unlocks> <chunks> <mask> <done>".
+/* Every ten seconds: "RAH1 <datagrams> <unlocks> 000000 00000000 0".
    No heartbeat means the send path is down; zero datagrams means nothing
-   from the PC survives the trip. */
+   from the PC survives the trip. The last three fields belonged to the
+   badge upload and stay as zeros so the client's parser keeps working. */
 static void ra_heartbeat(void)
 {
     char hb[48];
@@ -1079,13 +1168,13 @@ static void ra_heartbeat(void)
     ra_fmt((u8 *)&hb[n], ra_hb_rau, 6);
     n += 6;
     hb[n++] = ' ';
-    ra_fmt((u8 *)&hb[n], ra_hb_rab, 6);
+    ra_fmt((u8 *)&hb[n], 0, 6);
     n += 6;
     hb[n++] = ' ';
-    ra_fmt_hex8(&hb[n], ra_badge_mask);
+    ra_fmt_hex8(&hb[n], 0);
     n += 8;
     hb[n++] = ' ';
-    hb[n++] = ra_badge_done ? '1' : '0';
+    hb[n++] = '0';
     hb[n] = '\0';
     ra_ctl_send(hb, n);
 }
@@ -1099,13 +1188,15 @@ static void ra_thread(void *arg)
 
     (void)arg;
 
+    /* Keep ALL discovery/socket activity outside early game startup.
+       Previously we tried to discover first and only then waited, so
+       the initial SMAP traffic could still collide with an IOP reset. */
+    DelayThread(RA_QUIET_US);
+
     if (!ra_discover())
         return; /* no socket: the stack is not up, stay silent */
 
     ra_frame_init();
-
-    if (ra_disc_us < RA_QUIET_US)
-        DelayThread(RA_QUIET_US - ra_disc_us);
 
     for (;;) {
         int pending = ra_snap_pending();
@@ -1119,6 +1210,14 @@ static void ra_thread(void *arg)
         } else if (++idle >= RA_KEEPALIVE_TICKS) {
             ra_send_one();
             idle = 0;
+        }
+        if (!ra_rx_in_game && iter % RA_IDLE_TICKS == 0) {
+            char notice[133]; /* the sender's address, then the datagram */
+            int length = SMAPReadNotice(notice, 132);
+            if (length > 4 && ra_from_pc((const u8 *)notice)) {
+                notice[length] = 0;
+                ra_handle_pc(notice + 4, length - 4);
+            }
         }
         if (ra_rx_in_game && iter % RA_IDLE_TICKS == 0) {
             ra_drain_rx();
@@ -1135,16 +1234,11 @@ int _shutdown(void)
     return 0;
 }
 
-/* Arguments, built by ee_core (iopmgr.c). argv[1] is a comma-separated list,
-   each field optional from the left:
-     snapshot buffer address in IOP RAM, eight hex digits
-     event buffer address in EE RAM, eight hex digits
-     badge buffer address in EE RAM, eight hex digits
-     '1' or '0': may this module read from the network while a game runs
-     the game's serial, up to fifteen characters
-   argv[2] is the own IP in dotted form (followed by netmask and gateway,
-   which this module does not need). argv[0] is the module name, inserted by
-   the IOP loader. */
+/* Arguments, built by ee_core (iopmgr.c). argv[1] is laid out by the
+   RA_ARG_* offsets in ra_snap.h, each field optional from the left.
+   argv[2] is the own IP in dotted form (followed by routing netmask and gateway,
+   used to resolve the next hop). argv[0] is the module name, inserted
+   by the IOP loader. */
 int _start(int argc, char *argv[])
 {
     iop_thread_t thread;
@@ -1153,35 +1247,42 @@ int _start(int argc, char *argv[])
     if (argc >= 2 && argv[1] != NULL) {
         int len;
 
-        for (len = 0; len < 44 && argv[1][len] != '\0'; len++)
+        for (len = 0; len < RA_ARG_MAX && argv[1][len] != '\0'; len++)
             ;
 
-        if (len >= 8)
-            ra_snap = (volatile struct ra_snap *)ra_hex_at(argv[1], 0, 8);
-        if (len >= 17 && argv[1][8] == ',')
-            ra_ee_event = ra_hex_at(argv[1], 9, 8);
-        if (len >= 26 && argv[1][17] == ',')
-            ra_ee_badge = ra_hex_at(argv[1], 18, 8);
-        if (len >= 28 && argv[1][26] == ',')
-            ra_rx_in_game = argv[1][27] != '0';
-        if (len >= 29 && argv[1][28] == ',') {
+        if (len >= RA_ARG_SNAP + 8)
+            ra_snap = (volatile struct ra_snap *)ra_hex_at(argv[1], RA_ARG_SNAP, 8);
+        if (len >= RA_ARG_EVENT + 8 && argv[1][RA_ARG_EVENT - 1] == ',')
+            ra_ee_event = ra_hex_at(argv[1], RA_ARG_EVENT, 8);
+        if (len >= RA_ARG_RX + 1 && argv[1][RA_ARG_RX - 1] == ',') {
+            int flags = argv[1][RA_ARG_RX] - '0';
+            ra_rx_in_game = flags & 1;
+            ra_caduceus = (flags & 2) != 0;
+            ra_host_pinned = (flags & 4) != 0;
+        }
+        if (len >= RA_ARG_ID + 1 && argv[1][RA_ARG_ID - 1] == ',') {
             int i;
 
-            for (i = 0; i < 15 && argv[1][29 + i] != '\0'; i++)
-                ra_game_id[i] = argv[1][29 + i];
+            for (i = 0; i < RA_ARG_ID_MAX && argv[1][RA_ARG_ID + i] != '\0' && argv[1][RA_ARG_ID + i] != ' '; i++)
+                ra_game_id[i] = argv[1][RA_ARG_ID + i];
             ra_game_id[i] = '\0';
         }
+        if (len > RA_ARG_HOST && argv[1][RA_ARG_HOST - 1] == ',')
+            ra_server_ip = inet_addr(&argv[1][RA_ARG_HOST]);
     }
 
+    /* SMAP passes NUL-delimited IP, netmask and gateway arguments. */
     if (argc >= 3 && argv[2] != NULL)
         ra_src_ip = inet_addr(argv[2]);
+    if (argc >= 4 && argv[3] != NULL)
+        ra_netmask_ip = inet_addr(argv[3]);
+    if (argc >= 5 && argv[4] != NULL)
+        ra_gateway_ip = inet_addr(argv[4]);
 
     /* Without an own address there is nothing to put in the discovery
        request or the IP header. Staying silent beats sending garbage. */
     if (ra_src_ip == 0 || ra_src_ip == INADDR_BROADCAST)
         return MODULE_RESIDENT_END;
-
-    RegisterLibraryEntries(&_exp_raudp);
 
     thread.attr = TH_C;
     thread.option = 0;
@@ -1193,7 +1294,15 @@ int _start(int argc, char *argv[])
     if (tid < 0)
         return MODULE_NO_RESIDENT_END;
 
-    StartThread(tid, NULL);
+    if (RegisterLibraryEntries(&_exp_raudp) < 0) {
+        DeleteThread(tid);
+        return MODULE_NO_RESIDENT_END;
+    }
+    if (StartThread(tid, NULL) < 0) {
+        ReleaseLibraryEntries(&_exp_raudp);
+        DeleteThread(tid);
+        return MODULE_NO_RESIDENT_END;
+    }
 
     return MODULE_RESIDENT_END;
 }

@@ -49,6 +49,7 @@ static int opens;
 static bool corePresent = true;
 static int directoryError = -1;
 static std::string lastProbe;
+static int readdirFailAt = -1, readdirs, fileOpenError;
 #define LOG(...) ((void)0)
 static char cueSep(const char *prefix) { return strchr(prefix, '\\') ? '\\' : '/'; }
 static int cueResolveEmber(const char*, char*, int) { return corePresent; }
@@ -57,13 +58,21 @@ static DIR *probeDir(const char *path) {
     ++opens; lastProbe = path; std::string mapped(path);
     if (directoryError >= 0) { errno = directoryError; return nullptr; }
     for (char &c : mapped) if (c == '\\') c = '/';
+    struct stat st;
+    if (fileOpenError && stat(mapped.c_str(), &st) == 0 && S_ISREG(st.st_mode)) { errno = fileOpenError; return nullptr; }
     return opendir(mapped.c_str());
 }
+static dirent *probeRead(DIR *d) {
+    if (readdirs++ == readdirFailAt) { errno = EIO; return nullptr; }
+    return readdir(d);
+}
 #define opendir probeDir
+#define readdir probeRead
 ''' + exts + '\n' + '\n'.join(function(cue, s) for s in (
     'int cueNameLaunchable(', 'static int cueNameIsDiscImage(',
     'static int cueEntryIsGame(', 'int cueScanDir(')) + r'''
 #undef opendir
+#undef readdir
 static void put(const char *path) { FILE *f = fopen(path, "wb"); assert(f); fputs("image", f); fclose(f); }
 int main() {
     strcpy(gamesRoot, "games"); assert(mkdir(gamesRoot, 0700) == 0);
@@ -91,7 +100,17 @@ int main() {
         assert(cueScanDir("mass0:/", &list) == (error == ENOENT ? 0 : -1) && !list);
         corePresent = false;
     }
-    directoryError = -1;
+    directoryError = -1; corePresent = true;
+    // A loose file that FatFs answers with EIO (FR_NO_PATH) is still just a file.
+    fileOpenError = EIO; list = nullptr; assert(cueScanDir("mass0:/", &list) == 3 && list); free(list);
+    fileOpenError = 0;
+    // A listing cut short anywhere -- the games folder or a game folder -- keeps the last-good list.
+    int total = 0; readdirs = 0; list = nullptr; assert(cueScanDir("mass0:/", &list) == 3); free(list); total = readdirs;
+    for (int at = 0; at < total; ++at) {
+        readdirFailAt = at; readdirs = 0; list = nullptr;
+        assert(cueScanDir("mass0:/", &list) == -1 && !list);
+    }
+    readdirFailAt = -1;
     assert(opens > 0);
 }
 ''')
@@ -101,9 +120,9 @@ start = gui.index('if ((coreLoader == 2 ? gDefaultCoreLoader : coreLoader)')
 condition = gui[start:gui.index('guiMsgBox(', start)]
 run('vmc_warning', r'''
 #include <cassert>
-static int coreLoader, gDefaultCoreLoader, probes, result;
+static int coreLoader, gDefaultCoreLoader, probes, result, warning;
 static struct { int VMC_error; } vmc_status;
-static int sysVMCContiguity() { ++probes; return result; }
+static int guiGameVMCLayoutWarning() { ++probes; return result == 0 ? 7 : -1; }
 static bool warns() {
 ''' + condition + r'''
         return true;

@@ -18,8 +18,9 @@ def mk(f, defs):
         if x in ('-MMD', '-c') or x == first: continue
         out.append(x)
     return out + defs + ['-fsyntax-only', '-w', f]
-RA_ONLY = {'discsupport','rabadge','rahash','ranet','rawatch'}
-sets = {'RA': ['-DRETROACHIEVEMENTS'], 'IGS': ['-DIGS'], 'RTL': ['-D__RTL'], 'DEBUG': ['-D__DEBUG','-D__OPLDIAG','-DTTY_UDP','-g'], 'INGAME': ['-D__DEBUG','-D__OPLDIAG','-DTTY_UDP','-D__INGAME_DEBUG'], 'DTL': ['-D_DTL_T10000'], 'PPC': ['-D__DEBUG','-DTTY_PPC_UART'], 'EESIO': ['-D__DEBUG','-D__EESIO_DEBUG'], 'DECI2': ['-D__DEBUG','-D__DECI2_DEBUG','-D__INGAME_DEBUG']}
+RA_ONLY = {'achievements','discsupport','rabadge','rahash','ranet','ratls_ps2','rawatch'}
+TLS = ['-I' + os.path.join(ROOT, 'third_party/mbedtls', d) for d in ('include', '')]
+sets = {'RA': ['-DRETROACHIEVEMENTS'] + TLS, 'IGS': ['-DIGS'], 'RTL': ['-D__RTL'], 'DEBUG': ['-D__DEBUG','-D__OPLDIAG','-DTTY_UDP','-g'], 'INGAME': ['-D__DEBUG','-D__OPLDIAG','-DTTY_UDP','-D__INGAME_DEBUG'], 'DTL': ['-D_DTL_T10000'], 'PPC': ['-D__DEBUG','-DTTY_PPC_UART'], 'EESIO': ['-D__DEBUG','-D__EESIO_DEBUG'], 'DECI2': ['-D__DEBUG','-D__DECI2_DEBUG','-D__INGAME_DEBUG']}
 def run(args):
     r = subprocess.run(args, capture_output=True, text=True, cwd=os.path.join(ROOT, 'build'))
     return r.stderr

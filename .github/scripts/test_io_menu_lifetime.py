@@ -21,6 +21,8 @@ append = gui[start:gui.index("case GUI_OP_SELECT_MENU:", start)]
 program = r'''
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 class IoQueue {
 public:
     struct Request { Request *next; };
@@ -44,12 +46,12 @@ static int SignalSema(int id) {
 }
 @QUEUE@
 enum { GUI_OP_APPEND_MENU = 1 };
-struct Row { int isFolder, raBadged; };
+struct Row { int isFolder, raBadged; char *raText; };
 struct Entry { Row item; };
 struct Menu { Entry *last, *submenu, *current, *pagestart; int remindLast; };
 struct Update {
     struct { Menu *menu; Entry **subMenu; } menu;
-    struct { int icon_id; char *text; int id, text_id, isFolder, raBadged, selected, autoStart; } submenu;
+    struct { int icon_id; char *text; int id, text_id, isFolder, raBadged, selected, autoStart; char *raText; } submenu;
 };
 static Entry oldEntry{}, newEntry{};
 static bool fail;
@@ -57,12 +59,16 @@ static int DisableCron = 1, gRememberLastPlayed = 1, gAutoStartLastPlayed = 1, K
 static Entry *submenuAppendItem(Entry **, int, char *, int, int) {
     return fail ? nullptr : &newEntry;
 }
+static int frees;
+[[maybe_unused]] static void freeTracked(void *p) { frees += p != nullptr; std::free(p); }
+#define free freeTracked
 static void appendRow(Update *item) {
     Entry *result;
     switch (GUI_OP_APPEND_MENU) {
 @APPEND@
     }
 }
+#undef free
 int main() {
     q.head_ = &oldHead; mutate = true;
     // A worker consumes/frees the old head before WaitSema returns.
@@ -71,8 +77,15 @@ int main() {
     q.head_ = nullptr; assert(q.pendingCount() == 0 && !locked);
     Menu menu{&oldEntry, &oldEntry, &oldEntry, &oldEntry, 0};
     Entry *rows = &oldEntry;
-    Update item{{&menu, &rows}, {0, nullptr, 7, 0, 1, 1, 1, 1}};
-    fail = true; appendRow(&item);
+    Update item{{&menu, &rows}, {0, nullptr, 7, 0, 1, 1, 1, 1, nullptr}};
+    item.submenu.raText = strdup("RA Game");
+    fail = true; appendRow(&item); // OOM: the badge snapshot is released, not leaked
+#ifdef RETROACHIEVEMENTS
+    assert(frees == 1);
+#else
+    std::free(item.submenu.raText);
+#endif
+    item.submenu.raText = nullptr;
     assert(menu.last == &oldEntry && menu.submenu == &oldEntry);
     assert(menu.current == &oldEntry && menu.pagestart == &oldEntry);
     assert(!menu.remindLast && DisableCron == 1);
@@ -80,12 +93,16 @@ int main() {
     appendRow(&item);
     assert(!menu.last && !menu.submenu && !menu.current && !menu.pagestart);
     assert(!menu.remindLast && DisableCron == 1);
+    char *snapshot = item.submenu.raText = strdup("RA Game");
     fail = false; appendRow(&item);
     assert(menu.last == &newEntry && menu.submenu == &newEntry);
     assert(menu.current == &newEntry && menu.pagestart == &newEntry);
     assert(menu.remindLast && DisableCron == 0 && newEntry.item.isFolder);
 #ifdef RETROACHIEVEMENTS
-    assert(newEntry.item.raBadged);
+    assert(newEntry.item.raBadged && newEntry.item.raText == snapshot && frees == 1); // ownership moves to the row
+    std::free(snapshot);
+#else
+    std::free(snapshot);
 #endif
     puts("PASS: C++ queue snapshot holds its lock; append OOM preserves GUI navigation");
 }
@@ -99,3 +116,8 @@ with tempfile.TemporaryDirectory() as directory:
         subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
                         *defines, str(src), "-o", str(exe)], check=True)
         subprocess.run([str(exe)], check=True, timeout=10)
+
+# A queue that cannot take the op frees it, and with it the row's badge snapshot.
+queue_cpp = (ROOT / "src/ui/guiqueue.cpp").read_text(encoding="utf-8")
+oom = function(queue_cpp, "int DeferredOpQueue::enqueue(")
+assert oom.index("free(op->submenu.raText);") < oom.index("free(op);")

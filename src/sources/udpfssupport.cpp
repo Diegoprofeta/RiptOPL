@@ -6,13 +6,17 @@
 #include "include/supportbase.h"
 #include "include/udpfssupport.h"
 #include "include/cuesupport.h" // combined POPSTARTER/Ember PS1 view
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/vcdsupport.h"
 #include "include/libview.h" // libViewActive / libListViewActive -- which list this page shows
 #include "include/folderbrowse.h"
 #include "include/util.h"
 #include "include/renderman.h"
 #include "include/themes.h"
+#include "include/lang.h"
 #include "include/textures.h"
+#include "include/texcache.h"
+#include "include/artindex.h"
 #include "include/ioman.h"
 #include "include/system.h"
 #include "include/extern_irx.h"
@@ -27,6 +31,7 @@
 #define NEWLIB_PORT_AWARE
 #include <fileXio_rpc.h>
 #include <delaythread.h>
+#include <errno.h>
 
 // udpfs is a network FILESYSTEM device: the iomanX device "udpfs:" is served by the udpfs_ioman IRX
 // chain (smap -> ministack(ip=) -> udpfs_ioman). Games are read straight off "udpfs:/" and boot through
@@ -41,9 +46,17 @@
 static char udpfsPrefix[40]; // full path to the folder that holds all the games ("udpfs:/")
 static char *udpfsBase;      // device root ("udpfs:")
 static int udpfsIomanModLoaded = 0;
+static int udpfsNicClaimed = 0;       // SMAP resident, even if later modules failed; only an IOP reset frees it
 static int udpfsWaitingForServer = 0; // the last scan got no answer from the server; see udpfsSetWaitingForServer
 static int udpfsThemesScanned = 0;    // THM is registered once per active UDPFS session, after THM opens
+static int udpfsLanguagesScanned = 0; // LNG uses the shared registry once its directory becomes readable
 static int udpfsPs1Scanned = 0;       // a PS1-view scan has reached the server this session; see udpfsNeedsUpdate
+// The share's spelling of ART: a case-sensitive server keeps "art" and "ART" apart. Resolved once per
+// session by udpfsDiscoverArtFolder, never per image.
+static const char *const udpfsArtCaseNames[8] = {
+    "ART", "ARt", "ArT", "Art", "aRT", "aRt", "arT", "art"};
+static volatile unsigned int udpfsArtCaseIndex = 0;
+static int udpfsArtCaseChecked = 0;
 
 // Another device answering for this PS2's IP (udpfs_ioman devctl, value shared with udpfs_ioman.c).
 // The scan runs on the IO thread, but guiWarning draws, so the scan only queues the text and the GUI
@@ -71,6 +84,10 @@ static void udpfsLoadModules(void)
 
     if (udpfsIomanModLoaded)
         return;
+    if (udpfsNicClaimed) {
+        LOG("UDPFSSUPPORT: partial NIC chain resident, requires IOP reset\n");
+        return;
+    }
 
     // NIC-exclusivity: the SMAP adapter registers a single "SMAP_driver". The SMB/ETH stack and the
     // UDPBD/udpfs_bd block chain both own it, so refuse to bring up the UDPFS ioman stack on top of
@@ -95,6 +112,7 @@ static void udpfsLoadModules(void)
 
     LOG("[UDPFS_SMAP]:\n");
     if (sysLoadModuleBuffer(&udpfs_smap_irx, size_udpfs_smap_irx, 0, NULL) >= 0) {
+        udpfsNicClaimed = 1;
         LOG("[UDPFS_MINISTACK]:\n");
         if (sysLoadModuleBuffer(&udpfs_ministack_irx, size_udpfs_ministack_irx, (int)strlen(ipArg) + 1, ipArg) >= 0) {
             LOG("[UDPFS_IOMAN]:\n");
@@ -106,15 +124,17 @@ static void udpfsLoadModules(void)
         }
     }
 
-    // Release the dev9 reference taken above if any load failed -- otherwise a failing/retrying UDPFS
-    // inflates the refcounted dev9InitCount and a later HDD/ETH teardown can never power dev9 down.
+    // Release the dev9 reference taken above if nothing was loaded -- otherwise a failing/retrying UDPFS
+    // inflates the refcounted dev9InitCount and a later HDD/ETH teardown can never power dev9 down. A
+    // resident SMAP still needs DEV9 powered, and cannot be replaced without an IOP reset.
     LOG("UDPFSSUPPORT: module chain failed to load\n");
-    sysShutdownDev9();
+    if (!udpfsNicClaimed)
+        sysShutdownDev9();
 }
 
 int udpfsGetModulesLoaded(void)
 {
-    return udpfsIomanModLoaded;
+    return udpfsNicClaimed; // the NIC interlock must also catch a partial load
 }
 
 int udpfsEnsureReady(u32 timeoutMs)
@@ -191,6 +211,8 @@ public:
     int rowView(item_list_t *itemList, int id) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     int needsUpdate(item_list_t *itemList) override;
     int update(item_list_t *itemList) override;
     int count(item_list_t *itemList) override;
@@ -266,11 +288,11 @@ void UdpfsSupport::clearGameLists()
 static void udpfsSetWaitingForServer(int waiting)
 {
     udpfsWaitingForServer = waiting;
-    // Keep the lightweight background poll alive until THM itself has been opened successfully.
-    // The server root/game folders can become usable slightly before udpfs:/THM does; without this,
-    // a failed first THM attempt drops back to the normal cadence and, with Automatic Refresh off,
-    // is never retried for the rest of the session.
-    (*udpfsInstance()).updateDelay = (waiting || !udpfsThemesScanned) ? MENU_UPD_DELAY_GENREFRESH : UDPFS_MODE_UPDATE_DELAY;
+    // Keep the lightweight background poll alive until THM, LNG and ART resolution complete. The server
+    // root/game folders can become usable slightly before those folders; without this, a failed first
+    // attempt drops back to the normal cadence and, with Automatic Refresh off, is never retried for
+    // the rest of the session (original #1036/#1037).
+    (*udpfsInstance()).updateDelay = (waiting || !udpfsThemesScanned || !udpfsLanguagesScanned || !udpfsArtCaseChecked) ? MENU_UPD_DELAY_GENREFRESH : UDPFS_MODE_UPDATE_DELAY;
 }
 
 void UdpfsSource::init(item_list_t *itemList)
@@ -285,7 +307,10 @@ void UdpfsSource::init(item_list_t *itemList)
 
     udpfsBase = "udpfs:";
     udpfsThemesScanned = 0;
+    udpfsLanguagesScanned = 0;
     udpfsPs1Scanned = 0;
+    udpfsArtCaseIndex = 0;
+    udpfsArtCaseChecked = 0;
     // The games live directly at the device root; no share/prefix to prepend (unlike SMB).
     snprintf(udpfsPrefix, sizeof(udpfsPrefix), "udpfs:/");
     gUdpfsSupport.resetScanState();
@@ -369,13 +394,174 @@ static void udpfsDiscoverThemes(void)
     udpfsSetWaitingForServer(udpfsWaitingForServer);
 }
 
+// UDPFS registered no languages at all (original #1035). Match the shared LNG registration the other
+// devices use, scanning every case variant so an empty auto-created LNG cannot hide a populated lng.
+// A failed root listing or an unopenable LNG keeps retrying.
+static void udpfsDiscoverLanguages(void)
+{
+    char path[128];
+    DIR *root, *dir;
+    struct dirent *entry;
+    int found = 0, failed = 0, error;
+
+    if (udpfsLanguagesScanned || !udpfsIomanModLoaded || !udpfsServerAnswers())
+        return;
+    root = opendir(udpfsPrefix);
+    if (root == NULL)
+        return;
+    for (;;) {
+        errno = 0;
+        entry = readdir(root);
+        if (entry == NULL) {
+            error = errno;
+            break;
+        }
+        if (strcasecmp(entry->d_name, "LNG") != 0)
+            continue;
+        snprintf(path, sizeof(path), "%s%s", udpfsPrefix, entry->d_name);
+        dir = opendir(path);
+        if (dir == NULL) {
+            failed = 1;
+            continue;
+        }
+        closedir(dir);
+        lngAddLanguages(path, "/", (*udpfsInstance()).mode);
+        found = 1;
+    }
+    closedir(root);
+    if (!found || failed || error)
+        return;
+    udpfsLanguagesScanned = 1;
+    udpfsSetWaitingForServer(udpfsWaitingForServer);
+}
+
+// 1 if udpfs:/<variant> lists at least one entry, 0 if empty, -1 if it cannot be opened (a file named
+// "art", say), -2 on a read error (transient: discovery must retry, not latch).
+static int udpfsArtFolderHasFiles(unsigned int variant)
+{
+    char path[64];
+    DIR *dir;
+    struct dirent *entry;
+    int found = 0;
+
+    snprintf(path, sizeof(path), "%s%s", udpfsPrefix, udpfsArtCaseNames[variant]);
+    dir = opendir(path);
+    if (dir == NULL)
+        return -1;
+    for (;;) {
+        errno = 0;
+        entry = readdir(dir);
+        if (entry == NULL) {
+            if (errno != 0)
+                found = -2;
+            break;
+        }
+        if (entry->d_name[0] != '.') {
+            found = 1;
+            break;
+        }
+    }
+    closedir(dir);
+    return found;
+}
+
+// Resolve the share's ART spelling once its root can be fully listed. The ordinary path stays
+// udpfs:/ART, including on new shares; if a case-sensitive server has both an empty auto-created ART
+// and a populated art, the populated one wins. A single canonical ART costs no extra directory open.
+// Discovery always ends by re-arming covers parked as missing and the art index: first-connect probes
+// can memoize both before the server's ART is known (original #1037).
+static void udpfsDiscoverArtFolder(void)
+{
+    DIR *root;
+    struct dirent *entry;
+    unsigned int candidates = 0;
+    unsigned int chosen = 0;
+    int readError;
+
+    if (udpfsArtCaseChecked || !udpfsIomanModLoaded || !udpfsServerAnswers())
+        return;
+
+    root = opendir(udpfsPrefix);
+    if (root == NULL)
+        return;
+    for (;;) {
+        errno = 0;
+        if ((entry = readdir(root)) == NULL)
+            break;
+        if (strlen(entry->d_name) == 3 && strcasecmp(entry->d_name, "ART") == 0) {
+            for (unsigned int i = 0; i < 8; i++) {
+                if (strcmp(entry->d_name, udpfsArtCaseNames[i]) == 0) {
+                    candidates |= 1u << i;
+                    break;
+                }
+            }
+        }
+    }
+    readError = errno;
+    closedir(root);
+    if (readError != 0)
+        return; // an incomplete root listing must not become a permanent answer
+
+    if (candidates != 0 && !(candidates & 1u)) {
+        for (unsigned int i = 1; i < 8; i++) {
+            if (candidates & (1u << i)) {
+                chosen = i;
+                break;
+            }
+        }
+    }
+    if (candidates & (candidates - 1u)) {
+        int chosenState = udpfsArtFolderHasFiles(chosen);
+        if (chosenState == -2)
+            return;
+        if (chosenState <= 0) {
+            unsigned int fallback = chosenState == 0 ? chosen : 0;
+            int haveFallback = chosenState == 0;
+            int foundPopulated = 0;
+            for (unsigned int i = 0; i < 8; i++) {
+                if (i == chosen || !(candidates & (1u << i)))
+                    continue;
+                int candidateState = udpfsArtFolderHasFiles(i);
+                if (candidateState == -2)
+                    return;
+                if (candidateState > 0) {
+                    chosen = i;
+                    foundPopulated = 1;
+                    break;
+                }
+                if (candidateState == 0 && !haveFallback) {
+                    fallback = i;
+                    haveFallback = 1;
+                }
+            }
+            if (!foundPopulated)
+                chosen = haveFallback ? fallback : 0;
+        }
+    } else if (chosen != 0) {
+        // A single noncanonical entry must really be a directory; d_type is unreliable here.
+        int chosenState = udpfsArtFolderHasFiles(chosen);
+        if (chosenState == -2)
+            return;
+        if (chosenState < 0)
+            chosen = 0;
+    }
+
+    udpfsArtCaseChecked = 1;
+    udpfsArtCaseIndex = chosen;
+    cacheInvalidateFailMemo();
+    artIndexInvalidate();
+    udpfsSetWaitingForServer(udpfsWaitingForServer);
+}
+
 int UdpfsSource::needsUpdate(item_list_t *itemList)
 {
     int result = 0;
 
     // Keep this before every view-specific early return so a remembered PS1/Ember page cannot
-    // suppress theme discovery.
+    // suppress theme, language or ART discovery.
     udpfsDiscoverThemes();
+    udpfsDiscoverLanguages();
+    udpfsDiscoverArtFolder();
 
     // PS1/Ember view: force a rescan once on toggle, then refresh on toggle only (skip disc heuristics).
     if (host::library().consumeDirty(itemList->mode))
@@ -436,6 +622,10 @@ int UdpfsSource::update(item_list_t *itemList)
     // such a pass always keeps polling, and the next poll rescans once the server answers.
     answeredBefore = udpfsServerAnswers();
 
+    // Resolve an existing lowercase ART before sbCreateFolders creates an empty ART beside it.
+    if (answeredBefore)
+        udpfsDiscoverArtFolder();
+
     // Latch only once the server can hear us. A scan that ran before it answered used to latch here, so
     // the CD/DVD folders were never created for the rest of the boot.
     if (!gUdpfsSupport.foldersCreated_ && answeredBefore) {
@@ -448,6 +638,8 @@ int UdpfsSource::update(item_list_t *itemList)
     // directory open and leaves the background retry cadence armed.
     if (answeredBefore)
         udpfsDiscoverThemes();
+    if (answeredBefore)
+        udpfsDiscoverLanguages();
 
     if (view == LIB_VIEW_PS1 || view == LIB_VIEW_MIXED) {
         // Ember inherits this mount; POPSTARTER restores networking through the UDPFS BDMA pair.
@@ -536,17 +728,16 @@ void UdpfsSource::rename(item_list_t *itemList, int id, char *newName)
     gUdpfsSupport.invalidateIsoScan();
 }
 
-// Shared UDPFS VCD handoff for this source page and Favorites; prepare before teardown.
+// Shared UDPFS VCD handoff for this source page and Favorites; prepare before teardown. UDPFS
+// Assault serves every mass: file from the server, so POPSTARTER, the driver pair and the optional
+// DAT files all come from the server's POPS/ folder.
 void UdpfsSource::launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet)
 {
-    char usbRoot[64], elf[256], selector[320], vcdPath[320];
+    char elf[256], selector[320], vcdPath[320], popsDir[96], diag[160];
+    const int mode = VCD_BDMA_UDPFS;
     (void)configSet;
     if (vcdName == NULL || vcdName[0] == '\0' || !strcasecmp(vcdName, "POPSTARTER"))
         return;
-    if (!vcdPreparePopsUdpfsLaunch(usbRoot, sizeof(usbRoot))) {
-        host::ui().msgBox(_l(_STR_POPS_UDPFS_NOT_READY), 0, NULL);
-        return;
-    }
     // Linux servers are case-sensitive and this IRX only accepts uppercase .VCD.
     snprintf(vcdPath, sizeof(vcdPath), "%sPOPS/%s.VCD", udpfsPrefix, vcdName);
     int fd = open(vcdPath, O_RDONLY);
@@ -555,26 +746,38 @@ void UdpfsSource::launchVcd(item_list_t *itemList, const char *vcdName, config_s
         return;
     }
     close(fd);
-    if (!vcdResolvePopstarter(udpfsPrefix, elf, sizeof(elf)) &&
-        !vcdResolvePopstarter(usbRoot, elf, sizeof(elf))) {
-        vcdDescribePopstarterLookup(usbRoot, elf, sizeof(elf));
+    if (!vcdResolvePopstarter(udpfsPrefix, elf, sizeof(elf))) {
+        vcdDescribePopstarterLookup(udpfsPrefix, elf, sizeof(elf));
         host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), elf);
         return;
     }
     host::ui().renderTextScreen(_l(_STR_PLEASE_WAIT));
-    (void)vcdInstallPopstarterMc(usbRoot);
-    vcdEnsureBdmaForLaunch(VCD_BDMA_SRC_USB, VCD_BDMA_UDPFS);
-    if (!vcdBdmaLaunchReady(VCD_BDMA_UDPFS)) {
+    (void)vcdInstallPopstarterMc(udpfsPrefix);
+    snprintf(popsDir, sizeof(popsDir), "%s" POPS_FOLDER "/", udpfsPrefix);
+    int er = vcdInstallPopsUdpfsNet(popsDir);
+    if (er != 0) {
+        host::ui().msgBox(_l(er == -2 ? _STR_BDMA_ERR_SPACE : _STR_BDMA_ERR_IO), 0, NULL);
+        return;
+    }
+    if (gBdmaApplyOnLaunch && !vcdBdmaLaunchReady(mode)) {
+        er = vcdEquipBdmaFromPops(popsDir, mode, diag, sizeof(diag));
+        if (er != 0) {
+            host::ui().msgBox(_l(er == -5 ? _STR_BDMA_ERR_OLD : er == -4 ? _STR_BDMA_ERR_SRC :
+                                                            er == -2     ? _STR_BDMA_ERR_SPACE :
+                                                                           _STR_BDMA_ERR_IO),
+                              0, NULL);
+            return;
+        }
+    }
+    if (!vcdBdmaLaunchReady(mode)) {
         // Unlike local POPSTARTER, network VCDs require this exact driver family.
         host::ui().msgBox(_l(_STR_POPS_UDPFS_DRIVER_NOT_READY), 0, NULL);
         return;
     }
-    // POPS UDPFS has no RA integration yet. Do not leave our USB-only RA module
-    // reading a network VCD through unsupported telemetry hooks.
-    if (!vcdPopsUdpfsCleanModules()) {
-        host::ui().msgBox(_l(_STR_POPS_UDPFS_RA_MODULE), 0, NULL);
+    // POPS UDPFS has no RA integration yet: a module a tracked launch left in the server's POPS/
+    // would report telemetry for a game it does not see.
+    if (!vcdConfirmCleanLaunch(udpfsPrefix))
         return;
-    }
     vcdBuildSelector(udpfsPrefix, VCD_PREFIX_MASS, vcdName, selector, sizeof(selector));
     vcdPrepareRetroGemBarcode(vcdPath);
     host::app().deinitEx(sbLoaderDeinitException(elf), itemList->mode, host::app().pathToMode(elf));
@@ -602,6 +805,9 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
         host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
+    // Copies the argument onto our stack: cleanup frees the cached PS1 list during deinit.
+    if (!cuePrepareLaunch(udpfsPrefix, cueName, emberElf, launchName, sizeof(launchName)))
+        return;
 
     cueApplySettings(udpfsPrefix, cueName, configSet); // best-effort marker, never a launch gate
     if (!cueGameHasImage(udpfsPrefix, cueName)) {
@@ -609,10 +815,9 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
         return;
     }
 
-    // The in-view caller normally passes a pointer into the cached PS1 list, which cleanup frees during
-    // deinit. Preserve Ember's argv on the stack before that teardown; Favorites already supplies a
-    // separately owned string, but following one lifetime rule keeps both launch paths safe.
-    snprintf(launchName, sizeof(launchName), "%s", cueName);
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(udpfsPrefix, cueName);
 
     // UNMOUNT_EXCEPTION is load-bearing: Ember inherits this live mount. udpfsCleanUp keeps the
     // socket/module chain resident for the whole boot, so no network reinitialization is attempted.
@@ -664,8 +869,9 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     compatmask = sbPrepare(game, configSet, size_smb_cdvdman_irx, smb_cdvdman_irx, &index);
     if (compatmask < 0)
         return;
+    compatmask = sbGetCompatModes(configSet, 1); // UDPFS only launches Neutrino, and a title default can differ per core
 
-    if ((result = sbLoadCheats(udpfsPrefix, game->startup)) < 0) {
+    if ((result = sbLoadCheats(udpfsPrefix, game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
         // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
         // udpfs never assigns `settings` (Neutrino reads the game, not an OPL cdvdman), but
@@ -673,6 +879,11 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         if (!sbCheatsMissingContinue((u8 *)(&smb_cdvdman_irx) + index, result))
             return;
     }
+    // The scratch patch has done its job (the compat mask, and the cheats step's way back out above).
+    // Restore the zone NOW, so every return below -- format, no neutrino.elf, the preflights, the
+    // cheats hand-off -- leaves it pristine: smb_cdvdman_irx is the SMB leg's IRX too, and a zone left
+    // patched fails the next SMB or UDPFS launch's sbPrepare ("unable to locate patch zone").
+    sbUnprepare((u8 *)(&smb_cdvdman_irx) + index);
     sbLoadImage(udpfsPrefix, game->startup);
 
     if (gPS2Logo) {
@@ -734,9 +945,16 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // the user back into the menu sitting on the per-game card.
     if (sysNeutrinoPreflight("udpfs", neutrinoPath, 0, NULL, -1) < 0)
         return;
+    // Cheats: loaded above (sbLoadCheats) and handed to Neutrino here. Backing out stays in the menu.
+    if (sbNeutrinoHandCheats(game->startup, neutrinoPath, neutrinoExtraArgs) < 0)
+        return;
+#ifdef RETROACHIEVEMENTS
+    sbNeutrinoPrepareRA(udpfsPrefix, game->startup, "udpfs", neutrinoPath, neutrinoExtraArgs);
+#endif
     if (sysNeutrinoArgsPreflight("udpfs", partname, game->startup, compatmask, EnablePS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, 0, -1, &neutrinoVmc) < 0)
         return;
 
+    sysNeutrinoWarnPadEmu(configSet);
     // MMCE cross-device game-id (#261): push the disc id to a present MMCE card before teardown frees
     // `game`. Neutrino path forwarded so a Neutrino launch protects the MMCE hand-off timing.
     mmceSendGameID(game->startup, neutrinoPath,
@@ -756,16 +974,21 @@ config_set_t *UdpfsSource::config(item_list_t *itemList, int id)
 {
     base_game_info_t *game = gUdpfsSupport.activeGame(itemList, id);
 
-    return game == &gUdpfsSupport.emptyGame_ ? NULL : sbPopulateConfig(game, udpfsPrefix, "/");
+    if (game == &gUdpfsSupport.emptyGame_)
+        return NULL;
+    config_set_t *config = sbPopulateConfig(game, udpfsPrefix, "/");
+    ps1Size(itemList, game, config);
+    return config;
 }
 
 int UdpfsSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)
 {
     char path[256];
 
-    if (isRelative)
-        snprintf(path, sizeof(path), "%s%s/%s_%s", udpfsPrefix, folder, value, suffix);
-    else
+    if (isRelative) {
+        const char *imageFolder = strcmp(folder, "ART") == 0 ? udpfsArtCaseNames[udpfsArtCaseIndex] : folder;
+        snprintf(path, sizeof(path), "%s%s/%s_%s", udpfsPrefix, imageFolder, value, suffix);
+    } else
         snprintf(path, sizeof(path), "%s%s_%s", folder, value, suffix);
     int r = texDiscoverLoad(resultTex, path, -1);
     // ART LIVES IN THE ART FOLDER, and nowhere else. A PS1 cover is
@@ -818,6 +1041,16 @@ char *UdpfsSource::prefix(item_list_t *itemList)
     return udpfsPrefix;
 }
 
+
+int UdpfsSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                            char *partition, int partitionSize)
+{
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    return *ember && saveIconPs1Directory(udpfsPrefix, name, 1, directory, directorySize);
+}
 
 int UdpfsSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)
 {

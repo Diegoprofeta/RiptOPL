@@ -10,11 +10,15 @@ else — talking to the RetroAchievements servers, deciding what unlocked, your 
 PC.
 
 Based on the RetroAchievements implementation by **[hacan359 (yoba)](https://github.com/hacan359/Open-PS2-Loader/pull/1)**.
-Use the upstream **[xeRAbora PC client](https://github.com/hacan359/xerabora)** with RiptOPL's RA build. Download the required **[v0.1.0-alpha.10 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)**.
+Use the upstream **[xeRAbora PC client](https://github.com/hacan359/xerabora)** with RiptOPL's RA build. Download the required **[v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)**.
 
 RiptOPL's real-hardware stabilization was contributed by **[oMrRexD](https://github.com/oMrRexD)** through
 PRs **#702–#705**, covering the ee_core stack squeeze, MMCE DEV9 dependency, cold-launch network
 bring-up / unusable-IP fallback, and the misplaced RA settings rows.
+
+## Mode 6 (IGR disabled)
+
+When per-game Compatibility Mode 6 disables IGR, the RA build keeps the in-game snapshot tick through a dedicated VBLANK handler, but only when telemetry successfully initialized. It installs no IGR worker or pad-open hooks. Achievements can still be recorded; controller IGR and the client's **RESET CONSOLE** are unavailable. Mode 6 does not help a game that rejects a VBLANK handler itself. This follows xeRAbora alpha.17. **NOT TESTED on hardware** in RiptOPL.
 
 ---
 
@@ -49,7 +53,8 @@ Two settings, on the **Network** settings page:
 | Setting | Default | Effect |
 | --- | --- | --- |
 | RetroAchievements telemetry | **Off** | The master switch. While it is off an RA build launches a game for exactly what the standard build costs — no in-game network stack, no `raudp`, no snapshots. |
-| RetroAchievements badges | On | The `RA ` prefix in the game list and the mark over the cover. Cosmetic, and it follows the master switch: badges stay dark while telemetry is off. |
+| RetroAchievements badges | On | Shows the RA mark in the game list and over the cover. Cosmetic, and it follows the master switch: badges stay dark while telemetry is off. |
+| RA mark in game list | Prefix | Where the list mark goes: **Prefix** (`RA Name`) or **Suffix** (`Name [RA]`). Both sort by the clean game title and keep the file name for Favorites, rename and artwork. |
 
 Two actions on a game's own menu:
 
@@ -101,16 +106,44 @@ Telemetry lives inside OPL's own loader core, which only exists for launches OPL
 | --- | --- |
 | BDM — USB, iLink, MX4SIO, ATA/exFAT | yes |
 | ETH / SMB | wired, but **known bad upstream** — see below |
-| HDD (APA) | yes — but see the note below |
+| HDD (APA) | yes; the support check reads HDLoader installs read-only (see below) |
 | MMCE | yes |
 | Physical PS2 disc, **RA: launch disc** | implemented; **not hardware-tested** |
 | HTTP | local watch-list loading is wired into OPL-core launch; combined HTTP/RA operation is not hardware-validated, and it shares the ETH/SMB risk below |
-| Neutrino core (`$CoreLoader`) | **no** |
-| UDPFS | **no** |
-| PS1 / VCD (POPSTARTER, Ember) | **no** |
+| Neutrino core (`$CoreLoader`) | RA kit's ORBIT runtime only (below); **not hardware-tested** |
+| UDPFS | RA kit's ORBIT runtime (below), with the support check run from the menu over the UDPFS link; **not hardware-tested** |
+| PS1 / USB VCD (POPStarter) | yes, through its own module (below); **NOT TESTED on hardware** |
+| PS1 / Ember, MMCE, APA HDD, SMB and non-USB BDM | **no** |
 
-Neutrino, UDPFS and PS1 hand the console over to an external ELF and never load OPL's core, so there is
-nothing to take a snapshot from. This is structural, not an oversight.
+Neutrino (and so UDPFS) and PS1 hand the console over to an external ELF and never load OPL's core, so
+ee_core has nothing to take a snapshot from. The RA kit's Neutrino carries its own agent (below), and a USB
+VCD carries its own reader into POPStarter (see [PS1 through USB POPStarter](#ps1-through-usb-popstarter)).
+
+### Neutrino in the RA edition
+
+The RetroAchievements kit's `neutrino/` is **[ORBIT v1.0.2](https://github.com/danielnuld/ps2-launcher/releases/tag/v1.0.2)**'s
+RA-Neutrino by **Daniel / danielnuld**, based on Neutrino by **Maximus32**, with an achievement agent
+(`raagent.irx`) that speaks **hacan359 / xeRAbora**'s protocol. Its AFL-3.0 licence, source commit and
+archive SHA-256 ship beside it (`neutrino/ORBIT-RA.json`). Standard kits keep ordinary upstream Neutrino,
+and an ELF-only update does not install this runtime: copy the RA kit's whole `neutrino/` folder.
+`neutrino/RA-EDITION-NEUTRINO.txt` labels it. ORBIT is built on **Neutrino v1.8.0**, so every Neutrino
+launch in the RA edition lacks later upstream changes, Neutrino cheats included. RiptOPL replaces only its
+`IEEE1394_bd_mini.irx`, with the same i.LINK driver as the standard kit.
+
+For a game with a saved watch list, RiptOPL writes `ript-ra.wl` and `ript-ra.toml` next to the cheats file
+(`config/` under the effective `-cwd`, or beside `neutrino.elf` without one) and adds `-cfg=ript-ra -ra=...`;
+the generated config keeps the user's `-cfg` and the cheats config through `depends`. That folder must be
+writable, and a raw `hdd0:` path is refused. Both RA modes work: Caduceus's engine receives the same wire
+protocol. The agent sends to the RA companion IP, else the verified peer. Network games (UDPFS, UDPBD) need
+a static console IP; other devices raise the menu network first, unless a UDP transport holds the adapter.
+
+The agent sends each snapshot in one packet, so a set whose **direct values exceed 1,216 bytes** cannot be
+tracked. It reads the direct entries only and ignores a pointer-chain tail, as xeRAbora's protocol defines
+for an agent without chain support: chain-based achievements do not unlock on Neutrino launches while the
+rest of the set does. A game without a watch list launches quietly; any other reason the handoff cannot be
+made (no ORBIT runtime, no companion address, a failed write, or the two arguments pushing the launch past
+Neutrino's 256-byte budget) launches the game without achievements and says so. **Console unlock cards and
+remote reset are not provided by this runtime**; unlocks appear on the companion. **NOT TESTED on hardware.**
 
 ### Do not expect a game with achievements to run from a network share
 
@@ -122,13 +155,23 @@ loading about a minute in from a share, so the send path disturbs the stream on 
 own documentation says the same, and names the USB stick and the original disc as the only tested ways
 to play.
 
+Since then, on SMB and HTTP launches `raudp` no longer opens or polls a socket at all. It learns the
+companion's MAC from the stack's ARP table (asking once by raw ARP if it is missing, through the
+gateway when the companion is routed), the in-game SMAP driver sets aside RA datagrams it receives for
+the game anyway, and a snapshot waits while the game has a received frame queued. **This is NOT TESTED
+on hardware** and does not make a share a supported way to play yet.
+
 That defect is upstream's and ours alike; we have not reproduced or ruled it out on our own hardware.
 The hardware testing so far (#702–#705) launched from MMCE and USB, never from a share. Until a share
 is tested, **keep the images you play with achievements on a local device.** The same reasoning
 applies to HTTP, which streams down the same path.
 
-HDD (APA) games are stored in HDLoader format and have no image file to hash, so while a watch list
-placed by hand still loads and streams, the console cannot work out the hash for them itself.
+**HDD (APA) / HDLoader games** have a **read-only support check**. It reads the installed game's
+1024-byte HDLoader descriptor, validates its logical-to-ATA sector map (refusing invalid or overlapping
+extents, or a descriptor whose boot executable does not match the selected entry), and hashes the boot
+executable through the same ISO9660 walker as an image. It never rewrites or converts a partition. The
+list is saved under the HDD settings home as `RA/<startup>.wl`; a list placed by hand still loads. A
+synthetic split-partition test matches the image hash; **NOT TESTED on hardware**, including its speed.
 
 ### An image an earlier run left open on the share can still be hashed
 
@@ -139,8 +182,8 @@ a sharing violation, so "check game support" could only report that it could not
 while the game still *booted* off it, because the in-play open uses the older command, which the same
 server grants in compatibility mode.
 
-This flavour now carries its own `smbman` (`modules/network/smbman-ra`) that tries NT create first
-and falls back to the legacy open **only** when the server says the file is held, and **only for a
+RiptOPL now carries its own `smbman` (`modules/network/smbman-ra`, first in this flavour and now in every
+edition) that tries NT create first and falls back to the legacy open **only** when the server says the file is held, and **only for a
 read** — reaching past another handle to write is not something worth asking for. If both are
 refused, the hash log names the image as held instead of saying nothing. hacan359 confirmed this on
 hardware on 2026-09-10: two images held open by earlier runs hashed anyway, and the hashes matched
@@ -148,6 +191,38 @@ the ones taken from a USB stick.
 
 Note this fixes *hashing*, not play: a game with an achievement set still stops about a minute in
 when streamed from a share, per the section above.
+
+## PS1 through USB POPStarter
+
+Follows the original RiptOPL, which adapted hacan359/Open-PS2-Loader `531aad45` (xeRAbora alpha.16).
+Put a stock `POPS/POPSTARTER.ELF` and the `.VCD` games in the USB device's root `POPS/` folder.
+
+- **Support check.** **RA: check game support** on a USB VCD row (or its favourite) hashes the
+  executable `SYSTEM.CNF` names, with the `PSX.EXE` fallback, as RetroAchievements does for PS1. The
+  watch list is keyed by a 15-character `P` key from the normalized VCD path, since many PS1 images
+  share a boot name, and saved with an `RA/<key>.md5` guard holding the image's hash. Other PS1 rows
+  say that PS1 achievements need a USB VCD.
+- **Launch.** With a list and a matching guard, telemetry on and the network up (the same link, DHCP
+  and Caduceus session checks as a PS2 launch), the loader writes `POPS/MODULE_9.IRX`: `rapops` with the
+  network settings, the watch list and the six modules it starts (DEV9, SMSUTILS, SMSTCPIP, SMAP,
+  `raudp`, `rapull`) packed into its configuration block. POPStarter loads it after its IOP reset;
+  `rapull` reads PS1 RAM through SIF from **25 seconds after launch**, and `raudp` sends the snapshots
+  to the companion. Unlocks show on the companion only.
+- **Fails open.** No list, an old or mismatched guard, telemetry off, no network, low memory, an
+  unwritable slot or modules that do not fit all launch the game untracked. A partly written module
+  is deleted; one that cannot be deleted blocks the launch rather than boot a broken POPStarter.
+- **Your `MODULE_9.IRX` is never touched.** Only a file carrying `rapops`' marker is RiptOPL's. A
+  tracked launch with your module in the slot stops with a message; move it to track the game. The RA
+  build removes its own leftover before every BDM VCD launch. The standard build, and SMB and MMCE VCD
+  launches, ask before deleting one, then offer **Continue anyway**; declining cancels the launch.
+
+- **Menu, badges and browser.** A POPStarter row's menu has the RA entries (Ember rows do not). A
+  tracked USB VCD, and its favourite, carries the RA badge; the badge looks only on the game's own
+  device, as POPStarter's reader does, never on the share. **View achievements** opens the set by the
+  VCD's executable hash and returns to the PS1 menu.
+
+Host tests cover the hashing, module ownership, the handoff and the reader; **none of this
+is tested on a console**, and POPS compatibility is not established by a build.
 
 ## Networking
 
@@ -168,20 +243,89 @@ come up -- no cable, no adapter, no usable IP address or DHCP lease -- the game 
 achievements and the menu shows a notice. With the adapter powered and no link, the in-game
 network driver would otherwise wait for a cable for ever and the game would never start.
 
-The PC client is found automatically: the console broadcasts a query on UDP port 18194 and the client
-answers. Nothing is stored between runs.
+### RA Mode and the companion PC
 
-The console integration follows **xeRAbora v0.1.0-alpha.10** (`ebd18ed6`, paired with console commit `0c5f61a3` / `6c7e9a79` and CodeRabbit hardening `136f2620`). This release brings significant stability improvements between OPL and RA:
+**Settings → Network → RA Mode** picks the PC service: **Xerabora** (the default; configurations
+without `ra_mode` keep it) or **Caduceus**. It does not switch telemetry on by itself; **RA Telemetry**
+still does. **RA companion IP** names the PC that runs the service; **0.0.0.0** keeps the fallback.
 
-- **Console pointer-chain resolution:** Achievements that read through pointers previously never unlocked because the console only read a flat list of addresses (one measured set lost 22 of 50 achievements). In alpha.10, xeRAbora compiles pointer chains into nodes (parent, static offset, read size) sent as a tail after the watch addresses. `ee_core` walks the nodes once per frame and appends the dynamic `(address, value)` pair per node.
-- **Null base and broken chain protection:** If a chain's base pointer resolves to 0 (a null pointer or an out-of-range parent), RiptOPL forces the pair out as address 0 rather than adding the offset and reading random memory from the VBlank interrupt handler.
-- **Interrupt memory safety:** Addresses outside `0x00080000..0x02000000` (such as `0x00000000` found in some achievement sets like X-Men Origins) are never dereferenced in the interrupt handler. Reading outside mapped RAM caused TLB misses during VBlank and hung games on loading screens. Unreadable entries are reported as 0 so the snapshot maintains its structure.
-- **PC client stability:** xeRAbora v0.1.0-alpha.10 drops tracked leaderboards when the console disconnects instead of hanging stale on screen.
-- **Snapshot delivery:** Telemetry polls every 4 ms, sends each new snapshot once, retries busy or torn copies, repeats unchanged snapshots after ~1 second without a new one, and commits only the staged sequence once accepted.
+| | Xerabora | Caduceus |
+| --- | --- | --- |
+| Finding the PC | broadcast on UDP 18194, or unicast to the companion IP when one is set | the companion IP, else the SMB server; never a broadcast |
+| Before a tracked launch | the menu's link check | a session check on the bridge, UDP 18197 (`CADQ2`/`CADR2`); offline or signed out launches untracked |
+| In the game | `raudp` asks the PC again, pinned to the companion IP when one is set | `raudp` re-probes the bridge on that host only, then talks to the engine on UDP 18194 |
+
+Replies are accepted only from the host asked, and only as `RAO1 OK`. UDP **18195** is the console's
+telemetry and notice port and **18196** its menu reply port; allow them through the PC's firewall.
+RiptOPL never stores a RetroAchievements password or key. Caduceus here covers the session check,
+watch lists, telemetry, in-game notices and the achievement browser below. **Caduceus end-to-end
+console tracking is NOT TESTED on hardware.**
+
+In the game an unlock shows as a gold pulse (Xerabora always, Caduceus by default). **Settings →
+Network → Caduceus experimental cards** (Off by default, saved as `ra_experimental_cards=1`; any other
+value reads as Off) instead draws a small card with the achievement's title and points in the upper
+right. The row is available only with RA Mode Caduceus and telemetry on, and a switch away keeps the
+saved choice. With cards Off a launch reserves nothing extra and installs no GS tracker. With cards on,
+a tracked launch reserves about 30 KiB more in module storage, kept below 1 MB when the storage starts
+there; without room, or for a display the renderer cannot draw on, the pulse is used instead. The
+renderer is the original's (adapted from [Rian6's caduceus-opl](https://github.com/Rian6/caduceus-opl/tree/2a98a9d7361f8e33f421244bc88c318eab3bdf2f),
+AFL-3.0): it checks the GIF and display state before it draws, which does not prove a game's graphics
+are safe. **Cards may flicker or freeze a game; if one does, turn the setting off. NOT TESTED on
+hardware.** POPStarter PS1 unlocks stay on the companion.
+
+The PC can also send **RAR1**, which leaves the game for the menu exactly as the IGR combo does.
+Under Compatibility Mode 6, which has no IGR, the request is ignored.
+
+### Achievement browser
+
+The main menu's **Caduceus achievements** or **RetroAchievements library (xeRAbora)** entry (named
+after RA Mode) lists the account's games with progress; pick one to see its achievements, points,
+descriptions and unlock dates. **View achievements** in a game's menu hashes that ISO and opens its
+set directly; HDLoader and PS1 rows use the library instead. **L1/R1** pages, **Square** cycles All /
+Earned / Locked / Hardcore, **Select** refreshes and Back returns. Pages load on the I/O thread, and a
+launch or a network settings change waits until the page has loaded.
+
+- **Caduceus** needs **ART/CADUCEUS.KEY** (the companion's 64-character pairing key, not an RA
+  password) on the SMB share, or with **UDPFS Files** in the folder PS2-Servers shares (`ART/` or
+  `art/`), where optional `ART/<icon>_RA.png` badges also live. Requests go to the RA companion IP,
+  else the SMB server, on UDP **18198**; never to a broadcast. UDPFS IMG and UDPBD have no folder for
+  the key. The LAN protocol is unencrypted: keep the share to trusted devices.
+- **Xerabora** reads the xeRAbora PC's own interface on TCP **18280**: turn on **OPEN TO THE NETWORK**
+  in xeRAbora and allow it through the firewall. The PC is the RA companion IP, a verified peer, or
+  whoever answers discovery with `RAO1 OK`. A game card first asks retroachievements.org for the
+  image's game ID over HTTPS (ORBIT's lookup), so even a game never played shows its whole list.
+  Without internet, or with the console clock unset (the certificate check needs it, and the browser
+  then says so), the set is found by its title in the account library instead: a game never played
+  then shows its title and achievement count with a note to play it once. A failed connection is
+  tried once per session; **Select** tries again. TCP needs the menu's own network stack, so UDPFS
+  and UDPBD cannot open it.
+- **The HTTPS lookup** uses [Mbed TLS](https://github.com/Mbed-TLS/mbedtls) 3.6.7 (RA edition only,
+  Apache-2.0, `LICENSE-MBEDTLS.txt` in the package) with TLS 1.3/1.2 and full certificate checks
+  against five embedded roots (`third_party/ca-roots`). The PS2 has no hardware random number
+  generator: the TLS keys are seeded from timer jitter.
+
+**The browser is NOT TESTED on hardware.**
+
+The PS2 console core follows **xeRAbora v0.1.0-alpha.15** (client
+[`d36ee3a5`](https://github.com/hacan359/xerabora/commit/d36ee3a54c8769825c99756f908367b2cc2622f3),
+which pins console [`f4d559a3`](https://github.com/hacan359/Open-PS2-Loader/commit/f4d559a38f510bf644ac0f3f23431f15f6c9dc3a)),
+and the Mode 6 snapshot handling follows alpha.17. The console fix in alpha.18 (console
+[`c6e14e6b`](https://github.com/hacan359/Open-PS2-Loader/commit/c6e14e6b943be74210981e3a7bd51a25702a8df0):
+a watch-list chunk whose data began with a whitespace byte lost that byte, and the list was refused)
+was already in RiptOPL: the `RAC1` header ends at the length and its one space is stepped over by hand.
+Updating the external client alone does not update the telemetry code in your ELF.
+
+- **Pointer chains:** xeRAbora compiles pointer chains into nodes (parent, static offset, read size) sent as a tail after the watch addresses. `ee_core` walks the nodes once per frame and appends the dynamic `(address, value)` pair per node. A base that resolves to 0 (a null pointer or an out-of-range parent) sends address 0 instead of reading through it.
+- **Larger achievement sets:** up to 4,096 direct watches and 128 pointer-chain nodes, subject to the snapshot byte limit. The block in module storage is sized to the actual set, so ee_core's limited memory carries no tables.
+- **Bounded telemetry cadence:** up to three snapshot packets per video frame on average. Sets needing four to six parts are sampled every second frame, seven to nine parts every third frame; smaller sets every frame.
+- **Read-cost diagnostics:** the PC receives the COP0 ticks spent reading a snapshot and the ticks per video frame.
+- **Watch-list validation and read safety:** only 1-, 2- and 4-byte entries with an exact declared byte sum are accepted. Addresses outside `0x00080000..0x02000000` (some sets, like X-Men Origins, carry `0x00000000`) are never read from the VBlank handler, where they took a TLB miss and hung the game; they are sent as 0 so the snapshot keeps its shape.
+- **Set identification:** while the PC replies WAIT, the console pauses 500 ms between up to 20 rounds. A newer client's refusal reason is shown rather than a generic unknown-image message.
+- **PC-requested return:** the client's return command takes the existing IGR path, so it is unavailable in Mode 6.
+- **Snapshot delivery:** telemetry polls every 4 ms, sends each new snapshot once, retries busy or torn copies, repeats an unchanged snapshot after ~1 second, and marks the staged sequence sent only after every part is accepted.
 
 > [!IMPORTANT]
-> **Client Version Compatibility:** Always use **[xeRAbora v0.1.0-alpha.10](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)** with this build. Using earlier versions (alpha.8/alpha.9) lacks pointer-chain nodes and out-of-range memory handling, while arbitrary unverified versions risk protocol drift.
-
+> Use **[xeRAbora v0.1.0-alpha.17](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)** with this build, the version the original OPL fork also pairs with. Its wire protocol is unchanged since alpha.10. Later releases (v1.0.x) have not been checked against this build. Host tests and successful builds do not establish console timing or game compatibility; the alpha.10 hardware report above is historical evidence, not validation of this update.
 
 ---
 
@@ -201,53 +345,42 @@ remains available for a normal disc boot.
 
 ## Building
 
-```bash
-make clean && make RETROACHIEVEMENTS=1 release
+```sh
+python tools/build_edition.py ra             # Korium theme
+python tools/build_edition.py ra_incebtion   # IncebtIon theme
 ```
 
-`make clean` is not optional when switching the flag: it changes the layout of a structure and an
-enumeration shared between the menu and the loader core, and make cannot see that a stale object file
-is now wrong.
+Each edition build regenerates its assets and objects under `build/editions/<edition>-gcc`, so
+switching between RA and a standard edition needs no clean step. See
+[release channels and packaging](../ROLLING_RELEASE.md) for packaging.
 
-The rolling release publishes the flavour as its own archive, **`RIPTOPL-RetroAchievements-*.zip`**, built to the
-same shape as the main package: `POPS/`, `EMBER/`, `neutrino/` and the PC-tool shortcuts, with
+The `rolling-ra` channel publishes the kit as **`RIPTOPL-RetroAchievements.zip`**, built to the same
+shape as the standard kit: `POPS/`, `EMBER/`, `neutrino/` and the PC-tool shortcuts, with
 `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF`, matching `ART/RIPTOPL-RA.ELF_*.png` artwork, and
 `APP_RIPTOPL-RA.psu`. The PSU contains only the direct files of `APP_RIPTOPL-RA`; import it with a
 PS2 save manager for a memory-card installation, then copy the other folders separately.
 
-The ready app `APPS/APP_RIPTOPL-RA/` uses the official-toolchain build (`OFFICIALROLLING`,
-`PADEMU=1`) when that build succeeded, the same loader the release then also publishes on its own as
-`RIPTOPL-RA.ELF`. A run without it publishes no `RIPTOPL-RA.ELF`, and the ready app falls back to the
-labelled builds below, in the order listed. The archive keeps those labelled loader folders under
-`APPS/` for comparing builds:
+The same channel carries the IncebtIon-theme kit (`RIPTOPL-RetroAchievements-IncebtIon.zip`, with
+`RIPTOPL-RA-IncebtIon.ELF` and `APP_RIPTOPL-RA-IncebtIon.psu`; inside it the app is still
+`APP_RIPTOPL-RA`), and `RIPTOPL-RA-VARIANTS.zip` with the `pademu0` loader (pad emulation compiled
+out). The kit also carries **`xeRAbora.url`** (pointing directly to the paired
+[v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)),
+because the loader does nothing without the PC client.
 
-| Folder | Build |
-| --- | --- |
-| `APPS/APP_RIPTOPL-RA-PINNED/` | Pinned ps2dev toolchain, `PADEMU=1` (the ready app's first fallback). Start here for build comparisons. |
-| `APPS/APP_RIPTOPL-RA-ROLLING/` | `ps2dev:latest`, `PADEMU=1` |
-| `APPS/APP_RIPTOPL-RA-PINNED-nopademu/` | Pinned ps2dev toolchain, `PADEMU=0` |
-| `APPS/APP_RIPTOPL-RA-ROLLING-nopademu/` | `ps2dev:latest`, `PADEMU=0` |
+The standard editions are unaffected: every RA source file and call site is behind
+`#ifdef RETROACHIEVEMENTS`, the standard kits reject RA resources, and every build manifest
+records the RA flag.
 
-The labelled folders are the two ps2dev builds, so they say `PINNED`/`ROLLING` where the main
-package says `PS2DEVPINNED`/`PS2DEVROLLING`. The names are kept short on purpose: a memory card file
-name stops at 31 characters, and the release workflow fails rather than ship a longer one. The
-archive also carries **`xeRAbora.url`** (pointing directly to the paired [v0.1.0-alpha.10 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.10)), because the loader does nothing without the PC client.
-
-It is deliberately *not* an entry in `RIPTOPL-VARIANTS-*.zip`: that archive is a ~120 MB bag of every
-build permutation, and the release workflow excludes it from the permanent MEGA archive as a
-diagnostic bundle rather than installable payload. The default build is unaffected by all of this — every RA source file and
-every call site is behind `#ifdef RETROACHIEVEMENTS`, and that is checked by comparing the two builds'
-symbol tables, loader core and embedded IOP modules. PR CI also builds the pinned
-**PS2DEVPINNED-RA** flavour and records the RA flag in its build manifest.
-
-### Two IOP modules this flavour builds instead of taking from the SDK
+### Two IOP modules RiptOPL builds instead of taking from the SDK
 
 Both are ps2sdk sources vendored with a marked change, the way `modules/network/ps2ips` already is,
-and both are selected by `USBD_MINI_IRX` / `SMBMAN_IRX` at the top of the Makefile.
+built by `ps2.yaml` (`usbd_mini_fork`, `smbman_ra`). Both began in the RA edition; every edition now
+embeds both. [Notes for ps2sdk](PS2SDK-NOTES.md) lists the ps2sdk side of both, and of every other
+SDK module RiptOPL replaces.
 
 | Module | Why | Diff from ps2sdk |
 |---|---|---|
-| `modules/network/smbman-ra` | the held-image fix above | `smb.c` (35 lines) and `smb.h` (4); every other file byte-identical to ps2sdk master |
+| `modules/network/smbman-ra` (every edition) | the held-image fix above; also a write now counts only the bytes the server's WRITE_ANDX Count says it stored, where ps2sdk's smbman takes any success status as the whole write. That matters on a server that answers a full disk, or a partial write, with success and a short or zero Count, which MS-CIFS allows; Samba, Windows (per MS-CIFS) and PS2-Servers answer a full disk with an error status, which both copies already fail. A write request also carries at most 65,534 bytes, so its 16-bit ByteCount no longer wraps to 0 | `smb.c` (+57/−8: the three fixes), `smb.h` (+4) and `auth.c` (+6/−1: an unmarked password-buffer bound); every other source file byte-identical to ps2sdk master, checked 2026-10-27 by the original's #1064; only the build file is ours |
 | `modules/usb/usbd-ra` | see below | **nothing** — byte-identical to ps2sdk `iop/usb/usbd` at `314d87e7` (2024-04-01); only the Makefile is ours |
 
 **The usbd swap is not a RetroAchievements feature.** ps2sdk rewrote its USB host driver on
@@ -292,7 +425,7 @@ Hand testers a **run-pinned nightly.link build**, never a bare artifact link.
 | 8 | Menu check, protocol = UDPBD / UDPFS | clean refusal + hash written to `RA/hashes.txt`, no wedge |
 | 9 | Neutrino-core game | clean refusal, no hash attempt |
 | 10 | PS1/VCD entry | clean refusal |
-| 11 | HDD/APA entry | the check refuses; a watch list still loads |
+| 11 | HDD/APA entry | the read-only check maps the HDL extents; a watch list still loads |
 | 12 | Badge + cover mark | appear after refresh, correct game, correct device |
 | 13 | Unlock overlay | gold pulse on `RAU1`, game keeps running |
 | 14 | IGR combo during an RA launch | still resets |

@@ -12,7 +12,7 @@ probe = source[start:source.index('\n}', start)]
 program = r'''
 #include <assert.h>
 #include <stdio.h>
-static int gEnableILK, iLinkModLoaded, delays, refreshes, ready_after;
+static int gEnableILK, iLinkModLoaded, delays, refreshes, ready_after, bdmAutoLaunch;
 #define BDM_TYPE_ILINK 1
 #define LOG(...) ((void)0)
 static int bdmGetDeviceRootByType(int type, char *root, unsigned int size) {
@@ -27,6 +27,12 @@ static void run_probe(void) {
 ''' + probe + r'''
 }
 int main(void) {
+    gEnableILK = 0; run_probe();
+    gEnableILK = iLinkModLoaded = bdmAutoLaunch = 1;
+    ready_after = -1; run_probe();
+    assert(delays == 0 && refreshes == 0); // an absent optional iLink cannot delay Auto Loading
+    bdmAutoLaunch = 0; ready_after = 2; run_probe();
+    assert(delays == 2 && refreshes == 1); // a menu fallback still gets its late-drive probe
     int readiness[] = {0, 2, 11, 12, 13, -1};
     for (unsigned int i = 0; i < sizeof(readiness)/sizeof(readiness[0]); i++) {
         gEnableILK = 0; run_probe();
@@ -41,7 +47,7 @@ int main(void) {
     run_probe(); assert(refreshes == 0 && delays == 0);
     iLinkModLoaded = 1; ready_after = 0;
     run_probe(); assert(refreshes == 1 && delays == 0);
-    puts("iLink readiness: ready, delayed, absent, one-shot and re-enable passed");
+    puts("iLink readiness: autoload skip, menu fallback, ready, delayed, absent, one-shot and re-enable passed");
     return 0;
 }
 '''
@@ -52,3 +58,10 @@ with tempfile.TemporaryDirectory() as temp:
     subprocess.run(['g++', '-std=c++17', '-Wall', '-Wextra', '-Werror',
                     str(cfile), '-o', str(exe)], check=True)
     subprocess.run([str(exe)], check=True)
+
+# Auto Loading sets the policy after the IO worker exists and before BDM starts; the menu clears it.
+opl = (root / 'src/app/opl.cpp').read_text(encoding='utf-8')
+for signature, enabled in [('\nstatic void init(void)', 0), ('\nvoid miniInit(int mode)', 1)]:
+    begin = opl.index(signature)
+    body = opl[begin:opl.index('\n}', begin)]
+    assert body.index('ioInit();') < body.index(f'bdmSetAutoLaunch({enabled});') < body.index('bdmInitSemaphore();'), signature

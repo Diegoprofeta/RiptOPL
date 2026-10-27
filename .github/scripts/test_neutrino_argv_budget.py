@@ -1,4 +1,9 @@
-"""Compile the real Neutrino argv builder and verify pre-teardown budget refusal."""
+"""Compile the real Neutrino argv builder and verify pre-teardown budget refusal.
+
+Also covers Show Launch Arguments (original): with the toggle on, the preflight shows the exact argv
+the launch will pass -- including a per-game -logo -- and Back stays in the menu without the overflow
+warning. Autolaunch (no GUI) and the real handoff never ask.
+"""
 from pathlib import Path
 import re
 import subprocess
@@ -24,9 +29,14 @@ functions = "\n\n".join(function(sig) for sig in (
     "static int neutrinoArgHasActiveFlag(",
     "static int neutrinoEffectiveBsdfs(",
     "static const char *sysLastPathSeparator(",
+    "static void sysFormatNeutrinoArgv(",
+    "static int sysNeutrinoConfirmArgv(",
     "static int sysRunNeutrinoLaunch(",
     "int sysNeutrinoArgsPreflight(",
 ))
+declined = re.search(r"^#define NEUTRINO_LAUNCH_DECLINED .*$", source, re.M)
+assert declined is not None, "missing NEUTRINO_LAUNCH_DECLINED"
+functions = declined.group(0) + "\n\n" + functions
 
 for filename in ("bdmlaunch.cpp", "hddsupport.cpp", "mmcesupport.cpp", "udpfssupport.cpp"):
     leg = (root / "src/sources" / filename).read_text(encoding="utf-8")
@@ -47,19 +57,34 @@ harness = r'''
 #define LAUNCHDIAG_REFUSE_ARGS 1
 #define LAUNCHDIAG_REFUSE_CORE_ARGV 2
 #define _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW 7
+#define _STR_NEUTRINO_ARGS_CONFIRM 8
+#define _STR_RA_NEUTRINO_UNTRACKED 9
 #define NEUTRINO_VMC_SLOTS 2
 typedef struct { char arg[NEUTRINO_VMC_SLOTS][160]; } neutrino_vmc_args_t;
 
 static char gNeutrinoArgs[256];
 static int gNeutrinoElfArg = 1, gEnableDebug, gLaunchDiag;
-static int lastWarning, loads, refuses, lastArgc;
+static int lastWarning, raWarnings, loads, refuses, lastArgc;
+#ifdef RETROACHIEVEMENTS
+static char sysNeutrinoRAArg[336], sysNeutrinoRAStartup[32]; /* set by sysNeutrinoHandRA */
+#endif
 static char lastArgs[14][256];
 static int bdmGetLoadedNetProtocol(void) { return 0; }
 static int convertCompatmaskToModes(int mask) { return mask; }
-static const char *_l(int id) { lastWarning = id; return ""; }
+static const char *_l(int id) { lastWarning = id; raWarnings += id == _STR_RA_NEUTRINO_UNTRACKED; return ""; }
 static void guiWarning(const char *msg, int secs) { (void)msg; (void)secs; }
 static void launchDiagRefuse(int reason) { (void)reason; refuses++; }
 static void launchDiagMark(int stage) { (void)stage; }
+static char sysNeutrinoCheatArg[24], sysNeutrinoCheatStartup[32]; /* set by sysNeutrinoHandCheats */
+static int gNeutrinoShowArgs, guiActive = 1, msgAnswer = 1, msgCalls;
+static char msgText[512];
+static int guiIsActive(void) { return guiActive; }
+static int guiConfirmId(int strId, const char *detail) /* host.cpp: "<string>\n\n<detail>", 1 = Accept */
+{
+    msgCalls++;
+    snprintf(msgText, sizeof(msgText), "%s\n\n%s", _l(strId), detail);
+    return msgAnswer;
+}
 static int sysLoadELFKeepIOP(const char *path, const char *args, int argc, char **argv)
 {
     (void)path; (void)args;
@@ -124,6 +149,114 @@ int main(void)
         puts("FAIL actual launch must refuse an overfull argv even if preflight was bypassed");
         failures++;
     }
+    /* Show Launch Arguments: the preview is the composed argv joined by spaces, a spaced entry
+       quoted, and a per-game -logo forwarded at the tail even with the global PS2 Logo off. */
+    const char *expected = "mass0:/NEUTRINO/neutrino.elf -bsd=usb \"-dvd=mass0:/DVD/My Game.iso\" -qb "
+                           "-elf=cdrom0:\\SLUS_123.45;1 -cwd=mass0:/NEUTRINO/ -logo";
+    char want[512];
+    snprintf(want, sizeof(want), "\n\n%s", expected); /* the stub _l() returns "" for the heading */
+    gNeutrinoArgs[0] = '\0';
+    gNeutrinoShowArgs = 1;
+    msgAnswer = 1;
+    int beforeMsgs = msgCalls;
+    beforeLoads = loads;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != 0 ||
+        msgCalls != beforeMsgs + 1 || strcmp(msgText, want) || loads != beforeLoads) {
+        printf("FAIL preview must show the exact argv and let Accept launch\n  got:  [%s]\n  want: [%s]\n", msgText, want);
+        failures++;
+    }
+
+    msgAnswer = 0;
+    beforeMsgs = msgCalls;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != -1 ||
+        msgCalls != beforeMsgs + 1 || lastWarning == _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW || loads != beforeLoads) {
+        puts("FAIL Back on the preview must refuse the launch without the overflow warning");
+        failures++;
+    }
+
+    guiActive = 0; /* autolaunch: nobody can answer, so it launches as configured */
+    beforeMsgs = msgCalls;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != 0 ||
+        msgCalls != beforeMsgs) {
+        puts("FAIL autolaunch must not ask and must not be refused by the preview");
+        failures++;
+    }
+    guiActive = 1;
+
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", many); /* an over-budget argv is refused first */
+    beforeMsgs = msgCalls;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "", 0, 0, 0, 0, NULL) != -1 ||
+        msgCalls != beforeMsgs || lastWarning != _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW) {
+        puts("FAIL an over-budget argv must be refused before any preview");
+        failures++;
+    }
+
+    gNeutrinoArgs[0] = '\0';
+    beforeMsgs = msgCalls;
+    beforeLoads = loads;
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                             "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL, 0) != 0 ||
+        msgCalls != beforeMsgs || loads != beforeLoads + 1 || strcmp(lastArgs[lastArgc - 1], "-logo")) {
+        puts("FAIL the real handoff must not ask again and must carry the per-game -logo");
+        failures++;
+    }
+
+    gNeutrinoShowArgs = 0;
+    beforeMsgs = msgCalls;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/My Game.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/NEUTRINO/neutrino.elf", "-logo", 0, 0, 0, 0, NULL) != 0 ||
+        msgCalls != beforeMsgs) {
+        puts("FAIL with Show Launch Arguments off the preflight must not ask");
+        failures++;
+    }
+
+    /* Cheats (sysNeutrinoHandCheats): our -cfg comes after the user's own options and before --b,
+       so the -cfg Neutrino keeps -- its last -- is ours; and only the game it was written for gets it. */
+    snprintf(sysNeutrinoCheatArg, sizeof(sysNeutrinoCheatArg), "-cfg=riptopl-cheats");
+    snprintf(sysNeutrinoCheatStartup, sizeof(sysNeutrinoCheatStartup), "SLUS_123.45");
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "-a --b tail");
+    beforeLoads = loads;
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/SLUS_123.45.iso", "SLUS_123.45", 0, 0,
+                             "mass0:/NEUTRINO/neutrino.elf", "-cfg=mine", 0, 0, 0, 0, NULL, 0) != 0 ||
+        loads != beforeLoads + 1) {
+        puts("FAIL a launch with cheats must compose and hand off");
+        failures++;
+    } else {
+        int mine = -1, ours = -1, brk = -1;
+        for (int i = 0; i < lastArgc; i++) {
+            if (!strcmp(lastArgs[i], "-cfg=mine"))
+                mine = i;
+            if (!strcmp(lastArgs[i], "-cfg=riptopl-cheats"))
+                ours = i;
+            if (!strcmp(lastArgs[i], "--b"))
+                brk = i;
+        }
+        if (!(mine >= 0 && mine < ours && ours < brk)) {
+            printf("FAIL the cheats -cfg must follow the user's options and precede --b (mine=%d ours=%d --b=%d)\n", mine, ours, brk);
+            failures++;
+        }
+    }
+    gNeutrinoArgs[0] = '\0';
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/SLUS_999.99.iso", "SLUS_999.99", 0, 0,
+                             "mass0:/NEUTRINO/neutrino.elf", "", 0, 0, 0, 0, NULL, 0) != 0) {
+        puts("FAIL a launch for another game must still compose");
+        failures++;
+    }
+    for (int i = 0; i < lastArgc; i++) {
+        if (!strcmp(lastArgs[i], "-cfg=riptopl-cheats")) {
+            puts("FAIL another game must never be handed this game's cheats");
+            failures++;
+        }
+    }
+    sysNeutrinoCheatArg[0] = '\0';
+
     /* DVR is a filesystem path, never a bdfs tuple or an automatic quickboot/logo pass. */
     gNeutrinoArgs[0] = '\0';
     beforeLoads = loads;
@@ -138,6 +271,76 @@ int main(void)
             failures++;
     }
     if (sawDvr != 1 || sawPath != 1) failures++;
+
+#ifdef RETROACHIEVEMENTS
+    /* RA (sysNeutrinoHandRA): -cfg=ript-ra and -ra= follow the user's options and precede --b, and
+       only the game the handoff was written for gets them. */
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=mass0:/neutrino/config/ript-ra.wl");
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "SLUS_123.45");
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "-a --b tail");
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                             "mass0:/neutrino/neutrino.elf", "-cfg=mine", 0, 0, 0, 0, NULL, 0) != 0)
+        failures++;
+    int raArg = -1, raCfg = -1, mine = -1, boundary = -1;
+    for (int i = 0; i < lastArgc; i++) {
+        if (!strncmp(lastArgs[i], "-ra=", 4)) raArg = i;
+        if (!strcmp(lastArgs[i], "-cfg=ript-ra")) raCfg = i;
+        if (!strcmp(lastArgs[i], "-cfg=mine")) mine = i;
+        if (!strcmp(lastArgs[i], "--b")) boundary = i;
+    }
+    if (!(mine >= 0 && mine < raCfg && raCfg < raArg && raArg < boundary)) {
+        printf("FAIL RA arguments must follow the user's options and precede --b (mine=%d cfg=%d ra=%d --b=%d)\n", mine, raCfg, raArg, boundary);
+        failures++;
+    }
+    gNeutrinoArgs[0] = '\0';
+    if (sysRunNeutrinoLaunch("usb", "mass0:/DVD/b.iso", "SLUS_999.99", 0, 0,
+                             "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL, 0) != 0)
+        failures++;
+    for (int i = 0; i < lastArgc; i++)
+        if (!strncmp(lastArgs[i], "-ra=", 4) || !strcmp(lastArgs[i], "-cfg=ript-ra")) failures++;
+
+    /* A launch that fits on its own but not with the handoff's two arguments goes ahead untracked:
+       the preflight drops them and warns instead of refusing the game. */
+    char fill[64] = "";
+    int fits = -1;
+    sysNeutrinoRAArg[0] = '\0';
+    for (int n = 0; n < 14; n++) {
+        snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", fill);
+        if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                                     "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL) != 0)
+            break;
+        fits = n;
+        strcat(fill, "-x ");
+    }
+    fill[fits * 3] = '\0';
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", fill);
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=mass0:/neutrino/config/ript-ra.wl");
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "SLUS_123.45");
+    raWarnings = 0;
+    int pre = sysNeutrinoArgsPreflight("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                                       "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL);
+    if (fits < 0 || pre != 0 || raWarnings != 1 || sysNeutrinoRAArg[0] != '\0') {
+        printf("FAIL RA overflow must launch untracked: fits=%d result=%d warnings=%d ra=%s\n", fits, pre, raWarnings, sysNeutrinoRAArg);
+        failures++;
+    }
+    sysRunNeutrinoLaunch("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0, "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL, 0);
+    for (int i = 0; i < lastArgc; i++)
+        if (!strncmp(lastArgs[i], "-ra=", 4) || !strcmp(lastArgs[i], "-cfg=ript-ra")) failures++;
+
+    /* Over budget without them too: refused with the overflow warning alone, not "launching untracked". */
+    snprintf(gNeutrinoArgs, sizeof(gNeutrinoArgs), "%s", many);
+    snprintf(sysNeutrinoRAArg, sizeof(sysNeutrinoRAArg), "-ra=mass0:/neutrino/config/ript-ra.wl");
+    snprintf(sysNeutrinoRAStartup, sizeof(sysNeutrinoRAStartup), "SLUS_123.45");
+    raWarnings = 0;
+    lastWarning = 0;
+    if (sysNeutrinoArgsPreflight("usb", "mass0:/DVD/a.iso", "SLUS_123.45", 0, 0,
+                                 "mass0:/neutrino/neutrino.elf", "", 0, 0, 0, 0, NULL) != -1 ||
+        raWarnings != 0 || lastWarning != _STR_NEUTRINO_LAUNCH_ARGS_OVERFLOW) {
+        printf("FAIL an argv over budget without RA must not claim an untracked launch (warnings=%d)\n", raWarnings);
+        failures++;
+    }
+    gNeutrinoArgs[0] = '\0';
+#endif
     return failures ? 1 : 0;
 }
 '''
@@ -146,10 +349,11 @@ with tempfile.TemporaryDirectory() as tmp:
     src = Path(tmp) / "budget.c"
     exe = Path(tmp) / "budget"
     src.write_text(harness.replace("@FUNCTIONS@", functions), encoding="utf-8")
-    build = subprocess.run(["gcc", "-std=gnu99", "-Wall", "-Werror", "-Wno-unused-function",
-                            "-o", str(exe), str(src)], capture_output=True, text=True)
-    assert build.returncode == 0, build.stderr
-    result = subprocess.run([str(exe)], capture_output=True, text=True)
-    assert result.returncode == 0, result.stdout + result.stderr
+    for flags in ([], ["-DRETROACHIEVEMENTS"]):
+        build = subprocess.run(["gcc", *flags, "-std=gnu99", "-Wall", "-Werror", "-Wno-unused-function",
+                                "-o", str(exe), str(src)], capture_output=True, text=True)
+        assert build.returncode == 0, build.stderr
+        result = subprocess.run([str(exe)], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
 
 print("neutrino argv budget: count, bytes, VMC, 14-entry token integrity, and pre-teardown refusal OK")

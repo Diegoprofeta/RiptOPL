@@ -579,6 +579,68 @@ static int prepareHddSettingsFallback(char *path, int pathLen)
     return (n >= 0 && n < pathLen) ? 1 : -1;
 }
 
+// A memory card only creates a file through "mcN:/FILE", never "mcN:FILE" -- and a bare "mc1:" (a
+// launcher's CWD, or what anyone types for "save my settings on mc1") or a compact "mc1:APPS/X" is
+// exactly that shape. Insert the slash so every memory-card home has the one form file creation takes.
+void normalizeMcPath(char *path, size_t size)
+{
+    size_t len;
+
+    if (strncmp(path, "mc", 2) || (path[2] != '0' && path[2] != '1') || path[3] != ':' || path[4] == '/')
+        return;
+    len = strlen(path);
+    if (len + 1 >= size)
+        return;
+    memmove(&path[5], &path[4], len - 3);
+    path[4] = '/';
+}
+
+// The folder of a memory-card Custom Settings Path, made when it is not there yet: settings go to "a
+// folder you choose", and the per-file O_CREAT that writes them cannot make one. Save-time only -- the
+// boot-time read must never create anything. 0 = ready (or not a card path); -1 = it could not be made,
+// with gLastSaveErrno saying why.
+static int createMcSettingsFolder(const char *path)
+{
+    char folder[sizeof(gCustomSettingsPath)];
+    size_t len;
+    DIR *dir;
+
+    if (strncmp(path, "mc", 2) || (path[2] != '0' && path[2] != '1') || path[3] != ':')
+        return 0;
+    snprintf(folder, sizeof(folder), "%s", path);
+    len = strlen(folder);
+    while (len > 5 && folder[len - 1] == '/')
+        folder[--len] = '\0';
+    if (len <= 5) // "mcN:/": the card root is always there
+        return 0;
+    dir = opendir(folder);
+    if (dir != NULL) {
+        closedir(dir);
+        return 0;
+    }
+    // Each missing level in turn, since mkdir makes only the last one: "mc1:/APPS/OPL" on a card
+    // without APPS needs both.
+    for (size_t i = 6; i <= len; i++) {
+        if ((folder[i] != '/' && folder[i] != '\0') || folder[i - 1] == '/')
+            continue;
+        char end = folder[i];
+        folder[i] = '\0';
+        dir = opendir(folder);
+        if (dir != NULL)
+            closedir(dir);
+        else {
+            errno = 0;
+            if (mkdir(folder, 0777) < 0) {
+                gLastSaveErrno = errno != 0 ? errno : EIO;
+                return -1;
+            }
+            LOG("CONFIG created settings folder %s\n", folder);
+        }
+        folder[i] = end;
+    }
+    return 0;
+}
+
 // Make a typed settings path usable: the user may name a device that is not mounted yet. APA/PFS
 // paths are handled first and rewritten to OPL's already-mounted pfs0: data partition; BDM paths
 // keep the existing transport resolver. HDD targets have a deterministic safe fallback in
@@ -589,6 +651,8 @@ static int prepareCustomSettingsPath(char *path, int pathLen)
 
     if (path == NULL || path[0] == '\0')
         return 0;
+
+    normalizeMcPath(path, (size_t)pathLen);
 
     if (isApaSettingsPath(path))
         return prepareCustomApaSettingsPath(path, pathLen);
@@ -638,6 +702,12 @@ static int bootHomeIsConcreteMc(void)
 {
     return !strncmp(gBootDir, "mc", 2) &&
            (gBootDir[2] == '0' || gBootDir[2] == '1') && gBootDir[3] == ':';
+}
+
+// The launcher handed over the bare card ("mc1:" / "mc1:/"): there is no boot folder to save beside.
+static int bootHomeIsMcRoot(void)
+{
+    return bootHomeIsConcreteMc() && (gBootDir[4] == '\0' || (gBootDir[4] == '/' && gBootDir[5] == '\0'));
 }
 
 static int bootHomeIsKnownMmce(void)
@@ -760,13 +830,14 @@ static void restoreRecoverySaveHome(const char *recoveredHome)
             configSetMove((char *)mcHome);
         else
             configSetMove(NULL); // no concrete MC is reachable: keep the normal fail-visible wildcard home
-    } else if (sameConcreteMcSlot(gBootDir, recoveredHome) && !configOplIsOfficialSeed()) {
-        // A concrete MC boot that recovered its existing settings from the same card keeps that
-        // exact directory as its save owner. In particular, a launcher that supplies only "mc1:"
-        // as the boot CWD must not move a successfully read mc1:/OPL configuration to the card
-        // root (or to mc0 when both cards are inserted). This applies to RiptOPL's OWN settings
-        // only: an official conf_opl.cfg is a read-only seed and must not pull our save home into
-        // official OPL's folder, so that case falls through to the boot dir below.
+    } else if (sameConcreteMcSlot(gBootDir, recoveredHome) && !configOplIsOfficialSeed() && bootHomeIsMcRoot()) {
+        // A launcher that supplies only "mc1:" as the boot CWD leaves no folder to save beside, so a
+        // configuration recovered from the same card (mc1:/OPL) keeps that folder rather than moving
+        // to the card root (or to mc0 when both cards are inserted). Every other MC boot saves beside
+        // its ELF like any other boot -- settings follow the CWD -- through the branch below: an
+        // mc1:/APP_RIPTOPL boot that found older settings in mc1:/OPL reads them once and writes its
+        // next save beside the ELF, instead of keeping mc1:/OPL as its home for good. This applies to
+        // RiptOPL's OWN settings only: an official conf_opl.cfg is a read-only seed and never our home.
         configSetMove((char *)recoveredHome);
     } else if (gBootDir[0] != '\0') {
         configSetMove(gBootDir);
@@ -1062,6 +1133,7 @@ void configReadNeutrinoGlobals(config_set_t *configOPL)
     configGetStrCopy(configOPL, CONFIG_OPL_NEUTRINO_ARGS, gNeutrinoArgs, sizeof(gNeutrinoArgs));
     configGetStrCopy(configOPL, CONFIG_OPL_NEUTRINO_PATH, gNeutrinoPath, sizeof(gNeutrinoPath));
     configGetInt(configOPL, CONFIG_OPL_NEUTRINO_ELF_ARG, &gNeutrinoElfArg);
+    configGetInt(configOPL, CONFIG_OPL_NEUTRINO_SHOW_ARGS, &gNeutrinoShowArgs);
     // Global default Loader Core (0=<OPL>, 1=Neutrino). Absent in legacy configs -> keep the reset
     // default (0/<OPL>), so existing installs behave exactly as before this key existed.
     configGetInt(configOPL, CONFIG_OPL_DEFAULT_CORE, &gDefaultCoreLoader);
@@ -1437,11 +1509,42 @@ static void emberSaveSettings(config_set_t *configOPL)
     configRemoveKey(configOPL, CONFIG_OPL_EMBER_DISPLAY); // migrated on load; never written again
 }
 
+// The RA settings, read and normalised the same way for the menu and for Auto Loading (miniInit).
+void configReadRA(config_set_t *configOPL)
+{
+#ifdef RETROACHIEVEMENTS
+    const char *temp;
+    configGetInt(configOPL, CONFIG_OPL_RA_TELEMETRY, &gRATelemetry);
+    configGetInt(configOPL, CONFIG_OPL_RA_BADGES, &gRABadges);
+    configGetInt(configOPL, CONFIG_OPL_RA_BADGE_SUFFIX, &gRABadgeSuffix);
+    configGetInt(configOPL, CONFIG_OPL_RA_MODE, &gRAMode);
+    configGetInt(configOPL, CONFIG_OPL_RA_EXPERIMENTAL_CARDS, &gRAExperimentalCards);
+    gRABadgeSuffix = (gRABadgeSuffix == 1); // any stored value but 1 is Prefix
+    if (gRAMode != RA_MODE_CADUCEUS)
+        gRAMode = RA_MODE_XERABORA;
+    gRAExperimentalCards = (gRAExperimentalCards == 1); // anything but an explicit 1 is Off
+    int a, b, c, d;
+    char extra;
+    if (configGetStr(configOPL, CONFIG_OPL_RA_HOST_IP, &temp) &&
+        sscanf(temp, "%d.%d.%d.%d%c", &a, &b, &c, &d, &extra) == 4 &&
+        a >= 0 && a <= 255 && b >= 0 && b <= 255 && c >= 0 && c <= 255 && d >= 0 && d <= 255) {
+        gRAHostIp[0] = a;
+        gRAHostIp[1] = b;
+        gRAHostIp[2] = c;
+        gRAHostIp[3] = d;
+    }
+#else
+    (void)configOPL;
+#endif
+}
+
 void _loadConfig()
 {
     int value, themeID = -1, langID = -1;
     const char *temp;
     resolveBootDirToMass(); // usb0:/ata0:/mx4sio0:/APPS -> mass0:/APPS (boot-device massN:) before the first read
+    // Discover the resolved CWD (and CWD/LNG) before restoring the saved language.
+    lngRefreshBootLanguages(-1);
     int result = configReadMulti(lscstatus);
 
     if (lscstatus & CONFIG_OPL) {
@@ -1453,6 +1556,8 @@ void _loadConfig()
             config_set_t *configOPL = configGetByType(CONFIG_OPL);
 
             settingsLoad(configOPL); // every plain key; the special cases below (recovery combo, clamps, migrations) follow
+            gFontSize = fntValidFontSize(gFontSize);
+            configReadRA(configOPL);
 
 
             if (getKeyPressed(KEY_TRIANGLE) && getKeyPressed(KEY_CROSS)) {
@@ -1640,6 +1745,12 @@ void _loadConfig()
             else if (!configGetInt(configOPL, CONFIG_OPL_NET_PROTOCOL_PICK, &gNetProtocolPick) ||
                      gNetProtocolPick <= NET_PROTO_OFF || gNetProtocolPick > NET_PROTO_HTTP)
                 gNetProtocolPick = NET_PROTO_SMB;
+
+            // Recover UDPFS Access independently of UDPBD. Older configs have no key: infer
+            // IMG only if their active/remembered protocol really was UDPFSBD, else Files.
+            if (!configGetInt(configOPL, CONFIG_OPL_UDPFS_ACCESS, &gUdpfsAccessMode) ||
+                (gUdpfsAccessMode != 0 && gUdpfsAccessMode != 1))
+                gUdpfsAccessMode = (gNetProtocolPick == NET_PROTO_UDPFSBD) ? 1 : 0;
 
             // Network start row (Off/Manual/Auto). A config predating this field has no net_start_mode
             // key -- derive it from the protocol we just resolved so an existing user keeps working:
@@ -2053,6 +2164,10 @@ static void _saveConfig()
     if (lscstatus & CONFIG_OPL) {
         config_set_t *configOPL = configGetByType(CONFIG_OPL);
         settingsSave(configOPL);
+#ifdef RETROACHIEVEMENTS
+        snprintf(temp, sizeof(temp), "%d.%d.%d.%d", gRAHostIp[0], gRAHostIp[1], gRAHostIp[2], gRAHostIp[3]);
+        configSetStr(configOPL, CONFIG_OPL_RA_HOST_IP, temp);
+#endif
         configSetStr(configOPL, CONFIG_OPL_THEME, thmGetValue());
         configSetStr(configOPL, CONFIG_OPL_LANGUAGE, lngGetValue());
         configSetInt(configOPL, CONFIG_OPL_MMCE_PACING_MIGR, 1);
@@ -2066,6 +2181,7 @@ static void _saveConfig()
         configSetInt(configOPL, CONFIG_OPL_NEUTRINO_GSMCOMP, gNeutrinoGsmCompDefault);
         configSetInt(configOPL, CONFIG_OPL_NEUTRINO_DEVTYPE, gNeutrinoDevice);
         configSetInt(configOPL, CONFIG_OPL_NEUTRINO_ELF_ARG, gNeutrinoElfArg);
+        configSetInt(configOPL, CONFIG_OPL_NEUTRINO_SHOW_ARGS, gNeutrinoShowArgs);
         configSetInt(configOPL, CONFIG_OPL_ENABLE_UDPBD, gEnableUDPBD);
         // Dual-write: the authoritative unified selector PLUS the three legacy keys (derived shadows),
         // so a config saved by this build still boots correctly on an older OPL that only reads the legacy keys.
@@ -2073,6 +2189,7 @@ static void _saveConfig()
         configSetInt(configOPL, CONFIG_OPL_NETWORK_PROTOCOL, gNetworkProtocol);
         configSetInt(configOPL, CONFIG_OPL_NET_START_MODE, gNetStartMode);
         configSetInt(configOPL, CONFIG_OPL_NET_PROTOCOL_PICK, gNetProtocolPick);
+        configSetInt(configOPL, CONFIG_OPL_UDPFS_ACCESS, gUdpfsAccessMode);
 
         configSetInt(configOPL, CONFIG_OPL_SWAP_SEL_BUTTON, gSelectButton == KEY_CIRCLE ? 0 : 1);
     }
@@ -2199,6 +2316,14 @@ static void _saveConfig()
                 return;
             }
         } else {
+            // A memory-card folder has to exist before the per-file O_CREAT below ("settings not
+            // saving on mc1"). Made here, at save time, never by the boot-time read.
+            if (createMcSettingsFolder(customSettingsTarget) < 0) {
+                LOG("CONFIG custom settings folder %s could not be created (errno %d)\n", customSettingsTarget, gLastSaveErrno);
+                lscret = 0;
+                lscstatus = 0;
+                return;
+            }
             configSetMove(customSettingsTarget);
             customSettingsExplicit = 1;
         }

@@ -802,6 +802,8 @@ void HttpSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     compatmask = sbPrepare(game, configSet, size_http_cdvdman_irx, http_cdvdman_irx, &i);
+    if (compatmask < 0) // sbPrepare failed (patch zone not found): `i` is unset -- bail before using it.
+        return;
     sbEnsureIgrUsbDrivers(compatmask);
 
 #ifdef RETROACHIEVEMENTS
@@ -809,7 +811,7 @@ void HttpSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // per-game data -- there is no writable server side to put a watch list on.
     sbLoadWatchList(gHttpSupport.localPrefix(), startup);
 #endif
-    if ((result = sbLoadCheats(gHttpSupport.localPrefix(), startup)) < 0) {
+    if ((result = sbLoadCheats(gHttpSupport.localPrefix(), startup, configSet)) < 0) {
         if (!sbCheatsMissingContinue((u8 *)(&http_cdvdman_irx) + i, result))
             return;
     }
@@ -825,6 +827,9 @@ void HttpSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     settings->size_hi = (u32)(imageSize >> 32);
     settings->common.media = media;
     settings->common.layer1_start = layer1Start;
+    // Real media size for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763): the server
+    // reported the exact image size, and .zso never launches over HTTP.
+    settings->common.mediaLsnCount = (u32)(imageSize / 2048);
     settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9;
     settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_SMAP;
 

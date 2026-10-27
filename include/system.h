@@ -11,6 +11,10 @@ unsigned int USBA_crc32(const char *string);
 int sysGetDiscID(char *discID);
 // Takes a DEV9 reference even on failure; pair with sysShutdownDev9. Returns 1 when usable.
 int sysInitDev9(void);
+// PC CARD CF owns DEV9 exclusively: claim only while DEV9 holds no reference.
+int sysTryClaimPccf(void);
+int sysIsPccfOwned(void);
+void sysReleasePccf(void);
 void sysShutdownDev9(void);
 void sysReset(int modload_mask);
 void sysExecExit(void);
@@ -51,6 +55,19 @@ int sysNeutrinoPreflight(const char *driver, const char *neutrinoPath, int neutr
 
 // Compose the exact launch argv while the GUI is still live. Refuses a launch that would exceed
 // the 14-entry or 256-byte ExecPS2 budget, with a visible warning instead of dropping arguments.
+// Neutrino cheats: write `pairs` address/value code pairs where Neutrino resolves -cfg=riptopl-cheats and
+// add that flag to its argv. Every call clears the last hand-over first; NULL startup or no pairs hands
+// over nothing. 0 = launch; <0 = the user chose to stay in the menu. Callers go through
+// sbNeutrinoHandCheats, which reads the codes from the cheat engine.
+int sysNeutrinoHandCheats(const char *startup, const char *neutrinoPath, const char *extraArgs, const u32 *list, int pairs);
+#ifdef RETROACHIEVEMENTS
+/* RA through the RA kit's ORBIT Neutrino (sbNeutrinoPrepareRA decides). 1 when the effective -cwd holds
+   that runtime. HandRA writes the watch file and ript-ra.toml beside the cheats file and arms
+   -cfg=ript-ra -ra=... for startup's launch: 0 = armed, -1 = could not; NULL startup only disarms. */
+int sysNeutrinoRARuntime(const char *neutrinoPath, const char *extraArgs);
+int sysNeutrinoHandRA(const char *startup, const char *neutrinoPath, const char *extraArgs, int networkGame,
+                      const unsigned char *ip, const unsigned char *peer, const void *watch, int size);
+#endif
 int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs);
 
 // Launch an external POPSTARTER.ELF for a PS1 VCD. selector = the target's argv[0]
@@ -91,9 +108,13 @@ int sysCheckMC(void);
  * requires the creation path's directory proof of absence before any job. */
 #define SYS_VMC_PROBE_FORMAT            (-4)
 int sysCheckVMC(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock);
+// sysCheckVMC with genvmc creation flags (VMC_CREATE_*).
+int sysCheckVMCEx(const char *prefix, const char *sep, char *name, int createSize, vmc_superblock_t *vmc_superblock, int createFlags);
 // Layout of the VMC whose creation was last STARTED: 1 contiguous, 0 fragmented, -1 unknown.
 // Only meaningful once genvmc reports the job finished. -1 means "this backing store cannot say"
 // (mmce, APA/pfs, SMB, udpfs) and must be treated as silence -- never as a pass or a failure.
 int sysVMCContiguity(void);
+// Path of the VMC whose creation was last started, or "" when none.
+const char *sysVMCCreatePath(void);
 
 #endif

@@ -16,6 +16,8 @@ public:
     void forget(item_list_t *support);
     const char *forRow(item_list_t *support, int id);
     const char *displayName(item_list_t *support, int id, const char *text);
+    // What a game row sorts by: displayName without the cosmetic RA mark.
+    const char *sortName(item_list_t *support, int id, const char *text);
 
 private:
     struct Slot
@@ -36,5 +38,6 @@ void cfgTitleRefresh(item_list_t *support, int count);
 void cfgTitleForget(item_list_t *support);
 const char *cfgTitleForRow(item_list_t *support, int id);
 const char *cfgTitleDisplayName(item_list_t *support, int id, const char *text);
+const char *cfgTitleSortName(item_list_t *support, int id, const char *text);
 
 #endif

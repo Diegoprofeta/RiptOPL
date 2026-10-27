@@ -43,6 +43,7 @@ extern "C" {
 #include <debug.h>
 #include <ps2smb.h>
 #include "config.h"
+#include "fntsys.h"
 
 #include "include/hddsupport.h"
 #include "include/supportbase.h"
@@ -184,6 +185,7 @@ extern int gAutoCreateVmc;
 extern int gNeutrinoVideoDefault;
 extern int gNeutrinoGsmCompDefault;
 extern int gNeutrinoElfArg;
+extern int gNeutrinoShowArgs; // show the composed Neutrino argv and ask before each launch
 extern char gNeutrinoArgs[256];
 extern char gNeutrinoPath[256];
 // Default game-list view for VCD-capable device pages.
@@ -281,12 +283,16 @@ extern int gVcdShowPpPops;    // enumeration-only: list strict PP.<ID>.POPS.<nam
 extern int gVcdFirstDiscOnly; // hide discs 2+ of multi-disc PS1 sets
 extern char gBootDir[256];    // boot directory (cwd) OPL launched from; "" if undeterminable
 extern int gEnableBGArt;
+extern int gEnableSaveIcons; // 3D save icon theme element (SaveIcon)
 extern int gEnableArtTar;    // .tar art packs (item 45); OFF until the Artwork UI returns
 extern int gArtDelay;        // frames of inactivity before art loads (item 45); safe official-like default until gate D
 extern int gEnableFolderNav; // folder browsing in game lists (item 34)
 extern unsigned char gDefaultPlasBlendColor[3];
 extern int gEnableILK;
 extern int gEnableMX4SIO;
+// Experimental PC CARD CompactFlash on early Japanese consoles, default off.
+extern int gEnablePCCF;
+extern int gEnableDVR; // experimental DESR DVR ISO discovery on the HDD page, default off
 extern int gEnableBdmHDD;
 extern int gEnableUDPBD; // UDPBD network block device (smap_udpbd); NIC-exclusive with the SMB/ETH stack
 // Network-boot transport chosen when gEnableUDPBD is on. Both register the "udp" BDM token and are
@@ -326,6 +332,7 @@ extern int gNetStartMode;    // START_MODE_* -- network start row (Off/Manual/Au
 // (every consumer reads that as "no network"), so this is what the Protocol rows show then, and what
 // turning Connectivity back on restores.
 extern int gNetProtocolPick;
+extern int gUdpfsAccessMode; // UDPFS Files(0)/IMG(1) preference, independent of UDPBD
 
 extern int gAutosort;
 extern int gAutoRefresh;
@@ -337,12 +344,24 @@ extern int gRATelemetry;
 // List badges and the cover mark. Cosmetic, and subordinate to gRATelemetry: badges advertise a
 // feature, so they stay dark while the feature is switched off.
 extern int gRABadges;
+// RA mark placement: 0 = "RA " before the name, 1 = " [RA]" after it. Display only: rows keep
+// their source name and sort by the clean title.
+extern int gRABadgeSuffix;
+// The PC service protocol. Any stored value but Caduceus reads as Xerabora.
+#define RA_MODE_XERABORA 0
+#define RA_MODE_CADUCEUS 1
+extern int gRAMode;
+// Optional dedicated companion PC (IPv4). 0.0.0.0 keeps the SMB-host / broadcast fallback.
+extern int gRAHostIp[4];
+// Caduceus title/points cards drawn over the game by GIF DMA. Experimental, default Off: may flicker or freeze games.
+extern int gRAExperimentalCards;
 #endif
 extern int gEnableArt;
 extern int gEnableDiscArt; // ItemIcon/ICO disc artwork; independent of cover art
 extern int gEnableLogoArt; // per-game LGO logo artwork; independent of cover, disc and boot logo
 extern int gWideScreen;
-extern int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
+extern int gFontSize; // FONT_SIZE_* (fntsys.h)
+extern int gVMode;    // 0 - Auto, 1 - PAL, 2 - NTSC
 extern int gXOff;
 extern int gYOff;
 extern int gOverscan;
@@ -447,7 +466,7 @@ void initSupport(item_list_t *itemList, int mode, int force_reinit);
 
 void setDefaultColors(void);
 
-#define MENU_ITEM_HEIGHT 19
+#define MENU_ITEM_HEIGHT (fntScaleFontSize(FNTSYS_DEFAULT_SIZE) + 2)
 
 #include "include/menusys.h"
 

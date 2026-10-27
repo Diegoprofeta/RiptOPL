@@ -65,12 +65,16 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_RA_TELEMETRY, &gRATelemetry, 0), // opt in: telemetry puts SMAP on the NIC in every launch that has a .wl
 #endif
 #ifdef RETROACHIEVEMENTS
-    intSetting(CONFIG_OPL_RA_BADGES, &gRABadges, 1), // free once telemetry is on -- raBadgeRefresh runs on the I/O thread
+    intSetting(CONFIG_OPL_RA_BADGES, &gRABadges, 1),                        // free once telemetry is on -- raBadgeRefresh runs on the I/O thread
+    intSetting(CONFIG_OPL_RA_BADGE_SUFFIX, &gRABadgeSuffix, 0),             // the shipped prefix
+    intSetting(CONFIG_OPL_RA_MODE, &gRAMode, RA_MODE_XERABORA),             // old configurations keep Xerabora
+    intSetting(CONFIG_OPL_RA_EXPERIMENTAL_CARDS, &gRAExperimentalCards, 0), // explicit opt-in only
 #endif
     intSetting(CONFIG_OPL_ENABLE_COVERART, &gEnableArt, 1),
     intSetting(CONFIG_OPL_ENABLE_DISCART, &gEnableDiscArt, 1), // preserve existing ItemIcon/ICO behavior unless the user disables it
     intSetting(CONFIG_OPL_ENABLE_LOGOART, &gEnableLogoArt, 1), // preserve existing LGO artwork unless the user disables it
-    intSetting(CONFIG_OPL_WIDESCREEN, &gWideScreen, 1),
+    intSetting(CONFIG_OPL_WIDESCREEN, &gWideScreen, 0), // fresh configurations use 4:3; a saved choice overrides
+    intSetting(CONFIG_OPL_FONT_SIZE, &gFontSize, FONT_SIZE_DEFAULT),
     intSetting(CONFIG_OPL_VMODE, &gVMode, 0, /*loadPlain=*/false),
     intSetting(CONFIG_OPL_XOFF, &gXOff, 0),
     intSetting(CONFIG_OPL_YOFF, &gYOff, 0),
@@ -120,7 +124,12 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_VCD_HIDE_GAMEID, &gVcdHideGameId, 1),              // hide the PS1 game-ID prefix by default (display-only)
     intSetting(CONFIG_OPL_VCD_FIRST_DISC_ONLY, &gVcdFirstDiscOnly, 1),       // hide discs 2+ of multi-disc PS1 sets by default (POPSLoader parity)
     intSetting(CONFIG_OPL_VCD_SHOW_PP_POPS, &gVcdShowPpPops, 1),             // list strict PP.<ID>.POPS.<name> one-game HDD partitions by default
-    intSetting(CONFIG_OPL_ENABLE_BGART, &gEnableBGArt, 1),                   // fork parity; gEnableArt is 1 above, so this is live
+#ifdef BUILTIN_KORIUM
+    intSetting(CONFIG_OPL_ENABLE_BGART, &gEnableBGArt, 0), // as the original's Korium: its per-game _BG competes with cover loads
+#else
+    intSetting(CONFIG_OPL_ENABLE_BGART, &gEnableBGArt, 1), // fork parity; gEnableArt is 1 above, so this is live
+#endif
+    intSetting(CONFIG_OPL_ENABLE_SAVE_ICONS, &gEnableSaveIcons, 0),
     intSetting(CONFIG_OPL_ENABLE_ART_TAR, &gEnableArtTar, 0),
     // NO SETTLE BY DEFAULT. This is the number of INACTIVE frames the menu must see before art is
     // even asked for, and it shipped at 8 -- the slowest of the four values the UI offers {0,2,5,8}
@@ -141,12 +150,16 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_COVERFLOW_DIM, &gCoverflowDimCovers),
     intSetting(CONFIG_OPL_ENABLE_ILINK, &gEnableILK, 0),
     intSetting(CONFIG_OPL_ENABLE_MX4SIO, &gEnableMX4SIO, 0),
+    intSetting(CONFIG_OPL_ENABLE_PCCF, &gEnablePCCF, 0),
+    intSetting(CONFIG_OPL_ENABLE_DVR, &gEnableDVR, 0),
     intSetting(CONFIG_OPL_ENABLE_BDMHDD, &gEnableBdmHDD, 0),
     intSetting(CONFIG_OPL_NET_BOOT_PROTOCOL, &gNetBootProtocol, NET_BOOT_UDPBD), // default transport when network boot is enabled (back-compat)
-    intSetting(CONFIG_OPL_SFX, &gEnableSFX, 1),                                  // safe now: sfxPlay dispatches asynchronously (#340)
-    intSetting(CONFIG_OPL_RUMBLE, &gEnableRumble, 1),
-    intSetting(CONFIG_OPL_BOOT_SND, &gEnableBootSND, 1),
-    intSetting(CONFIG_OPL_BGM, &gEnableBGM, 1), // inert without a bgm.ogg on the card
+    // Audio and menu rumble start off, like the original (tester feedback 10-06: "disable the music and
+    // squeak"; rumble #1070). Saved configs keep their own choice; the Audio and Controller pages turn each on.
+    intSetting(CONFIG_OPL_SFX, &gEnableSFX, 0),
+    intSetting(CONFIG_OPL_RUMBLE, &gEnableRumble, 0),
+    intSetting(CONFIG_OPL_BOOT_SND, &gEnableBootSND, 0),
+    intSetting(CONFIG_OPL_BGM, &gEnableBGM, 0), // inert without a bgm.ogg on the card
     intSetting(CONFIG_OPL_SFX_VOLUME, &gSFXVolume, 90),
     intSetting(CONFIG_OPL_BOOT_SND_VOLUME, &gBootSndVolume, 90),
     intSetting(CONFIG_OPL_BGM_VOLUME, &gBGMVolume, 90),

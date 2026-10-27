@@ -21,8 +21,8 @@ dia_about = dialogs_cpp[dia_about_start : dia_about_end + len("{UI_TERMINATOR}};
 # 1. Financial support section removed from diaAbout
 assert "_STR_FINANCIAL_SUPPORT" not in dia_about, "Financial support section should not be in diaAbout"
 
-# 2. Akilluminati47 and eliminator credited under Quality Assurance
-assert '"Akilluminati47, eliminator"' in dia_about, "Akilluminati47 and eliminator should be credited in diaAbout QA"
+# 2. Akilluminati47, eliminator and V3ditata credited under Quality Assurance
+assert '"Akilluminati47, eliminator, V3ditata"' in dia_about, "Akilluminati47, eliminator and V3ditata should be credited in diaAbout QA"
 
 # 3. QA rows should contain all expected contributors
 assert "algol, Berion, Blade1984, El_Patas, EP, gledson999, jolek, lee4, Vapor" in dia_about

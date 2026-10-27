@@ -18,6 +18,7 @@
 #include "include/gamesource.h"
 #include "include/vcdsupport.h" // vcdDisplayName -- display-only VCD game-ID prefix hide
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
+#include "include/saveicon.h"   // SaveIcon: the selected game's 3D save icon
 #ifdef RETROACHIEVEMENTS
 #include "include/rabadge.h" // RA: mark over the cover
 #endif
@@ -532,8 +533,14 @@ static void drawAttributeText(struct menu_list *menu, struct submenu_list *item,
             // force refresh
             mutableText->currentConfigId = config->uid();
             mutableText->currentValue = NULL;
-            if (configGetStr(config, mutableText->value, (const char **)&mutableText->currentValue)) {
-                if ((mutableText->sizingMode == SIZING_WRAP) && mutableText->currentValue) {
+            configGetStr(config, mutableText->value, (const char **)&mutableText->currentValue);
+            // Metadata is optional. A missing/empty Title can still show the library name,
+            // without writing a fabricated metadata field back to the game's CFG.
+            if ((!mutableText->currentValue || !mutableText->currentValue[0]) &&
+                !strcmp(mutableText->value, "Title"))
+                configGetStr(config, CONFIG_ITEM_NAME, (const char **)&mutableText->currentValue);
+            if (mutableText->currentValue) {
+                if (mutableText->sizingMode == SIZING_WRAP) {
                     // Word-wrap a private copy, not the config's own stored string.
                     // configGetStr() hands back a pointer straight into the config
                     // buffer (it->val); fntFitString() inserts '\n's in place, so
@@ -902,6 +909,30 @@ int isHiddenArtworkCache(const image_cache_t *cache)
            (!gEnableLogoArt && strcmp(cache->suffix(), "LGO") == 0);
 }
 
+// The id-keyed probe with the name-keyed fallback. The row has one cache slot for both values.
+static GSTEXTURE *ps1IdArt(image_cache_t *cache, item_list_t *list, int *cacheId, int *cacheUid, char *id, char *name, int isPriority)
+{
+    // UID alone cannot tell which value owns the slot: when another value does (or an absence is
+    // parked with no value attached), let reunion-by-value find the id's own slot.
+    if (*cacheId == -2 || cache->slotKeyedOther(*cacheId, id))
+        *cacheId = -1;
+    GSTEXTURE *idTex = cacheGetTextureEx(cache, list, cacheId, cacheUid, id, isPriority);
+    if (idTex != NULL || *cacheId != -2)
+        return idTex; // resident, or still loading: adopted on a later frame
+
+    // The id art is parked absent for this fail generation. That memo belongs to the id value: set
+    // it aside so it cannot shadow the name fallback, and restore it only when the name probe left
+    // the slot untouched (a loading or resident name entry owns the slot).
+    int parkId = *cacheId, parkUid = *cacheUid;
+    *cacheId = -1;
+    GSTEXTURE *nameTex = cacheGetTextureEx(cache, list, cacheId, cacheUid, name, isPriority);
+    if (*cacheId == -1) {
+        *cacheId = parkId;
+        *cacheUid = parkUid;
+    }
+    return nameTex;
+}
+
 GSTEXTURE *getGameImageTextureEx(image_cache_t *cache, void *support, struct submenu_item *item, int isPriority)
 {
     // Folder browsing: a folder row has no cover art (and no startup key). Never route it through the
@@ -931,7 +962,19 @@ GSTEXTURE *getGameImageTextureEx(image_cache_t *cache, void *support, struct sub
         if (startup == NULL || startup[0] == '\0')
             return NULL;
 
-        return cacheGetTextureEx(cache, list, &item->cache_id[cache->userId()], &item->cache_uid[cache->userId()], startup, isPriority);
+        int *cacheId = &item->cache_id[cache->userId()];
+        int *cacheUid = &item->cache_uid[cache->userId()];
+        char id[VCD_ID_MAX];
+
+        // PS1 rows on device pages (original #1049): the RetroGEM disc id is the PRIMARY art key --
+        // ART/<id>_COV.png, the rule a PS2 title gets from its disc id -- so PSBBN/RetroGEM packs
+        // work without renaming a library. The row name stays the fallback, so existing name art
+        // keeps showing. Favourites/Apps are excluded: favGetArtMode matches this value against fav
+        // identities. The id resolves off-thread into the memo; the request makes that happen even
+        // without an ItemText element. This only changes which file a cover is READ from.
+        if (gsOf(list)->ps1ArtId(list, item->id, startup, id, sizeof(id)))
+            return ps1IdArt(cache, list, cacheId, cacheUid, id, startup, isPriority);
+        return cacheGetTextureEx(cache, list, cacheId, cacheUid, startup, isPriority);
     }
 
     return NULL;
@@ -974,48 +1017,14 @@ theme_element_t *thmGetElemForItem(struct menu_list *menu, struct submenu_list *
    The rectangle follows the same arithmetic as rmSetupQuad: the element
    may use any alignment, and we need the upper-right corner of what
    was drawn. Sizes come from the texture when the theme leaves them
-   undefined, since covers vary in size. */
-/* RA: positions along the cover's sides are fractions of RA_MARK_ONE;
-   a power of two keeps the division cheap. */
-constexpr int RA_MARK_ONE = 1024;
-
-/* A point inside the cover quadrilateral: s is the fraction along the
-   top edge, t along the left edge, both out of RA_MARK_ONE. Bilinear
-   interpolation over the four corners, the same mapping the renderer
-   uses to fit the cover itself (gsKit_prim_quad_texture in
-   rmDrawOverlayPixmap). Corner values never exceed the texture size, so
-   the products fit an int with room to spare. */
-static void raQuadPoint(const image_texture_t *ovl, int s, int t, int *px, int *py)
-{
-    int topx = ovl->upperLeft_x + ((ovl->upperRight_x - ovl->upperLeft_x) * s) / RA_MARK_ONE;
-    int topy = ovl->upperLeft_y + ((ovl->upperRight_y - ovl->upperLeft_y) * s) / RA_MARK_ONE;
-    int botx = ovl->lowerLeft_x + ((ovl->lowerRight_x - ovl->lowerLeft_x) * s) / RA_MARK_ONE;
-    int boty = ovl->lowerLeft_y + ((ovl->lowerRight_y - ovl->lowerLeft_y) * s) / RA_MARK_ONE;
-
-    *px = topx + ((botx - topx) * t) / RA_MARK_ONE;
-    *py = topy + ((boty - topy) * t) / RA_MARK_ONE;
-}
-
-/* Whether the overlay corners are sane enough to compute from. All four
-   are checked because the lower ones take part in the interpolation. */
-static int raQuadUsable(const image_texture_t *ovl, const GSTEXTURE *geom)
-{
-    return ovl->upperRight_x > 8 && ovl->upperRight_x <= geom->Width &&
-           ovl->upperLeft_x >= 0 && ovl->upperLeft_x < ovl->upperRight_x &&
-           ovl->upperLeft_y >= 0 && ovl->upperLeft_y < geom->Height &&
-           ovl->upperRight_y >= 0 && ovl->upperRight_y < geom->Height &&
-           ovl->lowerLeft_x >= 0 && ovl->lowerLeft_x <= geom->Width &&
-           ovl->lowerRight_x >= 0 && ovl->lowerRight_x <= geom->Width &&
-           ovl->lowerLeft_y > ovl->upperLeft_y && ovl->lowerLeft_y <= geom->Height &&
-           ovl->lowerRight_y > ovl->upperRight_y && ovl->lowerRight_y <= geom->Height;
-}
-
+   undefined, since covers vary in size. One flat square at the cover's upper-right corner,
+   case overlay or not. */
 static void drawRAMark(struct submenu_list *item, struct theme_element *elem,
                        mutable_image_t *img, GSTEXTURE *cover)
 {
     GSTEXTURE *mark, *geom;
     image_texture_t *ovl;
-    int w, h, x0, y0, side, margin, right, topy, refw, x, y;
+    int w, h, x0, y0, side, margin, x, y;
 
     if (item == NULL || cover == NULL)
         return;
@@ -1056,85 +1065,28 @@ static void drawRAMark(struct submenu_list *item, struct theme_element *elem,
     else
         y0 = elem->posY;
 
-    /* Skew. The renderer fits the cover into the quadrilateral given by
-       the overlay corners, which is where its slant comes from. The
-       mark lives in the cover's own coordinate system: its corners are
-       bilinearly interpolated and handed to the renderer as a
-       quadrilateral, so it shares the slant instead of looking like a
-       sticker.
+    /* The origin is computed HERE from the COVER's size: passing elem->width/height on to the
+       renderer would not do, because rmSetupQuad resolves DIM_UNDEF from the texture it is given,
+       and that texture is the mark, so the box would take the mark's size.
 
-       Size and margin are FRACTIONS OF THE COVER'S SIDES rather than
-       screen pixels: the sides are slanted and their length differs
-       from the case width, so pixel arithmetic would be wrong. */
-    if (ovl != NULL && raQuadUsable(ovl, geom)) {
-        int coverW = ovl->upperRight_x - ovl->upperLeft_x;
-        int coverH = ovl->lowerLeft_y - ovl->upperLeft_y;
-        int s0, s1, t0, t1;
-        int ax, ay, bx, by, cx, cy, dx, dy;
-
-        side = coverW / 3;
-        if (side < 22)
-            side = 22;
-        if (side > 48)
-            side = 48;
-        if (side > coverH / 2)
-            side = coverH / 2;
-        if (side < 4)
-            return;
-
-        margin = side / 8;
-        if (margin < 2)
-            margin = 2;
-
-        s1 = RA_MARK_ONE - (margin * RA_MARK_ONE) / coverW;
-        s0 = s1 - (side * RA_MARK_ONE) / coverW;
-        t0 = (margin * RA_MARK_ONE) / coverH;
-        t1 = t0 + (side * RA_MARK_ONE) / coverH;
-
-        /* A broken theme with a tiny case: draw nothing rather than an
-           inside-out quadrilateral. */
-        if (s0 < 0 || t1 > RA_MARK_ONE)
-            return;
-
-        raQuadPoint(ovl, s0, t0, &ax, &ay);
-        raQuadPoint(ovl, s1, t0, &bx, &by);
-        raQuadPoint(ovl, s0, t1, &cx, &cy);
-        raQuadPoint(ovl, s1, t1, &dx, &dy);
-
-        /* The origin is computed HERE, as in the flat path below: x0/y0
-           are already derived from the COVER's size. Passing
-           elem->width/height would not do: rmSetupQuad resolves
-           DIM_UNDEF from the texture it is given, and that texture is
-           the mark, so the box would take the mark's size. With centre
-           alignment the whole quadrilateral then lands off screen and
-           the mark disappears. */
-        rmDrawInlayPixmap(mark, x0, y0, ALIGN_NONE, w, h, SCALING_NONE,
-                          gDefaultCol, ax, ay, bx, by, cx, cy, dx, dy);
-        return;
-    }
-
-    /* No overlay: the cover is not slanted, so draw a flat square at its
-       upper-right corner. */
-    right = w;
-    topy = 0;
-    refw = w;
-
-    /* A third of the cover width, within limits: on a small cover the
-       mark would swallow it, on a large one it would get lost. */
-    side = refw / 3;
-    if (side < 22)
-        side = 22;
-    if (side > 48)
-        side = 48;
+       A quarter of the cover width, within limits: on a small cover the mark would swallow it,
+       on a large one it would get lost. */
+    side = w / 4;
+    if (side < 16)
+        side = 16;
+    if (side > 32)
+        side = 32;
     if (side > h / 2)
         side = h / 2;
+    if (side < 4)
+        return;
 
     margin = side / 8;
     if (margin < 2)
         margin = 2;
 
-    x = x0 + right - side - margin;
-    y = y0 + topy + margin;
+    x = x0 + w - side - margin;
+    y = y0 + margin;
 
     /* Guard against a broken theme: stay on screen. */
     if (x + side > gThmScreenWidth)
@@ -1469,7 +1421,7 @@ void drawAttributeImage(struct menu_list *menu, struct submenu_list *item, confi
             configGetStr(config, attributeImage->cache->suffix(), (const char **)&attributeImage->currentValue);
         }
         if (attributeImage->currentValue) {
-            if (thmGetGuiValue() == 0 || thmGetGuiValue() == thmDiskThemeCount() + 1) {
+            if (thmGetFilePath(thmGetGuiValue()) == NULL) { // a built-in theme: embedded glyphs
                 GSTEXTURE *texture = thmGetTexture(thmAttributeTexId(attributeImage));
                 if (texture && texture->Mem)
                     rmDrawPixmap(texture, elem->posX, elem->posY, elem->aligned, elem->width, elem->height, elem->scaled, gDefaultCol, 0);
@@ -1823,7 +1775,8 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
             }
         }
 
-        submenu_list_t *ps = menu->item->pagestart;
+        // PSBBN shows the title only once the covers come to rest.
+        submenu_list_t *ps = psbbnFlowIsMoving() ? NULL : menu->item->pagestart;
         int others = 0;
         u64 color;
         // A fixed leading column keeps stars and titles aligned on ordinary lists. Centered
@@ -1924,6 +1877,14 @@ void drawItemsList(struct menu_list *menu, struct submenu_list *item, config_set
     }
 }
 
+// Rows that fit the list's height at the current menu font size; a list always shows at least one.
+void itemsListFit(items_list_t *itemsList, int height)
+{
+    itemsList->displayedItems = height / MENU_ITEM_HEIGHT;
+    if (itemsList->displayedItems < 1)
+        itemsList->displayedItems = 1;
+}
+
 void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name, const char *decorator)
 {
     char elemProp[64];
@@ -1936,7 +1897,7 @@ void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *th
     if (elem->height == DIM_UNDEF)
         elem->height = theme->usedHeight - (MENU_POS_V + HINT_HEIGHT);
 
-    itemsList->displayedItems = elem->height / MENU_ITEM_HEIGHT;
+    itemsListFit(itemsList, elem->height);
     LOG("THEMES ItemsList %s: displaying %d elems, item height: %d\n", name, itemsList->displayedItems, elem->height);
 
     itemsList->decorator = NULL;
@@ -1951,6 +1912,68 @@ void initItemsList(const char *themePath, config_set_t *themeConfig, theme_t *th
     // elem->endElem = &endBasic; does the job
 
     elem->drawElem = &drawItemsList;
+}
+
+// SaveIcon (original fork-gaps OR1): the selected game's save icon -- from the game's own VMC, else a
+// memory card -- spinning in the element's box. Draws nothing while 3D Save Icons is off, on a row
+// that is not a game, or when no save is found, so a theme can place it unconditionally.
+void drawSaveIcon(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)
+{
+    char vmc[2][SAVEICON_PATH_SIZE];
+    const char *startup = NULL;
+    item_list_t *support = NULL;
+    float xScale;
+    int w, h, cx, cy, ps1 = 0, ember = 0;
+
+    vmc[0][0] = vmc[1][0] = '\0';
+    if (gEnableSaveIcons && menu != NULL && menu->item != NULL && item != NULL)
+        support = static_cast<item_list_t *>(menu->item->userdata);
+    if (support != NULL && support->mode != APP_MODE) {
+        int view = libListRowView(support, item->item.id);
+        startup = gsOf(support)->startup(support, item->item.id);
+        ps1 = view == LIB_VIEW_PS1;
+        // PS1: the source names the game's dedicated VMC folder (and, on HDD, the partition to mount).
+        if (ps1 ? !gsOf(support)->ps1SaveDir(support, item->item.id, startup, &ember, vmc[0], sizeof(vmc[0]), vmc[1], sizeof(vmc[1])) :
+                  view != LIB_VIEW_ISO)
+            startup = NULL;
+    }
+    if (startup != NULL && !ps1 && config != NULL) {
+        // The same path the VMC check opens: <device prefix>VMC<separator><name>.bin.
+        char *prefix = gsOf(support)->rowPrefix(support, item->item.id);
+        for (int slot = 0; slot < 2 && prefix != NULL; slot++) {
+            char name[32];
+            int disabled = 0, len = (int)strlen(prefix);
+            name[0] = '\0';
+            configGetVMC(config, name, sizeof(name), slot);
+            configGetVMCDisable(config, slot, &disabled);
+            if (name[0] != '\0' && !disabled)
+                snprintf(vmc[slot], sizeof(vmc[slot]), "%sVMC%s%s.bin", prefix, (len > 0 && prefix[len - 1] == '\\') ? "\\" : "/", name);
+        }
+    }
+    if (ps1 && startup != NULL)
+        saveIconSelectPs1(vmc[0], vmc[1], ember);
+    else
+        saveIconSelect(startup, vmc[0], vmc[1], config != NULL);
+    if (startup == NULL)
+        return;
+
+    // The element's box, placed the way rmSetupQuad places an image of that size.
+    w = elem->width > 0 ? elem->width : 64;
+    h = elem->height > 0 ? elem->height : 64;
+    xScale = (elem->scaled & SCALING_RATIO) ? rmWideScale(1024) / 1024.0f : 1.0f;
+    if (elem->aligned & ALIGN_HCENTER)
+        cx = elem->posX;
+    else if (elem->aligned & ALIGN_RIGHT)
+        cx = elem->posX - (int)(w * xScale) / 2;
+    else
+        cx = elem->posX + (int)(w * xScale) / 2;
+    if (elem->aligned & ALIGN_VCENTER)
+        cy = elem->posY;
+    else if (elem->aligned & ALIGN_BOTTOM)
+        cy = elem->posY - h / 2;
+    else
+        cy = elem->posY + h / 2;
+    saveIconDraw(cx, cy, w, h, xScale);
 }
 
 void drawItemText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)

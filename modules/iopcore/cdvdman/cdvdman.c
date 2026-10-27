@@ -28,6 +28,46 @@ extern struct irx_export_table _exp_dev9;
 int DeviceReadSectorsCached(u64 sector, void *buffer, unsigned int count);
 int (*DeviceReadSectorsPtr)(u64 sector, void *buffer, unsigned int count) = &DeviceReadSectors;
 
+#ifdef INGAMEDIAG
+// In-game freeze report (INGAMEDIAG flavour): handed to the EE through sceCdSC(CDSC_GET_FREEZE_DIAG).
+freeze_diag_iop_t g_freeze_diag __attribute__((aligned(16))) = {FREEZE_DIAG_MAGIC, FREEZE_DIAG_VERSION};
+
+static void freeze_diag_read_begin(u32 lsn, unsigned int sectors)
+{
+    iop_sys_clock_t now;
+
+    GetSystemTime(&now);
+    g_freeze_diag.busy_lsn = lsn;
+    g_freeze_diag.busy_sectors = sectors;
+    g_freeze_diag.busy_start_hi = now.hi;
+    g_freeze_diag.busy_start_lo = now.lo;
+    g_freeze_diag.busy = 1;
+}
+
+static void freeze_diag_read_end(int err)
+{
+    iop_sys_clock_t now;
+    u32 ticks_hi, ticks_lo, ms;
+
+    GetSystemTime(&now);
+    g_freeze_diag.busy = 0;
+
+    // 64-bit difference by hand, so the IOP build needs no 64-bit division.
+    ticks_lo = now.lo - g_freeze_diag.busy_start_lo;
+    ticks_hi = now.hi - g_freeze_diag.busy_start_hi - (now.lo < g_freeze_diag.busy_start_lo ? 1 : 0);
+    ms = ticks_hi != 0 ? 0xFFFFFFFF : ticks_lo / FREEZE_DIAG_IOP_TICKS_PER_MS;
+    if (ms > g_freeze_diag.max_read_ms)
+        g_freeze_diag.max_read_ms = ms;
+    if (ms >= 1000)
+        g_freeze_diag.slow_reads++;
+
+    if (err != SCECdErNO) {
+        g_freeze_diag.read_errors++;
+        g_freeze_diag.last_err = err;
+    }
+}
+#endif
+
 // internal functions prototypes
 static void oplShutdown(int poff);
 static int cdvdman_writeSCmd(u8 cmd, const void *in, u16 in_size, void *out, u16 out_size);
@@ -93,10 +133,113 @@ void oplRegisterShutdownCallback(oplShutdownCb_t cb)
     vmcShutdownCb = cb;
 }
 
+//-------------------------------------------------------------------------
+/* VMC save drain for oplShutdown.
+
+   oplShutdown (IGR, IGR power-off, and the power button when IGR is off) takes the device lock and
+   never releases it. MCEMU's IOP threads keep running while the EE is stopped, and one MCMAN call
+   can make many VMC page writes (MCEMU turns each block erase into 16 of them), so a save in
+   progress was cut at its next page once the lock was taken.
+
+   MCEMU reads and writes VMC pages only through this module's oplutils exports, and each of them
+   reports here. VMC I/O whose gaps are all shorter than VMC_DRAIN_QUIET_MS is one burst. Before it
+   takes the lock, oplShutdown waits for a burst that has written to end, for at most
+   VMC_DRAIN_CAP_MS. Without a VMC, or while the burst has only read, it does not wait.
+
+   A save that the game spreads over several MCMAN calls can still be cut between two calls: the
+   EE is stopped and never sends the next one. Pressing reset does the same to a real card. */
+
+#define VMC_TICKS_PER_MS   36864 // GetSystemTime counts the 36.864 MHz IOP clock.
+#define VMC_DRAIN_QUIET_MS 100   // Gaps inside one MCMAN call are IOP work and SIO2 handoffs.
+#define VMC_DRAIN_CAP_MS   500   // ee_core's INGAMEDIAG flavour allows this whole RPC 2000 ms.
+#define VMC_DRAIN_POLL_US  10000
+
+static int vmc_io_busy;             // VMC calls between begin and end, including any waiting for the device.
+static int vmc_burst_wrote;         // The current burst includes a page write (or an erase, which writes).
+static iop_sys_clock_t vmc_io_last; // Latest begin or end.
+
+static int vmc_clock_after(const iop_sys_clock_t *a, const iop_sys_clock_t *b)
+{
+    return a->hi > b->hi || (a->hi == b->hi && a->lo > b->lo);
+}
+
+// Ticks from then to now: 0 if then is later, 0xFFFFFFFF from about 116 s on. No 64-bit math on the IOP.
+static u32 vmc_ticks_between(const iop_sys_clock_t *then, const iop_sys_clock_t *now)
+{
+    u32 lo, hi;
+
+    if (vmc_clock_after(then, now))
+        return 0;
+    lo = now->lo - then->lo;
+    hi = now->hi - then->hi - (now->lo < then->lo ? 1 : 0);
+    return hi != 0 ? 0xFFFFFFFF : lo;
+}
+
+// Called by the oplutils VMC exports before they wait for the device.
+void cdvdman_vmc_io_begin(int is_write)
+{
+    iop_sys_clock_t now;
+    int oldstate;
+
+    GetSystemTime(&now);
+    CpuSuspendIntr(&oldstate);
+    if (vmc_io_busy == 0 && vmc_ticks_between(&vmc_io_last, &now) >= VMC_DRAIN_QUIET_MS * VMC_TICKS_PER_MS)
+        vmc_burst_wrote = 0; // A quiet gap ended the previous burst.
+    if (is_write)
+        vmc_burst_wrote = 1;
+    vmc_io_busy++;
+    if (vmc_clock_after(&now, &vmc_io_last))
+        vmc_io_last = now;
+    CpuResumeIntr(oldstate);
+}
+
+// Called by the oplutils VMC exports after the device call has returned.
+void cdvdman_vmc_io_end(void)
+{
+    iop_sys_clock_t now;
+    int oldstate;
+
+    GetSystemTime(&now);
+    CpuSuspendIntr(&oldstate);
+    vmc_io_busy--;
+    if (vmc_clock_after(&now, &vmc_io_last))
+        vmc_io_last = now;
+    CpuResumeIntr(oldstate);
+}
+
+static void cdvdman_vmc_drain(void)
+{
+    iop_sys_clock_t start, now, last;
+    int busy, wrote, oldstate;
+
+    GetSystemTime(&start);
+    for (;;) {
+        CpuSuspendIntr(&oldstate);
+        busy = vmc_io_busy;
+        wrote = vmc_burst_wrote;
+        last = vmc_io_last;
+        CpuResumeIntr(oldstate);
+        GetSystemTime(&now); // Read after the snapshot, so now is never before last.
+
+        // No VMC, or nothing written in this burst: nothing to finish.
+        if (!wrote)
+            return;
+        // The burst has ended.
+        if (!busy && vmc_ticks_between(&last, &now) >= VMC_DRAIN_QUIET_MS * VMC_TICKS_PER_MS)
+            return;
+        // A writer that does not stop, or a device call that does not return, cannot hold up the shutdown.
+        if (vmc_ticks_between(&start, &now) >= VMC_DRAIN_CAP_MS * VMC_TICKS_PER_MS)
+            return;
+        // Sleeping lets the lower-priority MCMAN and MCEMU threads run.
+        DelayThread(VMC_DRAIN_POLL_US);
+    }
+}
+
 static void oplShutdown(int poff)
 {
     u32 stat;
 
+    cdvdman_vmc_drain();
     DeviceLock();
     if (vmcShutdownCb != NULL)
         vmcShutdownCb();
@@ -175,7 +318,13 @@ int DeviceReadSectorsCached(u64 lsn, void *buffer, unsigned int sectors)
 {
     if (sectors < MAX_SECTOR_CACHE) { // if MAX_SECTOR_CACHE is 0 then it will act as disabled and passthrough
         if (cur_sector == 0xffffffffffffffff || lsn < cur_sector || (lsn + sectors) - cur_sector > MAX_SECTOR_CACHE) {
-            DeviceReadSectors(lsn, sector_cache, MAX_SECTOR_CACHE);
+            if (DeviceReadSectors(lsn, sector_cache, MAX_SECTOR_CACHE) != SCECdErNO) {
+                // Nothing in a failed window can be served, now or on a later hit. The window is wider
+                // than the request, so near the end of the image it can fail on sectors past the end
+                // alone: read just the requested sectors and return what that read reports.
+                cur_sector = 0xffffffffffffffff;
+                return DeviceReadSectors(lsn, buffer, sectors);
+            }
             cur_sector = lsn;
         }
         int pos = lsn - cur_sector;
@@ -203,7 +352,8 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
     // read first block if not aligned to sector size
     if (pos) {
         int r = MIN(size, (2048 - pos));
-        ReadSectors(lba, ziso_tmp_buf, 1);
+        if (ReadSectors(lba, ziso_tmp_buf, 1) != SCECdErNO)
+            return -1; // a failed read must never be decompressed as if it were data
         memcpy(addr, ziso_tmp_buf + pos, r);
         size -= r;
         lba++;
@@ -216,7 +366,8 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
         n_blocks++;
     if (n_blocks > 1) {
         int r = 2048 * (n_blocks - 1);
-        ReadSectors(lba, addr, n_blocks - 1);
+        if (ReadSectors(lba, addr, n_blocks - 1) != SCECdErNO)
+            return -1;
         size -= r;
         addr += r;
         lba += n_blocks - 1;
@@ -224,7 +375,8 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
 
     // read remaining data
     if (size) {
-        ReadSectors(lba, ziso_tmp_buf, 1);
+        if (ReadSectors(lba, ziso_tmp_buf, 1) != SCECdErNO)
+            return -1;
         memcpy(addr, ziso_tmp_buf, size);
         size = 0;
     }
@@ -235,7 +387,11 @@ int read_raw_data(u8 *addr, u32 size, u32 offset, u32 shift)
 
 int DeviceReadSectorsCompressed(u64 lsn, void *addr, unsigned int count)
 {
-    return (ziso_read_sector(addr, (u32)lsn, count) == count) ? SCECdErNO : SCECdErEOM;
+    int r = ziso_read_sector(addr, (u32)lsn, count);
+
+    if (r < 0)
+        return SCECdErREAD; // a device read failed: a read error the game can retry, not end of media
+    return ((unsigned int)r == count) ? SCECdErNO : SCECdErEOM;
 }
 
 static int probed = 0;
@@ -255,6 +411,19 @@ static int ProbeZSO(u8 *buffer)
     return 1;
 }
 
+// IOP clock ticks (36.864MHz) one 2048-byte sector takes under Accurate Reads (Mode 1).
+static u32 cdvdman_accu_read_ticks(void)
+{
+    // SP193: approximately 2KB/3600KB/s = 555us required per 2048-byte data sector at 3600KB/s, so 555 * 36.864 = 20460 ticks per sector with a 36.864MHz clock.
+    /* AKuHAK: 3600KB/s is too fast, it is CD 24x - theoretical maximum on CD
+       However, when setting SCECdSpinMax we will get 900KB/s (81920) for CD, and 2200KB/s (33512) for DVD */
+    /* Slow Reads (Mode 8) gives a DVD title the CD rate. Tales of the Abyss loses its music and SFX at
+       >=1200KB/s and plays clean at <=1000KB/s, which OPL 0.9's ~900KB/s Mode 1 met (#924). */
+    if (cdvdman_settings.common.media == 0x12 || (cdvdman_settings.common.flags & IOPCORE_COMPAT_SLOW_READS))
+        return 81920;
+    return 33512;
+}
+
 static int cdvdman_read_sectors(u32 lsn, unsigned int sectors, void *buf)
 {
     unsigned int remaining;
@@ -263,12 +432,21 @@ static int cdvdman_read_sectors(u32 lsn, unsigned int sectors, void *buf)
 
     DPRINTF("cdvdman_read lsn=%lu sectors=%u buf=%p\n", lsn, sectors, buf);
 
+#ifdef INGAMEDIAG
+    g_freeze_diag.reads++;
+    g_freeze_diag.last_lsn = lsn;
+    g_freeze_diag.last_sectors = sectors;
+#endif
+
     if (mediaLsnCount) {
 
         // If lsn to read is already bigger error already.
         if (lsn >= mediaLsnCount) {
             DPRINTF("cdvdman_read eom lsn=%d sectors=%d leftsectors=%d MaxLsn=%d \n", lsn, sectors, mediaLsnCount - lsn, mediaLsnCount);
             cdvdman_stat.err = SCECdErIPI;
+#ifdef INGAMEDIAG
+            g_freeze_diag.eom_hits++;
+#endif
             return 1;
         }
 
@@ -276,6 +454,9 @@ static int cdvdman_read_sectors(u32 lsn, unsigned int sectors, void *buf)
         if ((lsn + sectors) > mediaLsnCount) {
             DPRINTF("cdvdman_read eom lsn=%d sectors=%d leftsectors=%d MaxLsn=%d \n", lsn, sectors, mediaLsnCount - lsn, mediaLsnCount);
             endOfMedia = 1;
+#ifdef INGAMEDIAG
+            g_freeze_diag.eom_hits++;
+#endif
             // Limit how much sectors we can read.
             sectors = mediaLsnCount - lsn;
         }
@@ -299,15 +480,18 @@ static int cdvdman_read_sectors(u32 lsn, unsigned int sectors, void *buf)
                 SectorsToRead = 8;
 
             TargetTime.hi = 0;
-            TargetTime.lo = (cdvdman_settings.common.media == 0x12 ? 81920 : 33512) * SectorsToRead;
-            // SP193: approximately 2KB/3600KB/s = 555us required per 2048-byte data sector at 3600KB/s, so 555 * 36.864 = 20460 ticks per sector with a 36.864MHz clock.
-            /* AKuHAK: 3600KB/s is too fast, it is CD 24x - theoretical maximum on CD
-               However, when setting SCECdSpinMax we will get 900KB/s (81920) for CD, and 2200KB/s (33512) for DVD */
+            TargetTime.lo = cdvdman_accu_read_ticks() * SectorsToRead;
             ClearEventFlag(cdvdman_stat.intr_ef, ~0x1000);
             SetAlarm(&TargetTime, &cdvdemu_read_end_cb, NULL);
         }
 
+#ifdef INGAMEDIAG
+        freeze_diag_read_begin(lsn, SectorsToRead);
+#endif
         cdvdman_stat.err = DeviceReadSectorsPtr(lsn, ptr, SectorsToRead);
+#ifdef INGAMEDIAG
+        freeze_diag_read_end(cdvdman_stat.err);
+#endif
         if (cdvdman_stat.err != SCECdErNO) {
             if (cdvdman_settings.common.flags & IOPCORE_COMPAT_ACCU_READS)
                 CancelAlarm(&cdvdemu_read_end_cb, NULL);
@@ -603,6 +787,19 @@ int sceCdSC(int code, int *param)
             oplShutdown(*param);
             result = 1;
             break;
+#ifdef INGAMEDIAG
+        case CDSC_GET_FREEZE_DIAG: {
+            iop_sys_clock_t now;
+
+            GetSystemTime(&now);
+            g_freeze_diag.now_hi = now.hi;
+            g_freeze_diag.now_lo = now.lo;
+            g_freeze_diag.media_lsn_count = mediaLsnCount;
+            *param = (int)&g_freeze_diag;
+            result = 1;
+            break;
+        }
+#endif
         default:
             DPRINTF("sceCdSC unknown, code=0x%X param=0x%X \n", code, *param);
             result = 1; // dummy result

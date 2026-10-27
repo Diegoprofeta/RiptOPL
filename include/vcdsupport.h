@@ -28,11 +28,13 @@ constexpr int VCD_MAX_ITEMS = 2048; // hard cap on VCDs scanned from one folder
 typedef struct
 {
     char name[VCD_NAME_MAX]; // VCD basename WITHOUT ".VCD" (the POPSTARTER selector game name)
+    u32 sizeMB;              // vcdScanDirRoot only (0 otherwise): the file size, read while mounted
 } vcd_entry_t;
 
 
 // Like vcdScanDir but scans `dirPath` DIRECTLY (no POPS/ subfolder) -- for the APA/PFS HDD where each
-// __.POPS* partition holds its .VCD at the mounted root (e.g. dirPath = "pfs1:/").
+// __.POPS* partition holds its .VCD at the mounted root (e.g. dirPath = "pfs1:/"). Also fills each
+// entry's sizeMB: the container is only mounted during the scan, so the info screen cannot stat later.
 int vcdScanDirRoot(const char *dirPath, vcd_entry_t **outList);
 
 // Extract a strict leading PS1 ID from "SXXX_NNN.NN.Title" or "XX.SXXX_NNN.NN.Title" for same-folder CFG/art fallback.
@@ -44,6 +46,23 @@ int vcdExtractGameId(const char *name, char *idOut, int idSize);
 int vcdPopsPartitionTitleOffset(const char *label);
 
 
+
+// Which PS1 core a memo row belongs to (original #1049). The two libraries can hold the same display
+// name (one game kept for both cores is the expected case), so the memo keys on name AND kind.
+enum {
+    PS1_ROW_VCD = 0, // POPSTARTER disc image, scanned from its POPS directory
+    PS1_ROW_CUE      // Ember game folder, scanned from a device root (dir = devPrefix)
+};
+
+// METADATA key for art and CFG Title, for BOTH cores. Row identity does NOT change: launch, rename,
+// Favourites and settings keys stay the row name.
+//   ps1RowIdCached -- best id WITHOUT device IO: the disc-verified id when resolved, else the strict
+//     filename parse (a PSBBN/BatchKit-style name supplies the id for free). 0 = unknown.
+//   ps1RowIdRequest -- queue a background disc verify (the caption's one-slot worker). Call on the
+//     render path; the answer lands in the memo and the next lookup upgrades. Never opens the image
+//     synchronously, and verifies a parsed name too, so art matches the id the barcode reports.
+int ps1RowIdCached(const char *name, int kind, char *idOut, int idSize);
+void ps1RowIdRequest(const char *name, int kind);
 
 // Render-thread half of the caption id (#380): returns the ALREADY-resolved id from the session
 // memo, 0 if not yet resolved. Never touches the device, never queues -- safe to call every frame.
@@ -126,7 +145,7 @@ enum {
     VCD_BDMA_MMCE,      // MMCE exFAT
     VCD_BDMA_ATA,       // internal ATA HDD exFAT (BDMAssault)
     VCD_BDMA_ILINK,     // iLink / IEEE 1394 (appended so persisted mode values stay stable)
-    VCD_BDMA_UDPFS,     // read-only network VCD fallback through the POPSTARTER USB driver
+    VCD_BDMA_UDPFS,     // UDPFS serves all mass: files, including VMC writes
     VCD_BDMA_MODE_COUNT
 };
 // "BDMA SOURCE": which device holds the user-provided variant files in its POPS/ folder. The equip
@@ -146,13 +165,14 @@ enum {
 //   device's POPS/ folder. BDMA pairs are loose release/device files and are never embedded in the ELF.
 // On -4, if diag != NULL it is filled with a human-readable summary (needed files + which source
 // devices were actually mounted) so the failure can be shown on screen / screenshotted to diagnose.
+// This is the Settings page's manual equip: it installs the first pair it finds, whatever its size.
+// A launch equip installs only the pair this release ships, and returns -5 (copying nothing) when
+// the seek path holds only another release's pair.
 int vcdEquipBdma(int source, int mode, char *diag, int diagSize);
 // Read the equipped variant from mc?:/POPSTARTER/bdma_config.txt (VCD_BDMA_FAT32 if absent).
 int vcdReadBdmaMode(void);
 // Marked or matching unmarked driver pair, required for network VCD handoff.
 int vcdBdmaLaunchReady(int mode);
-// Refuse the known USB-only RA module (or an unreadable module) on every live USB volume.
-int vcdPopsUdpfsCleanModules(void);
 // Auto-equip the BDMA variant matching the game's device (source/mode) before a VCD launch.
 // Local launches keep best-effort preparation; UDPFS callers require vcdBdmaLaunchReady before handoff.
 void vcdEnsureBdmaForLaunch(int source, int mode);
@@ -232,10 +252,11 @@ int vcdPopsNetValuesValid(const vcd_popsnet_t *cfg, int validateSmb, int validat
 int vcdWritePopstarterNetFiles(const vcd_popsnet_t *cfg, int writeSmb, int writeIp);
 
 // Explicit readable POPS folder (including a temporarily mounted APA __common).
+// A launch equip: only the pair this release ships is installed (-5 when that folder holds another
+// release's).
 int vcdEquipBdmaFromPops(const char *popsDir, int mode, char *diag, int diagSize);
 
-// Interim BDM-UDPFS Assault configuration: the IRXs may come from any POPS source,
-// but this release reads these two DAT files only from USB mass:/POPS/ after reset.
+// UDPFS Assault reads optional DAT files from mc0:/SYS-CONF/, then mc1:/SYS-CONF/.
 typedef struct
 {
     int ps2Ip[4], mask[4], gateway[4], server[4]; // server 0.0.0.0 = broadcast discovery
@@ -245,7 +266,8 @@ typedef struct
 int vcdReadPopsUdpfsNet(vcd_pops_udpfs_t *out);
 int vcdPopsUdpfsNetValid(const vcd_pops_udpfs_t *cfg);
 int vcdWritePopsUdpfsNet(const vcd_pops_udpfs_t *cfg);
-int vcdPreparePopsUdpfsLaunch(char *usbRoot, int rootSize);
+// Copy optional game-device POPS/*.DAT only when absent from both cards.
+int vcdInstallPopsUdpfsNet(const char *popsDir);
 
 // ---- POPStarter SMB auto-provisioning (RiptOPL launch helper) ----
 // Ensures the two required network files for SMB VCD launches exist at the validated resolved
@@ -268,6 +290,12 @@ vcd_popsnet_ensure_t vcdPreparePopstarterSmbLaunch(const char *smbPrefix);
 // Render the RetroGEM Game ID optical barcode immediately prior to a POPStarter VCD launch.
 void vcdPrepareRetroGemBarcode(const char *vcdPath);
 
+// POPS/MODULE_9.IRX left by an RA launch (rapops): 0 absent or removed, -1 the user's own module
+// (never touched), -2 cannot tell or cannot remove. vcdConfirmCleanLaunch asks before an ordinary
+// launch whether to delete RiptOPL's; 0 means the user cancelled the launch.
+int vcdRemoveRaModule(const char *root);
+int vcdConfirmCleanLaunch(const char *root);
+
 // ---- module runtime state -------------------------------------------------------------
 // The one VcdSupport instance (src/sources/vcdsupport.cpp) owns the mutable state this module keeps
 // between calls: the session disc-id memo + the single async resolve-request slot (issue #380) and
@@ -280,18 +308,22 @@ class VcdSupport
 {
 public:
     // ---- disc-id memo + async resolve slot (#380) ----
-    // Scan-side hook: remember which directory a scanned VCD lives in (STRING WORK ONLY -- the scan
-    // path must never touch the device).
-    void noteScanDir(const char *name, const char *dirPath);
+    // Scan-side hook: remember which directory a scanned PS1 row lives in (STRING WORK ONLY -- the
+    // scan path must never touch the device). A .VCD row passes its directory, a .CUE row the device
+    // root (PS1_ROW_CUE).
+    void noteScanDir(const char *name, const char *dirPath, int kind = PS1_ROW_VCD);
     // Forget every remembered id and scan directory, so swapped media is not described by the
     // previous disc. Cheap: ids re-resolve lazily as rows are settled on.
     void invalidateGameIds();
     // Render-thread half: returns the ALREADY-resolved id from the memo, 0 if not yet resolved.
     // Never touches the device, never queues -- safe to call every frame.
     int displayIdCached(const char *name, char *idOut, int idSize);
-    // Ask for a settled VCD row's id to be resolved off-thread (one queued resolve per row per
-    // session, memo-deduped). A cold memo with a request already in flight is a no-op.
-    void requestDisplayId(const char *name);
+    // Ask for a row's id to be resolved off-thread (one queued resolve per row per session,
+    // memo-deduped). A cold memo with a request already in flight is a no-op. verifyParsedName=0
+    // keeps the caption's zero-IO contract for well-named rows; the metadata path passes 1.
+    void requestRowId(const char *name, int kind, int verifyParsedName);
+    // ps1RowIdCached's body: memo hit or free filename parse, never device IO.
+    int rowIdCached(const char *name, int kind, char *idOut, int idSize);
 
     // ---- tier-1 custom POPSTARTER.ELF cache ----
     // Resolve gPopstarterPath to a file, remembering the value last resolved and the file it
@@ -300,21 +332,22 @@ public:
 
     // Equip the chosen BDMA variant (copy from SOURCE's POPS/, or remove for FAT32) + write the
     // marker. Reads the custom cache above for the adaptive seek-order pre-probe.
-    int equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir = NULL);
+    int equipBdma(int source, int mode, char *diag, int diagSize, const char *popsDir = NULL, int shippedOnly = 0);
 
 private:
     // The io-worker body behind requestDisplayId; ioPutRequest(IO_CUSTOM_SIMPLEACTION, ...) takes
     // a plain function pointer, so the request is handed in through this static thunk.
     static void resolveQueuedDisplayIdThunk();
     void resolveQueuedDisplayId();
-    struct vcd_id_memo *idMemoFind(const char *name);
-    // The device IO behind the memo: resolves one VCD's disc id, memoizing hit AND miss.
-    int resolveDisplayId(const char *name, char *idOut, int idSize);
+    struct vcd_id_memo *idMemoFind(const char *name, int kind);
+    // The device IO behind the memo: resolves one row's disc id, memoizing hit AND miss.
+    int resolveRowId(const char *name, int kind, char *idOut, int idSize);
 
     struct vcd_id_memo *memoHead_ = NULL;
     int memoCount_ = 0;
     char idReqName_[256] = {};                         // one-slot request: the GUI writes it, the io worker reads + clears
     volatile int idReqPending_ = 0;                    // DIntr/EIntr-guarded, like the SFX dispatch ring
+    volatile unsigned char idReqKind_ = PS1_ROW_VCD;   // the queued row's core: same-named rows never cross
     char customPopsFor_[sizeof(gPopstarterPath)] = {}; // gPopstarterPath value the cache resolved for
     char customPopsElf_[256] = {};                     // the file it resolved to ("" on a miss)
 };

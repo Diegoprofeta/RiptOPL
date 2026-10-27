@@ -43,6 +43,8 @@ typedef uint64_t u64;
 '''
 state = core[core.index('static u8 *ra_snap_buf'):core.index('#define RA_RAM_HIGH')]
 state += '#define RA_RAM_HIGH 0x02000000\n'
+# COP0 Count has no host equivalent: each read advances a fake clock by 7.
+state = state.replace(function(state, 'static inline u32 ra_ticks'), 'static u32 ticks;\nstatic u32 ra_ticks(void) { return ticks += 7; }')
 run('ee_ra_budget', prefix + r'''
 #include "ee_core/include/coreconfig.h"
 struct EECoreConfig_t g_ee_core_config;
@@ -64,7 +66,7 @@ static int isceSifSetDma(SifDmaTransfer_t *dma,int count) {
 }
 static void RA_OverlayOnVblank(unsigned) {overlays++;}
 ''' + state + '\n' + '\n'.join(function(core_functions,s) for s in
-    ('void RA_SetupWatchList(', 'static void ra_snap_send(', 'void RA_OnVblank(')) + r'''
+    ('int RA_SnapBytes(', 'void RA_SetupWatchList(', 'static void ra_snap_send(', 'void RA_OnVblank(')) + r'''
 static u8 work[RA_EE_WORK_BYTES(RA_WATCH_MAX,RA_NODE_MAX)+128] __attribute__((aligned(64)));
 static u32 entries[RA_WATCH_MAX];
 static ra_node nodes[RA_NODE_MAX];
@@ -85,7 +87,7 @@ int main() {
         int bytes=((parts-1)*RA_SNAP_CHUNK_BYTES/4+1)*4;
         int count=bytes/4;
         for(int i=0;i<count;i++)entries[i]=RA_WATCH_PACK(0x80000+4*i,4);
-        setup(count,bytes);assert(ra_watch_count==count && ra_snap_bytes==bytes);
+        setup(count,bytes);assert(ra_watch_count==count && ra_snap_bytes==bytes && RA_SnapBytes()==bytes);
         assert(ra_snap_every==(unsigned)(parts+2)/3);
         for(int frame=0;frame<1200;frame++)RA_OnVblank();
         assert(overlays==1200 && transfers==600/(int)ra_snap_every);
@@ -102,7 +104,10 @@ int main() {
     for(int i=0;i<RA_NODE_MAX;i++){u32 v=0x12340000+i;memcpy(gameRam+base+i*4,&v,4);}
     setup(RA_WATCH_MAX,bytes,RA_NODE_MAX);
     assert(ra_watch_count==4096 && ra_node_count==128 && ra_snap_bytes==RA_SNAP_MAX_BYTES && ra_snap_every==3);
-    ra_snap_send();assert(transfers==1);
+    ra_snap_send();assert(transfers==1 && RA_SnapBytes()==RA_SNAP_MAX_BYTES);
+    // The read cost is two clock reads apart; the frame is the gap between two VBLANKs.
+    RA_OnVblank();RA_OnVblank();ra_snap_dma_id=0;ra_snap_send();
+    assert(((const ra_snap*)work)->read_cycles==7 && ((const ra_snap*)work)->frame_cycles==7);
     const u8 *vals=work+RA_SNAP_HDR;
     for(int i=0;i<RA_NODE_MAX;i++) {
         u32 address,value;memcpy(&address,vals+bytes+i*8,4);memcpy(&value,vals+bytes+i*8+4,4);
@@ -111,7 +116,7 @@ int main() {
     tailUnchanged(g_ee_core_config.raWorkBytes);
     // Undersized or unaligned reservations refuse without writing into them.
     setup(1,4);g_ee_core_config.raWorkBytes--;memset(work,0xCC,sizeof(work));RA_SetupWatchList();
-    assert(!ra_watch_count);tailUnchanged(0);
+    assert(!ra_watch_count && !RA_SnapBytes());tailUnchanged(0);
     setup(1,4);g_ee_core_config.raWorkArea=work+1;memset(work,0xCC,sizeof(work));RA_SetupWatchList();
     assert(!ra_watch_count);tailUnchanged(0);
     setup(1,4);g_ee_core_config.raSnapBytes=3;memset(work,0xCC,sizeof(work));RA_SetupWatchList();
@@ -124,7 +129,13 @@ int main() {
     // Unreadable addresses produce zeros without disturbing snapshot shape.
     entries[0]=RA_WATCH_PACK(0x7ffff,4);entries[1]=RA_WATCH_PACK(0x1ffffff,2);
     setup(2,6);ra_snap_send();for(int i=0;i<6;i++)assert(work[RA_SNAP_HDR+i]==0);
-    puts("PASS: EE module-storage bounds, full entries/nodes, IRQ reads and one/two/three-frame pacing");
+    // A chain whose base pointer is null sends address 0 and value 0, never reading through it
+    // (ported from the original's test_ra_watch).
+    entries[0]=RA_WATCH_PACK(0x80000,4);memset(gameRam+0x80000,0,4);gameRam[0x80004]=0xAA;
+    nodes[0]={RA_NODE_PACK(0,0,4),0x80001};
+    setup(1,4,1);ra_snap_send();
+    {const u8 zero[8]={0};assert(!memcmp(work+RA_SNAP_HDR+4,zero,8));}
+    puts("PASS: EE module-storage bounds, full entries/nodes, IRQ reads, null chains and one/two/three-frame pacing");
 }
 ''')
 
@@ -174,32 +185,61 @@ int main() {
 ''')
 
 app=(root/'src/app/host.cpp').read_text(encoding='utf-8')
-first=app.index('unsigned int raWorkBytes() override')
-method=app[first:app.index('\n    }',first)+6]
+first=app.index('#ifdef RETROACHIEVEMENTS\n    // Snapshot, watch words')
+last=app.index('unsigned int raWorkBytes(const void *at) override')
+method=app[first:app.index('\n    }',last)+6]
+overlay=app.index('        const unsigned int list = raListBytes();',app.index('void fillCoreConfig'))
+overlay=app[overlay:app.index(': NULL;',overlay)+7]
 run('launch_ra_capacity', prefix + r'''
 static unsigned int entries[RA_WATCH_MAX];
-static int count,bytes,nodes,gRATelemetry=1;
+static int count,bytes,nodes,gRATelemetry=1,gRAMode,gRAExperimentalCards,notes;
+#define RA_MODE_CADUCEUS 1
+#include "include/ra_features.h"
+static void raLaunchNote(const char *,int,int) {notes++;}
 unsigned int *GetWatchList() {return entries;}
 int GetWatchCount() {return count;}
 int GetWatchBytes() {return bytes;}
 int GetNodeCount() {return nodes;}
-struct LaunchServices {virtual unsigned int raWorkBytes()=0;};
+struct LaunchServices {virtual unsigned int raWorkBytes(const void *at)=0;};
+struct Config {void *raOverlayBuf;};
 class OplLaunch final:public LaunchServices {public:
 ''' + method + r'''
+    void *overlayFor(void *raWorkArea, unsigned int raWorkBytes) {
+        Config c, *config=&c;
+''' + overlay + r'''
+        return c.raOverlayBuf;
+    }
 };
 int main() {
     for(int i=0;i<RA_WATCH_MAX;i++)entries[i]=RA_WATCH_PACK(0x80000+i,1);
     OplLaunch launch;
     for(int n : {0,1,1024,4096,4097}) {
         count=bytes=n;nodes=0;
-        assert(launch.raWorkBytes()==(n>0 && n<=4096 ? (unsigned)RA_EE_WORK_BYTES(n,0) : 0));
+        assert(launch.raWorkBytes(nullptr)==(n>0 && n<=4096 ? (unsigned)RA_EE_WORK_BYTES(n,0) : 0));
     }
     count=bytes=4096;nodes=128;
-    assert(launch.raWorkBytes()==RA_EE_WORK_BYTES(4096,128));
-    nodes=-1;assert(!launch.raWorkBytes());nodes=129;assert(!launch.raWorkBytes());
-    nodes=0;bytes--;assert(!launch.raWorkBytes());bytes++;
-    entries[0]=RA_WATCH_PACK(0x80000,3);assert(!launch.raWorkBytes());
-    entries[0]=RA_WATCH_PACK(0x80000,1);gRATelemetry=0;assert(!launch.raWorkBytes());
+    assert(launch.raWorkBytes(nullptr)==RA_EE_WORK_BYTES(4096,128));
+    nodes=-1;assert(!launch.raWorkBytes(nullptr));nodes=129;assert(!launch.raWorkBytes(nullptr));
+    nodes=0;bytes--;assert(!launch.raWorkBytes(nullptr));bytes++;
+    entries[0]=RA_WATCH_PACK(0x80000,3);assert(!launch.raWorkBytes(nullptr));
+    entries[0]=RA_WATCH_PACK(0x80000,1);gRATelemetry=0;assert(!launch.raWorkBytes(nullptr));
     puts("PASS: actual C++ launch service reserves only validated set-sized module storage");
+    // Cards: Caduceus and an explicit opt-in add a cache-aligned packet behind the list,
+    // never past 1 MB when the block starts below it; the ee_core pointer follows the size.
+    static u8 area[1];
+    const void *low=(const void *)0x000C0000, *high=(const void *)0x00200000;
+    entries[0]=RA_WATCH_PACK(0x80000,1);gRATelemetry=1;count=bytes=3;nodes=0;
+    const unsigned list=RA_EE_WORK_BYTES(3,0), cards=((list+63)&~63u)+RA_CARD_PACKET_BYTES;
+    assert(list%64 && launch.raWorkBytes(low)==list && !launch.overlayFor(area,list));
+    gRAMode=1;assert(launch.raWorkBytes(low)==list);
+    gRAExperimentalCards=1;assert(launch.raWorkBytes(low)==cards);
+    assert(launch.overlayFor(area,cards)==area+((list+63)&~63u) && !launch.overlayFor(area,cards-1));
+    gRAMode=0;assert(launch.raWorkBytes(low)==list);gRAMode=1;
+    assert(!notes && launch.raWorkBytes((const void *)(0x00100000-cards))==cards);
+    assert(launch.raWorkBytes((const void *)(0x00100000-cards+64))==list && notes==1);
+    assert(launch.raWorkBytes(high)==cards && launch.raWorkBytes((const void *)(0x02000000-cards+64))==list);
+    assert(launch.raWorkBytes((const void *)0x02000040)==list && notes==3);
+    count=0;assert(!launch.raWorkBytes(low) && !launch.overlayFor(area,0));
+    puts("PASS: card packet only for Caduceus opt-in, cache-aligned, below the 1 MB/32 MB limit, else the pulse");
 }
 ''')

@@ -8,8 +8,8 @@ Two settings change what you read below, so check them first if the tables do no
   **Cross = confirm, Circle = back**, which is the default everywhere except **Japanese consoles**,
   where RiptOPL starts with Circle as confirm to match the regional convention. If Circle is your
   select button, swap those two everywhere, including the Settings screens.
-* **Coverflow** (*Settings → Interface*) rotates the navigation axis on the game list. Both layouts
-  are given below.
+* **Coverflow and PSBBN Flow** (*Settings → Interface → Theme*) rotate the navigation axis on the game
+  list. Both layouts are given below.
 
 ---
 
@@ -31,17 +31,17 @@ Two settings change what you read below, so check them first if the tables do no
 | **Start** | Open the main menu |
 | **Select** | Refresh the current device list |
 
-### With Coverflow enabled
+### With Coverflow or PSBBN Flow selected
 
-Coverflow rotates the two navigation axes on the game list — **and only there**. The info screen and
-every menu keep the standard layout.
+Both flow themes rotate the two navigation axes on the game list — **and only there**. The info screen
+and every menu keep the standard layout.
 
-| Button | Coverflow off | Coverflow on |
+| Button | List theme, such as `<OPL>` | Coverflow / PSBBN Flow |
 |---|---|---|
 | **Up / Down** | Move through the list | Switch device page |
-| **Left / Right** | Switch device page | Move through the carousel |
+| **Left / Right** | Switch device page | Move through the covers |
 
-Every other button is unchanged.
+Every other button is unchanged, including **R3 = toggle Favorite**.
 
 ### Notes on individual buttons
 
@@ -55,7 +55,7 @@ nothing on them.
 the size field is intentionally left blank rather than computed.
 
 **R3** does nothing when Favorites is disabled — it never writes silently. On the Favorites page
-itself, R3 removes the selected entry. See [the Favorites docs](https://nathanneurotic.github.io/Open-PS2-Loader/favourites.html).
+itself, R3 removes the selected entry. See [the Favorites docs](https://nathanneurotic.github.io/RiptOPL/favourites.html).
 
 **Select / Refresh** is also the retry for a device page that failed to populate — a network share
 that was not up when RiptOPL started, for example. A USB, MX4SIO, iLink, UDPBD or BDM HDD page whose
@@ -197,7 +197,7 @@ can't show leaves you looking at a black screen, so pressing buttons blind can't
 ## Rumble
 
 RiptOPL can give a short vibration when you move the cursor, confirm, or go back. It is controlled by
-**Controller Vibration in Menus** in *Settings → Controller Settings*.
+**Controller Vibration in Menus** in *Settings → Controller Settings*, and is off on a fresh install.
 
 It needs a **DualShock in analog mode** — with the analog light off, the controller has no motors
 available and the setting does nothing. Third-party pads and most adapters vary in whether they

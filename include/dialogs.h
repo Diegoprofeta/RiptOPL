@@ -22,10 +22,12 @@ enum UI_ITEMS {
     UICFG_ENABLE_DISCART,
     UICFG_ENABLE_LOGOART,
     UICFG_ENABLE_BGART,
+    UICFG_ENABLE_SAVE_ICONS,
     UICFG_ENABLE_ART_TAR,
     UICFG_ENABLE_ANALOG_NAV,
     UICFG_ART_DELAY,
     UICFG_WIDESCREEN,
+    UICFG_FONT_SIZE, // original #1038: Interface page Font Size (FONT_SIZE_*)
     UICFG_AUTOREFRESH,
     UICFG_VMODE,
     UICFG_XOFF,
@@ -60,6 +62,8 @@ enum UI_ITEMS {
     CFG_ENABLEUSB,
     CFG_ENABLEILK,
     CFG_ENABLEMX4SIO,
+    CFG_ENABLEPCCF,
+    CFG_ENABLEDVR,
     CFG_ENABLEBDMHDD,
     CFG_ENABLEUDPBD,     // legacy: kept as an unused placeholder (superseded by CFG_NETPROTOCOL)
     CFG_NETBOOTPROTOCOL, // legacy: kept as an unused placeholder (superseded by CFG_NETPROTOCOL)
@@ -94,9 +98,10 @@ enum UI_ITEMS {
     CFG_AUTO_CREATE_VMC,
     CFG_NEUTRINO_ARGS,
     CFG_NEUTRINO_PATH,
-    CFG_NEUTRINO_VIDEO,   // global default Neutrino -gsm video mode (gNeutrinoVideoDefault); per-game "Default" follows it
-    CFG_NEUTRINO_GSMCOMP, // global default -gsm ":c" comp half (gNeutrinoGsmCompDefault)
-    CFG_NEUTRINO_ELF_ARG, // auto-supply the game's boot ELF to Neutrino
+    CFG_NEUTRINO_VIDEO,     // global default Neutrino -gsm video mode (gNeutrinoVideoDefault); per-game "Default" follows it
+    CFG_NEUTRINO_GSMCOMP,   // global default -gsm ":c" comp half (gNeutrinoGsmCompDefault)
+    CFG_NEUTRINO_SHOW_ARGS, // show the composed Neutrino argv and ask before launching
+    CFG_NEUTRINO_ELF_ARG,   // auto-supply the game's boot ELF to Neutrino
     CFG_POPSTARTER_DEVICE,
     CFG_LBL_POPSTARTER_PATH,
     CFG_POPSTARTER_PATH,
@@ -209,8 +214,15 @@ enum UI_ITEMS {
 #ifdef RETROACHIEVEMENTS
     // RA rows on the Network page. Guarded in lockstep with their rows in diaNetConfig --
     // guard one and not the other and the array carries an id the enum does not define.
+    NETCFG_RA_MODE,
+    NETCFG_RA_HOST_IP_0,
+    NETCFG_RA_HOST_IP_1,
+    NETCFG_RA_HOST_IP_2,
+    NETCFG_RA_HOST_IP_3,
     NETCFG_RA_TELEMETRY,
     NETCFG_RA_BADGES,
+    NETCFG_RA_BADGE_SUFFIX,
+    NETCFG_RA_EXPERIMENTAL_CARDS,
 #endif
 
     CHTCFG_CHEATSOURCE,
@@ -272,6 +284,7 @@ enum UI_ITEMS {
     VMC_STATUS,
     VMC_PROGRESS,
     VMC_REFRESH,
+    VMC_BUTTON_REBUILD,
 
     OSD_LANGUAGE_SOURCE,
     OSD_LANGUAGE_ENABLE,
@@ -371,6 +384,7 @@ extern struct UIItem diaPadEmuInfo[];
 
 extern struct UIItem diaNetConfig[];
 extern struct UIItem diaUIConfig[];
+extern struct UIItem diaLanguageConfig[];
 extern struct UIItem diaAudioConfig[];
 extern struct UIItem diaControllerConfig[];
 extern struct UIItem diaCompatConfig[];

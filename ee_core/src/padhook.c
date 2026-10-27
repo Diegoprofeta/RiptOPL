@@ -32,12 +32,18 @@
 #include "ra.h"
 #endif
 #include "gsm_api.h"
+#ifdef RETROACHIEVEMENTS
+#include "../../include/ra_features.h"
+#endif
 #ifdef IGS
 #include "igs_api.h"
 #endif
 #include "cheat_api.h"
 #include "cd_igr_rpc.h"
 #include "coreconfig.h"
+#ifdef INGAMEDIAG
+#include "freeze_diag_core.h"
+#endif
 
 /* scePadPortOpen & scePad2CreateSocket prototypes */
 static int (*scePadPortOpen)(int port, int slot, void *addr);
@@ -48,6 +54,25 @@ static paddata_t Pad_Data;
 
 /* Monitored power button data */
 static powerbuttondata_t Power_Button;
+
+/* How IGR watches the pad: a VBLANK_END interrupt handler, in every build (issue #984).
+ *
+ * The handler samples the pad and the power button each frame. On a request it stops DMA/GS,
+ * suspends every game thread, then wakes the priority-127 worker at priority 0. It runs in
+ * interrupt context, so no game thread, however busy or high-priority, can keep it from running.
+ * This is OPL's original design, and what RiptOPL shipped until October 5, 2026.
+ *
+ * Two replacements failed on hardware and must not come back:
+ *   - Oct 5 (upstream OPL #1762): poll from the priority-127 thread, woken by an EE alarm. A game
+ *     that keeps any thread runnable never lets it run, so IGR was dead in GTA San Andreas, NFS Most
+ *     Wanted, PES and others (Beta-3979; upstream #1787, PES 2013).
+ *   - Oct 17 (#973, #990, #999): sample in the EE alarm callback. In-game the sampler never
+ *     latched anything -- controller and physical power button both dead on Beta-4032/4080, RE4
+ *     included -- while the VBLANK build worked on the same console and games.
+ *
+ * Known cost: #1762 reports Fatal Fury: Battle Archives Volume 2 black-screens with a VBLANK_END
+ * handler registered. supportbase.c gives that title Mode 6 (IGR off) by default.
+ * RetroAchievements builds also run RA_OnVblank from this handler. */
 
 /* IGR Thread ID and interrupt handler */
 static int IGR_Thread_ID = -1;
@@ -139,17 +164,160 @@ static void t_loadElf(void)
     Exit(0);
 }
 
+// Read the pad buffer and the power button once, and set Pad_Data.combo_type when either asks for
+// IGR. Runs once a frame, from the VBLANK_END handler (interrupt context).
+static void IGR_CheckInputs(void)
+{
+    USE_LOCAL_EECORE_CONFIG;
+    u8 pad_pos_state, pad_pos_frame, pad_pos_combo1, pad_pos_combo2;
+    int intr = DI();
+
+    // The polling worker can be preempted by a game thread resetting the IOP or
+    // reopening its pad. Keep the pointer, layout and reads in one short snapshot.
+    if (Pad_Data.pad_buf != NULL) {
+        // Copy values via the uncached segment, to bypass the cache.
+        pad_pos_state = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_state];
+        pad_pos_frame = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_frame];
+        pad_pos_combo1 = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_combo1];
+        pad_pos_combo2 = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_combo2];
+
+        // First check pad state
+        if (((Pad_Data.libpad == IGR_LIBPAD) && (pad_pos_state == IGR_PAD_STABLE_V1)) ||
+            ((Pad_Data.libpad == IGR_LIBPAD2) && (pad_pos_state == IGR_PAD_STABLE_V2))) {
+            // Check if pad buffer is still alive with pad data frame counter.
+            // Once PadOpen is patched in the game ELF, that patch stays in RAM
+            // for the life of the ELF; temporary pauses in pad polling during
+            // menus, prompts or loading screens must never clear padOpen_hooked
+            // and trigger a full 31 MB live-RAM rescan on the next CreateThread.
+            if (Pad_Data.vb_count++ >= 10) {
+                if (pad_pos_frame != Pad_Data.prev_frame) {
+                    padOpen_hooked = 1;
+                    Pad_Data.prev_frame = pad_pos_frame;
+                }
+                Pad_Data.vb_count = 0;
+            }
+
+            // Combo R1 + L1 + R2 + L2
+            if (pad_pos_combo1 == IGR_COMBO_R1_L1_R2_L2) {
+                // Combo Start + Select, R3 + L3 or UP
+                if ((pad_pos_combo2 == IGR_COMBO_START_SELECT) || // Start + Select combo, so reset
+                    (pad_pos_combo2 == IGR_COMBO_R3_L3)           // R3 + L3 combo, so poweroff
+#ifdef IGS
+                    || ((pad_pos_combo2 == IGR_COMBO_UP) && (config->EnableGSMOp)) // UP combo, so take IGS
+#endif
+                )
+
+                    Pad_Data.combo_type = pad_pos_combo2;
+            }
+        }
+    }
+
+#ifdef RETROACHIEVEMENTS
+    // ROM CDVDMAN has no OPL shutdown RPC. Ignore the power-off combo before
+    // suspending game threads, and leave the physical power button to the ROM.
+    if (config->GameMode == DISC_MODE) {
+        if (Pad_Data.combo_type == IGR_COMBO_R3_L3)
+            Pad_Data.combo_type = 0;
+    } else
+#endif
+    {
+        // Keep interrupts disabled while KSU=0 on the user-mode worker stack.
+        ee_kmode_enter();
+
+        /* The CDVD power-off interrupt is a latched hardware condition, not
+           a new tap every time the low-priority worker samples it. If its
+           cancellation is delayed by gameplay or IOP activity, counting it
+           on every poll turns a single press into a false double-press reset.
+           Re-arm only once the status clears, preserving true double taps. */
+        {
+            int pending = (*CDVD_R_NDIN & 0x20) && (*CDVD_R_POFF & 0x04);
+            if (pending && !Power_Button.latched) {
+                if (Power_Button.press < 2)
+                    Power_Button.press++;
+
+                // Cancel hardware poweroff while waiting for a second press.
+                *CDVD_R_SDIN = 0x00;
+                *CDVD_R_SCMD = 0x1B;
+            }
+            Power_Button.latched = pending;
+        }
+
+        // Start the frame counter when power button is pressed
+        if (Power_Button.press) {
+            // Check number of power button press after 1 ~ sec
+            if (Power_Button.vb_count++ >= 50) {
+                if (Power_Button.press == 1)
+                    Pad_Data.combo_type = IGR_COMBO_R3_L3; // power button press 1 time, so poweroff
+                else
+                    Pad_Data.combo_type = IGR_COMBO_START_SELECT; // power button press 2 time, so reset
+            }
+        }
+
+        ee_kmode_exit();
+    }
+
+    if (intr)
+        EI();
+}
+
+// Stop every DMA channel except SIF0-2 and reset the GS. While ExecPS2() would also do some of this
+// (it also calls ResetEE), initialization seems to sometimes get stuck at "Initializing GS", perhaps
+// when waiting for the V-Sync start interrupt. That happens before ResetEE is called, so ResetEE has
+// to be called earlier -- which both callers do right after this.
+static void IGR_StopDmaAndGs(void)
+{
+    // Wait for preceding loads & stores to complete.
+    asm volatile("sync.l\n");
+
+    // Stop all ongoing transfers (except for SIF0, SIF1 & SIF2 - DMA CH 5, 6 & 7).
+    u32 dmaEnableR = *R_EE_D_ENABLER;
+    *R_EE_D_ENABLEW = dmaEnableR | 0x10000;
+    *R_EE_D_CTRL;
+    *R_EE_D_STAT;
+    *R_EE_D0_CHCR = 0;
+    *R_EE_D1_CHCR = 0;
+    *R_EE_D2_CHCR = 0;
+    *R_EE_D3_CHCR = 0;
+    *R_EE_D4_CHCR = 0;
+    *R_EE_D8_CHCR = 0;
+    *R_EE_D9_CHCR = 0;
+    *R_EE_D_ENABLEW = dmaEnableR;
+
+    // Wait for preceding loads & stores to complete.
+    asm volatile("sync.l\n");
+
+    *R_EE_GS_CSR = 0x100; // Reset GS
+    asm volatile("sync.l\n");
+    while (*R_EE_GS_CSR & 0x100) {
+    };
+}
+
 // In Game Reset Thread
 static void IGR_Thread(void *arg)
 {
     USE_LOCAL_EECORE_CONFIG;
     u32 Cop0_Perf;
 
-    // Place our IGR thread in WAIT state
-    // It will be woken up by our IGR interrupt handler
-    SleepThread();
+    // Wait for the VBLANK_END handler, which latches the request, stops DMA/GS, suspends every
+    // other thread and raises this one to priority 0 before waking it. Recheck the latch so a stray
+    // wakeup cannot start a shutdown nobody asked for.
+    while (Pad_Data.combo_type == 0x00)
+        SleepThread();
 
     DPRINTF("IGR thread woken up!\n");
+
+#ifdef INGAMEDIAG
+    // Freeze report: the handler has suspended the game's threads, so this records their state.
+    if (Pad_Data.combo_type == IGR_COMBO_START_SELECT) {
+        unsigned int pad_state = 0, pad_frame = 0;
+
+        if (Pad_Data.pad_buf != NULL) {
+            pad_state = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_state];
+            pad_frame = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_frame];
+        }
+        FreezeDiag_Begin(Pad_Data.libpad, pad_state, pad_frame);
+    }
+#endif
 
     if (EnableDebug)
         DBGCOL(0xFFFFFF, IGR, "Thread WakeUp");
@@ -167,11 +335,17 @@ static void IGR_Thread(void *arg)
         if (EnableDebug)
             DBGCOL(0xFF8000, IGR, "oplIGRShutdown()");
 
+#ifdef INGAMEDIAG
+        // Freeze report: fetch the IOP's record, then shut down with a deadline. A stuck IOP must
+        // not hang IGR before the report is written. Without a report this is oplIGRShutdown(0).
+        FreezeDiag_FetchAndShutdown();
+#else
 #ifdef RETROACHIEVEMENTS
         // The shutdown RPC belongs to OPL CDVDMAN, absent in physical-disc mode.
         if (config->GameMode != DISC_MODE)
 #endif
             oplIGRShutdown(0);
+#endif
 
         if (EnableDebug)
             DBGCOL(0x0000FF, IGR, "Reset IOP");
@@ -211,6 +385,10 @@ static void IGR_Thread(void *arg)
             DPRINTF("Stopping GSM...\n");
             DisableGSM();
         }
+#if defined(RETROACHIEVEMENTS) && RA_EXPERIMENTAL_CARD_DMA
+        else if (config->raOverlayBuf)
+            DisableGSTracker();
+#endif
 
         if (config->gCheatList) {
             if (EnableDebug)
@@ -234,6 +412,11 @@ static void IGR_Thread(void *arg)
         SifInitIopHeap();
         LoadFileInit();
         sbv_patch_enable_lmb();
+
+#ifdef INGAMEDIAG
+        // Freeze report: write it with the clean IOP, which FreezeDiag_Write reboots again after.
+        FreezeDiag_Write();
+#endif
 
         if (EnableDebug)
             DBGCOL(0x800000, IGR, "Execute RESETSPU.IRX");
@@ -295,118 +478,23 @@ void IGR_Exit(s32 exit_code)
 // IGR VBLANK_END interrupt handler install to monitor combo trick in pad data aera
 static int IGR_Intc_Handler(int cause)
 {
-    USE_LOCAL_EECORE_CONFIG;
     int i;
-    u8 pad_pos_state, pad_pos_frame, pad_pos_combo1, pad_pos_combo2;
 
 #ifdef RETROACHIEVEMENTS
     RA_OnVblank(); /* RetroAchievements: per-frame memory snapshot */
 #endif
 
-    if (Pad_Data.pad_buf != NULL) {
-        // Copy values via the uncached segment, to bypass the cache.
-        pad_pos_state = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_state];
-        pad_pos_frame = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_frame];
-        pad_pos_combo1 = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_combo1];
-        pad_pos_combo2 = ((u8 *)UNCACHED_SEG(Pad_Data.pad_buf))[Pad_Data.pos_combo2];
-
-        // First check pad state
-        if (((Pad_Data.libpad == IGR_LIBPAD) && (pad_pos_state == IGR_PAD_STABLE_V1)) ||
-            ((Pad_Data.libpad == IGR_LIBPAD2) && (pad_pos_state == IGR_PAD_STABLE_V2))) {
-            // Track pad progress without treating a pause as loss of the EE code patch.
-            // Menus and loading screens can stop the DMA frame counter; clearing
-            // the install latch would trigger a live-RAM scan on CreateThread.
-            if (Pad_Data.vb_count++ >= 10) {
-                if (pad_pos_frame != Pad_Data.prev_frame) {
-                    padOpen_hooked = 1;
-                    Pad_Data.prev_frame = pad_pos_frame;
-                }
-                Pad_Data.vb_count = 0;
-            }
-
-            // Combo R1 + L1 + R2 + L2
-            if (pad_pos_combo1 == IGR_COMBO_R1_L1_R2_L2) {
-                // Combo Start + Select, R3 + L3 or UP
-                if ((pad_pos_combo2 == IGR_COMBO_START_SELECT) || // Start + Select combo, so reset
-                    (pad_pos_combo2 == IGR_COMBO_R3_L3)           // R3 + L3 combo, so poweroff
-#ifdef IGS
-                    || ((pad_pos_combo2 == IGR_COMBO_UP) && (config->EnableGSMOp)) // UP combo, so take IGS
+#ifdef INGAMEDIAG
+    g_freeze_diag_polls++;
 #endif
-                )
-
-                    Pad_Data.combo_type = pad_pos_combo2;
-            }
-        }
-    }
-
-#ifdef RETROACHIEVEMENTS
-    // ROM CDVDMAN has no OPL shutdown RPC. Ignore the power-off combo before
-    // suspending game threads, and leave the physical power button to the ROM.
-    if (config->GameMode == DISC_MODE) {
-        if (Pad_Data.combo_type == IGR_COMBO_R3_L3)
-            Pad_Data.combo_type = 0;
-    } else
-#endif
-    {
-        ee_kmode_enter();
-
-        // Check power button press
-        if ((*CDVD_R_NDIN & 0x20) && (*CDVD_R_POFF & 0x04)) {
-            // Increment button press counter
-            Power_Button.press++;
-
-            // Cancel poweroff to catch the second button press
-            *CDVD_R_SDIN = 0x00;
-            *CDVD_R_SCMD = 0x1B;
-        }
-
-        // Start VBlank counter when power button is pressed
-        if (Power_Button.press) {
-            // Check number of power button press after 1 ~ sec
-            if (Power_Button.vb_count++ >= 50) {
-                if (Power_Button.press == 1)
-                    Pad_Data.combo_type = IGR_COMBO_R3_L3; // power button press 1 time, so poweroff
-                else
-                    Pad_Data.combo_type = IGR_COMBO_START_SELECT; // power button press 2 time, so reset
-            }
-        }
-
-        ee_kmode_exit();
-    }
+    IGR_CheckInputs();
 
     // If power button or combo is press
     // Disable all interrupts & reset some peripherals.
     // Suspend and Change priority of all threads other then our IGR thread
     // Wakeup and Change priority of our IGR thread
     if (Pad_Data.combo_type != 0x00) {
-        // While ExecPS2() would also do some of these (also calls ResetEE),
-        // initialization seems to sometimes get stuck at "Initializing GS", perhaps when waiting for the V-Sync start interrupt.
-        // That happens before ResetEE is called, so ResetEE has to be called earlier.
-
-        // Wait for preceding loads & stores to complete.
-        asm volatile("sync.l\n");
-
-        // Stop all ongoing transfers (except for SIF0, SIF1 & SIF2 - DMA CH 5, 6 & 7).
-        u32 dmaEnableR = *R_EE_D_ENABLER;
-        *R_EE_D_ENABLEW = dmaEnableR | 0x10000;
-        *R_EE_D_CTRL;
-        *R_EE_D_STAT;
-        *R_EE_D0_CHCR = 0;
-        *R_EE_D1_CHCR = 0;
-        *R_EE_D2_CHCR = 0;
-        *R_EE_D3_CHCR = 0;
-        *R_EE_D4_CHCR = 0;
-        *R_EE_D8_CHCR = 0;
-        *R_EE_D9_CHCR = 0;
-        *R_EE_D_ENABLEW = dmaEnableR;
-
-        // Wait for preceding loads & stores to complete.
-        asm volatile("sync.l\n");
-
-        *R_EE_GS_CSR = 0x100; // Reset GS
-        asm volatile("sync.l\n");
-        while (*R_EE_GS_CSR & 0x100) {
-        };
+        IGR_StopDmaAndGs();
 
         // Disable interrupts & reset some peripherals, back to a standard state.
         // Call ResetEE(0x7F) from an interrupt handler.
@@ -488,6 +576,7 @@ void Install_IGR(void)
         ee_thread_t thread_param = {0};
         Power_Button.press = 0;
         Power_Button.vb_count = 0;
+        Power_Button.latched = 0;
         Pad_Data.pad_buf = NULL;
         Pad_Data.vb_count = 0;
         Pad_Data.combo_type = 0x00;
@@ -505,6 +594,8 @@ void Install_IGR(void)
             DeleteThread(IGR_Thread_ID);
             IGR_Thread_ID = -1;
         }
+        if (IGR_Thread_ID < 0)
+            DPRINTF("IGR: could not start IGR thread; will retry on next hook\n");
     }
 
     // Never arm a callback whose shutdown worker failed to start. Failed
@@ -534,6 +625,14 @@ static int RA_Intc_Handler(int cause)
     RA_OnVblank();
     ExitHandler();
     return 0;
+}
+
+void IGR_RequestReset(void)
+{
+    /* The VBLANK handler acts on combo_type right after RA_OnVblank returns.
+       Mode 6 has no IGR thread to wake, and a reset already asked for stays. */
+    if (IGR_Thread_ID >= 0 && Pad_Data.combo_type == 0x00)
+        Pad_Data.combo_type = IGR_COMBO_START_SELECT;
 }
 
 void Install_RA_Vblank(void)

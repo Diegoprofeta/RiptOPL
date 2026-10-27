@@ -61,7 +61,7 @@ typedef struct
     int pos_combo2;
     int pos_state;
     int pos_frame;
-    u8 combo_type;
+    volatile u8 combo_type; // set by the VBLANK_END handler, read by the IGR thread
     u8 prev_frame;
 } paddata_t;
 
@@ -69,6 +69,7 @@ typedef struct
 {
     int press;
     int vb_count;
+    int latched; // the CDVD power-off status was set at the last sample
 } powerbuttondata_t;
 
 typedef struct
@@ -97,6 +98,8 @@ typedef struct
 #ifdef RETROACHIEVEMENTS
 /* Mode 6 retains snapshots without installing IGR hooks. */
 void Install_RA_Vblank(void);
+/* The PC's reset request (RAR1): leave the game as the IGR combo does. */
+void IGR_RequestReset(void);
 #endif
 
 #endif

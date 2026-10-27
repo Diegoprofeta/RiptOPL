@@ -81,7 +81,7 @@ private:
 class CheatScreen: public ModalScreen
 {
 public:
-    CheatScreen();
+    explicit CheatScreen(config_set_t *configSet);
 
 private:
     bool onKeys() override;
@@ -91,6 +91,8 @@ private:
     int offset_ = 0;
     int cheatCount_ = 0;
     int selected_ = 0;
+    // Where Start saves the picks; NULL saves nothing.
+    config_set_t *configSet_;
     static constexpr int VISIBLE = 10; // Maximum number of cheats visible on screen
 };
 

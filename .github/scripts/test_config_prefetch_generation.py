@@ -42,7 +42,7 @@ static void configFree(config_set_t *p) { assert(p); ++frees; delete p; }
 static void _menuLoadConfig() { assert(!depth); ++waiterCalls; actionStatus=0; }
 static void menuFolderResetLeaving(Menu *) { assert(depth==1); ++moves; }
 constexpr int SFX_CURSOR=1;
-static void sfxPlay(int sound) { assert(depth==1 && sound==SFX_CURSOR); }
+static void sfxPlay(int sound) { assert(!depth && sound==SFX_CURSOR); } // audio RPCs run outside menuSemaId (#980)
 static void _menuRequestConfig();
 static void menuInvalidateConfig();
 static int ioPutRequest(int type,void *fn) { assert(!depth && type==IO_CUSTOM_SIMPLEACTION); ++queues; if(failQueue)return -1; pending.push_back(fn); return IO_OK; }

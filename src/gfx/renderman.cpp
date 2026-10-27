@@ -454,7 +454,7 @@ void Renderer::drawPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, in
 }
 
 void Renderer::drawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned, int w, int h, short scaled, u64 color,
-                         GSTEXTURE *inlay, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry, int reflection)
+                                 GSTEXTURE *inlay, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry, int reflection)
 {
     rm_quad_t quad;
     setupQuad(overlay, x, y, aligned, w, h, scaled, color, &quad);
@@ -517,49 +517,6 @@ void Renderer::drawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned
     }
 }
 
-#ifdef RETROACHIEVEMENTS
-/* RA: the cover mark, drawn as a quadrilateral INSIDE the cover's own (possibly slanted)
-   coordinate system. Same mapping as the overlay/inlay pair above, minus the reflection:
-   the mark is a badge, not art. */
-void Renderer::drawInlayPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color,
-                       int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry)
-{
-    rm_quad_t quad;
-    setupQuad(txt, x, y, aligned, w, h, scaled, color, &quad);
-
-    ulx = scaleX(ulx * aspectWidth_) >> 2;
-    urx = scaleX(urx * aspectWidth_) >> 2;
-    blx = scaleX(blx * aspectWidth_) >> 2;
-    brx = scaleX(brx * aspectWidth_) >> 2;
-    uly = scaleY(uly);
-    ury = scaleY(ury);
-    bly = scaleY(bly);
-    bry = scaleY(bry);
-
-    /* Alpha test as in rmDrawQuad: without it the transparent background
-       of the image is painted and the mark becomes a solid square. */
-    if ((txt->PSM == GS_PSM_CT32) || (txt->Clut && txt->ClutPSM == GS_PSM_CT32)) {
-        gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
-        gsKit_set_test(gsGlobal, GS_ATEST_ON);
-    } else {
-        gsGlobal->PrimAlphaEnable = GS_SETTING_OFF;
-        gsKit_set_test(gsGlobal, GS_ATEST_OFF);
-    }
-
-    gsKit_TexManager_bind(gsGlobal, txt);
-    gsKit_prim_quad_texture(gsGlobal, txt,
-                            quad.ul.x + ulx + renderXOff_, quad.ul.y + uly + renderYOff_,
-                            0.0f, 0.0f,
-                            quad.ul.x + urx + renderXOff_, quad.ul.y + ury + renderYOff_,
-                            txt->Width, 0.0f,
-                            quad.ul.x + blx + renderXOff_, quad.ul.y + bly + renderYOff_,
-                            0.0f, txt->Height,
-                            quad.ul.x + brx + renderXOff_, quad.ul.y + bry + renderYOff_,
-                            txt->Width, txt->Height, order_, color);
-    order_++;
-}
-#endif
-
 void Renderer::drawRect(int x, int y, int w, int h, u64 color)
 {
     float fx = scaleX(x) + renderXOff_;
@@ -606,6 +563,33 @@ void Renderer::drawLine(int x1, int y1, int x2, int y2, u64 color)
     gsGlobal->PrimAlphaEnable = GS_SETTING_ON;
     gsKit_prim_line(gsGlobal, fx1, fy1, fx2, fy2, order_, color);
     order_++;
+}
+
+void Renderer::drawTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors, int blend)
+{
+    // A texture without its own alpha channel (CT24) has none to blend with, so a fade uses the first
+    // vertex's alpha as the GS's fixed blend factor instead; the default blend comes back afterwards.
+    int fixed = blend && txt != NULL && count > 0 && txt->PSM != GS_PSM_CT32 && !(txt->Clut && txt->ClutPSM == GS_PSM_CT32);
+    if (fixed)
+        gsKit_set_primalpha(gsGlobal, GS_SETREG_ALPHA(0, 1, 2, 1, (colors[0] >> 24) & 0xff), 0);
+    gsGlobal->PrimAlphaEnable = blend ? GS_SETTING_ON : GS_SETTING_OFF;
+    gsKit_set_test(gsGlobal, GS_ATEST_OFF);
+    // One bind for the batch: nothing else binds between these triangles, so it stays resident.
+    if (txt != NULL)
+        gsKit_TexManager_bind(gsGlobal, txt);
+    for (int i = 0; i < count; i++, xy += 6, uv += (txt != NULL) ? 6 : 0, colors += 3) {
+        float x0 = scaleX(xy[0]) + renderXOff_, y0 = scaleY(xy[1]) + renderYOff_;
+        float x1 = scaleX(xy[2]) + renderXOff_, y1 = scaleY(xy[3]) + renderYOff_;
+        float x2 = scaleX(xy[4]) + renderXOff_, y2 = scaleY(xy[5]) + renderYOff_;
+        if (txt != NULL)
+            gsKit_prim_triangle_goraud_texture_3d(gsGlobal, txt, x0, y0, order_, uv[0], uv[1], x1, y1, order_, uv[2], uv[3],
+                                                  x2, y2, order_, uv[4], uv[5], colors[0], colors[1], colors[2]);
+        else
+            gsKit_prim_triangle_gouraud_3d(gsGlobal, x0, y0, order_, x1, y1, order_, x2, y2, order_, colors[0], colors[1], colors[2]);
+    }
+    order_++;
+    if (fixed)
+        gsKit_set_primalpha(gsGlobal, gDefaultAlpha, 0);
 }
 
 void Renderer::setDisplayOffset(int x, int y)
@@ -758,13 +742,6 @@ void rmDrawOverlayPixmap(GSTEXTURE *overlay, int x, int y, short aligned, int w,
     gRenderer.drawOverlayPixmap(overlay, x, y, aligned, w, h, scaled, color, inlay, ulx, uly, urx, ury, blx, bly, brx, bry, reflection);
 }
 
-#ifdef RETROACHIEVEMENTS
-void rmDrawInlayPixmap(GSTEXTURE *txt, int x, int y, short aligned, int w, int h, short scaled, u64 color, int ulx, int uly, int urx, int ury, int blx, int bly, int brx, int bry)
-{
-    gRenderer.drawInlayPixmap(txt, x, y, aligned, w, h, scaled, color, ulx, uly, urx, ury, blx, bly, brx, bry);
-}
-#endif
-
 void rmDrawRect(int x, int y, int w, int h, u64 color)
 {
     gRenderer.drawRect(x, y, w, h, color);
@@ -778,6 +755,16 @@ void rmDrawFramedRect(int x, int y, int w, int h, int border, u64 frameColor, u6
 void rmDrawLine(int x1, int y1, int x2, int y2, u64 color)
 {
     gRenderer.drawLine(x1, y1, x2, y2, color);
+}
+
+void rmDrawTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors)
+{
+    gRenderer.drawTriangles(txt, count, xy, uv, colors, 0);
+}
+
+void rmDrawBlendedTriangles(GSTEXTURE *txt, int count, const float *xy, const float *uv, const u64 *colors)
+{
+    gRenderer.drawTriangles(txt, count, xy, uv, colors, 1);
 }
 
 void rmSetDisplayOffset(int x, int y)

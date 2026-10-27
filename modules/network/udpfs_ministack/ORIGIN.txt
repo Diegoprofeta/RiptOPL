@@ -18,3 +18,9 @@ Local IP-conflict telemetry ported from Open-PS2-Loader #922 (0a1a593a): record 
 our IP, never cache our own address, append arp_ip_conflict to export slot 7 (slots 4-6 unchanged).
 udpfs_ioman queries this record without network traffic. Real-source host test:
 ../udpfs_shared/tests/test_ministack_conflict.c. Keep this change when re-vendoring.
+
+Ported from Open-PS2-Loader (RA menu link): ministack_xchg.c adds the "mstack:" iomanX device, one
+UDP request/reply exchange for the EE's RetroAchievements menu requests while UDPFS owns the NIC
+(include/mstack_xchg.h; main.c registers it once resident). handle_rx_arp() lets a host addressing
+the PS2 itself displace the oldest ARP entry when the table is full. Host test:
+../udpfs_shared/tests/test_ministack_xchg.c. Keep both on re-vendor.

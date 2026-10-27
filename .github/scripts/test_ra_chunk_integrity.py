@@ -13,7 +13,7 @@ def function(signature):
     return source[first:source.index("\n}", first) + 2]
 
 
-helper = function("static int raExpectedChunkLength(") if "static int raExpectedChunkLength(" in source else ""
+helper = "".join(function(name) for name in ("static int raParseChunkHeader(", "static int raExpectedChunkLength(") if name in source)
 program = r'''
 #include <cassert>
 #include <cstdio>
@@ -24,30 +24,35 @@ program = r'''
 #include <climits>
 #include "include/ranet.h"
 struct sockaddr_in {int unused;};
-constexpr int RA_CHUNK=896, RA_WAIT_ROUNDS=8;
-enum {_STR_RA_SUPPORTED,_STR_RA_ACHIEVEMENTS_FULL,_STR_RA_ACHIEVEMENTS};
+constexpr int RA_CHUNK=896, RA_WAIT_ROUNDS=20, RA_WAIT_PAUSE_MS=500, RA_LINK_BUSY=-8, RA_LINK_MSTACK=0x10000;
+enum {_STR_RA_SUPPORTED,_STR_RA_ACHIEVEMENTS_FULL,_STR_RA_ACHIEVEMENTS,_STR_RA_WL_NOT_SAVED};
+static void DelayThread(int) {}
 #define LOG(...) ((void)0)
 static const char *_l(int id) {return id==_STR_RA_ACHIEVEMENTS_FULL ? "%d %d %d" : "%d achievements";}
 static void raHashStep(const char*) {}
 static std::vector<std::string> replies;
 static std::vector<unsigned char> published;
-static int cursor, parsed, files, writes, closes, disconnected, parserResult=1;
+static int cursor, parsed, files, writes, closes, disconnected, parserResult=1, guards, shortWrite;
 static bool reserved;
 int Ranet::nicReserved() {return reserved;}
-int Ranet::openPcSocket(char *address,int,unsigned char ip[4]) {address[0]=0;memset(ip,0,4);return 7;}
-void Ranet::broadcastTarget(sockaddr_in*) {}
+int Ranet::openPcLink(char *address,int,unsigned char ip[4]) {address[0]=0;memset(ip,0,4);return reserved ? RA_LINK_BUSY : 7;}
+int Ranet::pcTarget(int,sockaddr_in*,const char*,char*,int) {return 0;}
+void Ranet::forgetPeer() {}
+void Ranet::rememberPeer(unsigned int) {}
 int Ranet::ask(int, sockaddr_in*, const char*, char *out, int max) {
     if(cursor==(int)replies.size())return -1;
     const auto &reply=replies[cursor++];assert(reply.size()<(unsigned)max);
     memcpy(out,reply.data(),reply.size());out[reply.size()]=0;return reply.size();
 }
-static int disconnect(int) {disconnected++;return 0;}
+void Ranet::closePcLink(int) {disconnected++;}
+static int unlink(const char*) {return 0;}
 static int SetWatchList(const void *data,int len,const char*) {
     parsed++;published.assign((const unsigned char*)data,(const unsigned char*)data+len);return parserResult;
 }
 static int mkdir(const char*,int) {return 0;}
+static int raVcdWatchGuardStore(const char*,const char*,const char*) {guards++;return 0;}
 static FILE *fake_open(const char*,const char*) {files++;return reinterpret_cast<FILE*>(1);}
-static size_t fake_write(const void*,size_t size,size_t count,FILE*) {writes++;return size*count;}
+static size_t fake_write(const void*,size_t size,size_t count,FILE*) {writes++;return shortWrite ? 0 : size*count;}
 static int fake_close(FILE*) {closes++;return 0;}
 #define fopen fake_open
 #define fwrite fake_write
@@ -69,7 +74,7 @@ static void chunk(int index,const std::string &payload,int advertised=-1) {
     replies.push_back(padded("RAC1 "+std::to_string(index)+" "+std::to_string(advertised)+" "+payload));
 }
 static void reset() {
-    replies.clear();published.clear();cursor=parsed=files=writes=closes=disconnected=0;parserResult=1;reserved=false;
+    replies.clear();published.clear();cursor=parsed=files=writes=closes=disconnected=guards=shortWrite=0;parserResult=1;reserved=false;
 }
 static int transfer() {return client.askPc("0123456789abcdef0123456789abcdef","SLUS_123.45","smb0:",nullptr,0,nullptr,0);}
 static void refused() {assert(transfer()<0);assert(!parsed && !files && !writes);assert(disconnected==1);}
@@ -99,9 +104,14 @@ int main() {
     reset();announce(1,1);chunk(0,"x");parserResult=-3;
     assert(transfer()==-6 && parsed==1 && !files && !writes && disconnected==1);
     reset();reserved=true;assert(transfer()==-8 && !cursor && !parsed && !files);
+    // A VCD list (15-character P key) is bound to its content hash, only once the list is on disk.
+    reset();announce(1,1);chunk(0,"a");assert(transfer()==0 && !guards);
+    const char *hash="0123456789abcdef0123456789abcdef";
+    reset();announce(1,1);chunk(0,"a");assert(client.askPc(hash,"P0123456789abcd","smb0:",nullptr,0,nullptr,0)==0 && guards==1);
+    reset();announce(1,1);chunk(0,"a");shortWrite=1;assert(client.askPc(hash,"P0123456789abcd","smb0:",nullptr,0,nullptr,0)==0 && !guards);
     puts("PASS: actual Ranet transfer refuses gaps/counts/truncation/invalid lists and preserves binary whitespace");
 }
-'''.replace("@HELPER@", helper).replace("@FUNCTION@", function("int Ranet::askPc("))
+'''.replace("@HELPER@", helper).replace("@FUNCTION@", function("int Ranet::askPc(") + function("int Ranet::raqAsk("))
 
 with tempfile.TemporaryDirectory() as directory:
     cpp, exe = Path(directory) / "transfer.cpp", Path(directory) / "transfer"

@@ -224,6 +224,11 @@ int cacheHasPendingArt(void)
     return (gArtQ.queued() > 0) || (gArtQ.active() > 0);
 }
 
+int ImageCache::slotKeyedOther(int i, const char *value) const
+{
+    return i >= 0 && i < count_ && strlen(value) < sizeof(content_[i].key) && strcmp(content_[i].key, value) != 0;
+}
+
 // LOOKUP ONLY: hand back this item's texture if its slot is still live, and never claim a slot,
 // never queue a load, never touch the fail memo. For a caller that wants to keep DRAWING art it
 // already has while deliberately not asking for more -- without this, "don't request" also means

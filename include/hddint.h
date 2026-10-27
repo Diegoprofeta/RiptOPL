@@ -86,8 +86,8 @@ public:
     void cleanUpSupportModules(int exception);
     // The hddSupportModulesLoaded block of shutdown: unconditional CLOSEALL, terminal-only flush.
     void shutdownSupportModules();
-    // The hddModulesLoadCount block of shutdown: idle the drive on the last reference, power DEV9
-    // down only on a terminal teardown.
+    // The hddModulesLoadCount block of shutdown: release the one logical ATA owner; idle the drive
+    // and release DEV9 only on a terminal teardown.
     void shutdownBaseModules();
 
     // ---- ATA / PFS module latches -----------------------------------------------------------

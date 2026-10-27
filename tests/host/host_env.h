@@ -45,9 +45,12 @@ struct NullUi final: UiServices
     void bootStatusSticky(const char *) override {}
     void bootStatusStickyCopy(const char *) override {}
     void renderTextScreen(const char *) override {}
-    void manageCheats() override {}
+    void manageCheats(config_set_t *) override {}
     int showVcdUsbMode() override { return 0; }
+    int pickEmberDisc(const char *, const struct cue_disc_list *) override { return -1; }
     int promptRebootIop() override { return 0; }
+    int active() override { return 0; }
+    int confirmId(int, const char *) override { return 0; }
     void drawBackgroundPlasma() override {}
     void lock() override {}
     void unlock() override {}

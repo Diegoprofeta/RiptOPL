@@ -169,14 +169,22 @@ int mmce_read_offset(int fd, unsigned int offset, unsigned int size, unsigned ch
     int ret = 0;
     DPRINTF("%s\n", __func__);
 
+    cdvdman_vmc_io_begin(0);
     WaitSema(mmce_io_sema);
+#ifdef INGAMEDIAG
+    freeze_diag_vmc_begin(FREEZE_DIAG_VMC_READ, offset / 512);
+#endif
     if (fp_mmcedrv_lseek && fp_mmcedrv_read) {
         if (fp_mmcedrv_lseek(fd, offset, 0) >= 0) {
             if (fp_mmcedrv_read(fd, size, buffer) == (int)size)
                 ret = 1;
         }
     }
+#ifdef INGAMEDIAG
+    freeze_diag_vmc_end();
+#endif
     SignalSema(mmce_io_sema);
+    cdvdman_vmc_io_end();
 
     return ret;
 }
@@ -186,14 +194,22 @@ int mmce_write_offset(int fd, unsigned int offset, unsigned int size, const unsi
     int ret = 0;
     DPRINTF("%s\n", __func__);
 
+    cdvdman_vmc_io_begin(1);
     WaitSema(mmce_io_sema);
+#ifdef INGAMEDIAG
+    freeze_diag_vmc_begin(FREEZE_DIAG_VMC_WRITE, offset / 512);
+#endif
     if (fp_mmcedrv_lseek && fp_mmcedrv_write) {
         if (fp_mmcedrv_lseek(fd, offset, 0) >= 0) {
             if (fp_mmcedrv_write(fd, size, (void *)buffer) == (int)size)
                 ret = 1;
         }
     }
+#ifdef INGAMEDIAG
+    freeze_diag_vmc_end();
+#endif
     SignalSema(mmce_io_sema);
+    cdvdman_vmc_io_end();
 
     return ret;
 }

@@ -1,0 +1,19 @@
+Source: ps2-mmce/mmceman, mmceman/
+Commit: db3e93f0fdbcf882f88da110cbd9b7db188ec17a
+License: MIT; LICENSE retained.
+
+Only the files the menu driver builds from are copied (the Makefile's IOP_OBJS plus their headers);
+mmcedrv and mmceigr still come from ps2build. RiptOPL builds this tree from ps2.yaml (mmceman_fork)
+with the Makefile's IOMANX_OLD_NAME_* defines and embeds it as mmceman.
+
+The ps2build mmceman package predates this commit (no rename or set-card command) and carries none
+of the fixes below. patches/ holds them, already applied to src/mmce_fs.c in this order:
+- mmceman-fs-close-fd-leak.patch: close/dclose free the handle slot on every exit, so failed closes
+  on a contended card cannot drain the 16-entry pool (RiptOPL #120).
+- mmceman-fs-open-enoent.patch, mmceman-fs-dopen-enoent.patch: the card's not-found reply is
+  -ENOENT, not -1, so callers can tell an absent file or folder from a failed read.
+- mmceman-fs-dread-eof.patch: the card's status reply to DREAD is end of directory (0), not -1, so
+  a completed listing is no longer reported as a read error (original #1005).
+Timeouts and garbled replies still return -1.
+
+test_mmceman_fork.py checks the tree against the commit and exercises the patched functions.

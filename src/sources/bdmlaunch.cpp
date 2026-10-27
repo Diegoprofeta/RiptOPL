@@ -28,6 +28,7 @@
 #include "modules/iopcore/common/cdvd_config.h"
 #include "include/bdmlauncher.h"
 #include "include/neutrinolauncher.h"
+#include "include/rapopslaunch.h"
 
 #include <usbhdfsd-common.h>
 
@@ -83,6 +84,9 @@ void BdmLauncher::launchCue(item_list_t *itemList, const char *cueName, config_s
         host::ui().missingFile(_l(_STR_EMBER_BIOS_MISSING), biosPath);
         return;
     }
+    // Copies the argument (folder, or the disc picked from discs.txt): cleanup frees the PS1 array.
+    if (!cuePrepareLaunch(ps1Prefix, cueName, emberElf, launchName, sizeof(launchName)))
+        return;
     // The scan lists folders without reading inside them -- that would be a directory read per row
     // on every refresh. Pay for it once, HERE, while a dialog can still be drawn: an empty or
     // mis-filled folder otherwise drops the user into the PS1 BIOS shell with no explanation.
@@ -103,9 +107,9 @@ void BdmLauncher::launchCue(item_list_t *itemList, const char *cueName, config_s
         }
     }
 
-    // itemCleanUp frees the active BDM PS1 array during deinit, so preserve the folder-name argv
-    // before teardown. This is especially load-bearing for the newly reachable UDPBD Ember path.
-    snprintf(launchName, sizeof(launchName), "%s", cueName);
+    // Launch metadata, not Ember identity: resolve the GameID from the real image while the device
+    // and the GUI are still live. A miss never blocks the launch.
+    cuePrepareRetroGemBarcode(ps1Prefix, cueName);
 
     // UNMOUNT_EXCEPTION is load-bearing here, not defensive: Ember never resets the IOP, so the
     // device it reads its game from must still be mounted when it starts.
@@ -137,7 +141,8 @@ void BdmLauncher::launchVcd(item_list_t *itemList, const char *vcdName, config_s
     }
     bdmBuildPs1Prefix(vcdPrefix, sizeof(vcdPrefix), itemList->mode); // device root, NOT gBDMPrefix -- POPSTARTER reads <root>/POPS only
     if (!vcdResolvePopstarter(vcdPrefix, vcdElf, sizeof(vcdElf))) {
-        host::ui().msgBox(_l(_STR_POPSTARTER_NOT_FOUND), 0, NULL);
+        vcdDescribePopstarterLookup(vcdPrefix, vcdElf, sizeof(vcdElf));
+        host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
     // vcdBuildSelector emits the BARE POPSTARTER label ("mass:/POPS/XX.<name>.ELF"), NOT this live
@@ -221,6 +226,22 @@ void BdmLauncher::launchVcd(item_list_t *itemList, const char *vcdName, config_s
 
     char vcdFullPath[256];
     snprintf(vcdFullPath, sizeof(vcdFullPath), "%sPOPS/%s.VCD", vcdPrefix, vcdName);
+#ifdef RETROACHIEVEMENTS
+    // A module left by an earlier tracked launch must not report for this one; a user's own
+    // MODULE_9.IRX is never touched. Only USB VCDs are tracked (POPStarter's USB stack).
+    int raModule = vcdRemoveRaModule(vcdPrefix);
+    if (raModule == -2) {
+        host::ui().msgBox(_l(_STR_PS1_RA_REMOVE_PREVIOUS), 0, NULL);
+        return;
+    }
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_USB && raPopsPrepare(vcdPrefix, pDeviceData->bdmPrefix, vcdFullPath, raModule == 0) < 0) {
+        host::ui().msgBox(_l(_STR_PS1_RA_PREPARE_FAILED), 0, NULL);
+        return;
+    }
+#else
+    if (!vcdConfirmCleanLaunch(vcdPrefix))
+        return;
+#endif
     vcdPrepareRetroGemBarcode(vcdFullPath);
 
     // POPSTARTER.ELF may be on a different backend than the VCD. Keep both alive until the
@@ -255,8 +276,10 @@ int NeutrinoLauncher::fragBudgetOk(const char *isoPath, neutrino_vmc_args_t *vmc
     if (fd >= 0) {
         isoFrags = fileXioIoctl2(ps2sdk_get_iop_fd(fd), USBMASS_IOCTL_GET_FRAGLIST, NULL, 0, NULL, 0);
         close(fd);
-        if (isoFrags < 0)
-            isoFrags = 0;
+        if (isoFrags < 0) {
+            LOG("[NEUTRINO] ISO fragment mapping failed: %d\n", isoFrags);
+            return 0;
+        }
     }
     total = isoFrags;
 
@@ -268,6 +291,10 @@ int NeutrinoLauncher::fragBudgetOk(const char *isoPath, neutrino_vmc_args_t *vmc
             if (fd >= 0) {
                 int frags = fileXioIoctl2(ps2sdk_get_iop_fd(fd), USBMASS_IOCTL_GET_FRAGLIST, NULL, 0, NULL, 0);
                 close(fd);
+                if (frags < 0) {
+                    LOG("[NEUTRINO] VMC slot %d fragment mapping failed: %d\n", i, frags);
+                    return 0;
+                }
                 if (frags > 0)
                     vmcFrags[i] = frags;
             }
@@ -297,7 +324,7 @@ int NeutrinoLauncher::fragBudgetOk(const char *isoPath, neutrino_vmc_args_t *vmc
 
                     if (gAutoLaunchBDMGame == NULL) {
                         char error[256];
-                        snprintf(error, sizeof(error), _l(_STR_ERR_VMC_FRAGMENTED_CONTINUE), vmcName, (i + 1));
+                        snprintf(error, sizeof(error), _l(_STR_NEUTRINO_VMC_FRAG_BUDGET_CONTINUE), total, kMaxFrags, vmcName, (i + 1));
                         if (!host::ui().msgBox(error, 1, NULL))
                             return -1; // Abort launch to menu
                     }
@@ -349,6 +376,9 @@ int NeutrinoLauncher::abortLaunch(int failResult, config_set_t *configSet)
 // 0 = proceed with the native launch (core is OPL, or Neutrino unavailable on a non-udp device).
 int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, bdm_device_data_t *pDeviceData, config_set_t *configSet)
 {
+    // Native CF driver only; external Neutrino cannot restore this transport.
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        return 0;
     int coreLoader = gDefaultCoreLoader; // no per-game $CoreLoader key -> follow the global default core
     configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &coreLoader);
     // UDPBD/UDPFS have no embedded cdvdman backend -- the "udp" BDM device can ONLY boot via
@@ -388,7 +418,7 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
     char neutrinoExtraArgs[256] = "";
     neutrino_vmc_args_t neutrinoVmc = {0};
     char partname[256], bdmCurrentDriver[32];
-    compatmask = sbGetCompatModes(configSet); // same source sbPrepare reads; no IRX patch needed
+    compatmask = sbGetCompatModes(configSet, 1); // same source sbPrepare reads; no IRX patch needed
     configGetStrCopy(configSet, CONFIG_ITEM_NEUTRINO_ARGS, neutrinoExtraArgs, sizeof(neutrinoExtraArgs));
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_VIDEO, &neutrinoVideo);
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_GSMCOMP, &neutrinoGsmComp);
@@ -420,8 +450,17 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
     // Δ6 preflight (driver token + network toml sync) -- abort stays in a live menu.
     if (sysNeutrinoPreflight(bdmCurrentDriver, neutrinoPath, neutrinoBsdfs, neutrinoExtraArgs, bdmDevNr) < 0)
         return abortLaunch(failResult, configSet);
+    // Cheats: the same per-game settings, .cht and Select-mode picker as the native leg, handed to
+    // Neutrino as a config file. After the preflight, so a launch that falls back to the native
+    // core asks nothing twice; backing out returns to the menu, never to the other core.
+    if (sbNeutrinoLoadCheats(pDeviceData->bdmPrefix, game->startup, configSet, neutrinoPath, neutrinoExtraArgs) < 0)
+        return abortLaunch(1, configSet);
+#ifdef RETROACHIEVEMENTS
+    sbNeutrinoPrepareRA(pDeviceData->bdmPrefix, game->startup, bdmCurrentDriver, neutrinoPath, neutrinoExtraArgs);
+#endif
     if (sysNeutrinoArgsPreflight(bdmCurrentDriver, partname, game->startup, compatmask, gPS2Logo, neutrinoPath, neutrinoExtraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdmDevNr, &neutrinoVmc) < 0)
         return abortLaunch(1, configSet); // an overfull Neutrino argv must not silently fall back to the native core
+    sysNeutrinoWarnPadEmu(configSet);
     if (gLaunchDiag)
         launchDiagMark(3);
 
@@ -480,6 +519,21 @@ void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
         game = gAutoLaunchBDMGame;
     }
 
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF) {
+#ifdef __INGAME_DEBUG
+        host::ui().msgBox(_l(_STR_PCCF_UNSUPPORTED_GAME), 0, NULL);
+        return; // Network/DECI2 game-debug builds cannot own the CF bus.
+#endif
+        char vmc[32];
+        for (int slot = 0; slot < 2; slot++) {
+            configGetVMC(configSet, vmc, sizeof(vmc), slot);
+            if (vmc[0]) {
+                host::ui().msgBox(_l(_STR_PCCF_UNSUPPORTED_GAME), 0, NULL);
+                return;
+            }
+        }
+    }
+
     // Folder browsing: a folder row is never launchable (the dispatch descends instead of reaching
     // here); guard defensively. Otherwise pin the path composers to the current subfolder so a game
     // inside it resolves to <prefix>CD|DVD/<sub>/<name>.
@@ -498,7 +552,7 @@ void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
 
 static int bdmMcemuSlots[2] = {-2, -2};
 
-static int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragments)
+int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragments)
 {
     *start_lba = (u64)-1;
     *fragments = -1;
@@ -578,7 +632,8 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     // so this should be unreachable. It is here to make "should" cost a message box instead of a dead
     // console -- and it also closes the udp hole the Neutrino helper's own comment warns about.
     if (!bdmDriverIsUSB(pDeviceData->bdmDriver) && !bdmDriverIsIlink(pDeviceData->bdmDriver) &&
-        !bdmDriverIsMx4sio(pDeviceData->bdmDriver) && !bdmDriverIsATA(pDeviceData->bdmDriver)) {
+        !bdmDriverIsMx4sio(pDeviceData->bdmDriver) && !bdmDriverIsATA(pDeviceData->bdmDriver) &&
+        pDeviceData->bdmDeviceType != BDM_TYPE_PCCF) {
         LOG("BDMSUPPORT launch aborted: device %d has no natively launchable driver token ('%s')\n",
             itemList != NULL ? itemList->mode : -1, pDeviceData->bdmDriver);
         if (gAutoLaunchBDMGame == NULL)
@@ -615,7 +670,7 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     bdm_vmc_infos_t bdm_vmc_infos;
     vmc_superblock_t vmc_superblock;
 
-    for (vmc_id = 0; vmc_id < 2; vmc_id++) {
+    for (vmc_id = 0; vmc_id < 2 && pDeviceData->bdmDeviceType != BDM_TYPE_PCCF; vmc_id++) {
         have_error = NATIVE_VMC_OK;
         memset(&bdm_vmc_infos, 0, sizeof(bdm_vmc_infos_t));
         configGetVMC(configSet, vmc_name, sizeof(vmc_name), vmc_id);
@@ -678,7 +733,10 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
 
     void *irx = NULL;
     int irx_size = 0;
-    if (bdmDriverIsATA(pDeviceData->bdmDriver)) {
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF) {
+        irx = &pccf_cdvdman_irx;
+        irx_size = size_pccf_cdvdman_irx;
+    } else if (bdmDriverIsATA(pDeviceData->bdmDriver)) {
         irx = &bdm_ata_cdvdman_irx;
         irx_size = size_bdm_ata_cdvdman_irx;
     } else {
@@ -714,6 +772,8 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     struct cdvdman_fragfile *iso_frag = &settings->fragfile[0];
     iso_frag->frag_start = 0;
     iso_frag->frag_count = 0;
+    u64 isoTotalBytes = 0;
+    int isoSizeKnown = 1;
     for (i = 0; i < game->parts; i++) {
         // Open file
         sbCreatePath(game, partname, pDeviceData->bdmPrefix, "/", i);
@@ -739,6 +799,14 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
         iso_frag->frag_count += iFragCount;
         iTotalFragCount += iFragCount;
 
+        // A part whose size cannot be read makes the whole size unknown: a partial or wrapped total
+        // would be a wrong bound, and an unknown one keeps CDVDMAN on the PVD (sbGetMediaLsnCount).
+        s64 partBytes = lseek64(fd, 0, SEEK_END);
+        if (partBytes > 0)
+            isoTotalBytes += (u64)partBytes;
+        else
+            isoSizeKnown = 0;
+
         if ((gPS2Logo) && (i == 0))
             EnablePS2Logo = CheckPS2Logo(fd, 0);
 
@@ -748,6 +816,11 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     // Initialize layer 1 information.
     sbCreatePath(game, partname, pDeviceData->bdmPrefix, "/", 0);
     layer1_start = sbGetISO9660MaxLBA(partname);
+
+    // Real media size, for CDVDMAN's out-of-bounds read emulation (upstream OPL #1763). The ISO9660
+    // PVD cannot be trusted for this: badly mastered discs understate it and read data past the end
+    // of the volume by raw LBA.
+    settings->common.mediaLsnCount = sbGetMediaLsnCount(partname, isoSizeKnown ? isoTotalBytes : 0);
 
     switch (game->format) {
         case GAME_FORMAT_USBLD:
@@ -778,7 +851,7 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     // launch. Absent is normal -- the game is simply not tracked.
     sbLoadWatchList(pDeviceData->bdmPrefix, game->startup);
 #endif
-    if ((result = sbLoadCheats(pDeviceData->bdmPrefix, game->startup)) < 0) {
+    if ((result = sbLoadCheats(pDeviceData->bdmPrefix, game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
         // the sbUnprepare itself -- see include/supportbase.h; skipping it breaks the NEXT launch.
         if (!sbCheatsMissingContinue(&settings->common, result))
@@ -861,7 +934,11 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     }
 
     LOG("bdm pre sysLaunchLoaderElf\n");
-    if (bdmDriverIsUSB(bdmCurrentDriver)) {
+    if (!strcmp(bdmCurrentDriver, "cf")) {
+        // The CF driver owns DEV9: fake the game's own DEV9/ATAD so they never touch the slot.
+        settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9 | FAKE_MODULE_FLAG_ATAD;
+        sysLaunchLoaderElf(filename, "BDM_CF_MODE", irx_size, static_cast<void **>(irx), 0, NULL, EnablePS2Logo, compatmask);
+    } else if (bdmDriverIsUSB(bdmCurrentDriver)) {
         settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_USBD;
         sysLaunchLoaderElf(filename, "BDM_USB_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
     } else if (bdmDriverIsIlink(bdmCurrentDriver)) {

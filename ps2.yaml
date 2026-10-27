@@ -134,7 +134,8 @@ targets:
     defines: [PS2IP_DNS]
     imports_lst: modules/network/ps2ips/imports.lst
 
-  # smbman. Default flavour used the stock SDK prebuilt (embed_irx: smbman package); the RA flavour uses this fork.
+  # smbman: ps2sdk's smbman with marked changes (the held-file fallback, and a write that counts only
+  # the bytes the server's WRITE_ANDX Count says it stored). Every edition embeds it, not the SDK copy.
   - name: smbman_ra
     type: iop
     sources: [modules/network/smbman-ra/smbman.c, modules/network/smbman-ra/smb_fio.c, modules/network/smbman-ra/smb.c, modules/network/smbman-ra/poll.c, modules/network/smbman-ra/auth.c, modules/network/smbman-ra/des.c, modules/network/smbman-ra/md4.c]
@@ -149,7 +150,6 @@ targets:
     include_dirs: [modules/network/smap-ingame/, modules/iopcore/common, modules/network/common]
     headers: *iop_headers
     imports_lst: modules/network/smap-ingame/imports.lst
-    exports_tab: modules/network/smap-ingame/exports.tab
 
   - name: SMSTCPIP
     type: iop
@@ -191,7 +191,7 @@ targets:
 
   - name: udpfs_ministack
     type: iop
-    sources: [modules/network/udpfs_ministack/src/main.c, modules/network/udpfs_ministack/src/ministack_arp.c, modules/network/udpfs_ministack/src/ministack_eth.c, modules/network/udpfs_ministack/src/ministack_ip.c, modules/network/udpfs_ministack/src/ministack_udp.c, modules/network/udpfs_ministack/src/udptty.c]
+    sources: [modules/network/udpfs_ministack/src/main.c, modules/network/udpfs_ministack/src/ministack_arp.c, modules/network/udpfs_ministack/src/ministack_eth.c, modules/network/udpfs_ministack/src/ministack_ip.c, modules/network/udpfs_ministack/src/ministack_udp.c, modules/network/udpfs_ministack/src/ministack_xchg.c, modules/network/udpfs_ministack/src/udptty.c]
     include_dirs: [modules/network/udpfs_ministack/src, modules/network/udpfs_ministack/include, modules/network/udpfs_smap/include]
     headers: *iop_headers
     cflags: [-mno-check-zero-division]
@@ -246,6 +246,48 @@ targets:
     libs: [bdm_fork, gcc]
     imports_lst: modules/bdm/src/imports.lst
     exports_tab: modules/bdm/src/exports.tab
+
+  # The SDK's bdmfs_fatfs at its pinned revision, plus the guarded FAT-chain walker and the
+  # contiguous VMC reservation API (modules/bdm/bdmfs_fatfs/ORIGIN.txt).
+  - name: bdmfs_fatfs_fork
+    type: iop
+    sources: [modules/bdm/bdmfs_fatfs/src/main.c, modules/bdm/bdmfs_fatfs/src/fs_driver.c, modules/bdm/bdmfs_fatfs/fatfs/diskio.c, modules/bdm/bdmfs_fatfs/fatfs/ff.c, modules/bdm/bdmfs_fatfs/fatfs/ffsystem.c, modules/bdm/bdmfs_fatfs/fatfs/ffunicode.c]
+    include_dirs: [modules/bdm/bdmfs_fatfs/src, modules/bdm/bdmfs_fatfs/src/include, modules/bdm/bdmfs_fatfs/fatfs/include, modules/vmc/genvmc]
+    headers: *iop_headers
+    libs: [gcc]
+    imports_lst: modules/bdm/bdmfs_fatfs/src/imports.lst
+
+  # ps2sdk's i.LINK manager and block-device driver with RiptOPL's transaction-ownership, post-reset
+  # login and readiness fixes (modules/ilink/*/ORIGIN.txt). The menu and the Neutrino bundle load
+  # these instead of the SDK builds.
+  - name: iLinkman_fork
+    type: iop
+    sources: [modules/ilink/iLinkman/src/iLink.c, modules/ilink/iLinkman/src/iLink_PHY.c, modules/ilink/iLinkman/src/iLink_internal.c, modules/ilink/iLinkman/src/iLink_crom.c, modules/ilink/iLinkman/src/iLink_intr.c, modules/ilink/iLinkman/src/iLink_TxRx.c, modules/ilink/iLinkman/src/iLink_DMA.c]
+    include_dirs: [modules/ilink/iLinkman/include, modules/ilink/iLinkman/src/include, modules/ilink/iLinkman/src]
+    headers: *iop_headers
+    cflags: [-mno-check-zero-division]
+    imports_lst: modules/ilink/iLinkman/src/imports.lst
+    exports_tab: modules/ilink/iLinkman/src/exports.tab
+
+  - name: IEEE1394_bd_mini_fork
+    type: iop
+    sources: [modules/ilink/IEEE1394_bd/src/sbp2_driver.c, modules/ilink/IEEE1394_bd/src/main.c, modules/ilink/IEEE1394_bd/src/scsi.c]
+    include_dirs: [modules/ilink/IEEE1394_bd/src, modules/ilink/IEEE1394_bd/src/include, modules/ilink/iLinkman/include]
+    headers: *iop_headers
+    defines: [MINI_DRIVER]
+    cflags: [-mno-check-zero-division]
+    libs: [gcc]
+    imports_lst: modules/ilink/IEEE1394_bd/src/imports.lst
+
+  # ps2-mmce's menu driver with RiptOPL's end-of-directory, handle-release and ENOENT fixes
+  # (modules/mmce/mmceman/ORIGIN.txt). Loaded instead of the ps2build mmceman package.
+  - name: mmceman_fork
+    type: iop
+    sources: [modules/mmce/mmceman/src/ioplib.c, modules/mmce/mmceman/src/sio2man_hook.c, modules/mmce/mmceman/src/mmce_sio2.c, modules/mmce/mmceman/src/mmce_cmds.c, modules/mmce/mmceman/src/mmce_fs.c, modules/mmce/mmceman/src/mmceman.c]
+    include_dirs: [modules/mmce/mmceman/include]
+    headers: *iop_headers
+    defines: [IOMANX_OLD_NAME_COMPATIBILITY=0, IOMANX_OLD_NAME_ADDDELDRV=0]
+    imports_lst: modules/mmce/mmceman/src/imports.lst
 
   - name: bdm_fork
     type: iop_lib
@@ -317,6 +359,38 @@ targets:
     include_dirs: [modules/iopcore/cdvdman/, modules/iopcore/common]
     headers: *iop_headers
     defines: [BDM_DRIVER, USE_BDM_ATA, __USE_DEV9]
+    libs: [bdm]
+    imports_lst: modules/iopcore/cdvdman/imports.lst
+    exports_tab: modules/iopcore/cdvdman/exports.tab
+
+  # PC CARD CF (original #955): a native DEV9 ATA-mode CompactFlash driver. pccf_bd is the GUI
+  # browser driver, pccf_game the in-game one; pccf_cdvdman owns DEV9 itself and never links dev9.c.
+  - name: pccf_bd
+    type: iop
+    sources: [modules/pccf/main.c, modules/pccf/pccf_hw.c, modules/pccf/pccf_ata.c, modules/pccf/pcdiag_cis.c, modules/pccf/pcdiag_cf.c]
+    include_dirs: [modules/pccf/]
+    headers: *iop_headers
+    defines: [PCCF_SETTLE_US=1000]
+    cflags: [-fno-strict-aliasing]
+    opt: -O2
+    imports_lst: modules/pccf/imports.lst
+
+  - name: pccf_game
+    type: iop
+    sources: [modules/pccf/main.c, modules/pccf/pccf_hw.c, modules/pccf/pccf_ata.c, modules/pccf/pcdiag_cis.c, modules/pccf/pcdiag_cf.c]
+    include_dirs: [modules/pccf/]
+    headers: *iop_headers
+    defines: [PCCF_SETTLE_US=1000, GAME_DRIVER]
+    cflags: [-fno-strict-aliasing]
+    opt: -O2
+    imports_lst: modules/pccf/imports.lst
+
+  - name: pccf_cdvdman
+    type: iop
+    sources: [modules/iopcore/cdvdman/cdvdman.c, modules/iopcore/cdvdman/ioops.c, modules/iopcore/cdvdman/ncmd.c, modules/iopcore/cdvdman/scmd.c, modules/iopcore/cdvdman/searchfile.c, modules/iopcore/cdvdman/streaming.c, modules/iopcore/cdvdman/ioplib_util.c, modules/iopcore/cdvdman/smsutils.S, modules/iopcore/cdvdman/device-bdm.c, modules/iopcore/cdvdman/dev9-pccf.c, modules/isofs/zso.c, modules/isofs/lz4.c]
+    include_dirs: [modules/iopcore/cdvdman/, modules/iopcore/common]
+    headers: *iop_headers
+    defines: [BDM_DRIVER, USE_PCCF]
     libs: [bdm]
     imports_lst: modules/iopcore/cdvdman/imports.lst
     exports_tab: modules/iopcore/cdvdman/exports.tab
@@ -432,7 +506,7 @@ targets:
   # ---- main loader ----
   - name: riptopl
     type: ee
-    sources: [src/core/pad.cpp, src/core/xparam.cpp, src/gfx/fntsys.cpp, src/gfx/renderman.cpp, src/ui/menusys.cpp, src/core/OSDHistory.cpp, src/platform/system.cpp, src/platform/sysvmc.cpp, src/platform/sysneutrino.cpp, src/platform/sysdisc.cpp, src/platform/elfldr_noreset.cpp, src/core/lang.cpp, src/core/lang_internal.c, src/core/config.cpp, src/platform/hdd.cpp, src/ui/dialogs.cpp, src/sources/favsupport.cpp, src/ui/dia.cpp, src/ui/diaeditors.cpp, src/ui/diaitems.cpp, src/platform/ioman.cpp, src/gfx/texcache.cpp, src/gfx/artload.cpp, src/gfx/artqueue.cpp, src/gfx/artworker.cpp, src/gfx/themes.cpp, src/gfx/themeelems.cpp, src/gfx/coverflow.cpp, src/sources/supportbase.cpp, src/sources/bdmsupport.cpp, src/sources/bdmlaunch.cpp, src/sources/bdmdevices.cpp, src/sources/bdmboot.cpp, src/sources/netsupport.cpp, src/sources/ethsupport.cpp, src/platform/httpcatalog.cpp, src/sources/httpsupport.cpp, src/sources/gamesource.cpp, src/sources/udpfssupport.cpp, src/sources/hddsupport.cpp, src/platform/zso.c, src/platform/lz4.c, src/platform/launchdiag.cpp, src/sources/appsupport.cpp, src/sources/mmcesupport.cpp, src/sources/artindex.cpp, src/sources/vcdsupport.cpp, src/sources/cuesupport.cpp, src/ui/libview.cpp, src/ui/cfgtitle.cpp, src/sources/retrogem.cpp, src/sources/folderbrowse.cpp, src/ui/gui.cpp, src/ui/guisettings.cpp, src/ui/guiqueue.cpp, src/ui/guiboot.cpp, src/ui/guinotify.cpp, src/ui/guiscreens.cpp, src/ui/guiframe.cpp, src/ui/guioverlay.cpp, src/ui/guisplash.cpp, src/ui/guimodal.cpp, src/ui/guiwait.cpp, src/ui/guigameid.cpp, src/gfx/plasma.cpp, src/gfx/uidraw.cpp, src/ui/guigame.cpp, src/core/vmc_groups.cpp, src/gfx/textures.cpp, src/platform/new.cpp, src/app/opl.cpp, src/ui/menuitems.cpp, src/sources/appscan.cpp, src/app/settingsio.cpp, src/app/lwnbdctl.cpp, src/app/autolaunch.cpp, src/core/settings.cpp, src/app/host.cpp, src/gfx/atlas.cpp, src/platform/nbns.cpp, src/platform/httpclient.cpp, src/core/gsm.cpp, src/core/cheatman.cpp, src/core/sound.cpp, src/core/sfx.cpp, src/core/bgm.cpp, src/platform/ps2cnf.cpp, src/platform/tar.cpp, src/platform/ioprp.cpp, src/platform/util.cpp, "asm/*.c"]
+    sources: [src/core/pad.cpp, src/core/xparam.cpp, src/gfx/fntsys.cpp, src/gfx/renderman.cpp, src/ui/menusys.cpp, src/core/OSDHistory.cpp, src/platform/system.cpp, src/platform/sysvmc.cpp, src/platform/sysneutrino.cpp, src/platform/sysdisc.cpp, src/platform/elfldr_noreset.cpp, src/core/lang.cpp, src/core/lang_internal.c, src/core/config.cpp, src/platform/hdd.cpp, src/ui/dialogs.cpp, src/sources/favsupport.cpp, src/ui/dia.cpp, src/ui/diaeditors.cpp, src/ui/diaitems.cpp, src/platform/ioman.cpp, src/gfx/texcache.cpp, src/gfx/artload.cpp, src/gfx/artqueue.cpp, src/gfx/artworker.cpp, src/gfx/themes.cpp, src/gfx/themeelems.cpp, src/gfx/coverflow.cpp, src/gfx/psbbnflow.cpp, src/gfx/saveicon.cpp, src/sources/supportbase.cpp, src/sources/bdmsupport.cpp, src/sources/bdmlaunch.cpp, src/sources/bdmdevices.cpp, src/sources/bdmboot.cpp, src/sources/netsupport.cpp, src/sources/ethsupport.cpp, src/platform/httpcatalog.cpp, src/sources/httpsupport.cpp, src/sources/gamesource.cpp, src/sources/udpfssupport.cpp, src/sources/hddsupport.cpp, src/sources/vmcrebuild.cpp, src/platform/zso.c, src/platform/lz4.c, src/platform/launchdiag.cpp, src/sources/appsupport.cpp, src/sources/mmcesupport.cpp, src/sources/artindex.cpp, src/sources/vcdsupport.cpp, src/sources/cuesupport.cpp, src/ui/libview.cpp, src/ui/cfgtitle.cpp, src/sources/retrogem.cpp, src/sources/folderbrowse.cpp, src/ui/gui.cpp, src/ui/guisettings.cpp, src/ui/guiqueue.cpp, src/ui/guiboot.cpp, src/ui/guinotify.cpp, src/ui/guiscreens.cpp, src/ui/guiframe.cpp, src/ui/guioverlay.cpp, src/ui/guisplash.cpp, src/ui/guimodal.cpp, src/ui/guiwait.cpp, src/ui/guigameid.cpp, src/gfx/plasma.cpp, src/gfx/uidraw.cpp, src/ui/guigame.cpp, src/core/vmc_groups.cpp, src/gfx/textures.cpp, src/platform/new.cpp, src/app/opl.cpp, src/ui/menuitems.cpp, src/sources/appscan.cpp, src/app/settingsio.cpp, src/app/lwnbdctl.cpp, src/app/autolaunch.cpp, src/core/settings.cpp, src/app/host.cpp, src/gfx/atlas.cpp, src/platform/nbns.cpp, src/platform/httpclient.cpp, src/core/gsm.cpp, src/core/cheatman.cpp, src/core/cheatconfig.cpp, src/core/sound.cpp, src/core/sfx.cpp, src/core/bgm.cpp, src/platform/ps2cnf.cpp, src/platform/tar.cpp, src/platform/ioprp.cpp, src/platform/util.cpp, "asm/*.c"]
     include_dirs: [., asm, include, modules/iopcore/common, modules/network/common, modules/hdd/common, modules/ds34bt/ee, modules/ds34usb/ee]
     headers: [kernel, cdvd, filexio, mc, poweroff, patches, vux, ps2ips, ps2ip, pad, netman, gskit, dmakit, freetype, png, z, audio, audsrv-compat, ogg, vorbis, elf-loader-nocolour]
     defines: [GSM_1080P, PADEMU]
@@ -440,5 +514,5 @@ targets:
     ldflags: [-fdata-sections, -ffunction-sections, "-Wl,--gc-sections", "-Wl,-Map,opl.map", -lpadx]
     libs: [gskit, dmakit, poweroff, filexio, patches, png, z, mc, freetype, vux, cdvd, netman, ps2ips, audsrv-compat, vorbisfile, vorbis, ogg, pad, elf-loader-nocolour, ds34usb_ee, ds34bt_ee]
     pack: true
-    embed_irx: [isofs, bdmevent, genvmc, nbns, httpclient, imgdrv, resetspu, apemodpatch, cleareffects, f2techioppatch, iremsndpatch, cdvdfsv, smbinit, SMSUTILS:smsutils, SMSTCPIP:ingame_smstcpip, smap_ingame, xhdd, smap_udpbd, udpfs_smap, udpfs_ministack, udpfs_bd, udpfs_ioman, lwnbdsvr, ps2ips_fork:ps2ips, bdm_drv:bdm, usbd_mini_fork:usbd, ata_bd:ps2atad, ps2hdd_osd:ps2hdd, hdd_cdvdman, hdd_hdpro_cdvdman, smb_cdvdman, http_cdvdman, bdm_cdvdman, bdm_ata_cdvdman, mmce_cdvdman, hdd_mcemu, smb_mcemu, bdm_mcemu, mmce_mcemu, usb_pademu, bt_pademu, ds34usb, ds34bt, eecore, elfldr, smbman, usbhdfsd, libsd, audio:audsrv, bdmfs_fatfs, iLinkman, IEEE1394_bd_mini:IEEE1394_bd, usbmass_bd_mini:usbmass_bd, mx4sio_bd_mini:mx4sio_bd, hdpro_atad, poweroff, dev9:ps2dev9, ps2ip-nm:ps2ip, smap, netman, iomanx, filexio, sio2man, padman, mcman, mcserv, mmceman, mmcedrv, mmceigr, fs-osd:ps2fs, eesync-nano:eesync, udnl]
+    embed_irx: [isofs, bdmevent, genvmc, nbns, httpclient, imgdrv, resetspu, apemodpatch, cleareffects, f2techioppatch, iremsndpatch, cdvdfsv, smbinit, SMSUTILS:smsutils, SMSTCPIP:ingame_smstcpip, smap_ingame, xhdd, smap_udpbd, udpfs_smap, udpfs_ministack, udpfs_bd, udpfs_ioman, lwnbdsvr, ps2ips_fork:ps2ips, bdm_drv:bdm, usbd_mini_fork:usbd, ata_bd:ps2atad, ps2hdd_osd:ps2hdd, hdd_cdvdman, hdd_hdpro_cdvdman, smb_cdvdman, http_cdvdman, bdm_cdvdman, bdm_ata_cdvdman, pccf_cdvdman, mmce_cdvdman, hdd_mcemu, smb_mcemu, bdm_mcemu, mmce_mcemu, usb_pademu, bt_pademu, ds34usb, ds34bt, pvrdrv:dvrdrv, dvrfile, eecore, elfldr, smbman_ra:smbman, usbhdfsd, libsd, audio:audsrv, bdmfs_fatfs_fork:bdmfs_fatfs, iLinkman_fork:iLinkman, IEEE1394_bd_mini_fork:IEEE1394_bd, usbmass_bd_mini:usbmass_bd, mx4sio_bd_mini:mx4sio_bd, pccf_bd, pccf_game, hdpro_atad, poweroff, dev9:ps2dev9, ps2ip-nm:ps2ip, smap, netman, iomanx, filexio, sio2man, padman, mcman, mcserv, mmceman_fork:mmceman, mmcedrv, mmceigr, fs-osd:ps2fs, eesync-nano:eesync, udnl]
 

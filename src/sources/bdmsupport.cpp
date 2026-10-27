@@ -10,6 +10,7 @@
 #include "include/bdmint.h"
 #include "include/vcdsupport.h"
 #include "include/cuesupport.h" // PS1 rows can belong to either core; the ROW decides
+#include "include/saveicon.h"   // saveIconPs1Directory
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #include "include/folderbrowse.h"
 #include "include/util.h"
@@ -19,9 +20,10 @@
 #include "include/ioman.h"
 #include "include/launchdiag.h" // UDPBD hang-triage stage markers (inert unless a udp launch arms them)
 #include "include/system.h"
-#include "include/ethsupport.h"   // ethGetModulesLoaded() for the UDPBD<->SMB NIC interlock
-#include "include/udpfssupport.h" // udpfsGetModulesLoaded() -- symmetric backstop vs the udpfs_ioman filesystem stack
-#include "include/mmcesupport.h"  // mmceSendGameID() cross-device game-id (#261)
+#include "modules/vmc/genvmc/genvmc.h" // VMC_CREATE_CONTIGUOUS
+#include "include/ethsupport.h"        // ethGetModulesLoaded() for the UDPBD<->SMB NIC interlock
+#include "include/udpfssupport.h"      // udpfsGetModulesLoaded() -- symmetric backstop vs the udpfs_ioman filesystem stack
+#include "include/mmcesupport.h"       // mmceSendGameID() cross-device game-id (#261)
 #include "include/extern_irx.h"
 #include "include/cheatman.h"
 #include "include/sound.h"
@@ -42,8 +44,14 @@ int iLinkModLoaded = 0;
 int iLinkManModLoaded = 0;
 int ieee1394ModLoaded = 0;
 int mx4sioModLoaded = 0;
+int pccfModLoaded;
+// Explicit-probe generation: hotplug and automatic refreshes never retry CF hardware init.
+static volatile unsigned int pccfProbeGeneration = 1;
+static unsigned int pccfAttemptGeneration;
+static int bdmAutoLaunch; // Auto Loading waits for its own mass device; skip menu discovery settles
 int hddModLoaded = 0;
 static int udpbdModLoaded = 0;
+static int udpbdNicClaimed = 0; // SMAP resident, even if later block modules failed; only an IOP reset frees it
 /*
   udpbdModLoaded alone is protocol-agnostic: both branches of the loader set it to 1, so once
   either chain is up the module gate short-circuits. But the tab label, the tab icon and the
@@ -121,6 +129,8 @@ int bdmDetermineDeviceType(const char *driverName)
         return BDM_TYPE_ATA;
     if (bdmDriverIsUDPBD(driverName))
         return BDM_TYPE_UDPBD;
+    if (driverName != NULL && !strcmp(driverName, "cf"))
+        return BDM_TYPE_PCCF;
 
     return BDM_TYPE_UNKNOWN;
 }
@@ -135,6 +145,8 @@ static const char *bdmDeviceTypeName(int type)
             return "iLink";
         case BDM_TYPE_SDC:
             return "MX4SIO";
+        case BDM_TYPE_PCCF:
+            return "PC CARD CF";
         case BDM_TYPE_ATA:
             return "ATA";
         case BDM_TYPE_UDPBD:
@@ -228,10 +240,10 @@ void bdmBuildPs1Prefix(char *target, int targetLength, int massSlot)
    fs_driver_resolve_volume() returns `unit` for "mass" WITHOUT checking that anything is mounted
    there, so Dopen can succeed on a slot whose backing device has gone away.
 
-   We embed the SDK's PREBUILT bdmfs_fatfs.irx (Makefile), so this cannot be fixed on our side --
-   only avoided. The no-buffer form returns -ENXIO safely (it carries the name's first four bytes in
-   its return value instead). That is precisely what Grimdoomer's fork does, and why it reads mass
-   devices where we fault. Gate on it, then ask for the full name.
+   The embedded driver is now our fork (modules/bdm/bdmfs_fatfs), which guards the copy; the gate
+   stays so a stock driver cannot fault either. The no-buffer form returns -ENXIO safely (it carries
+   the name's first four bytes in its return value instead). That is precisely what Grimdoomer's fork
+   does. Gate on it, then ask for the full name.
 
    Returns >= 0 on success; driverName is always left NUL-terminated. */
 int bdmReadDriverName(int dir, char *driverName, int driverNameLength)
@@ -327,6 +339,8 @@ static const char *bdmTypedRootStem(int type)
             return "ilink";
         case BDM_TYPE_SDC:
             return "mx4sio";
+        case BDM_TYPE_PCCF:
+            return "cf";
         case BDM_TYPE_ATA:
             return "ata";
         default:
@@ -663,7 +677,7 @@ static int bdmDiagLoadOptionalModuleArgs(const char *stage, const char *name, vo
 // Exposed for ethsupport's NIC mutual-exclusion: UDPBD and the SMB stack both own the SMAP adapter.
 int bdmIsUDPBDLoaded(void)
 {
-    return udpbdModLoaded;
+    return udpbdNicClaimed; // protect the NIC from another backend even after a partial load
 }
 
 int BdmSupport::loadedNetProtocol() const
@@ -700,6 +714,10 @@ int BdmSupport::ensureNetworkSourceModules(int protocol, u32 timeoutMs)
 
     WaitSema(bdmLoadModuleLock);
 
+    if (udpbdNicClaimed && !udpbdModLoaded) {
+        SignalSema(bdmLoadModuleLock);
+        return 0; // a partial SMAP load cannot be rebound in this IOP session
+    }
     if (udpbdModLoaded) {
         int same = udpbdLoadedProtocol_ == protocol;
         SignalSema(bdmLoadModuleLock);
@@ -714,6 +732,10 @@ int BdmSupport::ensureNetworkSourceModules(int protocol, u32 timeoutMs)
             result = -1; // the failure path below releases the DEV9 reference and module lock
         } else if (protocol == NET_BOOT_UDPFS) {
             result = bdmLoadOptionalModule("UDPFS_SMAP", &udpfs_smap_irx, size_udpfs_smap_irx);
+            if (result >= 0) {
+                udpbdNicClaimed = 1;
+                udpbdLoadedProtocol_ = NET_BOOT_UDPFS;
+            }
             if (result >= 0)
                 result = bdmLoadOptionalModuleArgs("UDPFS_MINISTACK", &udpfs_ministack_irx, size_udpfs_ministack_irx, (int)strlen(ipArg) + 1, ipArg);
             if (result >= 0)
@@ -724,8 +746,9 @@ int BdmSupport::ensureNetworkSourceModules(int protocol, u32 timeoutMs)
 
         if (result >= 0) {
             udpbdModLoaded = 1;
+            udpbdNicClaimed = 1;
             udpbdLoadedProtocol_ = protocol;
-        } else {
+        } else if (!udpbdNicClaimed) {
             sysShutdownDev9();
         }
         SignalSema(bdmLoadModuleLock);
@@ -879,6 +902,15 @@ void bdmDiagFlushPendingIopState(item_list_t *itemList)
 // the user applies Game Sources, so a BDM page that was force-hidden while its enable flag read 0
 // (e.g. an exFAT ATA tab, or a UDPBD tab) re-shows as soon as the device is re-enabled and present --
 // without needing a physical replug.
+void bdmRequestPccfProbe(void)
+{
+    if (!gEnablePCCF || pccfModLoaded)
+        return;
+    // A request during an in-flight attempt stays pending for the next worker pass.
+    pccfProbeGeneration++;
+    bdmForceDeviceRefresh();
+}
+
 void bdmForceDeviceRefresh(void)
 {
 #ifdef __DEBUG
@@ -1075,12 +1107,67 @@ static int bdmShouldQueueModuleLoad(void)
         return 1;
     if (gEnableMX4SIO && !mx4sioModLoaded)
         return 1;
+    if (gEnablePCCF && !pccfModLoaded && pccfAttemptGeneration != pccfProbeGeneration)
+        return 1;
     if (gEnableBdmHDD && !hddModLoaded)
         return 1;
-    if (gEnableUDPBD && !udpbdModLoaded && !ethGetModulesLoaded() && !udpfsGetModulesLoaded())
+    if (gEnableUDPBD && !udpbdNicClaimed && !ethGetModulesLoaded() && !udpfsGetModulesLoaded())
         return 1; // mirror the load gate -- if the SMB or udpfs-filesystem NIC is up, the block chain can't load
 
     return 0;
+}
+
+/* ROM version is eligibility only; the IOP driver still validates revision,
+   idle/present card, CIS, ATA capacity, and the mounted filesystem. */
+static int bdmPccfCandidate(void)
+{
+    static int eligible = -1;
+    if (eligible < 0) {
+        char romver[16] = {0};
+        int fd = open("rom0:ROMVER", O_RDONLY);
+        int size = fd >= 0 ? read(fd, romver, sizeof(romver) - 1) : -1;
+        if (fd >= 0)
+            close(fd);
+        eligible = size >= 6 && romver[4] == 'J' &&
+                   (!strncmp(romver, "0100", 4) || !strncmp(romver, "0101", 4) || !strncmp(romver, "0120", 4));
+        fd = open("rom0:PSXVER", O_RDONLY);
+        if (fd >= 0) {
+            close(fd);
+            eligible = 0;
+        }
+    }
+    return eligible;
+}
+
+int bdmModeIsPCCF(int mode)
+{
+    if (mode < BDM_MODE || mode > BDM_MODE_LAST)
+        return 0;
+    bdm_device_data_t *data = (bdm_device_data_t *)bdmDeviceList[mode - BDM_MODE].priv;
+    return data != NULL && data->bdmDeviceType == BDM_TYPE_PCCF;
+}
+
+int bdmModeIsUSB(int mode)
+{
+    if (mode < BDM_MODE || mode > BDM_MODE_LAST)
+        return 0;
+    bdm_device_data_t *data = (bdm_device_data_t *)bdmDeviceList[mode - BDM_MODE].priv;
+    return data != NULL && data->bdmDeviceType == BDM_TYPE_USB;
+}
+
+static void bdmLoadPccfModule(void)
+{
+    if (gEnablePCCF && !pccfModLoaded && pccfAttemptGeneration != pccfProbeGeneration) {
+        pccfAttemptGeneration = pccfProbeGeneration;
+        if (bdmPccfCandidate() && sysTryClaimPccf()) {
+            if (bdmLoadOptionalModule("PCCF_BD", &pccf_bd_irx, size_pccf_bd_irx) >= 0)
+                pccfModLoaded = 1;
+            else
+                sysReleasePccf();
+        }
+        if (!pccfModLoaded)
+            host::app().setError(_STR_PCCF_UNAVAILABLE, 0);
+    }
 }
 
 void bdmLoadBlockDeviceModules(void)
@@ -1094,7 +1181,7 @@ void bdmLoadBlockDeviceModules(void)
 
     // Snapshot, compared after the loads below. See the refresh at the end of this function for why
     // a transport enabled from Settings needed a "double tap" before its tab appeared.
-    int modsWere = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded;
+    int modsWere = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded + pccfModLoaded;
 
     // Retry a synchronous bdmLoadCoreModules failure via the generation/worker path. Gated on the
     // setting for the same reason as the core load above: an off source must not become resident.
@@ -1119,6 +1206,8 @@ void bdmLoadBlockDeviceModules(void)
             mx4sioModLoaded = 1;
     }
 
+    bdmLoadPccfModule();
+
     if (gEnableBdmHDD && !hddModLoaded) {
         // Load dev9 and atad device drivers.
         LOG("bdmLoadBlockDeviceModules loading hdd drivers...\n");
@@ -1128,14 +1217,22 @@ void bdmLoadBlockDeviceModules(void)
         bdmDiagBootStageBegin("DEV9/ATAD/XHDD");
         int hddResult = hddDiagLoadModulesReady();
         bdmDiagBootStageEnd("DEV9/ATAD/XHDD", hddResult);
-        if (hddResult)
+        if (hddResult) {
+            // Module residency does not imply that ATAD's boot-time IDENTIFY succeeded. The
+            // HDD loader settles AFTER ATAD/XHDD init; with APA Off there is no partition-sector
+            // devctl afterward to re-probe and register a late drive with BDM. Ask once now through
+            // XHDD's read-only sceAtaInit path. Keep the residency latch even for an absent drive,
+            // so idle refreshes do not reload modules or run an unbounded spin-up retry loop.
+            [[maybe_unused]] int ataResult = fileXioDevctl("xhdd0:", ATA_DEVCTL_IS_48BIT, NULL, 0, NULL, 0);
+            LOG("bdmLoadBlockDeviceModules post-settle ATA probe: %d\n", ataResult);
             hddModLoaded = 1;
+        }
     }
 
     // Network block device (UDPBD or UDPFS, picked by gNetBootProtocol). NIC-exclusive with the SMB/ETH
     // stack (smap registers "SMAP_driver"), so only load when SMB isn't up. dev9 is refcounted (shared
     // with ATA-HDD). Both need the PS2's static IP as an "ip=" arg -- the ministack has no DHCP client.
-    if (gEnableUDPBD && !udpbdModLoaded && !ethGetModulesLoaded() && !udpfsGetModulesLoaded()) {
+    if (gEnableUDPBD && !udpbdNicClaimed && !ethGetModulesLoaded() && !udpfsGetModulesLoaded()) {
         char ipArg[24];
         int networkResult = -1;
         const char *networkStage = gNetBootProtocol == NET_BOOT_UDPFS ? "UDPFS-BD chain" : "UDPBD";
@@ -1150,12 +1247,17 @@ void bdmLoadBlockDeviceModules(void)
             // UDPFS: a 3-IRX chain loaded in dependency order -- smap (exports to ministack + bd), then
             // ministack (gets the ip= arg, exports to bd), then udpfs_bd (registers the "udp" BDM device).
             networkResult = bdmDiagLoadOptionalModule("UDPFS_SMAP", "UDPFS_SMAP", &udpfs_smap_irx, size_udpfs_smap_irx);
+            if (networkResult >= 0) {
+                udpbdNicClaimed = 1;
+                gBdmSupport.setLoadedNetProtocol(NET_BOOT_UDPFS);
+            }
             if (networkResult >= 0)
                 networkResult = bdmDiagLoadOptionalModuleArgs("UDPFS_MINISTACK", "UDPFS_MINISTACK", &udpfs_ministack_irx, size_udpfs_ministack_irx, (int)strlen(ipArg) + 1, ipArg);
             if (networkResult >= 0)
                 networkResult = bdmDiagLoadOptionalModule("UDPFS_BD", "UDPFS_BD", &udpfs_bd_irx, size_udpfs_bd_irx);
             if (networkResult >= 0) {
                 udpbdModLoaded = 1;
+                udpbdNicClaimed = 1;
                 gBdmSupport.setLoadedNetProtocol(NET_BOOT_UDPFS);
             }
         } else {
@@ -1163,6 +1265,7 @@ void bdmLoadBlockDeviceModules(void)
             networkResult = bdmDiagLoadOptionalModuleArgs("SMAP_UDPBD", "SMAP_UDPBD", &smap_udpbd_irx, size_smap_udpbd_irx, (int)strlen(ipArg) + 1, ipArg);
             if (networkResult >= 0) {
                 udpbdModLoaded = 1;
+                udpbdNicClaimed = 1;
                 gBdmSupport.setLoadedNetProtocol(NET_BOOT_UDPBD);
             }
         }
@@ -1171,11 +1274,12 @@ void bdmLoadBlockDeviceModules(void)
         // UDPBD/UDPFS (both gates re-enter on every device refresh while !udpbdModLoaded) inflates the
         // refcounted dev9InitCount and a later HDD/ETH teardown can never power dev9 down. On success
         // the reference is intentionally kept (the device stays mounted). Mirrors ETH/HDD pairing.
-        if (!udpbdModLoaded)
+        // A partially loaded chain keeps its SMAP and therefore its DEV9 reference.
+        if (!udpbdNicClaimed)
             sysShutdownDev9();
     }
 
-    int modsNow = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded;
+    int modsNow = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded + pccfModLoaded;
 
     // BOOT PASS BUMPS NOTHING. On the first call every enabled transport loads for the first time, so
     // the comparison below is guaranteed true -- and bdmInitDevicesData is about to publish all of
@@ -1221,7 +1325,7 @@ void bdmLoadBlockDeviceModules(void)
     static int mx4sioSecondProbeDone = 0;
     if (!gEnableMX4SIO)
         mx4sioSecondProbeDone = 0;
-    else if (mx4sioModLoaded && !mx4sioSecondProbeDone) {
+    else if (mx4sioModLoaded && !mx4sioSecondProbeDone && !bdmAutoLaunch) {
         char sdcRoot[16];
         if (!bdmGetDeviceRootByType(BDM_TYPE_SDC, sdcRoot, sizeof(sdcRoot))) {
             mx4sioSecondProbeDone = 1;
@@ -1266,7 +1370,7 @@ void bdmLoadBlockDeviceModules(void)
      * remaining fault is something other than "not enough time", and adding delay only hides how
      * little is understood about it. */
     static int usbSecondProbeDone = 0;
-    if (iUSBModLoaded && !usbSecondProbeDone) {
+    if (iUSBModLoaded && !usbSecondProbeDone && !bdmAutoLaunch) {
         usbSecondProbeDone = 1;
         DelayThread(600 * 1000);               // bounded settle for USB enumeration + FAT mount
         bdmProbeMassSlots("after-usb-settle"); // forces FatFs's lazy mount on every slot
@@ -1278,7 +1382,7 @@ void bdmLoadBlockDeviceModules(void)
     static int ilinkProbeDone = 0;
     if (!gEnableILK)
         ilinkProbeDone = 0;
-    else if (iLinkModLoaded && !ilinkProbeDone) {
+    else if (iLinkModLoaded && !ilinkProbeDone && !bdmAutoLaunch) {
         char ilkRoot[16];
         int waitedMs;
 
@@ -1289,6 +1393,13 @@ void bdmLoadBlockDeviceModules(void)
             LOG("[BDM] iLink root %s after ~%d ms\n", waitedMs < 3000 ? "appeared" : "not found", waitedMs);
         bdmForceDeviceRefresh(); // publish either a newly ready root or the final absent result
     }
+}
+
+// Auto Loading retries its own mass device. The menu discovery settles above must not delay its IO
+// drain, nor be consumed if it falls back to the menu, which clears this again.
+void bdmSetAutoLaunch(int enabled)
+{
+    bdmAutoLaunch = enabled;
 }
 
 // Bring up only the common BDM infrastructure. Literal massN: boot resolution uses this path so an
@@ -1372,6 +1483,8 @@ public:
     int count(item_list_t *itemList) override;
     int sourceId(item_list_t *itemList, int id) override;
     int saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet) override;
+    int ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                   char *partition, int partitionSize) override;
     void *game(item_list_t *itemList, int id) override;
     char *name(item_list_t *itemList, int id) override;
     int nameLength(item_list_t *itemList, int id) override;
@@ -1379,12 +1492,14 @@ public:
     void deleteGame(item_list_t *itemList, int id) override;
     void rename(item_list_t *itemList, int id, char *newName) override;
     config_set_t *config(item_list_t *itemList, int id) override;
+    void ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config) override;
     int image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm) override;
     int textId(item_list_t *itemList) override;
     int iconId(item_list_t *itemList) override;
     void cleanUp(item_list_t *itemList, int exception) override;
     void shutdown(item_list_t *itemList) override;
     int checkVmc(item_list_t *itemList, char *name, int createSize) override;
+    int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous) override;
     char *prefix(item_list_t *itemList) override;
     void launch(item_list_t *itemList, int id, config_set_t *configSet) override;
     void launchVcd(item_list_t *itemList, const char *vcdName, config_set_t *configSet) override;
@@ -1442,7 +1557,7 @@ void BdmSource::init(item_list_t *itemList)
 // the UDPFS_MODE derivation; the user's saved gBDMStartMode is never modified or persisted.
 int bdmEffectiveStartMode(void)
 {
-    if (gEnableUDPBD && gBDMStartMode != START_MODE_AUTO)
+    if ((gEnableUDPBD || gEnablePCCF) && gBDMStartMode != START_MODE_AUTO)
         return START_MODE_AUTO;
     return gBDMStartMode;
 }
@@ -1458,6 +1573,8 @@ int bdmTransportEnabled(int bdmDeviceType)
             return gEnableILK ? 1 : 0;
         case BDM_TYPE_SDC:
             return gEnableMX4SIO ? 1 : 0;
+        case BDM_TYPE_PCCF:
+            return gEnablePCCF ? 1 : 0;
         case BDM_TYPE_ATA:
             return gEnableBdmHDD ? 1 : 0;
         case BDM_TYPE_UDPBD:
@@ -1658,7 +1775,8 @@ int BdmSource::update(item_list_t *itemList)
     // bdmGames, so a VCD scan reporting failure (r < 0) left the ISO list published under the VCD
     // view -- the L3 toggle then "never changed the list" (Nathan, HW, ATA/HDD_BD), and a device with
     // no POPS folder hit that on every single toggle.
-    if (view == LIB_VIEW_PS1 || view == LIB_VIEW_MIXED) {
+    // CF games are native PS2 only: no PS1 core can restore the PC CARD transport.
+    if (pDeviceData->bdmDeviceType != BDM_TYPE_PCCF && (view == LIB_VIEW_PS1 || view == LIB_VIEW_MIXED)) {
         char ps1Prefix[BDM_DEVICE_ROOT_MAX + 2];
         bdmBuildPs1Prefix(ps1Prefix, sizeof(ps1Prefix), itemList->mode); // device root, NOT gBDMPrefix
         // Ordinary BDM devices merge both cores. UDPBD deliberately publishes Ember ONLY:
@@ -1810,9 +1928,18 @@ config_set_t *BdmSource::config(item_list_t *itemList, int id)
 
     // Active view's array (#120 split) -- a VCD's per-game CFG keys off its own entry, and a stale
     // id resolves to the empty entry instead of indexing outside either backing array.
-    config = sbPopulateConfig(bdmActiveGame(itemList, id), pDeviceData->bdmPrefix, "/");
+    base_game_info_t *game = bdmActiveGame(itemList, id);
+    config = sbPopulateConfig(game, pDeviceData->bdmPrefix, "/");
+    ps1Size(itemList, game, config);
     bdmLogIdentityDiagnosticLive("config-create", itemList, config);
     return config;
+}
+
+void BdmSource::ps1Size(item_list_t *itemList, base_game_info_t *game, config_set_t *config)
+{
+    char root[BDM_DEVICE_ROOT_MAX + 2];
+    bdmBuildPs1Prefix(root, sizeof(root), itemList->mode); // POPS/ and EMBER/ live at the device root
+    sbResolvePs1Size(game, root, config);
 }
 
 int BdmSource::image(item_list_t *itemList, char *folder, int isRelative, char *value, char *suffix, GSTEXTURE *resultTex, short psm)
@@ -1847,6 +1974,8 @@ int BdmSource::textId(item_list_t *itemList)
         mode = _STR_MX4SIO_GAMES;
     else if (bdmDriverIsATA(pDeviceData->bdmDriver))
         mode = _STR_HDD_GAMES;
+    else if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        mode = _STR_PCCF_GAMES;
     else if (bdmDriverIsUDPBD(pDeviceData->bdmDriver))
         mode = (bdmGetLoadedNetProtocol() == NET_BOOT_UDPFS) ? _STR_UDPFSBD_GAMES : _STR_UDPBD_GAMES; // BLOCK: UDPFSBD vs UDPBD (the udpfs FILESYSTEM tab is _STR_UDPFS_GAMES, a separate device); mirror bdmGetIconId
 
@@ -1930,7 +2059,19 @@ void BdmSource::shutdown(item_list_t *itemList)
 int BdmSource::checkVmc(item_list_t *itemList, char *name, int createSize)
 {
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
+    if (pDeviceData != NULL && pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        return SYS_VMC_CREATE_FAILED; // CF games run without VMC
     return pDeviceData != NULL ? sysCheckVMC(pDeviceData->bdmPrefix, "/", name, createSize, NULL) : -1;
+}
+
+// Native mcemu needs a card in one extent: the bundled driver reserves it before genvmc formats,
+// or the creation fails. Neutrino maps fragments, so its cards keep plain creation.
+int BdmSource::createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous)
+{
+    bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
+    if (pDeviceData == NULL || pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        return SYS_VMC_CREATE_FAILED;
+    return sysCheckVMCEx(pDeviceData->bdmPrefix, "/", name, createSize, NULL, requireContiguous ? VMC_CREATE_CONTIGUOUS : 0);
 }
 
 char *BdmSource::prefix(item_list_t *itemList)
@@ -2099,6 +2240,18 @@ int bdmFindPartition(char *target, const char *name, int write)
     else
         sprintf(target, "mass0:");
     return 0;
+}
+
+int BdmSource::ps1SaveDir(item_list_t *itemList, int id, const char *name, int *ember, char *directory, int directorySize,
+                          char *partition, int partitionSize)
+{
+    char root[64];
+    (void)partitionSize;
+    if (!ps1RowKind(itemList, id, ember))
+        return 0;
+    partition[0] = '\0';
+    bdmBuildPs1Prefix(root, sizeof(root), itemList->mode);
+    return saveIconPs1Directory(root, name, *ember, directory, directorySize);
 }
 
 int BdmSource::saveCueSettings(item_list_t *itemList, int id, const char *name, config_set_t *configSet)

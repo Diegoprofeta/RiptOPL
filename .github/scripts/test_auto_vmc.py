@@ -35,14 +35,14 @@ run('auto_vmc', r'''
 enum {FAV_MODE=12, APP_MODE=10, HTTP_MODE=14, HDD_MODE=9, ETH_MODE=8, UDPFS_MODE=15, LIB_VIEW_PS1=1,FAV_KIND_ISO=0};
 enum {CONFIG_ITEM_CORE_LOADER, _STR_AUTO_VMC_FAILED, _STR_AUTO_VMC_TIMEOUT,
       _STR_AUTO_VMC_CREATING,_STR_VMC_FRAGMENTED_ON_CREATE,_STR_ERROR_SAVING_SETTINGS,
-      _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING};
+      _STR_AUTO_VMC_INVALID,_STR_AUTO_VMC_STILL_RUNNING,_STR_VMC_PFS_LIMIT_ON_CREATE};
 @STARTUP_LIMIT@
 static int gAutoCreateVmc=1,gDefaultCoreLoader=0;
 #define SYS_VMC_PROBE_FORMAT (-4)
 struct config_set_t {int loader=2,disabled=0;char assigned[32]={};};
 struct item_list_t {int mode=0,enabled=1;void *source=nullptr;void *priv=nullptr;};
 static int rowView,kind,probe= -1,submitted= -1,probes,creates,polls,aborts,writes,dialogs,contiguity;
-static int completionError,cancelAt= -1,completeAt=2,chain=1;
+static int completionError,cancelAt= -1,completeAt=2,chain=1,contiguous= -1;
 static int completedSize=8,rowCount=3,mutation;
 static bool active=true,ownerPresent=true,cap=true,saveOk=true,statusFails,assignOk=true;
 static bool jobStarted,initialBusy,initialFailure,udpbd;
@@ -53,9 +53,11 @@ public:
     bool hasCheckVmc() {return cap;}
     const char *startup(item_list_t*,int) {return title;}
     int count(item_list_t*) {return rowCount;}
+    int createVmc(item_list_t*,char *name,int size,int requireContiguous) {
+        assert(!strcmp(name,"GROUP_0") && size==8);creates++;jobStarted=true;contiguous=requireContiguous;return submitted;
+    }
     int checkVmc(item_list_t*,char *name,int size) {
-        assert(!strcmp(name,"GROUP_0")); if(size>0) {assert(size==8);creates++;jobStarted=true;return submitted;}
-        assert(size==SYS_VMC_PROBE_FORMAT);
+        assert(!strcmp(name,"GROUP_0") && size==SYS_VMC_PROBE_FORMAT); // creation goes through createVmc
         probes++;return creates ? completedSize : probe;
     }
 };
@@ -69,6 +71,7 @@ static int favGetItemKind(int) {return kind;}
 static int libListRowView(item_list_t*,int) {return rowView;}
 [[maybe_unused]] static int bdmSupportIsUDPBD(const item_list_t*) {return udpbd;}
 [[maybe_unused]] static int bdmModeIsUDPBD(int) {return udpbd;}
+[[maybe_unused]] static int bdmModeIsPCCF(int) {return 0;}
 static int guiIsActive() {return active;}
 static void configGetInt(config_set_t *c,int,int *out) {*out=c->loader;}
 static void configGetVMC(config_set_t *c,char *out,int,int) {strcpy(out,c->assigned);}
@@ -79,6 +82,8 @@ static const char *getGroupIdForTitleId(const char*) {return "GROUP";}
 static const char *_l(int) {return "message";}
 static int guiMsgBox(const char*,int,void*) {dialogs++;return 0;}
 static int sysVMCContiguity() {contiguity++;return chain;}
+static const char *sysVMCCreatePath() {return "mass0:/VMC/GROUP_0.bin";}
+static int hddVMCMapFits(const char*) {assert(0);return 1;}
 static void readPads() {}
 static int guiCancelKey() {return 1;}
 static int getKeyOn(int) {return polls==cancelAt;}
@@ -102,10 +107,10 @@ static int fileXioDevctl(const char*,unsigned command,void*,int,void *out,int) {
     return 0;
 }
 constexpr int AUTO_VMC_SIZE_MB=8, AUTO_VMC_MAX_FRAMES=5, AUTO_VMC_CANCEL_FRAMES=5;
-''' + function(policy_source,'int guiGameAutoCreateVmc(') + r'''
+''' + function(policy_source,'static int guiGameVMCLayoutWarning(') + '\n' + function(policy_source,'int guiGameAutoCreateVmc(') + r'''
 static void reset() {
     gAutoCreateVmc=1;gDefaultCoreLoader=0;rowView=kind=0;probe=submitted=-1;
-    probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;
+    probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;contiguous= -1;
     completeAt=2;cancelAt=-1;chain=1;active=ownerPresent=cap=saveOk=assignOk=true;
     statusFails=jobStarted=initialBusy=initialFailure=udpbd=false;title="SLUS_123.45";owner={};
     completedSize=8;rowCount=3;mutation=0;
@@ -115,6 +120,7 @@ int main() {
     item_list_t list;config_set_t cfg;
     reset(); assert(guiGameAutoCreateVmc(&list,1,&cfg)==1);
     assert(creates==1 && polls==2 && probes==2 && writes==1 && !strcmp(cfg.assigned,"GROUP_0") && contiguity==1);
+    assert(contiguous==1); // a native card needs one reserved extent (original #994)
     for(int size : {8,16,32,64}) {reset();cfg={};probe=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!creates && writes==1);}
     for(int size : {0,-2,-3,4}) {reset();cfg={};probe=size;assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);assert(dialogs==1);}
     for(int result : {0,-2,-3}) {reset();cfg={};submitted=result;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(creates==1 && !polls && !writes && !cfg.assigned[0]);}
@@ -130,7 +136,8 @@ int main() {
     for(int change : {1,2}) {reset();cfg={};mutation=change;assert(!guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);}
     reset();cfg={};saveOk=false;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(writes==1 && dialogs==1);
     reset();cfg={};assignOk=false;assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!writes && !cfg.assigned[0]);
-    reset();cfg={};cfg.loader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && !contiguity);
+    reset();cfg={};cfg.loader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && !contiguity && contiguous==0);
+    reset();cfg={};cfg.loader=2;gDefaultCoreLoader=1;assert(guiGameAutoCreateVmc(&list,1,&cfg) && contiguous==0);
     for(int scenario=0;scenario<10;scenario++) {
         reset();cfg={};list={};
         if(scenario==0)gAutoCreateVmc=0;
@@ -152,7 +159,7 @@ int main() {
     reset();cfg={};list.mode=FAV_MODE;ownerPresent=false;
     assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
     reset();cfg={};list.mode=FAV_MODE;
-    assert(guiGameAutoCreateVmc(&list,1,&cfg) && writes==1);
+    assert(guiGameAutoCreateVmc(&list,1,&cfg) && writes==1 && contiguous==1);
     for(int change : {3,4,5,6}) {
         reset();cfg={};list.mode=FAV_MODE;mutation=change;
         assert(!guiGameAutoCreateVmc(&list,1,&cfg) && !writes && probes==1);

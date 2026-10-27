@@ -34,11 +34,10 @@ typedef struct submenu_item
     /// 1 when this row is a browsable folder, not a launchable game -- checklist item 34
     int isFolder;
 #ifdef RETROACHIEVEMENTS
-    /// 1 when this game has a RetroAchievements watch list. Resolved once on the I/O thread when
-    /// the row is built, exactly like text and isFolder, so the RENDER path never calls back into
-    /// the badge cache -- that cache is freed and reallocated by raBadgeRefresh on the I/O thread,
-    /// and dereferencing it from a frame draw is a use-after-free waiting for the wrong interleave.
+    /// Watch-list presence, resolved on the I/O thread. The renderer never reads the badge cache
+    /// (raBadgeRefresh frees and reallocates it); raText is the row's own display snapshot.
     int raBadged;
+    char *raText; // owned "RA Name" / "Name [RA]"; text stays the source identity
 #endif
 } submenu_item_t;
 
@@ -136,6 +135,7 @@ config_set_t *gameMenuLoadConfig(struct UIItem *ui);
 int menuSaveConfig();
 int menuSaveEmberGameSettings(config_set_t *configSet);
 int menuSaveSettings(void);
+void menuSaveSettingsAndRestart(void);
 // Queue an async re-read of the current item's config WITH the #Size stat enabled. The scroll-path
 // load skips that stat (see sbSetConfigStatSize); the info screen calls this so #Size still resolves.
 void menuRequestInfoSize(void);
@@ -150,9 +150,17 @@ void menuHandleInputMenu();
 void menuHandleInputInfo();
 void menuHandleInputGameMenu();
 void menuHandleInputAppMenu();
+#ifdef RETROACHIEVEMENTS
+// The RA achievement browser screen.
+void menuRenderAchievements();
+void menuHandleInputAchievements();
+#endif
 
 // Sets the selected item if it is found in the menu list
 void menuSetSelectedItem(menu_item_t *item);
+
+/** Keep each selected row visible after list geometry changes. Caller holds guiLock. */
+void menuResetPageStarts(void);
 
 /** Serialize menu_item_t::hints against the renderer.
  *

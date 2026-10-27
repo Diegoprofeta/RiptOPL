@@ -14,12 +14,16 @@ import yaml
 
 from build import build
 from build_configuration import CONFIGURATIONS, apply_configuration
+from install_ports import LIBRARIES
 
 ROOT = Path(__file__).resolve().parents[1]
 EDITIONS = {
     "korium": {"title": "Korium", "tag": "rolling-korium", "theme": "korium", "ra": False},
     "ra": {"title": "RetroAchievements", "tag": "rolling-ra", "theme": "korium", "ra": True},
     "incebtion": {"title": "IncebtIon", "tag": "rolling-incebtion", "theme": "incebtion", "ra": False},
+    # The original's RA release carries a kit per theme: this one ships inside rolling-ra ("into").
+    "ra_incebtion": {"title": "RetroAchievements-IncebtIon", "tag": "rolling-ra", "theme": "incebtion", "ra": True,
+                     "into": "ra", "label": "IncebtIon"},
 }
 
 
@@ -40,11 +44,34 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         for target in (main, core):
             add(target, "defines", "RETROACHIEVEMENTS")
         add(main, "sources", "src/platform/md5.c", *[
-            f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport")])
-        add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c")
-        main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
+            f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport", "achievements",
+                                                   "rapopslaunch")])
+        # USB PS1 under POPStarter: rapops is written as POPS/MODULE_9.IRX and starts the network
+        # modules the loader copies into it, then rapull, which reads the game's RAM from the IOP.
+        headers = targets["raudp"]["headers"]
+        for name in ("rapull", "rapops"):
+            config["targets"].append({"name": name, "type": "iop", "sources": [f"modules/network/{name}/{name}.c"],
+                                      "include_dirs": [f"modules/network/{name}/", "modules/network/common",
+                                                       "modules/iopcore/common"],
+                                      "headers": headers, "imports_lst": f"modules/network/{name}/imports.lst"})
+        add(main, "embed_irx", "rapull", "rapops")
+        add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c", "ee_core/src/ra_pulse.c")
+        # mbedTLS 3.6.7 (third_party/mbedtls, Apache-2.0) for the HTTPS game-ID lookup. RA only:
+        # the other editions must not contain it (test_mbedtls_vendor.py).
+        # The compile line runs through a shell, so the define keeps its quotes escaped. RiptOPL's
+        # own TLS sources name the configuration themselves (include/ratls.h).
+        tls = ["third_party/mbedtls/include", "third_party/mbedtls"]
+        config["targets"].append({"name": "mbedtls", "type": "ee_lib", "sources": ["third_party/mbedtls/library/*.c"],
+                                  "include_dirs": tls, "defines": [r'MBEDTLS_CONFIG_FILE=\"riptopl_mbedtls_config.h\"']})
+        add(main, "sources", "src/platform/ratls.c", "src/sources/ratls_ps2.cpp")
+        add(main, "include_dirs", *tls)
+        add(main, "libs", "mbedtls")
         add(main, "embed_irx", "raudp")
         add(targets["SMSTCPIP"], "defines", "INGAME_UDP")
+        # raudp imports the in-game SMAP driver's transmit and notice exports, and the
+        # transmit mutex. Only RA carries the table: it changes the module's link layout.
+        add(targets["smap_ingame"], "defines", "RETROACHIEVEMENTS")
+        targets["smap_ingame"]["exports_tab"] = "modules/network/smap-ingame/exports.tab"
         # sdk-core v2026.10.13 supplies POSIX sockets through libc's fdman.
         # Keep descriptor ownership/non-blocking callbacks in the SDK, not a second archive.
         for name in ("bdm_cdvdman", "mmce_cdvdman"):
@@ -80,7 +107,8 @@ def main():
     source = git("rev-parse", "HEAD")
     dirty = bool(git("status", "--porcelain"))
     options = EDITIONS[args.edition]
-    os.environ["RIPTOPL_EDITION"] = args.edition
+    os.environ["RIPTOPL_THEME"] = options["theme"]
+    os.environ["RIPTOPL_RA"] = "1" if options["ra"] else "0"
     suffix = "" if args.configuration == "standard" else f"-{args.configuration.upper()}"
     os.environ["LOCALVERSION"] = f"PS2BUILD-{options['title']}-{args.toolchain.upper()}{suffix}"
     # Each edition regenerates blobs, so sequential local builds cannot inherit
@@ -100,17 +128,24 @@ def main():
         raise ValueError("source checkout changed during build")
     stage.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(elf, stage / "RIPTOPL.ELF")
+    # The i.LINK driver the ELF embeds also replaces the Neutrino bundle's copy (package_edition.py).
+    shutil.copyfile(output / "bin/IEEE1394_bd_mini_fork.irx", stage / "IEEE1394_bd_mini.irx")
     sdk = Path(os.environ.get("PS2BUILD_HOME", shutil.which("ps2build") or "")).resolve()
     if sdk.is_file():
         sdk = sdk.parent
+    world = sdk / ("packages-llvm" if args.toolchain == "llvm" else "packages") / "world"
     manifest = {
         "repository": "NathanNeurotic/RiptOPL", "source_commit": source, "dirty": dirty,
         "edition": args.edition, **options, "sdk": "ps2build", "compiler": args.toolchain,
         "configuration": args.configuration,
         "ps2build_version": subprocess.check_output(["ps2build", "--version"], text=True).strip(),
         "components": yaml.safe_load((sdk / "versions.yaml").read_text()) if (sdk / "versions.yaml").exists() else {},
+        # install_ports.py may keep a cached ogg/vorbis through a host outage; record which one was linked.
+        "ports": {package: hashlib.sha256(b"".join((world / package / "lib" / lib).read_bytes() for lib in libraries)).hexdigest()
+                  for package, libraries in LIBRARIES.items() if (world / package).is_dir()},
         "definition_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "elf_sha256": hashlib.sha256(elf.read_bytes()).hexdigest(),
+        "ilink_bd_sha256": hashlib.sha256((stage / "IEEE1394_bd_mini.irx").read_bytes()).hexdigest(),
         "version": (ROOT / "asm/opl_version.h").read_text().strip(),
         "run_url": os.environ.get("GITHUB_SERVER_URL", "https://github.com") + "/" +
             os.environ.get("GITHUB_REPOSITORY", "NathanNeurotic/RiptOPL") + "/actions/runs/" + os.environ.get("GITHUB_RUN_ID", "local"),

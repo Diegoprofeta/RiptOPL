@@ -19,7 +19,11 @@
 #endif
 
 
-// Cpu ticks per one milisecond
+// NOT the real rate: the EE COP0 Count register behind cpu_ticks() runs at the 294.912 MHz core
+// clock, i.e. 294,912 ticks per millisecond. This value (inherited from upstream OPL) is half that,
+// so every "ms" timed with it -- pad repeat delays, rumble pulses -- lasts about half a real
+// millisecond. Those durations were tuned on hardware in these units, so the constant is kept
+// as-is on purpose: correcting it would double every delay. Retune the ms values together with it.
 #define CLOCKS_PER_MILISEC 147456
 
 // 200 ms per repeat
@@ -698,10 +702,28 @@ u32 PadManager::pollElapsedMs(void)
     return ticks / CLOCKS_PER_MILISEC;
 }
 
+/* Most hold time one poll may credit to a held key's repeat countdown.
+
+   Time between two polls is UNOBSERVED: nothing read the pad in it, so it is not evidence that the
+   key stayed down -- the same rule the self-heal idle gate applies (PAD_IDLE_MAX_CLEAN_GAP_MS). The
+   countdown used to take the whole gap. The gap right after a press is where the GUI thread can
+   block (the press's own cursor sound is a synchronous audsrv RPC, and just after boot the IOP can
+   be busy with the game list, the art sweep and BGM priming). If the next poll still reads the
+   press from freepad's buffer, the whole stall counted as hold time, the countdown passed zero and
+   key() fired a repeat: one tap moved two rows. That matches the report of the first d-pad, L1
+   or R1 press after boot moving twice on every theme (likely path, not yet confirmed on hardware).
+   With the cap a repeat needs the key seen down on later polls too. A real hold still repeats on
+   schedule and a long stall still cannot freeze the counter (#729). 100 is about three frames in
+   these units. */
+constexpr u32 PAD_REPEAT_MAX_CREDIT_MS = 100;
+
 // A held key counts down to its next repeat (getKey); a released one rearms at the initial delay.
 void PadManager::advanceRepeatTimers(u32 elapsedMs)
 {
     int i;
+
+    if (elapsedMs > PAD_REPEAT_MAX_CREDIT_MS)
+        elapsedMs = PAD_REPEAT_MAX_CREDIT_MS;
 
     for (i = 0; i < 16; ++i) {
         if (keyPressed(i + 1))
