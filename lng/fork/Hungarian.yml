@@ -573,3 +573,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Jelentkezz be a RetroAchievementsbe a Caduceusban, aztán próbáld újra.
   RA_EXPERIMENTAL_CARDS: Caduceus kísérleti kártyák
   HINT_RA_EXPERIMENTAL_CARDS: Kísérleti, játékon belüli teljesítménykártyák PS2-n. Villoghatnak vagy lefagyaszthatják a játékot. Csak Caduceus; kikapcsolva az arany pulzálást használja. A következő játékindításkor lép életbe.
+  CAD_ACHIEVEMENTS: Caduceus teljesítmények
+  CAD_VIEW_ACHIEVEMENTS: Teljesítmények megtekintése
+  CAD_BACK: Vissza
+  CAD_BACK_REFRESH: A Vissza az OPL-be tér vissza. A Select frissíti ezt az oldalt.
+  CAD_CONNECTION_ERROR: A Caduceus nem kérdezhető le. Ellenőrizd a kapcsolatot, aztán nyomd meg a Select gombot az újrapróbáláshoz.
+  CAD_EARNED: Megszerzett
+  CAD_EMPTY_FILTER: Egyetlen teljesítmény sem felel meg ennek a szűrőnek.
+  CAD_EMPTY_LIBRARY: Ebben a fiókban nincs előrehaladással rendelkező játék.
+  CAD_FILTER_ALL: Összes
+  CAD_GAMES: '%d játék a fiókban'
+  CAD_GAME_CONTROLS: 'L1/R1: oldal   Négyzet: szűrő   Select: frissítés'
+  CAD_GAME_PROGRESS: '%d / %d teljesítmény  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Ennek a formátumnak a hash-e nem számítható ki. Böngészd inkább a fiók könyvtárát.
+  CAD_HEADING: TELJESÍTMÉNYEK
+  CAD_LIBRARY: RetroAchievements fiókkönyvtár
+  CAD_LIBRARY_CONTROLS: 'L1/R1: oldal   Elfogadás: megnyitás   Select: frissítés'
+  CAD_LOADING: Teljesítmények betöltése...
+  CAD_LOCKED: Zárolt
+  CAD_ONE_GAME: '%d játék a fiókban'
+  CAD_PAIR: Jelentkezz be a Caduceusba, és párosítsd az ART/CADUCEUS.KEY fájlt az SMB megosztásodon.
+  CAD_PAIR_UDPFS: A Caduceus nem érhető el. Párosítsd az ART/CADUCEUS.KEY fájlt a PS2-Servers által megosztott mappában, és állítsd be az RA segédprogram IP-jét.
+  CAD_POINTS: '%d pont  |  %s'
+  CAD_PROGRESS: '%d / %d megszerezve  |  %s'
+  CAD_UDPFS_IMG: 'A Caduceus böngészőnek SMB vagy UDPFS Fájlok kell: az UDPFS IMG-nek nincs megosztott mappája a kulcsához.'
+  CAD_UNKNOWN_GAME: Ez a játék nincs a Caduceus katalógusában. Frissítsd a katalógust a PC-n.
+  CAD_USE_LIBRARY: Ezt a játékot a főmenü Caduceus teljesítmények pontjában böngészd.
+  XERA_ACHIEVEMENTS: RetroAchievements könyvtár (xeRAbora)
+  XERA_CONNECTION_ERROR: A lista nem olvasható a xeRAborától. Nyomd meg a Select gombot az újrapróbáláshoz.
+  XERA_NOT_PLAYED: Még nincs a RetroAchievements könyvtáradban. Játssz vele egyszer teljesítményekkel, aztán nyomd meg a Select gombot.
+  XERA_OPEN_NETWORK: A xeRAbora nem érhető el. Kapcsold be az OPEN TO THE NETWORK opciót a beállításaiban, ellenőrizd az RA segédprogram IP-jét és a PC tűzfalát.
+  XERA_UNKNOWN_GAME: A xeRAbora nem ismeri ezt a képet. Előbb futtasd az RA játéktámogatás-ellenőrzést.
+  XERA_USE_LIBRARY: Ezt a játékot a főmenü RetroAchievements könyvtárában böngészd.

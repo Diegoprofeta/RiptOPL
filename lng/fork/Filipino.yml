@@ -602,3 +602,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Mag-sign in sa RetroAchievements sa Caduceus, saka subukan ulit.
   RA_EXPERIMENTAL_CARDS: Mga eksperimental na card ng Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Mga eksperimental na PS2 in-game achievement card. Maaaring kumislap o mag-freeze ang mga laro. Caduceus lang; gold pulse ang gamit ng Off. Magkakabisa sa susunod na paglulunsad ng laro.
+  CAD_ACHIEVEMENTS: Mga achievement ng Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Tingnan ang mga achievement
+  CAD_BACK: Bumalik
+  CAD_BACK_REFRESH: Bumabalik sa OPL ang Back. Nire-refresh ng Select ang page na ito.
+  CAD_CONNECTION_ERROR: Hindi makapagtanong sa Caduceus. Tingnan ang koneksyon, saka pindutin ang Select para subukan ulit.
+  CAD_EARNED: Nakuha
+  CAD_EMPTY_FILTER: Walang achievement na tugma sa filter na ito.
+  CAD_EMPTY_LIBRARY: Walang larong may progreso sa account na ito.
+  CAD_FILTER_ALL: Lahat
+  CAD_GAMES: '%d laro sa account'
+  CAD_GAME_CONTROLS: 'L1/R1: page   Square: filter   Select: i-refresh'
+  CAD_GAME_PROGRESS: '%d / %d achievement  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Hindi mai-hash ang format na ito. I-browse na lang ang library ng account.
+  CAD_HEADING: MGA ACHIEVEMENT
+  CAD_LIBRARY: Library ng RetroAchievements account
+  CAD_LIBRARY_CONTROLS: 'L1/R1: page   Confirm: buksan   Select: i-refresh'
+  CAD_LOADING: Nilo-load ang mga achievement...
+  CAD_LOCKED: Naka-lock
+  CAD_ONE_GAME: '%d laro sa account'
+  CAD_PAIR: Mag-sign in sa Caduceus at i-pair ang ART/CADUCEUS.KEY sa iyong SMB share.
+  CAD_PAIR_UDPFS: Hindi maabot ang Caduceus. I-pair ang ART/CADUCEUS.KEY sa folder na ibinabahagi ng PS2-Servers, at itakda ang RA companion IP.
+  CAD_POINTS: '%d pts  |  %s'
+  CAD_PROGRESS: '%d / %d nakuha  |  %s'
+  CAD_UDPFS_IMG: 'Kailangan ng Caduceus browser ang SMB o UDPFS Files: walang pinagsasaluhang folder ang UDPFS IMG para sa key nito.'
+  CAD_UNKNOWN_GAME: Wala ang larong ito sa Caduceus catalog. I-refresh ang catalog sa PC.
+  CAD_USE_LIBRARY: I-browse ang larong ito sa Caduceus achievements sa main menu.
+  XERA_ACHIEVEMENTS: RetroAchievements library (xeRAbora)
+  XERA_CONNECTION_ERROR: Hindi mabasa ang listahan mula sa xeRAbora. Pindutin ang Select para subukan ulit.
+  XERA_NOT_PLAYED: Wala pa sa iyong RetroAchievements library. Laruin ito nang isang beses na may achievement, saka pindutin ang Select.
+  XERA_OPEN_NETWORK: Hindi maabot ang xeRAbora. I-on ang OPEN TO THE NETWORK sa settings nito, tingnan ang RA companion IP at ang firewall ng PC.
+  XERA_UNKNOWN_GAME: Hindi kilala ng xeRAbora ang image na ito. Patakbuhin muna ang RA check game support.
+  XERA_USE_LIBRARY: I-browse ang larong ito sa RetroAchievements library sa main menu.

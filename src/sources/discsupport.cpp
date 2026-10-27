@@ -19,6 +19,7 @@
 #include "include/iosupport.h"
 #include "include/mmcesupport.h"
 #include "include/discsupport.h"
+#include "include/achievements.h"
 
 // The disc-support state (the busy latch serialising the deferred check against launches) and the
 // operations on it. Defined in this translation unit rather than a header because the source-
@@ -28,7 +29,7 @@
 class DiscSupport
 {
 public:
-    int checkBusy() { return busy_ || sbHashGameBusy(); }
+    int checkBusy() { return busy_ || sbHashGameBusy() || achievementsBusy(); }
     int checkSupportDeferred();
     void launch(int (*progress)(void));
     void checkWorker();

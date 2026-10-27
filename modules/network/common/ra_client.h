@@ -3,9 +3,10 @@
 #ifndef RA_CLIENT_H
 #define RA_CLIENT_H
 
-#define RA_CADUCEUS_PORT  18197
-#define RA_PROBE_HASH     "00000000000000000000000000000000"
-#define RA_CADUCEUS_PROBE "CADQ2 " RA_PROBE_HASH
+#define RA_CADUCEUS_PORT         18197
+#define RA_CADUCEUS_ACCOUNT_PORT 18198 /* CADA1/CADB1: the account and game pages */
+#define RA_PROBE_HASH            "00000000000000000000000000000000"
+#define RA_CADUCEUS_PROBE        "CADQ2 " RA_PROBE_HASH
 
 /* No libc imports: this header is also built into the IOP module. */
 static inline int raClientStarts(const char *text, const char *prefix)

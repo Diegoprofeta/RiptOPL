@@ -105,7 +105,7 @@ int main() {
     reset();reserved=true;assert(transfer()==-8 && !cursor && !parsed && !files);
     puts("PASS: actual Ranet transfer refuses gaps/counts/truncation/invalid lists and preserves binary whitespace");
 }
-'''.replace("@HELPER@", helper).replace("@FUNCTION@", function("int Ranet::askPc("))
+'''.replace("@HELPER@", helper).replace("@FUNCTION@", function("int Ranet::askPc(") + function("int Ranet::raqAsk("))
 
 with tempfile.TemporaryDirectory() as directory:
     cpp, exe = Path(directory) / "transfer.cpp", Path(directory) / "transfer"

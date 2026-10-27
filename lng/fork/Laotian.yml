@@ -633,3 +633,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: ເຂົ້າສູ່ລະບົບ RetroAchievements ໃນ Caduceus, ແລ້ວລອງໃໝ່.
   RA_EXPERIMENTAL_CARDS: ກາດທົດລອງ Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: ກາດຄວາມສຳເລັດ ໃນເກມ PS2 ແບບທົດລອງ. ອາດເຮັດໃຫ້ເກມ ກະພິບ ຫຼື ຄ້າງ. Caduceus ເທົ່ານັ້ນ; ປິດ ໃຊ້ຈັງຫວະສີທອງ. ມີຜົນ ຕອນເປີດເກມ ເທື່ອຕໍ່ໄປ.
+  CAD_ACHIEVEMENTS: ຄວາມສຳເລັດ Caduceus
+  CAD_VIEW_ACHIEVEMENTS: ເບິ່ງ ຄວາມສຳເລັດ
+  CAD_BACK: ກັບຄືນ
+  CAD_BACK_REFRESH: ກັບຄືນ ກັບໄປ OPL. Select ເອີ້ນໜ້ານີ້ຄືນໃໝ່.
+  CAD_CONNECTION_ERROR: ສອບຖາມ Caduceus ບໍ່ໄດ້. ກວດການເຊື່ອມຕໍ່, ແລ້ວກົດ Select ເພື່ອລອງໃໝ່.
+  CAD_EARNED: ໄດ້ຮັບແລ້ວ
+  CAD_EMPTY_FILTER: ບໍ່ມີຄວາມສຳເລັດ ທີ່ກົງກັບຕົວກອງນີ້.
+  CAD_EMPTY_LIBRARY: ບໍ່ມີເກມ ທີ່ມີຄວາມຄືບໜ້າ ໃນບັນຊີນີ້.
+  CAD_FILTER_ALL: ທັງໝົດ
+  CAD_GAMES: '%d ເກມ ໃນບັນຊີ'
+  CAD_GAME_CONTROLS: 'L1/R1: ໜ້າ   ສີ່ຫຼ່ຽມ: ຕົວກອງ   Select: ເອີ້ນຄືນໃໝ່'
+  CAD_GAME_PROGRESS: '%d / %d ຄວາມສຳເລັດ  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: ຮູບແບບນີ້ ແຮຊບໍ່ໄດ້. ທ່ອງເບິ່ງ ຫ້ອງສະໝຸດບັນຊີ ແທນ.
+  CAD_HEADING: ຄວາມສຳເລັດ
+  CAD_LIBRARY: ຫ້ອງສະໝຸດ ບັນຊີ RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: ໜ້າ   ຢືນຢັນ: ເປີດ   Select: ເອີ້ນຄືນໃໝ່'
+  CAD_LOADING: ກຳລັງໂຫຼດ ຄວາມສຳເລັດ...
+  CAD_LOCKED: ລັອກຢູ່
+  CAD_ONE_GAME: '%d ເກມ ໃນບັນຊີ'
+  CAD_PAIR: ເຂົ້າສູ່ລະບົບ Caduceus ແລະ ຈັບຄູ່ ART/CADUCEUS.KEY ເທິງແຊ SMB ຂອງທ່ານ.
+  CAD_PAIR_UDPFS: ເຂົ້າເຖິງ Caduceus ບໍ່ໄດ້. ຈັບຄູ່ ART/CADUCEUS.KEY ໃນໂຟນເດີ ທີ່ PS2-Servers ແບ່ງປັນ, ແລະ ຕັ້ງ IP ຄູ່ RA.
+  CAD_POINTS: '%d ຄະແນນ  |  %s'
+  CAD_PROGRESS: '%d / %d ໄດ້ຮັບແລ້ວ  |  %s'
+  CAD_UDPFS_IMG: 'ໂຕທ່ອງ Caduceus ຕ້ອງການ SMB ຫຼື UDPFS ໄຟລ໌: UDPFS IMG ບໍ່ມີໂຟນເດີທີ່ແບ່ງປັນ ສຳລັບກະແຈຂອງມັນ.'
+  CAD_UNKNOWN_GAME: ເກມນີ້ ບໍ່ຢູ່ໃນແຄັດຕາລັອກ Caduceus. ເອີ້ນແຄັດຕາລັອກຄືນໃໝ່ ເທິງ PC.
+  CAD_USE_LIBRARY: ທ່ອງເບິ່ງເກມນີ້ ຜ່ານຄວາມສຳເລັດ Caduceus ໃນເມນູຫຼັກ.
+  XERA_ACHIEVEMENTS: ຫ້ອງສະໝຸດ RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: ອ່ານລາຍຊື່ ຈາກ xeRAbora ບໍ່ໄດ້. ກົດ Select ເພື່ອລອງໃໝ່.
+  XERA_NOT_PLAYED: ຍັງບໍ່ຢູ່ໃນຫ້ອງສະໝຸດ RetroAchievements ຂອງທ່ານ. ຫຼິ້ນມັນ ໜຶ່ງເທື່ອ ພ້ອມຄວາມສຳເລັດ, ແລ້ວກົດ Select.
+  XERA_OPEN_NETWORK: ເຂົ້າເຖິງ xeRAbora ບໍ່ໄດ້. ເປີດ OPEN TO THE NETWORK ໃນການຕັ້ງຄ່າຂອງມັນ, ກວດ IP ຄູ່ RA ແລະ firewall ຂອງ PC.
+  XERA_UNKNOWN_GAME: xeRAbora ບໍ່ຮູ້ຈັກຮູບນີ້. ເປີດ RA ກວດການຮອງຮັບເກມ ກ່ອນ.
+  XERA_USE_LIBRARY: ທ່ອງເບິ່ງເກມນີ້ ຜ່ານຫ້ອງສະໝຸດ RetroAchievements ໃນເມນູຫຼັກ.

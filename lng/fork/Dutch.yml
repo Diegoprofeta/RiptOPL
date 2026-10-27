@@ -627,3 +627,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Meld je in Caduceus aan bij RetroAchievements en probeer het opnieuw.
   RA_EXPERIMENTAL_CARDS: Experimentele Caduceus-kaarten
   HINT_RA_EXPERIMENTAL_CARDS: Experimentele prestatiekaarten in PS2-games. Kunnen flikkeren of games laten vastlopen. Alleen Caduceus; Uit gebruikt de gouden puls. Werkt vanaf de volgende gamestart.
+  CAD_ACHIEVEMENTS: Caduceus-prestaties
+  CAD_VIEW_ACHIEVEMENTS: Prestaties bekijken
+  CAD_BACK: Terug
+  CAD_BACK_REFRESH: Terug keert terug naar OPL. Select vernieuwt deze pagina.
+  CAD_CONNECTION_ERROR: Kan Caduceus niet bevragen. Controleer de verbinding en druk dan op Select om het opnieuw te proberen.
+  CAD_EARNED: Behaald
+  CAD_EMPTY_FILTER: Geen prestaties die bij dit filter passen.
+  CAD_EMPTY_LIBRARY: Geen games met voortgang in dit account.
+  CAD_FILTER_ALL: Alle
+  CAD_GAMES: '%d games in account'
+  CAD_GAME_CONTROLS: 'L1/R1: pagina   Vierkant: filter   Select: vernieuwen'
+  CAD_GAME_PROGRESS: '%d / %d prestaties  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Van dit formaat kan geen hash worden berekend. Blader in plaats daarvan door de accountbibliotheek.
+  CAD_HEADING: PRESTATIES
+  CAD_LIBRARY: RetroAchievements-accountbibliotheek
+  CAD_LIBRARY_CONTROLS: 'L1/R1: pagina   Bevestigen: openen   Select: vernieuwen'
+  CAD_LOADING: Prestaties laden...
+  CAD_LOCKED: Vergrendeld
+  CAD_ONE_GAME: '%d game in account'
+  CAD_PAIR: Meld je aan bij Caduceus en koppel ART/CADUCEUS.KEY op je SMB-share.
+  CAD_PAIR_UDPFS: Kan Caduceus niet bereiken. Koppel ART/CADUCEUS.KEY in de map die PS2-Servers deelt, en stel het IP van de RA-hulp in.
+  CAD_POINTS: '%d ptn  |  %s'
+  CAD_PROGRESS: '%d / %d behaald  |  %s'
+  CAD_UDPFS_IMG: 'De Caduceus-browser heeft SMB of UDPFS Bestanden nodig: UDPFS IMG heeft geen gedeelde map voor zijn sleutel.'
+  CAD_UNKNOWN_GAME: Deze game staat niet in de Caduceus-catalogus. Vernieuw de catalogus op de pc.
+  CAD_USE_LIBRARY: Blader door deze game via Caduceus-prestaties in het hoofdmenu.
+  XERA_ACHIEVEMENTS: RetroAchievements-bibliotheek (xeRAbora)
+  XERA_CONNECTION_ERROR: Kan de lijst niet lezen van xeRAbora. Druk op Select om het opnieuw te proberen.
+  XERA_NOT_PLAYED: Nog niet in je RetroAchievements-bibliotheek. Speel het één keer met prestaties en druk dan op Select.
+  XERA_OPEN_NETWORK: Kan xeRAbora niet bereiken. Zet OPEN TO THE NETWORK aan in de instellingen ervan, controleer het IP van de RA-hulp en de firewall van de pc.
+  XERA_UNKNOWN_GAME: xeRAbora kent deze image niet. Voer eerst de RA-controle van gameondersteuning uit.
+  XERA_USE_LIBRARY: Blader door deze game via de RetroAchievements-bibliotheek in het hoofdmenu.

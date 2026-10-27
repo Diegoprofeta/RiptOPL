@@ -563,3 +563,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Caduceus で RetroAchievements にサインインしてから、もう一度お試しください。
   RA_EXPERIMENTAL_CARDS: Caduceus の実験的カード
   HINT_RA_EXPERIMENTAL_CARDS: PS2 のゲーム内に出る実験的な実績カード。ちらついたりゲームが固まったりすることがあります。Caduceus のみ。オフでは金色のパルスを使います。次のゲーム起動から有効です。
+  CAD_ACHIEVEMENTS: Caduceus の実績
+  CAD_VIEW_ACHIEVEMENTS: 実績を見る
+  CAD_BACK: 戻る
+  CAD_BACK_REFRESH: 戻るで OPL に戻ります。Select でこのページを更新します。
+  CAD_CONNECTION_ERROR: Caduceus に問い合わせできません。接続を確認してから Select で再試行してください。
+  CAD_EARNED: 獲得済み
+  CAD_EMPTY_FILTER: このフィルターに合う実績はありません。
+  CAD_EMPTY_LIBRARY: このアカウントには進行中のゲームがありません。
+  CAD_FILTER_ALL: すべて
+  CAD_GAMES: アカウントのゲーム %d 本
+  CAD_GAME_CONTROLS: L1/R1：ページ   四角：フィルター   Select：更新
+  CAD_GAME_PROGRESS: 実績 %d / %d  |  ハードコア %d
+  CAD_HARDCORE: ハードコア
+  CAD_HASH_UNSUPPORTED: この形式はハッシュを計算できません。代わりにアカウントのライブラリを閲覧してください。
+  CAD_HEADING: 実績
+  CAD_LIBRARY: RetroAchievements アカウントのライブラリ
+  CAD_LIBRARY_CONTROLS: L1/R1：ページ   決定：開く   Select：更新
+  CAD_LOADING: 実績を読み込んでいます...
+  CAD_LOCKED: ロック中
+  CAD_ONE_GAME: アカウントのゲーム %d 本
+  CAD_PAIR: Caduceus にサインインし、SMB 共有で ART/CADUCEUS.KEY をペアリングしてください。
+  CAD_PAIR_UDPFS: Caduceus に接続できません。PS2-Servers が共有するフォルダで ART/CADUCEUS.KEY をペアリングし、RA コンパニオン IP を設定してください。
+  CAD_POINTS: '%d ポイント  |  %s'
+  CAD_PROGRESS: '%d / %d 獲得  |  %s'
+  CAD_UDPFS_IMG: Caduceus ブラウザーには SMB か UDPFS の「ファイル」が必要です：UDPFS IMG には鍵を置く共有フォルダがありません。
+  CAD_UNKNOWN_GAME: このゲームは Caduceus のカタログにありません。PC でカタログを更新してください。
+  CAD_USE_LIBRARY: このゲームはメインメニューの Caduceus の実績から閲覧してください。
+  XERA_ACHIEVEMENTS: RetroAchievements ライブラリ（xeRAbora）
+  XERA_CONNECTION_ERROR: xeRAbora からリストを読めません。Select で再試行してください。
+  XERA_NOT_PLAYED: まだ RetroAchievements ライブラリにありません。実績付きで一度プレイしてから Select を押してください。
+  XERA_OPEN_NETWORK: xeRAbora に接続できません。その設定で OPEN TO THE NETWORK をオンにし、RA コンパニオン IP と PC のファイアウォールを確認してください。
+  XERA_UNKNOWN_GAME: xeRAbora はこのイメージを知りません。まず RA のゲーム対応の確認を実行してください。
+  XERA_USE_LIBRARY: このゲームはメインメニューの RetroAchievements ライブラリから閲覧してください。

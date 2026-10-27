@@ -186,6 +186,21 @@ void raNetForgetPeer(void)
     gRanet.forgetPeer();
 }
 
+int raCaduceusPage(const char *request, unsigned int serial, char *out, int size)
+{
+    return gRanet.caduceusPage(request, serial, out, size);
+}
+
+int raNetXeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int titlesz, int *count)
+{
+    return gRanet.xeraboraIdentify(hash, serial, host, title, titlesz, count);
+}
+
+int raNetHttpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length)
+{
+    return gRanet.httpGet(host, port, path, buf, max, length);
+}
+
 /* The NIC settlement (design doc, decided 2026-09-03): RA's menu check is a
    fourth claimant on the one SMAP NIC. When a UDP transport (UDPBD, or the
    UDPFS filesystem chain) owns it, RA must NOT raise the SMB stack on top --
@@ -560,38 +575,14 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
     snprintf(req, sizeof(req), "RAQ1 %s %s%s", hash, serial, myaddr);
     LOG("RA: asking the PC about %s\n", hash);
 
-    got = ask(sock, &to, req, rx_, sizeof(rx_));
-    if (got <= 0) {
-        LOG("RA: no reply from the PC\n");
+    got = raqAsk(sock, &to, req);
+    if (got == -2 || got == -7) {
+        LOG("RA: %s\n", got == -2 ? "no reply from the PC" : "PC is still identifying the image");
         closePcLink(sock);
-        return -2;
+        return got;
     }
 
-    /* WAIT means the PC hears us and is asking the RA server about this
-       image. Keep asking while it answers that way. */
-    {
-        int w;
-
-        for (w = 0; w < RA_WAIT_ROUNDS && strncmp(rx_, "RAA1 WAIT", 9) == 0; w++) {
-            LOG("RA: PC is asking the server, waiting (%d)\n", w + 1);
-
-            DelayThread(RA_WAIT_PAUSE_MS * 1000);
-            got = ask(sock, &to, req, rx_, sizeof(rx_));
-            if (got <= 0) {
-                LOG("RA: PC went silent while identifying the image\n");
-                closePcLink(sock);
-                return -2;
-            }
-        }
-    }
-
-    if (strncmp(rx_, "RAA1 WAIT", 9) == 0) {
-        LOG("RA: PC is still identifying the image\n");
-        closePcLink(sock);
-        return -7;
-    }
-
-    if (strncmp(rx_, "RAA1 OK ", 8) != 0) {
+    if (got != 0) {
         LOG("RA: PC does not know this image: %s\n", rx_);
         /* "RAA1 NO <reason>": a newer PC says why (unknown game, set too
            big, server down). The sentence goes to the screen in place of
@@ -932,6 +923,188 @@ int Ranet::netTestLink(char *line1, int sz1, char *line2, int sz2)
     }
 
     return 1;
+}
+
+/* RAQ1 with the WAIT rounds: WAIT means the PC hears us and is asking the RA server about
+   this image, so keep asking while it answers that way. The reply stays in rx_.
+   0 = "RAA1 OK", 1 = anything else (NO), -2 = silent, -7 = still identifying. */
+int Ranet::raqAsk(int sock, struct sockaddr_in *to, const char *req)
+{
+    int got = ask(sock, to, req, rx_, sizeof(rx_));
+
+    for (int w = 0; got > 0 && w < RA_WAIT_ROUNDS && strncmp(rx_, "RAA1 WAIT", 9) == 0; w++) {
+        DelayThread(RA_WAIT_PAUSE_MS * 1000);
+        got = ask(sock, to, req, rx_, sizeof(rx_));
+    }
+    if (got <= 0)
+        return -2;
+    if (strncmp(rx_, "RAA1 WAIT", 9) == 0)
+        return -7;
+    return strncmp(rx_, "RAA1 OK ", 8) == 0 ? 0 : 1;
+}
+
+/* Caduceus browser: the account and game pages come from the same bridge that tracks games,
+   on its account port, and WAIT retries stay pinned to it. */
+int Ranet::caduceusPage(const char *request, unsigned int serial, char *out, int size)
+{
+    struct sockaddr_in to;
+    char myaddr[32], expected[32];
+    unsigned char ip[4];
+
+    if (gRAMode != RA_MODE_CADUCEUS || !out || size < 1)
+        return -1;
+    out[0] = '\0';
+    int sock = openPcLink(myaddr, sizeof(myaddr), ip);
+    if (sock < 0)
+        return -1;
+    int session = caduceusSession(sock, &to, RA_PROBE_HASH, rx_, sizeof(rx_));
+    if (session != 0) {
+        closePcLink(sock);
+        if (session != -9)
+            return -2;
+        snprintf(out, size, "OFFLINE");
+        return 0;
+    }
+    to.sin_port = htons(RA_CADUCEUS_ACCOUNT_PORT);
+    snprintf(expected, sizeof(expected), "CADB1 %u ", serial);
+    const int skip = (int)strlen(expected);
+    for (int attempt = 0; attempt < 40; attempt++) {
+        if (ask(sock, &to, request, rx_, sizeof(rx_)) <= 0)
+            break;
+        if (strncmp(rx_, expected, skip))
+            continue; // an answer to an earlier page
+        if (!strcmp(rx_ + skip, "WAIT")) {
+            DelayThread(250000);
+            continue;
+        }
+        snprintf(out, size, "%s", rx_ + skip);
+        closePcLink(sock);
+        return 0;
+    }
+    closePcLink(sock);
+    return -2;
+}
+
+/* The PC that answers xeRAbora requests: the explicit RA companion IP, the verified peer,
+   else whoever answers a RAP1 broadcast with "RAO1 OK". Network byte order; 0 = none. */
+unsigned int Ranet::xeraboraHost(int sock, const char *myaddr)
+{
+    struct sockaddr_in to;
+    char req[48];
+    unsigned int ip = peerIP();
+
+    if (hostIsExplicit())
+        return configuredTarget(&to, RA_PORT) ? to.sin_addr.s_addr : 0;
+    if (ip != 0)
+        return ip;
+    broadcastTarget(&to);
+    snprintf(req, sizeof(req), "RAP1%s", myaddr);
+    if (ask(sock, &to, req, rx_, 193) < 8 || strncmp(rx_, "RAO1 OK ", 8) != 0)
+        return 0;
+    rememberPeer(replyIP_);
+    return replyIP_;
+}
+
+/* The list itself travels over TCP from the xeRAbora PC's HTTP interface, so this needs the
+   menu's own stack: never over mstack:. */
+int Ranet::xeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int titlesz, int *count)
+{
+    struct sockaddr_in to;
+    char req[96], myaddr[32];
+    unsigned char ip[4];
+
+    *host = 0;
+    title[0] = '\0';
+    *count = 0;
+    if (gRAMode != RA_MODE_XERABORA || nicReserved())
+        return -8;
+    int sock = openPcSocket(myaddr, sizeof(myaddr), ip);
+    if (sock < 0)
+        return -1;
+    if (myaddr[0] == '\0' || (*host = xeraboraHost(sock, myaddr)) == 0) {
+        disconnect(sock);
+        return -2;
+    }
+    if (hash == NULL) { // host only: the account library needs no image
+        disconnect(sock);
+        return 0;
+    }
+    memset(&to, 0, sizeof(to));
+    to.sin_family = AF_INET;
+    to.sin_port = htons(RA_PORT);
+    to.sin_addr.s_addr = *host;
+    snprintf(req, sizeof(req), "RAQ1 %s %s%s", hash, serial, myaddr);
+    int result = raqAsk(sock, &to, req);
+    disconnect(sock);
+    if (result != 0)
+        return result;
+    int bytes = 0, chunks = 0, unlocked, unsupported, pos = 0;
+    // The two reply shapes askPc accepts: five numbers (newer clients) or three, then the title.
+    if (sscanf(rx_ + 8, "%d %d %d %d %d %n", &bytes, &chunks, count, &unlocked, &unsupported, &pos) != 5)
+        sscanf(rx_ + 8, "%d %d %d %n", &bytes, &chunks, count, &pos); // %n was not reached: pos is still 0
+    char *name = rx_ + 8 + pos;
+    int len = (int)strlen(name);
+    while (len > 0 && name[len - 1] == ' ')
+        name[--len] = '\0';
+    snprintf(title, titlesz, "%s", name);
+    return 0;
+}
+
+/* Reads use lwIP's per-call MSG_DONTWAIT into the aligned rx_ (the rules above), and the
+   whole exchange is bounded so a stalled PC cannot hold the I/O thread. clock() is a 32-bit
+   microsecond counter: time the elapsed span, never an absolute deadline that breaks at the wrap. */
+int Ranet::httpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length)
+{
+    constexpr int RA_HTTP_MS = 8000;
+    struct sockaddr_in to;
+    char req[160];
+    int len = 0, closed = 0;
+
+    *length = 0;
+    if (host == 0 || max < 64 || nicReserved())
+        return -1;
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0)
+        return -1;
+    memset(&to, 0, sizeof(to));
+    to.sin_family = AF_INET;
+    to.sin_port = htons(port);
+    to.sin_addr.s_addr = host;
+    if (connect(sock, (struct sockaddr *)&to, sizeof(to)) < 0) {
+        disconnect(sock);
+        return -2;
+    }
+    snprintf(req, sizeof(req), "GET %s HTTP/1.0\r\nHost: %u.%u.%u.%u\r\nConnection: close\r\n\r\n", path,
+             host & 0xff, (host >> 8) & 0xff, (host >> 16) & 0xff, (host >> 24) & 0xff);
+    if (send(sock, req, strlen(req), 0) != (int)strlen(req)) {
+        disconnect(sock);
+        return -3;
+    }
+    const clock_t start = clock();
+    while (len < max - 1 && (clock_t)(clock() - start) < (clock_t)RA_HTTP_MS * (CLOCKS_PER_SEC / 1000)) {
+        int room = max - 1 - len;
+        int got = recv(sock, rx_, room < RA_RECV_MAX ? room : RA_RECV_MAX, RA_MSG_DONTWAIT);
+        if (got == 0) {
+            closed = 1; // the PC closed: complete
+            break;
+        }
+        if (got < 0) {
+            DelayThread(RA_POLL_MS * 1000);
+            continue;
+        }
+        memcpy(buf + len, rx_, got);
+        len += got;
+    }
+    disconnect(sock);
+    buf[len] = '\0';
+    if (len >= max - 1 || !closed)
+        return -4; // larger than the buffer, or cut off: never parse a partial document
+    int status;
+    char *body = strstr(buf, "\r\n\r\n");
+    if (sscanf(buf, "HTTP/%*d.%*d %d", &status) != 1 || status != 200 || body == NULL)
+        return -5;
+    *length = len - (int)(body + 4 - buf);
+    return (int)(body + 4 - buf);
 }
 
 #endif /* RETROACHIEVEMENTS */

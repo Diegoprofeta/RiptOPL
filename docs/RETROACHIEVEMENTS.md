@@ -190,8 +190,8 @@ still does. **RA companion IP** names the PC that runs the service; **0.0.0.0** 
 Replies are accepted only from the host asked, and only as `RAO1 OK`. UDP **18195** is the console's
 telemetry and notice port and **18196** its menu reply port; allow them through the PC's firewall.
 RiptOPL never stores a RetroAchievements password or key. Caduceus here covers the session check,
-watch lists, telemetry and in-game notices; its achievement browser is not ported yet. **Caduceus
-end-to-end console tracking is NOT TESTED on hardware.**
+watch lists, telemetry, in-game notices and the achievement browser below. **Caduceus end-to-end
+console tracking is NOT TESTED on hardware.**
 
 In the game an unlock shows as a gold pulse (Xerabora always, Caduceus by default). **Settings →
 Network → Caduceus experimental cards** (Off by default, saved as `ra_experimental_cards=1`; any other
@@ -207,6 +207,29 @@ hardware.** POPStarter PS1 unlocks stay on the companion.
 
 The PC can also send **RAR1**, which leaves the game for the menu exactly as the IGR combo does.
 Under Compatibility Mode 6, which has no IGR, the request is ignored.
+
+### Achievement browser
+
+The main menu's **Caduceus achievements** or **RetroAchievements library (xeRAbora)** entry (named
+after RA Mode) lists the account's games with progress; pick one to see its achievements, points,
+descriptions and unlock dates. **View achievements** in a game's menu hashes that ISO and opens its
+set directly; HDLoader and PS1 rows use the library instead. **L1/R1** pages, **Square** cycles All /
+Earned / Locked / Hardcore, **Select** refreshes and Back returns. Pages load on the I/O thread, and a
+launch or a network settings change waits until the page has loaded.
+
+- **Caduceus** needs **ART/CADUCEUS.KEY** (the companion's 64-character pairing key, not an RA
+  password) on the SMB share, or with **UDPFS Files** in the folder PS2-Servers shares (`ART/` or
+  `art/`), where optional `ART/<icon>_RA.png` badges also live. Requests go to the RA companion IP,
+  else the SMB server, on UDP **18198**; never to a broadcast. UDPFS IMG and UDPBD have no folder for
+  the key. The LAN protocol is unencrypted: keep the share to trusted devices.
+- **Xerabora** reads the xeRAbora PC's own interface on TCP **18280**: turn on **OPEN TO THE NETWORK**
+  in xeRAbora and allow it through the firewall. The PC is the RA companion IP, a verified peer, or
+  whoever answers discovery with `RAO1 OK`. A game card's set is found by its title in the account
+  library, so a game never played shows its title and achievement count with a note to play it once.
+  The retroachievements.org lookup by hash that shows a never-played game's whole list is not ported
+  yet. TCP needs the menu's own network stack, so UDPFS and UDPBD cannot open it.
+
+**The browser is NOT TESTED on hardware.**
 
 The console integration follows **xeRAbora v0.1.0-alpha.10** (`ebd18ed6`, paired with console commit `0c5f61a3` / `6c7e9a79` and CodeRabbit hardening `136f2620`). This release brings significant stability improvements between OPL and RA:
 

@@ -149,6 +149,11 @@ void menuHandleInputMenu();
 void menuHandleInputInfo();
 void menuHandleInputGameMenu();
 void menuHandleInputAppMenu();
+#ifdef RETROACHIEVEMENTS
+// The RA achievement browser screen.
+void menuRenderAchievements();
+void menuHandleInputAchievements();
+#endif
 
 // Sets the selected item if it is found in the menu list
 void menuSetSelectedItem(menu_item_t *item);

@@ -617,3 +617,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: سجّل الدخول إلى RetroAchievements في Caduceus، ثم حاول مرة أخرى.
   RA_EXPERIMENTAL_CARDS: بطاقات Caduceus التجريبية
   HINT_RA_EXPERIMENTAL_CARDS: بطاقات إنجازات تجريبية داخل ألعاب PS2. قد تومض أو تجمّد الألعاب. لـ Caduceus فقط؛ والإيقاف يستخدم النبض الذهبي. يسري من تشغيل اللعبة التالي.
+  CAD_ACHIEVEMENTS: إنجازات Caduceus
+  CAD_VIEW_ACHIEVEMENTS: عرض الإنجازات
+  CAD_BACK: رجوع
+  CAD_BACK_REFRESH: الرجوع يعود إلى OPL. Select يحدّث هذه الصفحة.
+  CAD_CONNECTION_ERROR: تعذّر الاستعلام من Caduceus. افحص الاتصال، ثم اضغط Select لإعادة المحاولة.
+  CAD_EARNED: مكتسبة
+  CAD_EMPTY_FILTER: لا توجد إنجازات تطابق هذا المرشح.
+  CAD_EMPTY_LIBRARY: لا توجد ألعاب فيها تقدّم في هذا الحساب.
+  CAD_FILTER_ALL: الكل
+  CAD_GAMES: '%d ألعاب في الحساب'
+  CAD_GAME_CONTROLS: 'L1/R1: الصفحة   المربع: المرشح   Select: تحديث'
+  CAD_GAME_PROGRESS: '%d / %d إنجاز  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: لا يمكن حساب بصمة لهذه الصيغة. تصفح مكتبة الحساب بدلاً من ذلك.
+  CAD_HEADING: الإنجازات
+  CAD_LIBRARY: مكتبة حساب RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: الصفحة   التأكيد: فتح   Select: تحديث'
+  CAD_LOADING: جارٍ تحميل الإنجازات...
+  CAD_LOCKED: مقفلة
+  CAD_ONE_GAME: '%d لعبة في الحساب'
+  CAD_PAIR: سجّل الدخول إلى Caduceus وأقرن ART/CADUCEUS.KEY على مشاركة SMB الخاصة بك.
+  CAD_PAIR_UDPFS: تعذّر الوصول إلى Caduceus. أقرن ART/CADUCEUS.KEY في المجلد الذي يشاركه PS2-Servers، واضبط عنوان IP لمرافق RA.
+  CAD_POINTS: '%d نقطة  |  %s'
+  CAD_PROGRESS: '%d / %d مكتسبة  |  %s'
+  CAD_UDPFS_IMG: 'يحتاج متصفح Caduceus إلى SMB أو ملفات UDPFS: لا يوجد في UDPFS IMG مجلد مشترك لمفتاحه.'
+  CAD_UNKNOWN_GAME: هذه اللعبة ليست في فهرس Caduceus. حدّث الفهرس على الحاسوب.
+  CAD_USE_LIBRARY: تصفح هذه اللعبة عبر إنجازات Caduceus في القائمة الرئيسية.
+  XERA_ACHIEVEMENTS: مكتبة RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: تعذّرت قراءة القائمة من xeRAbora. اضغط Select لإعادة المحاولة.
+  XERA_NOT_PLAYED: ليست في مكتبة RetroAchievements الخاصة بك بعد. العبها مرة واحدة مع الإنجازات، ثم اضغط Select.
+  XERA_OPEN_NETWORK: تعذّر الوصول إلى xeRAbora. فعّل OPEN TO THE NETWORK في إعداداته، وافحص عنوان IP لمرافق RA وجدار حماية الحاسوب.
+  XERA_UNKNOWN_GAME: لا يعرف xeRAbora هذه الصورة. شغّل فحص دعم اللعبة في RA أولاً.
+  XERA_USE_LIBRARY: تصفح هذه اللعبة عبر مكتبة RetroAchievements في القائمة الرئيسية.

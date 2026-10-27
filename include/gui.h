@@ -64,6 +64,9 @@ constexpr int GUI_SCREEN_MENU = 1;
 constexpr int GUI_SCREEN_INFO = 2;
 constexpr int GUI_SCREEN_GAME_MENU = 3;
 constexpr int GUI_SCREEN_APP_MENU = 4;
+#ifdef RETROACHIEVEMENTS
+constexpr int GUI_SCREEN_ACHIEVEMENTS = 5;
+#endif
 
 void guiSwitchScreen(int target);
 

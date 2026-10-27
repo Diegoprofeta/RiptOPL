@@ -566,3 +566,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Влезте в RetroAchievements в Caduceus и опитайте отново.
   RA_EXPERIMENTAL_CARDS: Експериментални карти на Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Експериментални карти с постижения в PS2 игрите. Може да трептят или да замразяват игри. Само Caduceus; Изкл. използва златния пулс. Влиза в сила при следващото стартиране на игра.
+  CAD_ACHIEVEMENTS: Постижения в Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Преглед на постиженията
+  CAD_BACK: Назад
+  CAD_BACK_REFRESH: Назад връща в OPL. Select обновява тази страница.
+  CAD_CONNECTION_ERROR: Caduceus не може да бъде запитан. Проверете връзката и натиснете Select, за да опитате отново.
+  CAD_EARNED: Спечелени
+  CAD_EMPTY_FILTER: Няма постижения, които отговарят на този филтър.
+  CAD_EMPTY_LIBRARY: В този акаунт няма игри с напредък.
+  CAD_FILTER_ALL: Всички
+  CAD_GAMES: '%d игри в акаунта'
+  CAD_GAME_CONTROLS: 'L1/R1: страница   Квадрат: филтър   Select: обновяване'
+  CAD_GAME_PROGRESS: '%d / %d постижения  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: За този формат не може да се изчисли хеш. Разгледайте вместо това библиотеката на акаунта.
+  CAD_HEADING: ПОСТИЖЕНИЯ
+  CAD_LIBRARY: Библиотека на акаунта в RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: страница   Потвърждаване: отваряне   Select: обновяване'
+  CAD_LOADING: Зареждане на постиженията...
+  CAD_LOCKED: Заключени
+  CAD_ONE_GAME: '%d игра в акаунта'
+  CAD_PAIR: Влезте в Caduceus и сдвоете ART/CADUCEUS.KEY на вашето SMB споделяне.
+  CAD_PAIR_UDPFS: Caduceus е недостъпен. Сдвоете ART/CADUCEUS.KEY в папката, която споделя PS2-Servers, и задайте IP на помощника за RA.
+  CAD_POINTS: '%d т.  |  %s'
+  CAD_PROGRESS: '%d / %d спечелени  |  %s'
+  CAD_UDPFS_IMG: 'Браузърът на Caduceus се нуждае от SMB или UDPFS Файлове: UDPFS IMG няма споделена папка за ключа си.'
+  CAD_UNKNOWN_GAME: Тази игра не е в каталога на Caduceus. Обновете каталога на компютъра.
+  CAD_USE_LIBRARY: Разгледайте тази игра чрез Постижения в Caduceus в главното меню.
+  XERA_ACHIEVEMENTS: Библиотека на RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: Списъкът от xeRAbora не може да се прочете. Натиснете Select, за да опитате отново.
+  XERA_NOT_PLAYED: Още не е във вашата библиотека на RetroAchievements. Изиграйте я веднъж с постижения и натиснете Select.
+  XERA_OPEN_NETWORK: xeRAbora е недостъпен. Включете OPEN TO THE NETWORK в настройките му и проверете IP на помощника за RA и защитната стена на компютъра.
+  XERA_UNKNOWN_GAME: xeRAbora не познава този образ. Първо пуснете проверката на поддръжката на игри на RA.
+  XERA_USE_LIBRARY: Разгледайте тази игра чрез библиотеката на RetroAchievements в главното меню.

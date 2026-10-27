@@ -562,3 +562,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Přihlaste se k RetroAchievements v Caduceus a zkuste to znovu.
   RA_EXPERIMENTAL_CARDS: Experimentální karty Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Experimentální karty úspěchů ve hrách PS2. Mohou blikat nebo hru zamrazit. Jen Caduceus; Vypnuto použije zlatý puls. Projeví se při příštím spuštění hry.
+  CAD_ACHIEVEMENTS: Úspěchy Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Zobrazit úspěchy
+  CAD_BACK: Zpět
+  CAD_BACK_REFRESH: Zpět se vrátí do OPL. Select obnoví tuto stránku.
+  CAD_CONNECTION_ERROR: Caduceus nelze dotázat. Zkontrolujte spojení a pak stiskněte Select pro nový pokus.
+  CAD_EARNED: Získané
+  CAD_EMPTY_FILTER: Tomuto filtru neodpovídají žádné úspěchy.
+  CAD_EMPTY_LIBRARY: V tomto účtu nejsou hry s postupem.
+  CAD_FILTER_ALL: Vše
+  CAD_GAMES: '%d her v účtu'
+  CAD_GAME_CONTROLS: 'L1/R1: stránka   Čtverec: filtr   Select: obnovit'
+  CAD_GAME_PROGRESS: '%d / %d úspěchů  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: U tohoto formátu nelze spočítat hash. Procházejte místo toho knihovnu účtu.
+  CAD_HEADING: ÚSPĚCHY
+  CAD_LIBRARY: Knihovna účtu RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: stránka   Potvrdit: otevřít   Select: obnovit'
+  CAD_LOADING: Načítání úspěchů...
+  CAD_LOCKED: Zamčené
+  CAD_ONE_GAME: '%d hra v účtu'
+  CAD_PAIR: Přihlaste se do Caduceus a spárujte ART/CADUCEUS.KEY na svém sdílení SMB.
+  CAD_PAIR_UDPFS: Caduceus není dosažitelný. Spárujte ART/CADUCEUS.KEY ve složce, kterou sdílí PS2-Servers, a nastavte IP pomocníka RA.
+  CAD_POINTS: '%d bodů  |  %s'
+  CAD_PROGRESS: Získáno %d / %d  |  %s
+  CAD_UDPFS_IMG: 'Prohlížeč Caduceus potřebuje SMB nebo UDPFS Soubory: UDPFS IMG nemá sdílenou složku pro svůj klíč.'
+  CAD_UNKNOWN_GAME: Tato hra není v katalogu Caduceus. Obnovte katalog na PC.
+  CAD_USE_LIBRARY: Tuto hru procházejte přes Úspěchy Caduceus v hlavním menu.
+  XERA_ACHIEVEMENTS: Knihovna RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: Seznam z xeRAbora nelze přečíst. Stiskněte Select pro nový pokus.
+  XERA_NOT_PLAYED: Zatím není ve vaší knihovně RetroAchievements. Zahrajte si ji jednou s úspěchy a pak stiskněte Select.
+  XERA_OPEN_NETWORK: xeRAbora není dosažitelná. Zapněte OPEN TO THE NETWORK v jejím nastavení, zkontrolujte IP pomocníka RA a bránu firewall na PC.
+  XERA_UNKNOWN_GAME: xeRAbora tento obraz nezná. Nejdřív spusťte kontrolu podpory hry RA.
+  XERA_USE_LIBRARY: Tuto hru procházejte přes knihovnu RetroAchievements v hlavním menu.

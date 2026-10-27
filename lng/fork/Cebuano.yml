@@ -592,3 +592,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Pag-sign in sa RetroAchievements sa Caduceus, unya sulayi pag-usab.
   RA_EXPERIMENTAL_CARDS: Mga eksperimental nga card sa Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Mga eksperimental nga achievement card sulod sa PS2 nga dula. Mahimong mokidlap o mo-freeze ang mga dula. Caduceus ra; gold pulse ang gamit sa Off. Magsugod kini sa sunod nga paglansad sa dula.
+  CAD_ACHIEVEMENTS: Mga achievement sa Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Tan-awa ang mga achievement
+  CAD_BACK: Balik
+  CAD_BACK_REFRESH: Mobalik sa OPL ang Back. I-refresh sa Select kining page.
+  CAD_CONNECTION_ERROR: Dili makapangutana sa Caduceus. Susiha ang koneksyon, unya pindota ang Select aron sulayan pag-usab.
+  CAD_EARNED: Nakuha
+  CAD_EMPTY_FILTER: Walay achievement nga motugma niining filter.
+  CAD_EMPTY_LIBRARY: Walay dula nga adunay progreso niining account.
+  CAD_FILTER_ALL: Tanan
+  CAD_GAMES: '%d ka dula sa account'
+  CAD_GAME_CONTROLS: 'L1/R1: page   Square: filter   Select: i-refresh'
+  CAD_GAME_PROGRESS: '%d / %d ka achievement  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Dili ma-hash kining format. I-browse na lang ang library sa account.
+  CAD_HEADING: MGA ACHIEVEMENT
+  CAD_LIBRARY: Library sa RetroAchievements account
+  CAD_LIBRARY_CONTROLS: 'L1/R1: page   Confirm: ablihi   Select: i-refresh'
+  CAD_LOADING: Gi-load ang mga achievement...
+  CAD_LOCKED: Naka-lock
+  CAD_ONE_GAME: '%d ka dula sa account'
+  CAD_PAIR: Pag-sign in sa Caduceus ug i-pair ang ART/CADUCEUS.KEY sa imong SMB share.
+  CAD_PAIR_UDPFS: Dili maabot ang Caduceus. I-pair ang ART/CADUCEUS.KEY sa folder nga gipaambit sa PS2-Servers, ug i-set ang RA companion IP.
+  CAD_POINTS: '%d pts  |  %s'
+  CAD_PROGRESS: '%d / %d nakuha  |  %s'
+  CAD_UDPFS_IMG: 'Kinahanglan sa Caduceus browser ang SMB o UDPFS Files: walay gipaambit nga folder ang UDPFS IMG alang sa key niini.'
+  CAD_UNKNOWN_GAME: Wala kining dula sa Caduceus catalog. I-refresh ang catalog sa PC.
+  CAD_USE_LIBRARY: I-browse kining dula pinaagi sa Caduceus achievements sa main menu.
+  XERA_ACHIEVEMENTS: RetroAchievements library (xeRAbora)
+  XERA_CONNECTION_ERROR: Dili mabasa ang lista gikan sa xeRAbora. Pindota ang Select aron sulayan pag-usab.
+  XERA_NOT_PLAYED: Wala pa sa imong RetroAchievements library. Dulaa kini kausa uban ang achievement, unya pindota ang Select.
+  XERA_OPEN_NETWORK: Dili maabot ang xeRAbora. I-on ang OPEN TO THE NETWORK sa settings niini, susiha ang RA companion IP ug ang firewall sa PC.
+  XERA_UNKNOWN_GAME: Wala mailhi sa xeRAbora kining image. Padagana una ang RA check game support.
+  XERA_USE_LIBRARY: I-browse kining dula pinaagi sa RetroAchievements library sa main menu.

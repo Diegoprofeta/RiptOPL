@@ -575,3 +575,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Συνδεθείτε στο RetroAchievements μέσα στο Caduceus και δοκιμάστε ξανά.
   RA_EXPERIMENTAL_CARDS: Πειραματικές κάρτες Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Πειραματικές κάρτες επιτευγμάτων μέσα σε παιχνίδια PS2. Μπορεί να τρεμοπαίζουν ή να παγώνουν παιχνίδια. Μόνο Caduceus· το Ανενεργό χρησιμοποιεί τον χρυσό παλμό. Ισχύει από την επόμενη εκκίνηση παιχνιδιού.
+  CAD_ACHIEVEMENTS: Επιτεύγματα Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Προβολή επιτευγμάτων
+  CAD_BACK: Πίσω
+  CAD_BACK_REFRESH: Το Πίσω επιστρέφει στο OPL. Το Select ανανεώνει αυτή τη σελίδα.
+  CAD_CONNECTION_ERROR: Δεν γίνεται ερώτημα στο Caduceus. Ελέγξτε τη σύνδεση και πατήστε Select για νέα δοκιμή.
+  CAD_EARNED: Κερδισμένα
+  CAD_EMPTY_FILTER: Κανένα επίτευγμα δεν ταιριάζει με αυτό το φίλτρο.
+  CAD_EMPTY_LIBRARY: Κανένα παιχνίδι με πρόοδο σε αυτόν τον λογαριασμό.
+  CAD_FILTER_ALL: Όλα
+  CAD_GAMES: '%d παιχνίδια στον λογαριασμό'
+  CAD_GAME_CONTROLS: 'L1/R1: σελίδα   Τετράγωνο: φίλτρο   Select: ανανέωση'
+  CAD_GAME_PROGRESS: '%d / %d επιτεύγματα  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Αυτή η μορφή δεν κατακερματίζεται. Περιηγηθείτε στη βιβλιοθήκη του λογαριασμού αντί γι' αυτό.
+  CAD_HEADING: ΕΠΙΤΕΥΓΜΑΤΑ
+  CAD_LIBRARY: Βιβλιοθήκη λογαριασμού RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: σελίδα   Επιβεβαίωση: άνοιγμα   Select: ανανέωση'
+  CAD_LOADING: Φόρτωση επιτευγμάτων...
+  CAD_LOCKED: Κλειδωμένα
+  CAD_ONE_GAME: '%d παιχνίδι στον λογαριασμό'
+  CAD_PAIR: Συνδεθείτε στο Caduceus και κάντε σύζευξη του ART/CADUCEUS.KEY στο κοινόχρηστο SMB σας.
+  CAD_PAIR_UDPFS: Δεν υπάρχει πρόσβαση στο Caduceus. Κάντε σύζευξη του ART/CADUCEUS.KEY στον φάκελο που μοιράζεται το PS2-Servers, και ορίστε την IP βοηθού RA.
+  CAD_POINTS: '%d πόντοι  |  %s'
+  CAD_PROGRESS: '%d / %d κερδισμένα  |  %s'
+  CAD_UDPFS_IMG: 'Ο περιηγητής Caduceus χρειάζεται SMB ή UDPFS Αρχεία: το UDPFS IMG δεν έχει κοινόχρηστο φάκελο για το κλειδί του.'
+  CAD_UNKNOWN_GAME: Αυτό το παιχνίδι δεν είναι στον κατάλογο του Caduceus. Ανανεώστε τον κατάλογο στον υπολογιστή.
+  CAD_USE_LIBRARY: Περιηγηθείτε σε αυτό το παιχνίδι μέσω των επιτευγμάτων Caduceus στο κύριο μενού.
+  XERA_ACHIEVEMENTS: Βιβλιοθήκη RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: Δεν διαβάζεται η λίστα από το xeRAbora. Πατήστε Select για νέα δοκιμή.
+  XERA_NOT_PLAYED: Δεν είναι ακόμα στη βιβλιοθήκη σας RetroAchievements. Παίξτε το μία φορά με επιτεύγματα και πατήστε Select.
+  XERA_OPEN_NETWORK: Δεν υπάρχει πρόσβαση στο xeRAbora. Ενεργοποιήστε το OPEN TO THE NETWORK στις ρυθμίσεις του, ελέγξτε την IP βοηθού RA και το τείχος προστασίας του υπολογιστή.
+  XERA_UNKNOWN_GAME: Το xeRAbora δεν ξέρει αυτή την εικόνα. Τρέξτε πρώτα τον έλεγχο υποστήριξης παιχνιδιού RA.
+  XERA_USE_LIBRARY: Περιηγηθείτε σε αυτό το παιχνίδι μέσω της βιβλιοθήκης RetroAchievements στο κύριο μενού.

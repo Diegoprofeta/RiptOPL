@@ -15,6 +15,7 @@
 #include "include/settingshell.h"
 #ifdef RETROACHIEVEMENTS
 #include "include/ranet.h" // raNetForgetPeer
+#include "include/achievements.h"
 #endif
 #include "include/diag.h" // gLastDeferredTimedOut -- a bounded wait that expired means the handler never ran
 #include "include/renderman.h"
@@ -904,6 +905,12 @@ static int guiSmbLinkChanged(const gui_smb_link_t *before)
 
 int guiShowNetConfig(void)
 {
+#ifdef RETROACHIEVEMENTS
+    if (achievementsBusy()) { // a browser page still owns the network and the share
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        return gSettingsShell.pageResult(UIID_BTN_CANCEL);
+    }
+#endif
     size_t i;
     // What the live SMB session was built from, before this page changes anything.
     gui_smb_link_t smbBefore;
@@ -1058,7 +1065,10 @@ reshow_network:
         diaGetInt(diaNetConfig, NETCFG_ETHOPMODE, &gETHOpMode);
 #ifdef RETROACHIEVEMENTS
         int raBadgeState = gRATelemetry << 2 | gRABadges << 1 | gRABadgeSuffix;
+        int raMode = gRAMode;
         diaGetInt(diaNetConfig, NETCFG_RA_MODE, &gRAMode);
+        if (gRAMode != raMode)
+            menuReinitMainMenu(); // the browser's entry is named after the mode
         for (i = 0; i < 4; ++i)
             diaGetInt(diaNetConfig, NETCFG_RA_HOST_IP_0 + i, &gRAHostIp[i]);
         diaGetInt(diaNetConfig, NETCFG_RA_TELEMETRY, &gRATelemetry);

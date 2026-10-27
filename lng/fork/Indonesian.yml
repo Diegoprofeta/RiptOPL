@@ -588,3 +588,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Masuk ke RetroAchievements di Caduceus, lalu coba lagi.
   RA_EXPERIMENTAL_CARDS: Kartu eksperimental Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Kartu pencapaian eksperimental di dalam game PS2. Bisa berkedip atau membuat game macet. Hanya Caduceus; Mati memakai denyut emas. Berlaku di peluncuran game berikutnya.
+  CAD_ACHIEVEMENTS: Pencapaian Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Lihat pencapaian
+  CAD_BACK: Kembali
+  CAD_BACK_REFRESH: Kembali kembali ke OPL. Select menyegarkan halaman ini.
+  CAD_CONNECTION_ERROR: Tidak bisa menghubungi Caduceus. Periksa koneksi, lalu tekan Select untuk mencoba lagi.
+  CAD_EARNED: Diraih
+  CAD_EMPTY_FILTER: Tidak ada pencapaian yang cocok dengan filter ini.
+  CAD_EMPTY_LIBRARY: Tidak ada game dengan kemajuan di akun ini.
+  CAD_FILTER_ALL: Semua
+  CAD_GAMES: '%d game di akun'
+  CAD_GAME_CONTROLS: 'L1/R1: halaman   Kotak: filter   Select: segarkan'
+  CAD_GAME_PROGRESS: '%d / %d pencapaian  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Format ini tidak bisa di-hash. Jelajahi pustaka akun sebagai gantinya.
+  CAD_HEADING: PENCAPAIAN
+  CAD_LIBRARY: Pustaka akun RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: halaman   Terima: buka   Select: segarkan'
+  CAD_LOADING: Memuat pencapaian...
+  CAD_LOCKED: Terkunci
+  CAD_ONE_GAME: '%d game di akun'
+  CAD_PAIR: Masuk ke Caduceus dan pasangkan ART/CADUCEUS.KEY di share SMB-mu.
+  CAD_PAIR_UDPFS: Tidak bisa menjangkau Caduceus. Pasangkan ART/CADUCEUS.KEY di folder yang dibagikan PS2-Servers, dan atur IP pendamping RA.
+  CAD_POINTS: '%d poin  |  %s'
+  CAD_PROGRESS: '%d / %d diraih  |  %s'
+  CAD_UDPFS_IMG: 'Peramban Caduceus butuh SMB atau UDPFS File: UDPFS IMG tidak punya folder bersama untuk kuncinya.'
+  CAD_UNKNOWN_GAME: Game ini tidak ada di katalog Caduceus. Segarkan katalog di PC.
+  CAD_USE_LIBRARY: Jelajahi game ini lewat pencapaian Caduceus di menu utama.
+  XERA_ACHIEVEMENTS: Pustaka RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: Tidak bisa membaca daftar dari xeRAbora. Tekan Select untuk mencoba lagi.
+  XERA_NOT_PLAYED: Belum ada di pustaka RetroAchievements-mu. Mainkan sekali dengan pencapaian, lalu tekan Select.
+  XERA_OPEN_NETWORK: Tidak bisa menjangkau xeRAbora. Nyalakan OPEN TO THE NETWORK di pengaturannya, periksa IP pendamping RA dan firewall PC.
+  XERA_UNKNOWN_GAME: xeRAbora tidak mengenal image ini. Jalankan pemeriksaan dukungan game RA lebih dulu.
+  XERA_USE_LIBRARY: Jelajahi game ini lewat pustaka RetroAchievements di menu utama.

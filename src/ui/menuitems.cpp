@@ -47,6 +47,7 @@
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
 #ifdef RETROACHIEVEMENTS
 #include "include/rabadge.h" // RA: "tracked game" badge in the list
+#include "include/achievements.h"
 #endif
 
 #include "include/cheatman.h"
@@ -82,6 +83,12 @@ static void itemInitSupport(item_list_t *support)
 
 static void itemExecSelect(struct menu_item *curMenu)
 {
+#ifdef RETROACHIEVEMENTS
+    if (achievementsBusy()) { // a browser page still owns the network and the share
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        return;
+    }
+#endif
     item_list_t *support = static_cast<item_list_t *>(curMenu->userdata);
     sfxPlay(SFX_CONFIRM);
     // That confirm just armed a rumble pulse, and everything below blocks the GUI thread without

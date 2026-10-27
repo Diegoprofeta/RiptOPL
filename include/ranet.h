@@ -51,6 +51,17 @@ public:
     unsigned int peerIP() const;
     void forgetPeer();
 
+    /* Caduceus browser: after the session check, one CADA1 request to the bridge's account
+       port. 0 with out filled ("OFFLINE" when the session is signed out), else negative. */
+    int caduceusPage(const char *request, unsigned int serial, char *out, int size);
+    /* Xerabora browser: the xeRAbora PC in *host (network order). With a hash, also RAQ1's
+       title and achievement count: 0 known, 1 unknown image, -7 still identifying, -8 NIC
+       reserved, another negative when no PC answered. */
+    int xeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int titlesz, int *count);
+    /* HTTP/1.0 GET of path from host:port (network order): the body offset in buf (its size
+       in *length), or negative. 8 s for the whole exchange. */
+    int httpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length);
+
 private:
     static int hostIsExplicit();
     void rememberPeer(unsigned int ip);
@@ -68,6 +79,8 @@ private:
     static int configuredTarget(struct sockaddr_in *to, int port);
     int caduceusSession(int sock, struct sockaddr_in *to, const char *hash, char *rx, int rxsize);
     int pcTarget(int sock, struct sockaddr_in *to, const char *hash, char *rx, int rxsize);
+    int raqAsk(int sock, struct sockaddr_in *to, const char *req);
+    unsigned int xeraboraHost(int sock, const char *myaddr);
 
     /* Alignment is mandatory: DMA delivery rule 1 in ranet.cpp. */
     char rx_[2048] __attribute__((aligned(64)));
@@ -93,5 +106,8 @@ int raNetNicReserved(void);
 int raNetUdpfsNotLoaded(void);
 unsigned int raNetPeerIP(void);
 void raNetForgetPeer(void);
+int raCaduceusPage(const char *request, unsigned int serial, char *out, int size);
+int raNetXeraboraIdentify(const char *hash, const char *serial, unsigned int *host, char *title, int titlesz, int *count);
+int raNetHttpGet(unsigned int host, int port, const char *path, char *buf, int max, int *length);
 
 #endif

@@ -618,3 +618,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Autentifică-te în RetroAchievements în Caduceus, apoi încearcă din nou.
   RA_EXPERIMENTAL_CARDS: Carduri experimentale Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Carduri de realizări experimentale în jocurile PS2. Pot pâlpâi sau bloca jocurile. Doar Caduceus; Oprit folosește pulsul auriu. Intră în vigoare la următoarea lansare a unui joc.
+  CAD_ACHIEVEMENTS: Realizări Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Vezi realizările
+  CAD_BACK: Înapoi
+  CAD_BACK_REFRESH: Înapoi revine la OPL. Select reîmprospătează această pagină.
+  CAD_CONNECTION_ERROR: Caduceus nu poate fi interogat. Verifică conexiunea, apoi apasă Select ca să încerci din nou.
+  CAD_EARNED: Obținute
+  CAD_EMPTY_FILTER: Nicio realizare nu se potrivește cu acest filtru.
+  CAD_EMPTY_LIBRARY: Niciun joc cu progres în acest cont.
+  CAD_FILTER_ALL: Toate
+  CAD_GAMES: '%d jocuri în cont'
+  CAD_GAME_CONTROLS: 'L1/R1: pagină   Pătrat: filtru   Select: reîmprospătează'
+  CAD_GAME_PROGRESS: '%d / %d realizări  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Pentru acest format nu se poate calcula hash-ul. Răsfoiește în schimb biblioteca contului.
+  CAD_HEADING: REALIZĂRI
+  CAD_LIBRARY: Biblioteca contului RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: pagină   Confirmă: deschide   Select: reîmprospătează'
+  CAD_LOADING: Se încarcă realizările...
+  CAD_LOCKED: Blocate
+  CAD_ONE_GAME: '%d joc în cont'
+  CAD_PAIR: Autentifică-te în Caduceus și asociază ART/CADUCEUS.KEY pe partajarea ta SMB.
+  CAD_PAIR_UDPFS: Caduceus nu poate fi accesat. Asociază ART/CADUCEUS.KEY în folderul pe care îl partajează PS2-Servers și setează IP-ul însoțitorului RA.
+  CAD_POINTS: '%d puncte  |  %s'
+  CAD_PROGRESS: '%d / %d obținute  |  %s'
+  CAD_UDPFS_IMG: 'Browserul Caduceus are nevoie de SMB sau UDPFS Fișiere: UDPFS IMG nu are un folder partajat pentru cheia lui.'
+  CAD_UNKNOWN_GAME: Acest joc nu este în catalogul Caduceus. Reîmprospătează catalogul pe PC.
+  CAD_USE_LIBRARY: Răsfoiește acest joc prin Realizări Caduceus din meniul principal.
+  XERA_ACHIEVEMENTS: Bibliotecă RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: Lista nu poate fi citită de la xeRAbora. Apasă Select ca să încerci din nou.
+  XERA_NOT_PLAYED: Încă nu este în biblioteca ta RetroAchievements. Joacă-l o dată cu realizări, apoi apasă Select.
+  XERA_OPEN_NETWORK: xeRAbora nu poate fi accesat. Pornește OPEN TO THE NETWORK în setările lui, verifică IP-ul însoțitorului RA și firewallul PC-ului.
+  XERA_UNKNOWN_GAME: xeRAbora nu cunoaște această imagine. Rulează întâi verificarea suportului de joc RA.
+  XERA_USE_LIBRARY: Răsfoiește acest joc prin biblioteca RetroAchievements din meniul principal.

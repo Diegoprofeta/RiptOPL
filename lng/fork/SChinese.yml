@@ -564,3 +564,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: 请在 Caduceus 中登录 RetroAchievements 后重试。
   RA_EXPERIMENTAL_CARDS: Caduceus 实验性卡片
   HINT_RA_EXPERIMENTAL_CARDS: PS2 游戏内的实验性成就卡片。可能闪烁或导致游戏卡死。仅限 Caduceus；关闭则使用金色脉冲。下次启动游戏时生效。
+  CAD_ACHIEVEMENTS: Caduceus 成就
+  CAD_VIEW_ACHIEVEMENTS: 查看成就
+  CAD_BACK: 返回
+  CAD_BACK_REFRESH: 返回会回到 OPL。Select 刷新本页。
+  CAD_CONNECTION_ERROR: 无法查询 Caduceus。请检查连接，然后按 Select 重试。
+  CAD_EARNED: 已获得
+  CAD_EMPTY_FILTER: 没有符合此筛选条件的成就。
+  CAD_EMPTY_LIBRARY: 此账号中没有有进度的游戏。
+  CAD_FILTER_ALL: 全部
+  CAD_GAMES: 账号中有 %d 个游戏
+  CAD_GAME_CONTROLS: L1/R1：翻页   方块：筛选   Select：刷新
+  CAD_GAME_PROGRESS: '%d / %d 个成就  |  硬核 %d'
+  CAD_HARDCORE: 硬核
+  CAD_HASH_UNSUPPORTED: 此格式无法计算哈希。请改为浏览账号游戏库。
+  CAD_HEADING: 成就
+  CAD_LIBRARY: RetroAchievements 账号游戏库
+  CAD_LIBRARY_CONTROLS: L1/R1：翻页   确认：打开   Select：刷新
+  CAD_LOADING: 正在加载成就...
+  CAD_LOCKED: 未解锁
+  CAD_ONE_GAME: 账号中有 %d 个游戏
+  CAD_PAIR: 请登录 Caduceus，并在你的 SMB 共享上配对 ART/CADUCEUS.KEY。
+  CAD_PAIR_UDPFS: 无法连接 Caduceus。请在 PS2-Servers 共享的文件夹中配对 ART/CADUCEUS.KEY，并设置 RA 伴侣 IP。
+  CAD_POINTS: '%d 分  |  %s'
+  CAD_PROGRESS: 已获得 %d / %d  |  %s
+  CAD_UDPFS_IMG: Caduceus 浏览器需要 SMB 或 UDPFS“文件”：UDPFS IMG 没有可存放其密钥的共享文件夹。
+  CAD_UNKNOWN_GAME: 这个游戏不在 Caduceus 目录中。请在电脑上刷新目录。
+  CAD_USE_LIBRARY: 请在主菜单中通过 Caduceus 成就浏览这个游戏。
+  XERA_ACHIEVEMENTS: RetroAchievements 游戏库（xeRAbora）
+  XERA_CONNECTION_ERROR: 无法从 xeRAbora 读取列表。按 Select 重试。
+  XERA_NOT_PLAYED: 尚不在你的 RetroAchievements 游戏库中。带成就玩一次，然后按 Select。
+  XERA_OPEN_NETWORK: 无法连接 xeRAbora。请在其设置中开启 OPEN TO THE NETWORK，并检查 RA 伴侣 IP 和电脑防火墙。
+  XERA_UNKNOWN_GAME: xeRAbora 不认识这个镜像。请先运行 RA 游戏支持检查。
+  XERA_USE_LIBRARY: 请在主菜单中通过 RetroAchievements 游戏库浏览这个游戏。

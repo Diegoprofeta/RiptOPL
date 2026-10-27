@@ -584,3 +584,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Logga in på RetroAchievements i Caduceus och försök igen.
   RA_EXPERIMENTAL_CARDS: Experimentella Caduceus-kort
   HINT_RA_EXPERIMENTAL_CARDS: Experimentella prestationskort i PS2-spel. Kan flimra eller frysa spel. Bara Caduceus; Av använder den gyllene pulsen. Gäller från nästa spelstart.
+  CAD_ACHIEVEMENTS: Caduceus-prestationer
+  CAD_VIEW_ACHIEVEMENTS: Visa prestationer
+  CAD_BACK: Tillbaka
+  CAD_BACK_REFRESH: Tillbaka återgår till OPL. Select uppdaterar den här sidan.
+  CAD_CONNECTION_ERROR: Kan inte fråga Caduceus. Kontrollera anslutningen och tryck sedan på Select för att försöka igen.
+  CAD_EARNED: Tagna
+  CAD_EMPTY_FILTER: Inga prestationer matchar det här filtret.
+  CAD_EMPTY_LIBRARY: Inga spel med framsteg i det här kontot.
+  CAD_FILTER_ALL: Alla
+  CAD_GAMES: '%d spel i kontot'
+  CAD_GAME_CONTROLS: 'L1/R1: sida   Fyrkant: filter   Select: uppdatera'
+  CAD_GAME_PROGRESS: '%d / %d prestationer  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Det här formatet kan inte hashas. Bläddra i kontobiblioteket i stället.
+  CAD_HEADING: PRESTATIONER
+  CAD_LIBRARY: RetroAchievements-kontobibliotek
+  CAD_LIBRARY_CONTROLS: 'L1/R1: sida   Bekräfta: öppna   Select: uppdatera'
+  CAD_LOADING: Laddar prestationer...
+  CAD_LOCKED: Låsta
+  CAD_ONE_GAME: '%d spel i kontot'
+  CAD_PAIR: Logga in på Caduceus och para ihop ART/CADUCEUS.KEY på din SMB-resurs.
+  CAD_PAIR_UDPFS: Kan inte nå Caduceus. Para ihop ART/CADUCEUS.KEY i mappen som PS2-Servers delar, och ange RA-hjälparens IP.
+  CAD_POINTS: '%d p  |  %s'
+  CAD_PROGRESS: '%d / %d tagna  |  %s'
+  CAD_UDPFS_IMG: 'Caduceus-bläddraren behöver SMB eller UDPFS Filer: UDPFS IMG har ingen delad mapp för sin nyckel.'
+  CAD_UNKNOWN_GAME: Det här spelet finns inte i Caduceus katalog. Uppdatera katalogen på PC:n.
+  CAD_USE_LIBRARY: Bläddra i det här spelet via Caduceus-prestationer i huvudmenyn.
+  XERA_ACHIEVEMENTS: RetroAchievements-bibliotek (xeRAbora)
+  XERA_CONNECTION_ERROR: Kan inte läsa listan från xeRAbora. Tryck på Select för att försöka igen.
+  XERA_NOT_PLAYED: Inte i ditt RetroAchievements-bibliotek ännu. Spela det en gång med prestationer och tryck sedan på Select.
+  XERA_OPEN_NETWORK: Kan inte nå xeRAbora. Slå på OPEN TO THE NETWORK i dess inställningar, kontrollera RA-hjälparens IP och PC:ns brandvägg.
+  XERA_UNKNOWN_GAME: xeRAbora känner inte till den här avbilden. Kör RA-kontrollen av spelstöd först.
+  XERA_USE_LIBRARY: Bläddra i det här spelet via RetroAchievements-biblioteket i huvudmenyn.

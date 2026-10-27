@@ -608,3 +608,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Hãy đăng nhập RetroAchievements trong Caduceus, rồi thử lại.
   RA_EXPERIMENTAL_CARDS: Thẻ thử nghiệm Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: Thẻ thành tích thử nghiệm bên trong trò chơi PS2. Có thể nhấp nháy hoặc làm treo trò chơi. Chỉ Caduceus; Tắt thì dùng nhịp vàng. Có hiệu lực từ lần chạy trò chơi tiếp theo.
+  CAD_ACHIEVEMENTS: Thành tích Caduceus
+  CAD_VIEW_ACHIEVEMENTS: Xem thành tích
+  CAD_BACK: Quay lại
+  CAD_BACK_REFRESH: Quay lại để về OPL. Select làm mới trang này.
+  CAD_CONNECTION_ERROR: Không truy vấn được Caduceus. Hãy kiểm tra kết nối, rồi nhấn Select để thử lại.
+  CAD_EARNED: Đã đạt
+  CAD_EMPTY_FILTER: Không có thành tích nào khớp bộ lọc này.
+  CAD_EMPTY_LIBRARY: Tài khoản này không có trò chơi nào có tiến độ.
+  CAD_FILTER_ALL: Tất cả
+  CAD_GAMES: '%d trò chơi trong tài khoản'
+  CAD_GAME_CONTROLS: 'L1/R1: trang   Vuông: lọc   Select: làm mới'
+  CAD_GAME_PROGRESS: '%d / %d thành tích  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: Định dạng này không tính được mã băm. Hãy duyệt thư viện tài khoản thay thế.
+  CAD_HEADING: THÀNH TÍCH
+  CAD_LIBRARY: Thư viện tài khoản RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: trang   Xác nhận: mở   Select: làm mới'
+  CAD_LOADING: Đang nạp thành tích...
+  CAD_LOCKED: Đang khóa
+  CAD_ONE_GAME: '%d trò chơi trong tài khoản'
+  CAD_PAIR: Hãy đăng nhập Caduceus và ghép cặp ART/CADUCEUS.KEY trên thư mục chia sẻ SMB của bạn.
+  CAD_PAIR_UDPFS: Không kết nối được Caduceus. Hãy ghép cặp ART/CADUCEUS.KEY trong thư mục PS2-Servers chia sẻ, và đặt IP đồng hành RA.
+  CAD_POINTS: '%d điểm  |  %s'
+  CAD_PROGRESS: Đã đạt %d / %d  |  %s
+  CAD_UDPFS_IMG: 'Trình duyệt Caduceus cần SMB hoặc UDPFS Tệp: UDPFS IMG không có thư mục chia sẻ để chứa khóa của nó.'
+  CAD_UNKNOWN_GAME: Trò chơi này không có trong danh mục của Caduceus. Hãy làm mới danh mục trên PC.
+  CAD_USE_LIBRARY: Hãy duyệt trò chơi này qua Thành tích Caduceus ở menu chính.
+  XERA_ACHIEVEMENTS: Thư viện RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: Không đọc được danh sách từ xeRAbora. Nhấn Select để thử lại.
+  XERA_NOT_PLAYED: Chưa có trong thư viện RetroAchievements của bạn. Hãy chơi một lần có thành tích, rồi nhấn Select.
+  XERA_OPEN_NETWORK: Không kết nối được xeRAbora. Hãy bật OPEN TO THE NETWORK trong cài đặt của nó, kiểm tra IP đồng hành RA và tường lửa PC.
+  XERA_UNKNOWN_GAME: xeRAbora không biết ảnh đĩa này. Hãy chạy kiểm tra hỗ trợ trò chơi RA trước.
+  XERA_USE_LIBRARY: Hãy duyệt trò chơi này qua thư viện RetroAchievements ở menu chính.

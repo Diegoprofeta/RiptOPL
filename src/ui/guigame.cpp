@@ -7,6 +7,9 @@
 #include "include/gui.h"
 #include "include/ioman.h"
 #include "include/lang.h"
+#ifdef RETROACHIEVEMENTS
+#include "include/achievements.h"
+#endif
 #include "include/pad.h"
 #include "include/config.h"
 #include "include/ethsupport.h"
@@ -1852,6 +1855,12 @@ void guiGameRemoveSettings(config_set_t *configSet)
 
 void guiGameTestSettings(int id, item_list_t *support, config_set_t *configSet)
 {
+#ifdef RETROACHIEVEMENTS
+    if (achievementsBusy()) { // a browser page still owns the network and the share
+        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+        return;
+    }
+#endif
     // Test launch: apply the in-dialog edits to a throwaway CLONE and boot from that, so the live
     // per-game config is never modified -- "Test" must not persist. (The old code wrote the edits
     // straight into the live configSet, which could later be flushed to disk by an unrelated Save.)

@@ -40,7 +40,7 @@ def definition(edition, configuration="standard", toolchain="gcc"):
         for target in (main, core):
             add(target, "defines", "RETROACHIEVEMENTS")
         add(main, "sources", "src/platform/md5.c", *[
-            f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport")])
+            f"src/sources/{name}.cpp" for name in ("rawatch", "rahash", "ranet", "rabadge", "discsupport", "achievements")])
         add(core, "sources", "ee_core/src/ra.c", "ee_core/src/ra_overlay.c", "ee_core/src/ra_pulse.c")
         main["embed_irx"] = ["smbman_ra:smbman" if v == "smbman" else v for v in main["embed_irx"]]
         add(main, "embed_irx", "raudp")

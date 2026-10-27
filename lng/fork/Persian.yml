@@ -797,3 +797,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: در Caduceus وارد RetroAchievements شوید، سپس دوباره تلاش کنید.
   RA_EXPERIMENTAL_CARDS: کارت‌های آزمایشی Caduceus
   HINT_RA_EXPERIMENTAL_CARDS: کارت‌های آزمایشی دستاورد درون بازی PS2. ممکن است بازی‌ها را چشمک‌زن یا هنگ کنند. فقط Caduceus؛ خاموش از پالس طلایی استفاده می‌کند. از اجرای بعدی بازی اعمال می‌شود.
+  CAD_ACHIEVEMENTS: دستاوردهای Caduceus
+  CAD_VIEW_ACHIEVEMENTS: مشاهده دستاوردها
+  CAD_BACK: بازگشت
+  CAD_BACK_REFRESH: بازگشت به OPL برمی‌گردد. Select این صفحه را تازه می‌کند.
+  CAD_CONNECTION_ERROR: پرس‌وجو از Caduceus ممکن نیست. اتصال را بررسی کنید، سپس برای تلاش دوباره Select را بزنید.
+  CAD_EARNED: کسب‌شده
+  CAD_EMPTY_FILTER: هیچ دستاوردی با این فیلتر جور نیست.
+  CAD_EMPTY_LIBRARY: در این حساب بازی‌ای با پیشرفت نیست.
+  CAD_FILTER_ALL: همه
+  CAD_GAMES: '%d بازی در حساب'
+  CAD_GAME_CONTROLS: 'L1/R1: صفحه   مربع: فیلتر   Select: تازه‌سازی'
+  CAD_GAME_PROGRESS: '%d / %d دستاورد  |  %d hardcore'
+  CAD_HARDCORE: Hardcore
+  CAD_HASH_UNSUPPORTED: هش این قالب محاسبه نمی‌شود. به جای آن کتابخانه حساب را مرور کنید.
+  CAD_HEADING: دستاوردها
+  CAD_LIBRARY: کتابخانه حساب RetroAchievements
+  CAD_LIBRARY_CONTROLS: 'L1/R1: صفحه   تأیید: باز کردن   Select: تازه‌سازی'
+  CAD_LOADING: در حال بارگذاری دستاوردها...
+  CAD_LOCKED: قفل
+  CAD_ONE_GAME: '%d بازی در حساب'
+  CAD_PAIR: وارد Caduceus شوید و ART/CADUCEUS.KEY را روی اشتراک SMB خود جفت کنید.
+  CAD_PAIR_UDPFS: دسترسی به Caduceus ممکن نیست. ART/CADUCEUS.KEY را در پوشه‌ای که PS2-Servers به اشتراک می‌گذارد جفت کنید، و IP همراه RA را تعیین کنید.
+  CAD_POINTS: '%d امتیاز  |  %s'
+  CAD_PROGRESS: '%d / %d کسب‌شده  |  %s'
+  CAD_UDPFS_IMG: 'مرورگر Caduceus به SMB یا فایل‌های UDPFS نیاز دارد: UDPFS IMG پوشه مشترکی برای کلید آن ندارد.'
+  CAD_UNKNOWN_GAME: این بازی در کاتالوگ Caduceus نیست. کاتالوگ را روی رایانه تازه کنید.
+  CAD_USE_LIBRARY: این بازی را از طریق دستاوردهای Caduceus در منوی اصلی مرور کنید.
+  XERA_ACHIEVEMENTS: کتابخانه RetroAchievements (xeRAbora)
+  XERA_CONNECTION_ERROR: فهرست از xeRAbora خوانده نمی‌شود. برای تلاش دوباره Select را بزنید.
+  XERA_NOT_PLAYED: هنوز در کتابخانه RetroAchievements شما نیست. یک بار با دستاوردها آن را بازی کنید، سپس Select را بزنید.
+  XERA_OPEN_NETWORK: دسترسی به xeRAbora ممکن نیست. OPEN TO THE NETWORK را در تنظیمات آن روشن کنید، IP همراه RA و دیوار آتش رایانه را بررسی کنید.
+  XERA_UNKNOWN_GAME: xeRAbora این تصویر را نمی‌شناسد. اول بررسی پشتیبانی بازی RA را اجرا کنید.
+  XERA_USE_LIBRARY: این بازی را از طریق کتابخانه RetroAchievements در منوی اصلی مرور کنید.

@@ -568,3 +568,36 @@ translations:
   RA_CADUCEUS_SIGN_IN: Caduceus'ta RetroAchievements'a giriş yapıp yeniden deneyin.
   RA_EXPERIMENTAL_CARDS: Caduceus deneysel kartları
   HINT_RA_EXPERIMENTAL_CARDS: Deneysel PS2 oyun içi başarım kartları. Titreyebilir veya oyunları dondurabilir. Yalnızca Caduceus; Kapalı altın nabzı kullanır. Bir sonraki oyun başlatmada geçerli olur.
+  CAD_ACHIEVEMENTS: Caduceus başarımları
+  CAD_VIEW_ACHIEVEMENTS: Başarımları görüntüle
+  CAD_BACK: Geri
+  CAD_BACK_REFRESH: Geri OPL'ye döner. Select bu sayfayı yeniler.
+  CAD_CONNECTION_ERROR: Caduceus sorgulanamıyor. Bağlantıyı kontrol edin, sonra yeniden denemek için Select'e basın.
+  CAD_EARNED: Kazanılan
+  CAD_EMPTY_FILTER: Bu filtreyle eşleşen başarım yok.
+  CAD_EMPTY_LIBRARY: Bu hesapta ilerleme kaydedilmiş oyun yok.
+  CAD_FILTER_ALL: Tümü
+  CAD_GAMES: Hesapta %d oyun
+  CAD_GAME_CONTROLS: 'L1/R1: sayfa   Kare: filtre   Select: yenile'
+  CAD_GAME_PROGRESS: '%d / %d başarım  |  %d zorlu'
+  CAD_HARDCORE: Zorlu
+  CAD_HASH_UNSUPPORTED: Bu biçimin özeti hesaplanamaz. Bunun yerine hesap kitaplığına göz atın.
+  CAD_HEADING: BAŞARIMLAR
+  CAD_LIBRARY: RetroAchievements hesap kitaplığı
+  CAD_LIBRARY_CONTROLS: 'L1/R1: sayfa   Onay: aç   Select: yenile'
+  CAD_LOADING: Başarımlar yükleniyor...
+  CAD_LOCKED: Kilitli
+  CAD_ONE_GAME: Hesapta %d oyun
+  CAD_PAIR: Caduceus'a giriş yapın ve SMB paylaşımınızda ART/CADUCEUS.KEY dosyasını eşleştirin.
+  CAD_PAIR_UDPFS: Caduceus'a ulaşılamıyor. PS2-Servers'ın paylaştığı klasörde ART/CADUCEUS.KEY dosyasını eşleştirin ve RA yardımcı IP'sini ayarlayın.
+  CAD_POINTS: '%d puan  |  %s'
+  CAD_PROGRESS: '%d / %d kazanıldı  |  %s'
+  CAD_UDPFS_IMG: 'Caduceus tarayıcısı SMB veya UDPFS Dosyalar''a ihtiyaç duyar: UDPFS IMG''nin anahtarı için paylaşılan bir klasörü yok.'
+  CAD_UNKNOWN_GAME: Bu oyun Caduceus kataloğunda yok. Kataloğu PC'de yenileyin.
+  CAD_USE_LIBRARY: Bu oyuna ana menüdeki Caduceus başarımları üzerinden göz atın.
+  XERA_ACHIEVEMENTS: RetroAchievements kitaplığı (xeRAbora)
+  XERA_CONNECTION_ERROR: xeRAbora'dan liste okunamıyor. Yeniden denemek için Select'e basın.
+  XERA_NOT_PLAYED: Henüz RetroAchievements kitaplığınızda değil. Başarımlarla bir kez oynayın, sonra Select'e basın.
+  XERA_OPEN_NETWORK: xeRAbora'ya ulaşılamıyor. Ayarlarında OPEN TO THE NETWORK'ü açın, RA yardımcı IP'sini ve PC güvenlik duvarını kontrol edin.
+  XERA_UNKNOWN_GAME: xeRAbora bu görüntüyü tanımıyor. Önce RA oyun desteği kontrolünü çalıştırın.
+  XERA_USE_LIBRARY: Bu oyuna ana menüdeki RetroAchievements kitaplığı üzerinden göz atın.

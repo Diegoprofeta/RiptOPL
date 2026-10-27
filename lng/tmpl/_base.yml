@@ -1764,14 +1764,14 @@ gui_strings:
   string: RA companion IP (0.0.0.0 = automatic)
 - label: HINT_RA_HOST_IP
   string: "Optional dedicated RetroAchievements PC IPv4. Use 0.0.0.0 for legacy SMB/HTTP fallback or Xerabora discovery. Does not alter game-server settings."
+
+# RA: a UDPFS protocol is selected but its network module has not loaded yet.
 - label: RA_UDPFS_LOAD_FIRST
   string: "Open the UDPFS page once so its network module loads, then try again."
 
-# RA Caduceus browser: UDPFS IMG has no shared folder for ART/CADUCEUS.KEY.
 - label: RA_WL_NOT_SAVED
   string: "Could not save the watch list. Make sure the game's device or share is writable, then check again."
 
-# RA: a UDPFS protocol is selected but its network module has not loaded yet.
 - label: CAD_UNTRACKED
   string: "Caduceus is not ready. Launching without achievements this time."
 - label: RA_CADUCEUS_OFFLINE
@@ -1782,5 +1782,71 @@ gui_strings:
   string: "Caduceus experimental cards"
 - label: HINT_RA_EXPERIMENTAL_CARDS
   string: "Experimental PS2 in-game achievement cards. May flicker or freeze games. Caduceus only; Off uses the gold pulse. Takes effect on the next game launch."
+- label: CAD_ACHIEVEMENTS
+  string: "Caduceus achievements"
+- label: CAD_VIEW_ACHIEVEMENTS
+  string: "View achievements"
+- label: CAD_BACK
+  string: "Back"
+- label: CAD_BACK_REFRESH
+  string: "Back returns to OPL. Select refreshes this page."
+- label: CAD_CONNECTION_ERROR
+  string: "Cannot query Caduceus. Check the connection, then press Select to retry."
+- label: CAD_EARNED
+  string: "Earned"
+- label: CAD_EMPTY_FILTER
+  string: "No achievements match this filter."
+- label: CAD_EMPTY_LIBRARY
+  string: "No games with progress in this account."
+- label: CAD_FILTER_ALL
+  string: "All"
+- label: CAD_GAMES
+  string: "%d games in account"
+- label: CAD_GAME_CONTROLS
+  string: "L1/R1: page   Square: filter   Select: refresh"
+- label: CAD_GAME_PROGRESS
+  string: "%d / %d achievements  |  %d hardcore"
+- label: CAD_HARDCORE
+  string: "Hardcore"
+- label: CAD_HASH_UNSUPPORTED
+  string: "This format cannot be hashed. Browse the account library instead."
+- label: CAD_HEADING
+  string: "ACHIEVEMENTS"
+- label: CAD_LIBRARY
+  string: "RetroAchievements account library"
+- label: CAD_LIBRARY_CONTROLS
+  string: "L1/R1: page   Confirm: open   Select: refresh"
+- label: CAD_LOADING
+  string: "Loading achievements..."
+- label: CAD_LOCKED
+  string: "Locked"
+- label: CAD_ONE_GAME
+  string: "%d game in account"
+- label: CAD_PAIR
+  string: "Sign in to Caduceus and pair ART/CADUCEUS.KEY on your SMB share."
+- label: CAD_PAIR_UDPFS
+  string: "Cannot reach Caduceus. Pair ART/CADUCEUS.KEY in the folder PS2-Servers shares, and set the RA companion IP."
+- label: CAD_POINTS
+  string: "%d pts  |  %s"
+- label: CAD_PROGRESS
+  string: "%d / %d earned  |  %s"
 
-# ORBIT external runtime handoff is confined to the RA edition.
+# RA Caduceus browser: UDPFS IMG has no shared folder for ART/CADUCEUS.KEY.
+- label: CAD_UDPFS_IMG
+  string: "The Caduceus browser needs SMB or UDPFS Files: UDPFS IMG has no shared folder for its key."
+- label: CAD_UNKNOWN_GAME
+  string: "This game is not in the Caduceus catalog. Refresh the catalog on the PC."
+- label: CAD_USE_LIBRARY
+  string: "Browse this game through Caduceus achievements in the main menu."
+- label: XERA_ACHIEVEMENTS
+  string: "RetroAchievements library (xeRAbora)"
+- label: XERA_CONNECTION_ERROR
+  string: "Cannot read the list from xeRAbora. Press Select to retry."
+- label: XERA_NOT_PLAYED
+  string: "Not in your RetroAchievements library yet. Play it once with achievements, then press Select."
+- label: XERA_OPEN_NETWORK
+  string: "Cannot reach xeRAbora. Turn on OPEN TO THE NETWORK in its settings, check the RA companion IP and the PC firewall."
+- label: XERA_UNKNOWN_GAME
+  string: "xeRAbora does not know this image. Run RA check game support first."
+- label: XERA_USE_LIBRARY
+  string: "Browse this game through the RetroAchievements library in the main menu."
