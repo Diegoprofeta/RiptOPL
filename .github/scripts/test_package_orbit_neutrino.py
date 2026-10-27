@@ -26,6 +26,7 @@ class OrbitStagingTests(unittest.TestCase):
         archive = self.root / "runtime.zip"
         files = {name: b"payload" for name in (
             "neutrino.elf", "modules/ee_core.elf", "modules/raagent.irx", "modules/IEEE1394_bd_mini.irx",
+            "modules/iLinkman.irx",
             "config/system.toml", "config/bsd-udpfs.toml", "LICENSE")}
         files["neutrino.elf"] = loader
         files.pop(missing, None)
@@ -76,6 +77,7 @@ class OrbitStagingTests(unittest.TestCase):
             package_edition.stage_orbit(archive, self.destination, self.pin)
         self.assertFalse(self.destination.exists())
         for kwargs in ({"missing": "modules/raagent.irx"}, {"missing": "modules/IEEE1394_bd_mini.irx"},
+                       {"missing": "modules/iLinkman.irx"},
                        {"loader": b"stock"}, {"extra": "ORBIT-test/neutrino/../escape"},
                        {"extra": "/absolute"}, {"extra": "bad\\windows"},
                        {"extra": "ORBIT-test/neutrino/LICENSE"}):

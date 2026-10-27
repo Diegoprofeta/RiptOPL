@@ -40,7 +40,7 @@ def stage_orbit(archive, destination, pin):
                 raise ValueError("duplicate ORBIT runtime entry")
             payload[relative] = source.read(entry)
     for name in ("neutrino.elf", "modules/ee_core.elf", "modules/raagent.irx", "modules/IEEE1394_bd_mini.irx",
-                 "config/system.toml", "config/bsd-udpfs.toml", "LICENSE"):
+                 "modules/iLinkman.irx", "config/system.toml", "config/bsd-udpfs.toml", "LICENSE"):
         if not payload.get(name):
             raise ValueError(f"missing ORBIT runtime entry: {name}")
     if b"-ra=<file>" not in payload["neutrino.elf"]:
@@ -61,9 +61,9 @@ def stage_orbit(archive, destination, pin):
         "THIS neutrino/ FOLDER BELONGS TO THE RIPTOPL RETROACHIEVEMENTS EDITION.\n"
         "\n"
         f"It is ORBIT's RA-Neutrino {pin['tag']}: Neutrino v1.8.0 with the achievement agent\n"
-        "(raagent.irx). Only modules/IEEE1394_bd_mini.irx is replaced, by RiptOPL's i.LINK driver,\n"
-        "as in the standard kit. It is NOT the standard RiptOPL Neutrino: keep this folder with\n"
-        "the RA loader (APPS/APP_RIPTOPL-RA) and the standard one with the standard loader.\n"
+        "(raagent.irx). Only modules/iLinkman.irx and modules/IEEE1394_bd_mini.irx are replaced,\n"
+        "by RiptOPL's i.LINK pair, as in the standard kit. It is NOT the standard RiptOPL Neutrino:\n"
+        "keep this folder with the RA loader (APPS/APP_RIPTOPL-RA) and the standard one with the standard loader.\n"
         "\n"
         "Every Neutrino launch in the RA edition uses this runtime, so upstream changes made\n"
         "after Neutrino v1.8.0 (including Neutrino cheats) are not available here.\n", encoding="utf-8")
@@ -154,13 +154,16 @@ def package(edition, neutrino_archive, orbit_archive=None):
             subprocess.run([extractor, "x", "-y", "-o" + str(kit / "neutrino"), str(neutrino_archive)], check=True, stdout=subprocess.DEVNULL)
         shutil.copyfile(ROOT / "ship/neutrino/bsd-udpfsbd.toml", kit / "neutrino/config/bsd-udpfsbd.toml")
         # i.LINK: Neutrino's own IEEE1394_bd_mini.irx loses its login after an IOP reset (original
-        # #1018). Replace it with RiptOPL's build of the same driver -- the one the ELF embeds -- and
-        # refuse to package if upstream stopped shipping the file bsd-ilink.toml loads.
-        ilink = kit / "neutrino/modules/IEEE1394_bd_mini.irx"
-        ours = built / "IEEE1394_bd_mini.irx"
-        if not ilink.is_file() or hashlib.sha256(ours.read_bytes()).hexdigest() != manifest["ilink_bd_sha256"]:
-            raise ValueError("cannot replace neutrino/modules/IEEE1394_bd_mini.irx (upstream file or RiptOPL build missing)")
-        shutil.copyfile(ours, ilink)
+        # #1018). Replace it AND its manager with RiptOPL's builds -- the pair the ELF embeds; the
+        # manager carries the TX cancellation, alarm and receive-FIFO fixes, so the driver alone leaves
+        # them out (original 00bc8e5). Refuse to package if upstream stopped shipping the files
+        # bsd-ilink.toml loads.
+        for module, key in (("IEEE1394_bd_mini.irx", "ilink_bd_sha256"), ("iLinkman.irx", "ilink_manager_sha256")):
+            ilink = kit / "neutrino/modules" / module
+            ours = built / module
+            if not ilink.is_file() or not ours.is_file() or hashlib.sha256(ours.read_bytes()).hexdigest() != manifest[key]:
+                raise ValueError(f"cannot replace neutrino/modules/{module} (upstream file or RiptOPL build missing)")
+            shutil.copyfile(ours, ilink)
         shortcuts = {name: name for name in ("PS2-Servers.url", "OrbitPS2-Manager.url", "OPL-PS1-AIO-Converter-GUI.url", "PS2RD-CHT-Manager.url")}
         shortcuts["android-udpfs-server.url"] = "udpfs-server.url"
         for target, source in shortcuts.items():
