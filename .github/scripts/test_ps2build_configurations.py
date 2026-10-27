@@ -98,9 +98,10 @@ class ConfigurationTests(unittest.TestCase):
                 self.assertIn("TTY_PPC" if uart else "TTY_UDP", core["defines"])
                 for name, target in targets.items():
                     if name.endswith("_cdvdman"):
-                        self.assertIn("__USE_DEV9", target["defines"])
+                        dev9 = name != "pccf_cdvdman"  # PCCF exports its own dev9 table
+                        self.assertEqual("__USE_DEV9" in target["defines"], dev9)
                         self.assertIn("__IOPCORE_DEBUG", target["defines"])
-                        self.assertIn("modules/iopcore/cdvdman/dev9.c", target["sources"])
+                        self.assertEqual("modules/iopcore/cdvdman/dev9.c" in target["sources"], dev9)
                 self.assertEqual("DEBUG" in targets["bdm_mcemu"]["defines"], configuration.startswith("iopcore_"))
         dtl = self.targets("korium", "dtl")
         self.assertIn("udnl-t300:udnl", dtl["riptopl"]["embed_irx"])

@@ -81,8 +81,11 @@ def apply_configuration(config, configuration):
                 add(main, "embed_irx", "udptty_ingame")
             for target in config["targets"]:
                 if target["name"].endswith("_cdvdman"):
-                    add(target, "defines", "__IOPCORE_DEBUG", "__USE_DEV9")
-                    add(target, "sources", "modules/iopcore/cdvdman/dev9.c")
+                    add(target, "defines", "__IOPCORE_DEBUG")
+                    # PCCF exports its own dev9 table and cannot share the real driver.
+                    if target["name"] != "pccf_cdvdman":
+                        add(target, "defines", "__USE_DEV9")
+                        add(target, "sources", "modules/iopcore/cdvdman/dev9.c")
                 if configuration.startswith("iopcore_") and target["name"].endswith("_mcemu"):
                     add(target, "defines", "DEBUG")
             add(targets["bdm_ata_cdvdman"], "defines", "DEV9_DEBUG")
