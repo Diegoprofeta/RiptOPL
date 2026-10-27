@@ -290,8 +290,11 @@ int main()
     assert(!strcmp(two, "Console 192.168.1.10 18196.")); /* the console address, never a literal %s */
     reset(); gRAMode = RA_MODE_CADUCEUS; respond = offline;
     assert(client.netTestLink(one, sizeof(one), two, sizeof(two)) == 0 && !strcmp(one, "OFFLINE") && !strcmp(two, "SIGN IN"));
-    reset(); respond = [](const Packet &) { return std::vector<Packet>{{PC, 0, "RAO1 FAIL"}}; };
-    assert(client.netTestLink(one, sizeof(one), two, sizeof(two)) == 0 && client.peerIP() == 0);
+    static const char *notOk;
+    for (const char *reply : {"RAO1 FAIL", "RAO1 BAD", "RAO1", "RAO1 OKAY"}) {
+        reset(); notOk = reply; respond = [](const Packet &) { return std::vector<Packet>{{PC, 0, notOk}}; };
+        assert(client.netTestLink(one, sizeof(one), two, sizeof(two)) == 0 && client.peerIP() == 0);
+    }
     reset(); gNetworkProtocol = NET_PROTO_UDPFS;
     assert(client.netTestLink(one, sizeof(one), two, sizeof(two)) == 0 && !strcmp(two, "LOAD FIRST"));
     reset(); gNetworkProtocol = NET_PROTO_UDPBD;
