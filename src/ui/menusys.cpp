@@ -35,6 +35,7 @@
 #include "include/vcdsupport.h"   // VCD launches never use Neutrino
 #include "include/libview.h"      // libViewActive / libListViewActive -- which list this page shows
 #include "include/bdmsupport.h"   // bdmSupportIsUDPBD() -- UDPBD games are Neutrino-only
+#include "include/hddsupport.h"   // hdl_game_info_t -- the RA check hashes an HDLoader install
 #include <assert.h>
 #include <delaythread.h>
 
@@ -2412,10 +2413,18 @@ void menuHandleInputGameMenu()
             } else if (gameMenuCoreIsNeutrino()) {
                 guiShowRANotice(_l(_STR_RA_NA_NEUTRINO), NULL);
             } else if (support->mode == HDD_MODE) {
-                /* HDLoader entries (hdl_game_info_t) have no filename and no extension, so there
-                   is nothing to hash. Watch lists still LOAD from RA/ at launch; the .wl has to
-                   be built on the PC. */
-                guiShowRANotice(_l(_STR_RA_NA_HDD), _l(_STR_RA_NA_HDD2));
+                /* An HDLoader install has no image file: hash through its partition map, read-only,
+                   on the I/O worker. */
+                hdl_game_info_t *g = gsOf(support)->hasGame() ? (hdl_game_info_t *)gsOf(support)->game(support, gid) : NULL;
+                const char *prefix = gsOf(support)->hasPrefix() ? gsOf(support)->prefix(support) : NULL;
+
+                if (g && g->start_sector && g->startup[0] && prefix && prefix[0]) {
+                    if (sbHashHdlDeferred(prefix, g->name, g->startup, g->start_sector))
+                        guiShowRANotice(_l(_STR_RA_CHECKING_IMAGE), NULL);
+                    else
+                        guiShowRANotice(_l(_STR_RA_CHECK_RUNNING), NULL);
+                } else
+                    guiShowRANotice(_l(_STR_RA_NA_HDD), _l(_STR_RA_NA_HDD2));
             } else if (gsOf(support)->hasGame() && gsOf(support)->hasPrefix()) {
                 base_game_info_t *g = (base_game_info_t *)gsOf(support)->game(support, gid);
                 const char *prefix = gsOf(support)->prefix(support);

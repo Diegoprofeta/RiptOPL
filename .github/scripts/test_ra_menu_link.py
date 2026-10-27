@@ -53,6 +53,7 @@ static int udpbdLoaded, udpfsLoaded, ethInits, warnings, lastWarning = -1, watch
 static int bdmIsUDPBDLoaded() { return udpbdLoaded; }
 static int udpfsGetModulesLoaded() { return udpfsLoaded; }
 static void raHashStep(const char *) {}
+static int raVcdWatchGuardStore(const char *, const char *, const char *) { return 0; }
 static void DelayThread(int) {}
 static int ethLoadInitModules() { ethInits++; return 0; }
 static int ethGetNetConfig(u8 *ip, u8 *, u8 *) { for (int i = 0; i < 4; i++) ip[i] = ps2_ip[i]; return 0; }

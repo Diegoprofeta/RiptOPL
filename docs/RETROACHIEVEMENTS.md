@@ -106,7 +106,7 @@ Telemetry lives inside OPL's own loader core, which only exists for launches OPL
 | --- | --- |
 | BDM — USB, iLink, MX4SIO, ATA/exFAT | yes |
 | ETH / SMB | wired, but **known bad upstream** — see below |
-| HDD (APA) | yes — but see the note below |
+| HDD (APA) | yes; the support check reads HDLoader installs read-only (see below) |
 | MMCE | yes |
 | Physical PS2 disc, **RA: launch disc** | implemented; **not hardware-tested** |
 | HTTP | local watch-list loading is wired into OPL-core launch; combined HTTP/RA operation is not hardware-validated, and it shares the ETH/SMB risk below |
@@ -164,8 +164,12 @@ The hardware testing so far (#702–#705) launched from MMCE and USB, never from
 is tested, **keep the images you play with achievements on a local device.** The same reasoning
 applies to HTTP, which streams down the same path.
 
-HDD (APA) games are stored in HDLoader format and have no image file to hash, so while a watch list
-placed by hand still loads and streams, the console cannot work out the hash for them itself.
+**HDD (APA) / HDLoader games** have a **read-only support check**. It reads the installed game's
+1024-byte HDLoader descriptor, validates its logical-to-ATA sector map (refusing invalid or overlapping
+extents, or a descriptor whose boot executable does not match the selected entry), and hashes the boot
+executable through the same ISO9660 walker as an image. It never rewrites or converts a partition. The
+list is saved under the HDD settings home as `RA/<startup>.wl`; a list placed by hand still loads. A
+synthetic split-partition test matches the image hash; **NOT TESTED on hardware**, including its speed.
 
 ### An image an earlier run left open on the share can still be hashed
 
@@ -398,7 +402,7 @@ Hand testers a **run-pinned nightly.link build**, never a bare artifact link.
 | 8 | Menu check, protocol = UDPBD / UDPFS | clean refusal + hash written to `RA/hashes.txt`, no wedge |
 | 9 | Neutrino-core game | clean refusal, no hash attempt |
 | 10 | PS1/VCD entry | clean refusal |
-| 11 | HDD/APA entry | the check refuses; a watch list still loads |
+| 11 | HDD/APA entry | the read-only check maps the HDL extents; a watch list still loads |
 | 12 | Badge + cover mark | appear after refresh, correct game, correct device |
 | 13 | Unlock overlay | gold pulse on `RAU1`, game keeps running |
 | 14 | IGR combo during an RA launch | still resets |

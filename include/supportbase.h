@@ -160,6 +160,7 @@ void raHashLogClose(void);
 
 int sbHashGameBusy(void);
 int sbHashGameDeferred(const char *path, const char *name, const char *ext, const char *startup, int format);
+int sbHashHdlDeferred(const char *path, const char *name, const char *startup, unsigned int start_sector);
 
 // RA: ask the PC client to answer, from the I/O thread; the result is shown
 // as a notice.

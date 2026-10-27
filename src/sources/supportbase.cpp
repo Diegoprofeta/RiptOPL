@@ -2674,6 +2674,40 @@ void SupportBase::hashLogClose()
 /* on the splash screen. The image's folder is not known in advance,   */
 /* so DVD is tried first, then CD, the way OPL itself lays them out.   */
 
+/* One result-to-notice mapping for ISO, VCD and HDL support checks. The hash-log steps tell a
+   failed transport apart from a companion that ignored the request. */
+static void sbShowAskResult(int q, const char *hash, const char *info, const char *info2)
+{
+    if (q == 0) {
+        raHashStep("7-list-received");
+        host::ui().raNotice(info[0] ? info : _l(_STR_RA_SUPPORTED),
+                            info2[0] ? info2 : _l(_STR_RA_START_TO_TRACK));
+    } else if (q == 1) {
+        raHashStep("7-pc-does-not-know-image");
+        host::ui().raNotice(_l(_STR_RA_UNKNOWN_IMAGE), hash);
+    } else if (q == -9) {
+        raHashStep("7-caduceus-session-offline");
+        host::ui().raNotice(_l(_STR_RA_CADUCEUS_OFFLINE), _l(_STR_RA_CADUCEUS_SIGN_IN));
+    } else if (q == -7) {
+        raHashStep("7-pc-still-identifying");
+        host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
+    } else if (q == -8) {
+        /* NIC owned by a UDP transport (the settlement): the ask was
+           refused without touching the network. The hash is already in
+           the log, so the PC-side path to a .wl stays open. */
+        raHashStep("7-nic-busy-udp-transport");
+        host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(raNetUdpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY_HASH));
+    } else if (q == -1) {
+        /* The console could not open a UDP socket, so nothing was
+           ever sent -- report that, not a PC that never heard us. */
+        raHashStep("7-no-socket-on-console");
+        host::ui().raNotice(_l(_STR_RA_NO_SOCKET), _l(_STR_RA_NO_SOCKET2));
+    } else {
+        raHashStep("7-pc-did-not-answer");
+        host::ui().raNotice(_l(_STR_RA_PC_NO_ANSWER), _l(_STR_RA_PC_NO_ANSWER2));
+    }
+}
+
 static void sbHashGame(const char *path, const char *name, const char *ext, const char *startup, int format)
 {
     static const char *dirs[] = {"DVD", "CD", NULL};
@@ -2692,6 +2726,37 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
         raHashStep("1-ul-format-not-supported");
         raHashLogAdd(name, startup, "UL: not an image, not supported yet");
         host::ui().raNotice(_l(_STR_RA_UL_UNSUPPORTED), _l(_STR_RA_UL_UNSUPPORTED2));
+        raHashSetStepLog(NULL);
+        raHashLogClose();
+        return;
+    }
+
+    if (!strcasecmp(ext, ".VCD")) {
+        /* A USB PS1 VCD lives in <root>/POPS/. Its list is keyed by the image's path
+           (raVcdWatchKey), since a BOOT name is shared by many PS1 images. */
+        char root[64], boot[16], watchKey[16];
+        const char *colon = strchr(path, ':');
+        int n = colon ? (int)(colon - path) + 1 : 0;
+        int ret = -1;
+
+        if (n && n + 2 <= (int)sizeof(root)) {
+            memcpy(root, path, n);
+            root[n++] = '/';
+            root[n] = '\0';
+            if (snprintf(iso, sizeof(iso), "%sPOPS/%s%s", root, name, ext) < (int)sizeof(iso))
+                ret = raHashVcd(iso, boot, sizeof(boot), hash);
+            if (ret == 0)
+                ret = raVcdWatchKey(iso, watchKey, sizeof(watchKey));
+        }
+        if (ret == 0) {
+            int q = raAskPC(hash, watchKey, path, info, sizeof(info), info2, sizeof(info2));
+            raHashLogAdd(name, boot, hash);
+            sbShowAskResult(q, hash, info, info2);
+        } else {
+            snprintf(last_err, sizeof(last_err), "VCD: code %d", ret);
+            raHashLogAdd(name, startup && startup[0] ? startup : "PS1", last_err);
+            host::ui().raNotice(_l(_STR_RA_HASH_FAILED), _l(_STR_RA_HASH_FAILED2));
+        }
         raHashSetStepLog(NULL);
         raHashLogClose();
         return;
@@ -2728,34 +2793,7 @@ static void sbHashGame(const char *path, const char *name, const char *ext, cons
             raHashStep("6-asking-pc");
             q = raAskPC(hash, startup, path, info, sizeof(info), info2, sizeof(info2));
 
-            if (q == 0) {
-                raHashStep("7-list-received");
-                host::ui().raNotice(info[0] ? info : _l(_STR_RA_SUPPORTED),
-                                    info2[0] ? info2 : _l(_STR_RA_START_TO_TRACK));
-            } else if (q == 1) {
-                raHashStep("7-pc-does-not-know-image");
-                host::ui().raNotice(_l(_STR_RA_UNKNOWN_IMAGE), hash);
-            } else if (q == -9) {
-                raHashStep("7-caduceus-session-offline");
-                host::ui().raNotice(_l(_STR_RA_CADUCEUS_OFFLINE), _l(_STR_RA_CADUCEUS_SIGN_IN));
-            } else if (q == -7) {
-                raHashStep("7-pc-still-identifying");
-                host::ui().raNotice(_l(_STR_RA_STILL_IDENTIFYING), _l(_STR_RA_TRY_AGAIN));
-            } else if (q == -8) {
-                /* NIC owned by a UDP transport (the settlement): the ask was
-                   refused without touching the network. The hash is already in
-                   the log, so the PC-side path to a .wl stays open. */
-                raHashStep("7-nic-busy-udp-transport");
-                host::ui().raNotice(_l(_STR_RA_NET_BUSY), _l(raNetUdpfsNotLoaded() ? _STR_RA_UDPFS_LOAD_FIRST : _STR_RA_NET_BUSY_HASH));
-            } else if (q == -1) {
-                /* The console could not open a UDP socket, so nothing was
-                   ever sent -- report that, not a PC that never heard us. */
-                raHashStep("7-no-socket-on-console");
-                host::ui().raNotice(_l(_STR_RA_NO_SOCKET), _l(_STR_RA_NO_SOCKET2));
-            } else {
-                raHashStep("7-pc-did-not-answer");
-                host::ui().raNotice(_l(_STR_RA_PC_NO_ANSWER), _l(_STR_RA_PC_NO_ANSWER2));
-            }
+            sbShowAskResult(q, hash, info, info2);
 
             raHashSetStepLog(NULL);
             raHashLogClose();
@@ -2797,6 +2835,8 @@ static char ra_hash_name[128];
 static char ra_hash_ext[16];
 static char ra_hash_startup[16];
 static int ra_hash_format = -1; /* GAME_FORMAT_USBLD is 0: never default to it */
+static int ra_hash_hdl = 0;
+static unsigned int ra_hash_hdl_sector;
 
 static void sbHashGameDeferredWorker(void);
 
@@ -2821,6 +2861,49 @@ int sbHashGameDeferred(const char *path, const char *name, const char *ext, cons
     snprintf(ra_hash_ext, sizeof(ra_hash_ext), "%s", ext ? ext : "");
     snprintf(ra_hash_startup, sizeof(ra_hash_startup), "%s", startup ? startup : "");
     ra_hash_format = format;
+    ra_hash_hdl = 0;
+
+    if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&sbHashGameDeferredWorker)) != IO_OK) {
+        ra_hash_busy = 0;
+        return 0;
+    }
+    return 1;
+}
+
+/* An HDLoader install has no image file: its descriptor maps the ISO's logical sectors across
+   APA extents, and raHashHdl reads through that map without mounting or writing anything. */
+static void sbHashHdlGame(const char *path, const char *name, const char *startup, unsigned int start_sector)
+{
+    char hash[33], info[96] = "", info2[96] = "", result[64];
+    int status;
+
+    raHashLogOpen(path);
+    raHashSetStepLog(&raHashStep);
+    status = raHashHdl(start_sector, startup, hash);
+    if (status == 0) {
+        raHashLogAdd(name, startup, hash);
+        raHashStep("6-asking-pc");
+        sbShowAskResult(raAskPC(hash, startup, path, info, sizeof(info), info2, sizeof(info2)), hash, info, info2);
+    } else {
+        snprintf(result, sizeof(result), "HDL: read/map/hash error %d", status);
+        raHashLogAdd(name, startup, result);
+        host::ui().raNotice(_l(_STR_RA_HASH_FAILED), _l(_STR_RA_HASH_FAILED2));
+    }
+    raHashSetStepLog(NULL);
+    raHashLogClose();
+}
+
+int sbHashHdlDeferred(const char *path, const char *name, const char *startup, unsigned int start_sector)
+{
+    if (ra_hash_busy || !path || !path[0] || !startup || !startup[0] || !start_sector)
+        return 0;
+    ra_hash_busy = 1;
+
+    snprintf(ra_hash_path, sizeof(ra_hash_path), "%s", path);
+    snprintf(ra_hash_name, sizeof(ra_hash_name), "%s", name ? name : "");
+    snprintf(ra_hash_startup, sizeof(ra_hash_startup), "%s", startup);
+    ra_hash_hdl_sector = start_sector;
+    ra_hash_hdl = 1;
 
     if (ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&sbHashGameDeferredWorker)) != IO_OK) {
         ra_hash_busy = 0;
@@ -2831,7 +2914,10 @@ int sbHashGameDeferred(const char *path, const char *name, const char *ext, cons
 
 static void sbHashGameDeferredWorker(void)
 {
-    sbHashGame(ra_hash_path, ra_hash_name, ra_hash_ext, ra_hash_startup, ra_hash_format);
+    if (ra_hash_hdl)
+        sbHashHdlGame(ra_hash_path, ra_hash_name, ra_hash_startup, ra_hash_hdl_sector);
+    else
+        sbHashGame(ra_hash_path, ra_hash_name, ra_hash_ext, ra_hash_startup, ra_hash_format);
     ra_hash_busy = 0;
 }
 

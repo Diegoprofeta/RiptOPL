@@ -83,7 +83,11 @@ prefix=r'''
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <ctype.h>
 #include "include/md5.h"
+#include "include/hdl_layout.h"
+static int hddReadSectors(unsigned int lba,unsigned int count,void *buffer)
+    {(void)lba;(void)count;(void)buffer;return -1;}
 typedef void (*ra_step_fn)(const char *);
 typedef struct { unsigned char trycount,spindlctrl,datapattern,pad; } sceCdRMode;
 enum { SCECdErNO=0,SCECdSecS2048=0,SCECdSpinNom=1,SCECdSpinStm=2 };
@@ -318,6 +322,8 @@ int main(void) {
 
 s=(root/'src/sources/supportbase.cpp').read_text(encoding='utf-8')
 s=s[s.index('static char ra_hash_path'):s.index('static void sbTestPCLinkWorker')]
+# Queue mechanics are the subject here; the real HDL hash is covered by test_ra_ps1.py.
+s=s[:s.index('static void sbHashHdlGame(')]+s[s.index('int sbHashHdlDeferred('):]
 prefix=r'''
 #include <assert.h>
 #include <stdio.h>
@@ -326,6 +332,7 @@ static int result, requests, hashes;
 static void (*worker)(void);
 static int ioPutRequest(int kind,void *fn) {assert(kind==IO_CUSTOM_SIMPLEACTION);requests++;worker=(void (*)(void))fn;return result;}
 static void sbHashGame(const char *p,const char*n,const char*e,const char*s,int f) {(void)p;(void)n;(void)e;(void)s;(void)f;hashes++;}
+static void sbHashHdlGame(const char *p,const char*n,const char*s,unsigned x) {(void)p;(void)n;(void)s;(void)x;hashes+=10;}
 '''
 run('image_queue',prefix+s+r'''
 int main(void) {
@@ -340,7 +347,15 @@ int main(void) {
     assert(!sbHashGameDeferred("p","n","iso","SLUS_201.74",1) && requests==7);
     worker();assert(!sbHashGameBusy() && hashes==1);
     assert(sbHashGameDeferred("p","n","iso","SLUS_201.74",1));
-    puts("PASS: failed image-hash submissions release busy state and allow a later request");
+    worker();assert(!sbHashGameBusy() && hashes==2);
+    assert(!sbHashHdlDeferred(NULL,"n","SLUS_201.74",100));
+    assert(!sbHashHdlDeferred("p","n","SLUS_201.74",0));
+    assert(sbHashHdlDeferred("p","n","SLUS_201.74",100));
+    assert(sbHashGameBusy() && !sbHashGameDeferred("p","n","iso","SLUS_201.74",1));
+    worker();assert(!sbHashGameBusy() && hashes==12);
+    assert(sbHashGameDeferred("p","n","iso","SLUS_201.74",1));
+    worker();assert(hashes==13); /* the image check after an HDL one is an image check again */
+    puts("PASS: failed image-hash submissions release busy state and allow a later request; queued HDL checks serialize");
 }
 ''')
 

@@ -85,6 +85,7 @@
 #include "include/bdmsupport.h"   /* bdmIsUDPBDLoaded: the NIC interlock */
 #include "include/udpfssupport.h" /* udpfsGetModulesLoaded: the NIC interlock */
 #include "include/rawatch.h"      /* SetWatchList: list straight into memory */
+#include "include/rahash.h"       /* raVcdWatchGuardStore: a VCD list is bound to its content */
 #include "include/gui.h"          /* guiWarning: the untracked-launch notice */
 
 #include <ps2ips.h>
@@ -744,7 +745,10 @@ int Ranet::askPc(const char *hash, const char *serial, const char *savepath,
                 continue;
             }
             saved++;
-
+            /* A VCD's list is keyed by its path, so bind it to this exact content hash, and only
+               once the list itself is on disk: a refused update must not authorize an older list. */
+            if (serial[0] == 'P' && strlen(serial) == 15 && raVcdWatchGuardStore(where[w], serial, hash) != 0)
+                LOG("RA: VCD guard was not saved: %s\n", file);
             LOG("RA: list saved: %s (%d bytes)\n", file, total);
         }
 
