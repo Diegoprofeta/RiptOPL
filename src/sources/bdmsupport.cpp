@@ -1131,8 +1131,16 @@ void bdmLoadBlockDeviceModules(void)
         bdmDiagBootStageBegin("DEV9/ATAD/XHDD");
         int hddResult = hddDiagLoadModulesReady();
         bdmDiagBootStageEnd("DEV9/ATAD/XHDD", hddResult);
-        if (hddResult)
+        if (hddResult) {
+            // Module residency does not imply that ATAD's boot-time IDENTIFY succeeded. The
+            // HDD loader settles AFTER ATAD/XHDD init; with APA Off there is no partition-sector
+            // devctl afterward to re-probe and register a late drive with BDM. Ask once now through
+            // XHDD's read-only sceAtaInit path. Keep the residency latch even for an absent drive,
+            // so idle refreshes do not reload modules or run an unbounded spin-up retry loop.
+            [[maybe_unused]] int ataResult = fileXioDevctl("xhdd0:", ATA_DEVCTL_IS_48BIT, NULL, 0, NULL, 0);
+            LOG("bdmLoadBlockDeviceModules post-settle ATA probe: %d\n", ataResult);
             hddModLoaded = 1;
+        }
     }
 
     // Network block device (UDPBD or UDPFS, picked by gNetBootProtocol). NIC-exclusive with the SMB/ETH
