@@ -23,14 +23,15 @@ LIBRARIES = {"ogg": ("libogg.a",), "vorbis": ("libvorbis.a", "libvorbisfile.a")}
 
 def download(url):
     request = urllib.request.Request(url, headers={"User-Agent": "RiptOPL-build/1.0"})
-    for attempt in range(3):
+    for attempt in range(5):
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 return response.read()
         except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.IncompleteRead) as error:
-            if isinstance(error, urllib.error.HTTPError) and error.code not in (408, 429, 500, 502, 503, 504):
+            # Any 5xx is transient here, including Cloudflare's 520-524 when the origin is briefly down.
+            if isinstance(error, urllib.error.HTTPError) and error.code not in (408, 429) and error.code < 500:
                 raise
-            if attempt == 2:
+            if attempt == 4:
                 raise
             print(f"retrying {url} after {type(error).__name__}: {error}", flush=True)
             time.sleep(1 << attempt)
