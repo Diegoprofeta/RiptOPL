@@ -20,6 +20,9 @@ EDITIONS = {
     "korium": {"title": "Korium", "tag": "rolling-korium", "theme": "korium", "ra": False},
     "ra": {"title": "RetroAchievements", "tag": "rolling-ra", "theme": "korium", "ra": True},
     "incebtion": {"title": "IncebtIon", "tag": "rolling-incebtion", "theme": "incebtion", "ra": False},
+    # The original's RA release carries a kit per theme: this one ships inside rolling-ra ("into").
+    "ra_incebtion": {"title": "RetroAchievements-IncebtIon", "tag": "rolling-ra", "theme": "incebtion", "ra": True,
+                     "into": "ra", "label": "IncebtIon"},
 }
 
 
@@ -103,7 +106,8 @@ def main():
     source = git("rev-parse", "HEAD")
     dirty = bool(git("status", "--porcelain"))
     options = EDITIONS[args.edition]
-    os.environ["RIPTOPL_EDITION"] = args.edition
+    os.environ["RIPTOPL_THEME"] = options["theme"]
+    os.environ["RIPTOPL_RA"] = "1" if options["ra"] else "0"
     suffix = "" if args.configuration == "standard" else f"-{args.configuration.upper()}"
     os.environ["LOCALVERSION"] = f"PS2BUILD-{options['title']}-{args.toolchain.upper()}{suffix}"
     # Each edition regenerates blobs, so sequential local builds cannot inherit

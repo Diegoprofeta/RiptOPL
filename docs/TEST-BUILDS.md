@@ -6,8 +6,8 @@ sign into GitHub, then download the requested ZIP from Artifacts. Expired artifa
 
 | Workflow | Artifact | What it holds |
 | --- | --- | --- |
-| Rolling Release | `release-korium`, `release-ra`, `release-incebtion` | The complete install kit and every channel asset for that edition, exactly as publication would upload them |
-| Rolling Release | `variant-<configuration>` | One Korium configuration build (ELF and manifest); the VARIANTS and DEBUG release zips are made from these |
+| Rolling Release | `release-korium`, `release-ra`, `release-incebtion`, `release-ra_incebtion` | The complete install kit and every channel asset for that edition (the last is the IncebtIon-theme RA kit) |
+| Rolling Release | `variant-<edition>-<configuration>` | One configuration build (ELF and manifest); the VARIANTS, DEBUG and RA-VARIANTS release zips are made from these |
 | ps2build-configurations | `configuration-<edition>-<configuration>-<gcc or llvm>` | One configuration build per compiler, with its manifest and resolved definition |
 | ps2build | `riptopl-ps2build-gcc`, `riptopl-ps2build-llvm` | The bare packed loader from the compiler gate |
 
@@ -35,7 +35,7 @@ configuration names itself there. See [release channels and packaging](../ROLLIN
 
 ## In-game freeze report (ingamediag)
 
-Use the `ingamediag` configuration (in the DEBUG bundle, or a `variant-ingamediag` /
+Use the `ingamediag` configuration (in the DEBUG bundle, or a `variant-korium-ingamediag` /
 `configuration-korium-ingamediag-gcc` artifact) when a game freezes during play. Play as usual.
 When it freezes, press **L1 + L2 + R1 + R2 + Start + Select** (the normal IGR combo). The build
 saves `RIPTFRZ.TXT` to the root of the memory card in slot 1 (slot 2 if slot 1 fails), then exits

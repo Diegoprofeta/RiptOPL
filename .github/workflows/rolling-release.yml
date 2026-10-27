@@ -25,11 +25,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Each channel's kit, plus every Korium configuration for the VARIANTS and DEBUG bundles.
+        # Each channel's kit, plus the configurations for the VARIANTS, DEBUG and RA-VARIANTS bundles.
         target:
           - {edition: korium, configuration: standard}
           - {edition: ra, configuration: standard}
           - {edition: incebtion, configuration: standard}
+          - {edition: ra_incebtion, configuration: standard}
           - {edition: korium, configuration: pademu0}
           - {edition: korium, configuration: ds5}
           - {edition: korium, configuration: extras}
@@ -44,6 +45,7 @@ jobs:
           - {edition: korium, configuration: ingame_debug_uart}
           - {edition: korium, configuration: iopcore_debug_uart}
           - {edition: korium, configuration: ingamediag}
+          - {edition: ra, configuration: pademu0}
     env:
       PS2BUILD_HOME: ${{ github.workspace }}/.ps2dev
       PS2DEV_INSTALL_DIR: ${{ github.workspace }}/.ps2dev
@@ -94,8 +96,8 @@ jobs:
         if: matrix.target.configuration != 'standard'
         uses: actions/upload-artifact@v4
         with:
-          name: variant-${{ matrix.target.configuration }}
-          path: dist/configurations/korium-${{ matrix.target.configuration }}-gcc/
+          name: variant-${{ matrix.target.edition }}-${{ matrix.target.configuration }}
+          path: dist/configurations/${{ matrix.target.edition }}-${{ matrix.target.configuration }}-gcc/
           if-no-files-found: error
           retention-days: 14
       - name: Download the official companion core

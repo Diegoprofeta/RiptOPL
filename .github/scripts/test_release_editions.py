@@ -19,10 +19,10 @@ class EditionsTests(unittest.TestCase):
             config = editions.definition(name)
             targets = {t["name"]: t for t in config["targets"]}
             loader, core = targets["riptopl"], targets["eecore"]
-            ra = name == "ra"
+            ra = editions.EDITIONS[name]["ra"]
             for target in (loader, core):
                 self.assertEqual("RETROACHIEVEMENTS" in target["defines"], ra)
-            self.assertEqual("BUILTIN_KORIUM" in loader["defines"], name != "incebtion")
+            self.assertEqual("BUILTIN_KORIUM" in loader["defines"], editions.EDITIONS[name]["theme"] == "korium")
             self.assertEqual("raudp" in loader["embed_irx"], ra)
             self.assertNotIn("ps2sdk_socket_compat", loader["libs"])
             self.assertNotIn("ps2sdk_socket_compat", targets)

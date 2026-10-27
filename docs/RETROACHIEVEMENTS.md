@@ -345,44 +345,31 @@ remains available for a normal disc boot.
 
 ## Building
 
-```bash
-make clean && make RETROACHIEVEMENTS=1 release
+```sh
+python tools/build_edition.py ra             # Korium theme
+python tools/build_edition.py ra_incebtion   # IncebtIon theme
 ```
 
-`make clean` is not optional when switching the flag: it changes the layout of a structure and an
-enumeration shared between the menu and the loader core, and make cannot see that a stale object file
-is now wrong.
+Each edition build regenerates its assets and objects under `build/editions/<edition>-gcc`, so
+switching between RA and a standard edition needs no clean step. See
+[release channels and packaging](../ROLLING_RELEASE.md) for packaging.
 
-The rolling release publishes the flavour as its own archive, **`RIPTOPL-RetroAchievements-*.zip`**, built to the
-same shape as the main package: `POPS/`, `EMBER/`, `neutrino/` and the PC-tool shortcuts, with
+The `rolling-ra` channel publishes the kit as **`RIPTOPL-RetroAchievements.zip`**, built to the same
+shape as the standard kit: `POPS/`, `EMBER/`, `neutrino/` and the PC-tool shortcuts, with
 `APPS/APP_RIPTOPL-RA/RIPTOPL-RA.ELF`, matching `ART/RIPTOPL-RA.ELF_*.png` artwork, and
 `APP_RIPTOPL-RA.psu`. The PSU contains only the direct files of `APP_RIPTOPL-RA`; import it with a
 PS2 save manager for a memory-card installation, then copy the other folders separately.
 
-The ready app `APPS/APP_RIPTOPL-RA/` uses the official-toolchain build (`OFFICIALROLLING`,
-`PADEMU=1`) when that build succeeded, the same loader the release then also publishes on its own as
-`RIPTOPL-RA.ELF`. A run without it publishes no `RIPTOPL-RA.ELF`, and the ready app falls back to the
-labelled builds below, in the order listed. The archive keeps those labelled loader folders under
-`APPS/` for comparing builds:
+The same channel carries the IncebtIon-theme kit (`RIPTOPL-RetroAchievements-IncebtIon.zip`, with
+`RIPTOPL-RA-IncebtIon.ELF` and `APP_RIPTOPL-RA-IncebtIon.psu`; inside it the app is still
+`APP_RIPTOPL-RA`), and `RIPTOPL-RA-VARIANTS.zip` with the `pademu0` loader (pad emulation compiled
+out). The kit also carries **`xeRAbora.url`** (pointing directly to the paired
+[v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)),
+because the loader does nothing without the PC client.
 
-| Folder | Build |
-| --- | --- |
-| `APPS/APP_RIPTOPL-RA-PINNED/` | Pinned ps2dev toolchain, `PADEMU=1` (the ready app's first fallback). Start here for build comparisons. |
-| `APPS/APP_RIPTOPL-RA-ROLLING/` | `ps2dev:latest`, `PADEMU=1` |
-| `APPS/APP_RIPTOPL-RA-PINNED-nopademu/` | Pinned ps2dev toolchain, `PADEMU=0` |
-| `APPS/APP_RIPTOPL-RA-ROLLING-nopademu/` | `ps2dev:latest`, `PADEMU=0` |
-
-The labelled folders are the two ps2dev builds, so they say `PINNED`/`ROLLING` where the main
-package says `PS2DEVPINNED`/`PS2DEVROLLING`. The names are kept short on purpose: a memory card file
-name stops at 31 characters, and the release workflow fails rather than ship a longer one. The
-archive also carries **`xeRAbora.url`** (pointing directly to the paired [v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)), because the loader does nothing without the PC client.
-
-It is deliberately *not* an entry in `RIPTOPL-VARIANTS-*.zip`: that archive is a ~120 MB bag of every
-build permutation, and the release workflow excludes it from the permanent MEGA archive as a
-diagnostic bundle rather than installable payload. The default build is unaffected by all of this — every RA source file and
-every call site is behind `#ifdef RETROACHIEVEMENTS`, and that is checked by comparing the two builds'
-symbol tables, loader core and embedded IOP modules. PR CI also builds the pinned
-**PS2DEVPINNED-RA** flavour and records the RA flag in its build manifest.
+The standard editions are unaffected: every RA source file and call site is behind
+`#ifdef RETROACHIEVEMENTS`, the standard kits reject RA resources, and every build manifest
+records the RA flag.
 
 ### Two IOP modules this flavour builds instead of taking from the SDK
 

@@ -49,7 +49,7 @@ for edition in build_edition.EDITIONS:
         except ValueError:
             continue  # a combination build_configuration.py refuses
         text = json.dumps(config)
-        if edition == "ra":
+        if build_edition.EDITIONS[edition]["ra"]:
             targets = {t["name"]: t for t in config["targets"]}
             assert targets["mbedtls"]["type"] == "ee_lib"
             assert targets["mbedtls"]["sources"] == ["third_party/mbedtls/library/*.c"]
@@ -63,7 +63,7 @@ for edition in build_edition.EDITIONS:
             assert not pattern.search(text), f"{edition}/{configuration} names mbedTLS or ratls"
 # The roots are embedded by tools/assets.py for RA alone.
 assets = (ROOT / "tools/assets.py").read_text(encoding="utf-8")
-ra_branch = assets[assets.index('    if edition == "ra":'):]
+ra_branch = assets[assets.index('    if os.environ.get("RIPTOPL_RA") == "1":'):]
 ra_branch = ra_branch[:ra_branch.index("\n    for a in pngs:")]
 assert "third_party/ca-roots" in ra_branch and assets.count("ca-roots") == 1
 assert '"ratls_root_" + der.stem.replace("-", "")' in ra_branch

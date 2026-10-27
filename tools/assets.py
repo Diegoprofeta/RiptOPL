@@ -122,11 +122,11 @@ def embed():
     for stale in os.listdir(ASM_DIR):  # asm/*.c is globbed by ps2.yaml: drop leftovers
         if stale.endswith(".c"):
             os.remove(os.path.join(ASM_DIR, stale))
-    edition = os.environ.get("RIPTOPL_EDITION", "incebtion")
-    if edition not in ("korium", "ra", "incebtion"):
-        sys.exit(f"unknown RIPTOPL_EDITION: {edition}")
+    theme = os.environ.get("RIPTOPL_THEME", "incebtion")
+    if theme not in ("korium", "incebtion"):
+        sys.exit(f"unknown RIPTOPL_THEME: {theme}")
     theme_dir = None
-    if edition in ("korium", "ra"):
+    if theme == "korium":
         vendor = Path(ROOT) / "third_party/korium"
         archive = vendor / "assets.zip"
         manifest = json.loads((vendor / "UPSTREAM.json").read_text(encoding="utf-8"))
@@ -147,7 +147,7 @@ def embed():
     pngs = list(PNG_ASSETS)
     if theme_dir:
         pngs += ["apps_case", "case_ps1", "disc_ps1", "Players_1", "Players_2", "Players_3", "Players_4"]
-    if edition == "ra":
+    if os.environ.get("RIPTOPL_RA") == "1":
         pngs += ["ra_mark"]
         # The HTTPS lookup's trust anchors (src/sources/ratls_ps2.cpp): ratls_root_<name>.
         for der in sorted((Path(ROOT) / "third_party/ca-roots").glob("*.der")):

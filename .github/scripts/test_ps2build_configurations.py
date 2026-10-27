@@ -26,7 +26,8 @@ class ConfigurationTests(unittest.TestCase):
         for edition in editions.EDITIONS:
             for configuration in editions.CONFIGURATIONS:
                 with self.subTest(edition=edition, configuration=configuration):
-                    if edition == "ra" and configuration == "ingamediag":
+                    ra = editions.EDITIONS[edition]["ra"]
+                    if ra and configuration == "ingamediag":
                         with self.assertRaisesRegex(ValueError, "RetroAchievements"):
                             self.targets(edition, configuration)
                         continue
@@ -39,20 +40,20 @@ class ConfigurationTests(unittest.TestCase):
                         self.assertEqual("INGAMEDIAG" in target.get("defines", []), diag and (
                             target["name"] in ("riptopl", "eecore", "cdvdfsv") or target["name"].endswith("_cdvdman")))
                     for name in ("riptopl", "eecore"):
-                        self.assertEqual("RETROACHIEVEMENTS" in targets[name]["defines"], edition == "ra")
+                        self.assertEqual("RETROACHIEVEMENTS" in targets[name]["defines"], ra)
                         self.assertEqual("PADEMU" in targets[name]["defines"], configuration != "pademu0")
                         self.assertIn("GSM_1080P", targets[name]["defines"])
                     for name in ("bdm_mcemu", "mmce_mcemu", "hdd_mcemu", "smb_mcemu"):
                         self.assertEqual("PADEMU" in targets[name]["defines"], configuration != "pademu0")
                     loader = targets["riptopl"]
-                    self.assertEqual("BUILTIN_KORIUM" in loader["defines"], edition != "incebtion")
-                    self.assertEqual("raudp" in loader["embed_irx"], edition == "ra")
+                    self.assertEqual("BUILTIN_KORIUM" in loader["defines"], editions.EDITIONS[edition]["theme"] == "korium")
+                    self.assertEqual("raudp" in loader["embed_irx"], ra)
                     self.assertNotIn("ps2sdk_socket_compat", loader["libs"])
                     self.assertNotIn("ps2sdk_socket_compat", targets)
-                    self.assertEqual("INGAME_UDP" in targets["SMSTCPIP"]["defines"], edition == "ra")
+                    self.assertEqual("INGAME_UDP" in targets["SMSTCPIP"]["defines"], ra)
                     smap = targets["smap_ingame"]
-                    self.assertEqual("RETROACHIEVEMENTS" in smap.get("defines", []), edition == "ra")
-                    self.assertEqual("exports_tab" in smap, edition == "ra")
+                    self.assertEqual("RETROACHIEVEMENTS" in smap.get("defines", []), ra)
+                    self.assertEqual("exports_tab" in smap, ra)
                     for target in targets.values():
                         for field in ("sources", "defines", "embed_irx", "libs"):
                             values = target.get(field, [])
@@ -192,8 +193,8 @@ class PublisherTests(unittest.TestCase):
                 source_zip.writestr("README.md", "synthetic source")
             with zipfile.ZipFile(path / "RIPTOPL-LANGS.zip", "w") as langs:
                 langs.writestr("README.txt", "synthetic")
-            if edition == "korium":
-                for name in publish_editions.BUNDLES:
+            for name, bundle in publish_editions.BUNDLES.items():
+                if bundle[0] == edition:
                     (path / f"RIPTOPL-{name}.zip").write_bytes(b"synthetic-bundle")
             with zipfile.ZipFile(path / f"RIPTOPL-{options['title']}.zip", "w") as kit:
                 kit.writestr("BUILD-MANIFEST.json", json.dumps(manifest))
@@ -203,32 +204,36 @@ class PublisherTests(unittest.TestCase):
             (path / "SHA256SUMS.txt").write_text(sums)
 
     def variants(self, root, **changes):
-        for configuration in publish_editions.CONFIGURATIONS[1:]:
-            stage = root / ("variant-" + configuration)
-            stage.mkdir()
-            payload = b"\x7fELF" + configuration.encode()
-            manifest = {"source_commit": self.sha, "dirty": False, "edition": "korium", "compiler": "gcc",
-                        "configuration": configuration, "ps2build_version": "test", "components": {},
-                        "elf_sha256": hashlib.sha256(payload).hexdigest(), **changes.get(configuration, {})}
-            (stage / "RIPTOPL.ELF").write_bytes(payload)
-            (stage / "BUILD-MANIFEST.json").write_text(json.dumps(manifest))
+        for edition, configurations, _ in publish_editions.BUNDLES.values():
+            for configuration in configurations:
+                stage = root / f"variant-{edition}-{configuration}"
+                stage.mkdir()
+                payload = b"\x7fELF" + configuration.encode()
+                manifest = {"source_commit": self.sha, "dirty": False, "edition": edition, "compiler": "gcc",
+                            "configuration": configuration, "ps2build_version": "test", "components": {},
+                            "elf_sha256": hashlib.sha256(payload).hexdigest(), **changes.get(configuration, {})}
+                (stage / "RIPTOPL.ELF").write_bytes(payload)
+                (stage / "BUILD-MANIFEST.json").write_text(json.dumps(manifest))
 
     def test_configuration_bundles(self):
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
             root = Path(directory)
             self.kit(root)
-            for name in publish_editions.BUNDLES:
-                (root / "release-korium" / f"RIPTOPL-{name}.zip").unlink()
-            sums = (root / "release-korium/SHA256SUMS.txt").read_text().splitlines()
-            (root / "release-korium/SHA256SUMS.txt").write_text("".join(l + "\n" for l in sums if "-VARIANTS" not in l and "-DEBUG" not in l))
+            for name, (edition, _, _) in publish_editions.BUNDLES.items():
+                (root / f"release-{edition}" / f"RIPTOPL-{name}.zip").unlink()
+                listing = root / f"release-{edition}/SHA256SUMS.txt"
+                listing.write_text("".join(l + "\n" for l in listing.read_text().splitlines() if not l.endswith(f"  RIPTOPL-{name}.zip")))
             self.variants(root)
             publish_editions.bundle_configurations(root, self.sha)
-            self.assertEqual(len(publish_editions.verify(root, self.sha)), 3)
+            self.assertEqual(len(publish_editions.verify(root, self.sha)), 4)
             with zipfile.ZipFile(root / "release-korium/RIPTOPL-VARIANTS.zip") as bundle:
                 self.assertEqual(bundle.read("ds5/RIPTOPL.ELF"), b"\x7fELFds5")
                 self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 4)
             with zipfile.ZipFile(root / "release-korium/RIPTOPL-DEBUG.zip") as bundle:
                 self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 10)
+            with zipfile.ZipFile(root / "release-ra/RIPTOPL-RA-VARIANTS.zip") as bundle:
+                self.assertEqual(bundle.read("pademu0/RIPTOPL-RA.ELF"), b"\x7fELFpademu0")
+                self.assertIn("RIPTOPL-RA.ELF", bundle.read("README.txt").decode())
         for bad in ({"ds5": {"configuration": "extras"}}, {"debug": {"source_commit": "0" * 40}},
                     {"dtl": {"elf_sha256": "0" * 64}}, {"diag": {"ps2build_version": "other"}}):
             with self.subTest(bad=bad), tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
@@ -247,7 +252,23 @@ class PublisherTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "invalid source/edition manifest"):
                         publish_editions.verify(root, self.sha)
                 else:
-                    self.assertEqual(len(publish_editions.verify(root, self.sha)), 3)
+                    self.assertEqual(len(publish_editions.verify(root, self.sha)), 4)
+
+    def test_ra_incebtion_kit_ships_inside_the_ra_channel(self):
+        with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
+            root = Path(directory)
+            self.kit(root)
+            channels = publish_editions.fold_companions(publish_editions.verify(root, self.sha))
+            self.assertEqual([c[0] for c in channels], ["korium", "ra", "incebtion"])
+            ra = root / "release-ra"
+            folded = ["RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu"]
+            sums = dict(reversed(line.split("  ", 1)) for line in (ra / "SHA256SUMS.txt").read_text().splitlines())
+            for name in folded:
+                self.assertEqual(sums[name], hashlib.sha256((ra / name).read_bytes()).hexdigest())
+            self.assertEqual(set(sums) | {"SHA256SUMS.txt"}, {p.name for p in ra.iterdir()})
+            # Folding twice would overwrite the channel's own copy: refused.
+            with self.assertRaisesRegex(ValueError, "collides"):
+                publish_editions.fold_companions([(e, o, root / ("release-" + e), {}) for e, o in editions.EDITIONS.items()])
 
 
 if __name__ == "__main__":

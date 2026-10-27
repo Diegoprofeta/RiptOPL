@@ -8,8 +8,9 @@ candidates are not extra release channels and cannot replace standard release ki
 Releases carry them as the original did: the Korium channel publishes
 `RIPTOPL-VARIANTS.zip` (`pademu0`, `ds5`, `extras`, `extras_ds5`) and
 `RIPTOPL-DEBUG.zip` (every other nonstandard configuration), one folder per
-configuration with its GCC `RIPTOPL.ELF` and build manifest. The publisher
-packs them only from builds of the released commit and SDK suite. Every channel
+configuration with its GCC `RIPTOPL.ELF` and build manifest; the RetroAchievements
+channel publishes `RIPTOPL-RA-VARIANTS.zip` (`pademu0`, as `RIPTOPL-RA.ELF`). The
+publisher packs them only from builds of the released commit and SDK suite. Every channel
 also publishes `RIPTOPL-LANGS.zip`, the translations and their fonts.
 
 Prepare the SDK/ports and assets as described in [PS2BUILD-MIGRATION.md](PS2BUILD-MIGRATION.md),

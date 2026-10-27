@@ -18,6 +18,8 @@ class PublicationTests(unittest.TestCase):
         sha = "a" * 40
         history = "b" * 40 + "\x00Fix [launch] <edge>"
         for options in publisher.EDITIONS.values():
+            if "into" in options:
+                continue  # a companion's links are in its parent's notes
             with patch.object(publisher, "git", return_value=history) as git:
                 body = publisher.release_notes(options, sha, "v1.8.0")
             git.assert_called_once_with("log", "--no-merges", "-10", "--format=%H%x00%s", sha, "--")
@@ -31,7 +33,10 @@ class PublicationTests(unittest.TestCase):
             self.assertIn(f"/{elf})", body)
             self.assertIn(f"/{psu})", body)
             self.assertIn(f"/releases/download/{options['tag']}/RIPTOPL-LANGS.zip)", body)
-            self.assertEqual(6 if options["tag"] == "rolling-korium" else 4, sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
+            if options["tag"] == "rolling-ra":
+                for name in ("RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu"):
+                    self.assertIn(f"/releases/download/rolling-ra/{name})", body)
+            self.assertEqual({"rolling-korium": 6, "rolling-ra": 5}.get(options["tag"], 4), sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
             self.assertIn("Included build: v1.8.0 ", body)
             self.assertNotIn("Release compiler", body)
             self.assertNotIn("Imported production documentation", body)
@@ -61,7 +66,7 @@ class PublicationTests(unittest.TestCase):
         self.assertFalse(publisher.publication_allowed({}, "abc123"))
 
     def test_only_incebtion_is_designated_latest(self):
-        self.assertEqual(set(publisher.EDITIONS), {"korium", "ra", "incebtion"})
+        self.assertEqual(set(publisher.EDITIONS), {"korium", "ra", "incebtion", "ra_incebtion"})
         for edition in publisher.EDITIONS:
             expected = "--latest=true" if edition == "incebtion" else "--latest=false"
             self.assertEqual(publisher.latest_release_arg(edition), expected)
