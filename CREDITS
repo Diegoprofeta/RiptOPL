@@ -219,16 +219,17 @@ Special and sincere thanks to:
     game subfolders came from seeing it there.
   - Irfanlesnar - creator of PS2-Launcher, for UI and feature ideas across the OPL
     fork ecosystem.
-  - Okeanos (Okeanos86) - for BDM-UDPFS Assault Alpha, the read-only POPSTARTER
-    network VCD fallback. The unchanged driver pair, archive hash and complete
-    upstream license/credit notices are preserved under ship/POPS/UDPFS-NOTICES/.
+  - Okeanos (Okeanos86) - for UDPFS Assault 1.0.0, POPSTARTER's network read/write
+    VCD driver based on israpps' BDM Assault (https://github.com/Okeanos86/BDMAssault/releases).
+    The unchanged driver pair, archive hash and complete upstream license/credit
+    notices are preserved under ship/POPS/UDPFS-NOTICES/.
   - pcm720 - for udpfsd and nhddl, key foundations for modern PS2 streaming.
   - Ifcaro and jimmikaelkael - the original Open PS2 Loader authors - and every
     contributor across OPL's long history, all named above in this file.
 
 Testing, bug reports and real-hardware feedback:
 by eliminator1403, lucaslmgv, AndrewBento, AcidReach, bodvenomz, nuno6573, Blade1984,
-zackcage6 and Aislinn🏳️‍⚧️
+zackcage6, Vapor, V3ditata and Aislinn🏳️‍⚧️
 
 The RiptOPL name:
 by Akilluminati47 (https://github.com/akilluminati47)
