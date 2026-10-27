@@ -11,6 +11,10 @@ unsigned int USBA_crc32(const char *string);
 int sysGetDiscID(char *discID);
 // Takes a DEV9 reference even on failure; pair with sysShutdownDev9. Returns 1 when usable.
 int sysInitDev9(void);
+// PC CARD CF owns DEV9 exclusively: claim only while DEV9 holds no reference.
+int sysTryClaimPccf(void);
+int sysIsPccfOwned(void);
+void sysReleasePccf(void);
 void sysShutdownDev9(void);
 void sysReset(int modload_mask);
 void sysExecExit(void);

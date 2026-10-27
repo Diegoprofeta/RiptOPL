@@ -458,3 +458,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino će se pokrenuti sa ovim argumentima. Pokrenuti?
   NEUTRINO_CHEATS_WRITE_FAILED: Lista varki nije mogla da se sačuva u fasciklu Neutrino, pa Neutrino ne može da je koristi. Pokrenuti bez varki?
   HINT_ENABLE_DVR: Eksperimentalno otkrivanje DESR DVR ISO datoteka. Zahteva uključen HDD izvor; pokretanje igre zahteva spoljni Neutrino koji podržava DVR.
+  HINT_ENABLE_PCCF: Rani japanski PS2 PC CARD CompactFlash. Samo izvorne PS2 igre; CF zahteva isključiv pristup PC CARD-u. Ponovo pokrenite da ga oslobodite.
+  PCCF_GAMES: PC CARD CF igre
+  PCCF_UNAVAILABLE: 'CF nije dostupan: potrebni su rani japanski PC CARD PS2, kompatibilna kartica i nijedan aktivan DEV9/HDD/mrežni drajver.'
+  PCCF_UNSUPPORTED_GAME: CF trenutno podržava samo izvorne PS2 igre. CF VMC, učitavanje PS1 igara i mrežna dostignuća nisu dostupni.

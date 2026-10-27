@@ -546,3 +546,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino se spustí s těmito argumenty. Spustit?
   NEUTRINO_CHEATS_WRITE_FAILED: Seznam cheatů nešlo uložit do složky Neutrina, takže ho Neutrino nemůže použít. Spustit bez cheatů?
   HINT_ENABLE_DVR: Experimentální vyhledávání ISO DESR DVR. Vyžaduje zapnutý zdroj HDD; spuštění her vyžaduje externí Neutrino s podporou DVR.
+  HINT_ENABLE_PCCF: CompactFlash v PC CARD raných japonských PS2. Jen nativní hry PS2; CF potřebuje výhradní přístup k PC CARD. Pro uvolnění restartujte.
+  PCCF_GAMES: Hry PC CARD CF
+  PCCF_UNAVAILABLE: 'CF nedostupné: vyžaduje ranou japonskou PS2 s PC CARD, kompatibilní kartu a žádný aktivní ovladač DEV9/HDD/sítě.'
+  PCCF_UNSUPPORTED_GAME: CF zatím podporuje jen nativní hry PS2. VMC na CF, načítání PS1 a síťové úspěchy nejsou dostupné.

@@ -26,6 +26,7 @@ typedef struct
 #define BDM_TYPE_SDC     2
 #define BDM_TYPE_ATA     3
 #define BDM_TYPE_UDPBD   4
+#define BDM_TYPE_PCCF    5
 
 // Network-backed BDM devices (UDPBD/UDPFS) open over the wire, so a single failed presence poll is
 // usually a transient stall, not a real removal. Debounce: hide a NETWORK page only after this many
@@ -123,6 +124,7 @@ int bdmEnsureTypedSource(int bdmType, u32 timeoutMs);
 // reboot while the loaded IRX cannot.
 int bdmGetLoadedNetProtocol(void);
 int bdmSupportIsUDPBD(const item_list_t *support); // 1 if this support is the UDPBD block device (its games are Neutrino-only)
+int bdmModeIsPCCF(int mode);                       // 1 if this BDM mode slot is the PC CARD CF device
 int bdmModeIsUDPBD(int mode);                      // 1 if this BDM mode slot is the UDPBD block device
 // Native-core verdict (NATIVE_VMC_*) on an open VMC: one extent covering the card, inside 32-bit LBAs.
 int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragments);
@@ -130,6 +132,8 @@ int bdmCheckNativeVmcLayout(int iop_fd, int size_mb, u64 *start_lba, int *fragme
 // Re-evaluate every BDM device's presence + page visibility on the next refresh (bumps the latch
 // generation). Call after a device-enable toggle so a latched-hidden tab re-shows without a replug.
 void bdmForceDeviceRefresh(void);
+// Ask the worker to probe PC CARD CF once more (setting toggle, or entering the CF page).
+void bdmRequestPccfProbe(void);
 // Effective BDM start mode: floors to AUTO while a BDM network transport (UDPBD/UDPFSBD) is the
 // selected protocol so its hotplug tab can exist; never modifies/persists the saved gBDMStartMode.
 int bdmEffectiveStartMode(void);

@@ -781,3 +781,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino با این آرگومان‌ها شروع می‌شود. اجرا شود؟
   NEUTRINO_CHEATS_WRITE_FAILED: فهرست تقلب‌ها در پوشه Neutrino ذخیره نشد، پس Neutrino نمی‌تواند از آن استفاده کند. بدون تقلب اجرا شود؟
   HINT_ENABLE_DVR: کشف آزمایشی ISOهای DESR DVR. به منبع هارد روشن نیاز دارد؛ اجرای بازی به Neutrino خارجی با پشتیبانی DVR نیاز دارد.
+  HINT_ENABLE_PCCF: CompactFlash روی PC CARD برای PS2های ژاپنی اولیه. فقط بازی‌های بومی PS2؛ CF به دسترسی انحصاری به PC CARD نیاز دارد. برای آزاد کردن آن دوباره راه‌اندازی کنید.
+  PCCF_GAMES: بازی‌های PC CARD CF
+  PCCF_UNAVAILABLE: 'CF در دسترس نیست: یک PS2 ژاپنی اولیه با PC CARD، یک کارت سازگار و نبود هیچ درایور فعال DEV9/هارد/شبکه لازم است.'
+  PCCF_UNSUPPORTED_GAME: CF اکنون فقط بازی‌های بومی PS2 را پشتیبانی می‌کند. VMC روی CF، بارگذاری PS1 و دستاوردهای شبکه در دسترس نیستند.

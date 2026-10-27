@@ -568,3 +568,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino startar med de här argumenten. Starta?
   NEUTRINO_CHEATS_WRITE_FAILED: Fusklistan kunde inte sparas i Neutrino-mappen, så Neutrino kan inte använda den. Starta utan fusk?
   HINT_ENABLE_DVR: Experimentell upptäckt av DESR DVR-ISO:er. Kräver att HDD-källan är på; spelstart kräver en extern Neutrino med DVR-stöd.
+  HINT_ENABLE_PCCF: PC CARD CompactFlash i tidiga japanska PS2:or. Bara inbyggda PS2-spel; CF behöver ensam åtkomst till PC CARD. Starta om för att släppa den.
+  PCCF_GAMES: PC CARD CF-spel
+  PCCF_UNAVAILABLE: 'CF är inte tillgängligt: kräver en tidig japansk PS2 med PC CARD, ett kompatibelt kort och ingen aktiv DEV9-, HDD- eller nätverksdrivrutin.'
+  PCCF_UNSUPPORTED_GAME: CF stöder för närvarande bara inbyggda PS2-spel. VMC på CF, PS1-laddning och nätverksprestationer är inte tillgängliga.

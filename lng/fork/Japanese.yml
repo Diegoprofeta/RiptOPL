@@ -547,3 +547,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino はこの引数で起動します。起動しますか？
   NEUTRINO_CHEATS_WRITE_FAILED: チートのリストを Neutrino フォルダに保存できなかったため、Neutrino は使えません。チートなしで起動しますか？
   HINT_ENABLE_DVR: 実験的な DESR DVR ISO の検出。HDD ソースをオンにする必要があります。ゲームの起動には外部の DVR 対応 Neutrino が必要です。
+  HINT_ENABLE_PCCF: 初期の日本版 PS2 の PC CARD CompactFlash。PS2 ネイティブのゲームのみ。CF には PC CARD の専有が必要です。解放するには再起動してください。
+  PCCF_GAMES: PC CARD CF ゲーム
+  PCCF_UNAVAILABLE: CF は使えません：PC CARD 付きの初期の日本版 PS2、互換性のあるカード、そして DEV9/HDD/ネットワークのドライバーが動いていないことが必要です。
+  PCCF_UNSUPPORTED_GAME: CF は今のところ PS2 ネイティブのゲームのみに対応しています。CF の VMC、PS1 の読み込み、ネットワークの実績は使えません。

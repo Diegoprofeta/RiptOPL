@@ -44,6 +44,10 @@ int iLinkModLoaded = 0;
 int iLinkManModLoaded = 0;
 int ieee1394ModLoaded = 0;
 int mx4sioModLoaded = 0;
+int pccfModLoaded;
+// Explicit-probe generation: hotplug and automatic refreshes never retry CF hardware init.
+static volatile unsigned int pccfProbeGeneration = 1;
+static unsigned int pccfAttemptGeneration;
 static int bdmAutoLaunch; // Auto Loading waits for its own mass device; skip menu discovery settles
 int hddModLoaded = 0;
 static int udpbdModLoaded = 0;
@@ -124,6 +128,8 @@ int bdmDetermineDeviceType(const char *driverName)
         return BDM_TYPE_ATA;
     if (bdmDriverIsUDPBD(driverName))
         return BDM_TYPE_UDPBD;
+    if (driverName != NULL && !strcmp(driverName, "cf"))
+        return BDM_TYPE_PCCF;
 
     return BDM_TYPE_UNKNOWN;
 }
@@ -138,6 +144,8 @@ static const char *bdmDeviceTypeName(int type)
             return "iLink";
         case BDM_TYPE_SDC:
             return "MX4SIO";
+        case BDM_TYPE_PCCF:
+            return "PC CARD CF";
         case BDM_TYPE_ATA:
             return "ATA";
         case BDM_TYPE_UDPBD:
@@ -330,6 +338,8 @@ static const char *bdmTypedRootStem(int type)
             return "ilink";
         case BDM_TYPE_SDC:
             return "mx4sio";
+        case BDM_TYPE_PCCF:
+            return "cf";
         case BDM_TYPE_ATA:
             return "ata";
         default:
@@ -882,6 +892,15 @@ void bdmDiagFlushPendingIopState(item_list_t *itemList)
 // the user applies Game Sources, so a BDM page that was force-hidden while its enable flag read 0
 // (e.g. an exFAT ATA tab, or a UDPBD tab) re-shows as soon as the device is re-enabled and present --
 // without needing a physical replug.
+void bdmRequestPccfProbe(void)
+{
+    if (!gEnablePCCF || pccfModLoaded)
+        return;
+    // A request during an in-flight attempt stays pending for the next worker pass.
+    pccfProbeGeneration++;
+    bdmForceDeviceRefresh();
+}
+
 void bdmForceDeviceRefresh(void)
 {
 #ifdef __DEBUG
@@ -1078,12 +1097,59 @@ static int bdmShouldQueueModuleLoad(void)
         return 1;
     if (gEnableMX4SIO && !mx4sioModLoaded)
         return 1;
+    if (gEnablePCCF && !pccfModLoaded && pccfAttemptGeneration != pccfProbeGeneration)
+        return 1;
     if (gEnableBdmHDD && !hddModLoaded)
         return 1;
     if (gEnableUDPBD && !udpbdModLoaded && !ethGetModulesLoaded() && !udpfsGetModulesLoaded())
         return 1; // mirror the load gate -- if the SMB or udpfs-filesystem NIC is up, the block chain can't load
 
     return 0;
+}
+
+/* ROM version is eligibility only; the IOP driver still validates revision,
+   idle/present card, CIS, ATA capacity, and the mounted filesystem. */
+static int bdmPccfCandidate(void)
+{
+    static int eligible = -1;
+    if (eligible < 0) {
+        char romver[16] = {0};
+        int fd = open("rom0:ROMVER", O_RDONLY);
+        int size = fd >= 0 ? read(fd, romver, sizeof(romver) - 1) : -1;
+        if (fd >= 0)
+            close(fd);
+        eligible = size >= 6 && romver[4] == 'J' &&
+                   (!strncmp(romver, "0100", 4) || !strncmp(romver, "0101", 4) || !strncmp(romver, "0120", 4));
+        fd = open("rom0:PSXVER", O_RDONLY);
+        if (fd >= 0) {
+            close(fd);
+            eligible = 0;
+        }
+    }
+    return eligible;
+}
+
+int bdmModeIsPCCF(int mode)
+{
+    if (mode < BDM_MODE || mode > BDM_MODE_LAST)
+        return 0;
+    bdm_device_data_t *data = (bdm_device_data_t *)bdmDeviceList[mode - BDM_MODE].priv;
+    return data != NULL && data->bdmDeviceType == BDM_TYPE_PCCF;
+}
+
+static void bdmLoadPccfModule(void)
+{
+    if (gEnablePCCF && !pccfModLoaded && pccfAttemptGeneration != pccfProbeGeneration) {
+        pccfAttemptGeneration = pccfProbeGeneration;
+        if (bdmPccfCandidate() && sysTryClaimPccf()) {
+            if (bdmLoadOptionalModule("PCCF_BD", &pccf_bd_irx, size_pccf_bd_irx) >= 0)
+                pccfModLoaded = 1;
+            else
+                sysReleasePccf();
+        }
+        if (!pccfModLoaded)
+            host::app().setError(_STR_PCCF_UNAVAILABLE, 0);
+    }
 }
 
 void bdmLoadBlockDeviceModules(void)
@@ -1097,7 +1163,7 @@ void bdmLoadBlockDeviceModules(void)
 
     // Snapshot, compared after the loads below. See the refresh at the end of this function for why
     // a transport enabled from Settings needed a "double tap" before its tab appeared.
-    int modsWere = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded;
+    int modsWere = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded + pccfModLoaded;
 
     // Retry a synchronous bdmLoadCoreModules failure via the generation/worker path. Gated on the
     // setting for the same reason as the core load above: an off source must not become resident.
@@ -1121,6 +1187,8 @@ void bdmLoadBlockDeviceModules(void)
         if (bdmDiagLoadOptionalModule("MX4SIO", "MX4SIO_BD", &mx4sio_bd_irx, size_mx4sio_bd_irx) >= 0)
             mx4sioModLoaded = 1;
     }
+
+    bdmLoadPccfModule();
 
     if (gEnableBdmHDD && !hddModLoaded) {
         // Load dev9 and atad device drivers.
@@ -1186,7 +1254,7 @@ void bdmLoadBlockDeviceModules(void)
             sysShutdownDev9();
     }
 
-    int modsNow = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded;
+    int modsNow = iUSBModLoaded + iLinkModLoaded + mx4sioModLoaded + hddModLoaded + udpbdModLoaded + pccfModLoaded;
 
     // BOOT PASS BUMPS NOTHING. On the first call every enabled transport loads for the first time, so
     // the comparison below is guaranteed true -- and bdmInitDevicesData is about to publish all of
@@ -1463,7 +1531,7 @@ void BdmSource::init(item_list_t *itemList)
 // the UDPFS_MODE derivation; the user's saved gBDMStartMode is never modified or persisted.
 int bdmEffectiveStartMode(void)
 {
-    if (gEnableUDPBD && gBDMStartMode != START_MODE_AUTO)
+    if ((gEnableUDPBD || gEnablePCCF) && gBDMStartMode != START_MODE_AUTO)
         return START_MODE_AUTO;
     return gBDMStartMode;
 }
@@ -1479,6 +1547,8 @@ int bdmTransportEnabled(int bdmDeviceType)
             return gEnableILK ? 1 : 0;
         case BDM_TYPE_SDC:
             return gEnableMX4SIO ? 1 : 0;
+        case BDM_TYPE_PCCF:
+            return gEnablePCCF ? 1 : 0;
         case BDM_TYPE_ATA:
             return gEnableBdmHDD ? 1 : 0;
         case BDM_TYPE_UDPBD:
@@ -1679,7 +1749,8 @@ int BdmSource::update(item_list_t *itemList)
     // bdmGames, so a VCD scan reporting failure (r < 0) left the ISO list published under the VCD
     // view -- the L3 toggle then "never changed the list" (Nathan, HW, ATA/HDD_BD), and a device with
     // no POPS folder hit that on every single toggle.
-    if (view == LIB_VIEW_PS1 || view == LIB_VIEW_MIXED) {
+    // CF games are native PS2 only: no PS1 core can restore the PC CARD transport.
+    if (pDeviceData->bdmDeviceType != BDM_TYPE_PCCF && (view == LIB_VIEW_PS1 || view == LIB_VIEW_MIXED)) {
         char ps1Prefix[BDM_DEVICE_ROOT_MAX + 2];
         bdmBuildPs1Prefix(ps1Prefix, sizeof(ps1Prefix), itemList->mode); // device root, NOT gBDMPrefix
         // Ordinary BDM devices merge both cores. UDPBD deliberately publishes Ember ONLY:
@@ -1868,6 +1939,8 @@ int BdmSource::textId(item_list_t *itemList)
         mode = _STR_MX4SIO_GAMES;
     else if (bdmDriverIsATA(pDeviceData->bdmDriver))
         mode = _STR_HDD_GAMES;
+    else if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        mode = _STR_PCCF_GAMES;
     else if (bdmDriverIsUDPBD(pDeviceData->bdmDriver))
         mode = (bdmGetLoadedNetProtocol() == NET_BOOT_UDPFS) ? _STR_UDPFSBD_GAMES : _STR_UDPBD_GAMES; // BLOCK: UDPFSBD vs UDPBD (the udpfs FILESYSTEM tab is _STR_UDPFS_GAMES, a separate device); mirror bdmGetIconId
 
@@ -1951,6 +2024,8 @@ void BdmSource::shutdown(item_list_t *itemList)
 int BdmSource::checkVmc(item_list_t *itemList, char *name, int createSize)
 {
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
+    if (pDeviceData != NULL && pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        return SYS_VMC_CREATE_FAILED; // CF games run without VMC
     return pDeviceData != NULL ? sysCheckVMC(pDeviceData->bdmPrefix, "/", name, createSize, NULL) : -1;
 }
 
@@ -1959,7 +2034,7 @@ int BdmSource::checkVmc(item_list_t *itemList, char *name, int createSize)
 int BdmSource::createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous)
 {
     bdm_device_data_t *pDeviceData = (bdm_device_data_t *)itemList->priv;
-    if (pDeviceData == NULL)
+    if (pDeviceData == NULL || pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
         return SYS_VMC_CREATE_FAILED;
     return sysCheckVMCEx(pDeviceData->bdmPrefix, "/", name, createSize, NULL, requireContiguous ? VMC_CREATE_CONTIGUOUS : 0);
 }

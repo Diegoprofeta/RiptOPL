@@ -53,6 +53,7 @@ static int packs(unsigned int modules, int padEmu)
 }
 static unsigned int launch_modules(int discMode, int size_mcemu_irx)
 {
+    const int cfMode = 0;
     unsigned int modules = CORE_IRX_HDD;
     if (@LAUNCH@)
         modules |= CORE_IRX_VMC;

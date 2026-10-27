@@ -71,6 +71,7 @@ static int favGetItemKind(int) {return kind;}
 static int libListRowView(item_list_t*,int) {return rowView;}
 [[maybe_unused]] static int bdmSupportIsUDPBD(const item_list_t*) {return udpbd;}
 [[maybe_unused]] static int bdmModeIsUDPBD(int) {return udpbd;}
+[[maybe_unused]] static int bdmModeIsPCCF(int) {return 0;}
 static int guiIsActive() {return active;}
 static void configGetInt(config_set_t *c,int,int *out) {*out=c->loader;}
 static void configGetVMC(config_set_t *c,char *out,int,int) {strcpy(out,c->assigned);}

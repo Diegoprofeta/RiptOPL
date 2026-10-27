@@ -76,6 +76,7 @@ CHECK(gDefaultPlasBlendColor[0] == RIPTOPL_PLASMA_BLEND_R && gDefaultPlasBlendCo
 // gCoverflowDimCovers: no default in setDefaults (initialiser / another routine owns it)
 CHECK(gEnableILK == (0));
 CHECK(gEnableMX4SIO == (0));
+CHECK(gEnablePCCF == (0));
 CHECK(gEnableDVR == (0));
 CHECK(gEnableBdmHDD == (0));
 CHECK(gNetBootProtocol == (NET_BOOT_UDPBD));

@@ -2130,7 +2130,7 @@ static int gameMenuCoreIsNeutrino(void)
     // be blocked under a Neutrino global default.
     if (selected_item != NULL && selected_item->item != NULL) {
         item_list_t *support = (item_list_t *)selected_item->item->userdata;
-        if (support != NULL && ((menuSelectedRowView(support) == LIB_VIEW_PS1) || support->mode == ETH_MODE))
+        if (support != NULL && ((menuSelectedRowView(support) == LIB_VIEW_PS1) || support->mode == ETH_MODE || bdmModeIsPCCF(support->mode)))
             return 0;
     }
     // UDPBD games are Neutrino-only even while $CoreLoader is still its OPL default.
@@ -2185,6 +2185,9 @@ void menuHandleInputGameMenu()
             if (menuSelectedRowView(support) == LIB_VIEW_PS1) {
                 // PS1/VCD rows launch through POPSTARTER or Ember, never ee_core.
                 guiShowRANotice(_l(_STR_RA_NA_PS1), NULL);
+            } else if (bdmModeIsPCCF(support->mode)) {
+                // CF owns DEV9 in game, so the RA network modules never load beside it.
+                guiShowRANotice(_l(_STR_PCCF_UNSUPPORTED_GAME), NULL);
             } else if (support->mode == UDPFS_MODE) {
                 // UDPFS is Neutrino-only in this fork.
                 guiShowRANotice(_l(_STR_RA_NA_UDPFS), NULL);

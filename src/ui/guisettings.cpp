@@ -375,6 +375,7 @@ void guiShowDeviceConfig(void)
     diaSetInt(diaDeviceConfig, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(diaDeviceConfig, CFG_ENABLEILK, gEnableILK);
     diaSetInt(diaDeviceConfig, CFG_ENABLEMX4SIO, gEnableMX4SIO);
+    diaSetInt(diaDeviceConfig, CFG_ENABLEPCCF, gEnablePCCF);
     diaSetInt(diaDeviceConfig, CFG_ENABLEDVR, gEnableDVR);
     diaSetInt(diaDeviceConfig, CFG_ENABLEBDMHDD, gEnableBdmHDD);
     diaSetEnabled(diaDeviceConfig, CFG_ENABLEBDMHDD, 1); // coexists with APA
@@ -409,6 +410,10 @@ reshow_device:
         diaGetInt(diaDeviceConfig, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(diaDeviceConfig, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(diaDeviceConfig, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
+        int oldEnablePCCF = gEnablePCCF;
+        diaGetInt(diaDeviceConfig, CFG_ENABLEPCCF, &gEnablePCCF);
+        if (oldEnablePCCF != gEnablePCCF)
+            bdmRequestPccfProbe();
         diaGetInt(diaDeviceConfig, CFG_ENABLEDVR, &gEnableDVR);
         diaGetInt(diaDeviceConfig, CFG_ENABLEBDMHDD, &gEnableBdmHDD);
 
@@ -2413,6 +2418,7 @@ static int guiSettingsShowSources(void)
     diaSetInt(ui, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(ui, CFG_ENABLEILK, gEnableILK);
     diaSetInt(ui, CFG_ENABLEMX4SIO, gEnableMX4SIO);
+    diaSetInt(ui, CFG_ENABLEPCCF, gEnablePCCF);
     diaSetInt(ui, CFG_ENABLEDVR, gEnableDVR);
     diaSetInt(ui, CFG_ENABLEBDMHDD, gEnableBdmHDD);
     diaSetEnabled(ui, CFG_ENABLEBDMHDD, 1);
@@ -2449,6 +2455,10 @@ reshow_sources:
         diaGetInt(ui, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(ui, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(ui, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
+        int oldEnablePCCF = gEnablePCCF;
+        diaGetInt(ui, CFG_ENABLEPCCF, &gEnablePCCF);
+        if (oldEnablePCCF != gEnablePCCF)
+            bdmRequestPccfProbe();
         diaGetInt(ui, CFG_ENABLEDVR, &gEnableDVR);
         diaGetInt(ui, CFG_ENABLEBDMHDD, &gEnableBdmHDD);
         guiSourcesNetRowsRead(ui);

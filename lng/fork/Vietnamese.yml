@@ -592,3 +592,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino sẽ chạy với các tham số này. Chạy?
   NEUTRINO_CHEATS_WRITE_FAILED: Không lưu được danh sách mã gian lận vào thư mục Neutrino, nên Neutrino không dùng được. Chạy không có mã gian lận?
   HINT_ENABLE_DVR: Tìm ISO DESR DVR thử nghiệm. Cần bật nguồn HDD; chạy trò chơi cần Neutrino bên ngoài có hỗ trợ DVR.
+  HINT_ENABLE_PCCF: CompactFlash qua PC CARD của PS2 Nhật đời đầu. Chỉ trò chơi PS2 gốc; CF cần độc quyền truy cập PC CARD. Khởi động lại để nhả nó.
+  PCCF_GAMES: Trò chơi PC CARD CF
+  PCCF_UNAVAILABLE: 'Không dùng được CF: cần PS2 Nhật đời đầu có PC CARD, thẻ tương thích, và không có trình điều khiển DEV9/HDD/mạng nào đang chạy.'
+  PCCF_UNSUPPORTED_GAME: Hiện CF chỉ hỗ trợ trò chơi PS2 gốc. VMC trên CF, nạp PS1 và thành tích qua mạng không dùng được.

@@ -84,6 +84,9 @@ extern unsigned int size_eesync_irx;
 constexpr int MAX_MODULES = 64;
 static void *g_sysLoadedModBuffer[MAX_MODULES];
 static s32 sysLoadModuleLock = -1;
+// Guards DEV9 ownership: the PC CARD CF driver and DEV9.IRX drive the same slot, never both.
+static s32 sysDev9BusLock = -1;
+static int sysPccfOwned;
 
 constexpr int ELF_MAGIC = 0x464c457f;
 constexpr int ELF_PT_LOAD = 1;
@@ -168,8 +171,53 @@ constexpr int OPL_SIF_CMD_BUFF_SIZE = 1;
 static SifCmdHandlerData_t OplSifCmdbuffer[OPL_SIF_CMD_BUFF_SIZE];
 static unsigned char dev9Initialized = 0, dev9Loaded = 0, dev9InitCount = 0;
 
+// The CF driver may claim the slot only while no DEV9 reference exists.
+int sysTryClaimPccf(void)
+{
+    int claimed = 0;
+    if (sysDev9BusLock < 0)
+        return 0;
+    WaitSema(sysDev9BusLock);
+    if (!dev9Initialized && !dev9Loaded && dev9InitCount == 0 && !sysPccfOwned) {
+        sysPccfOwned = 1;
+        claimed = 1;
+    }
+    SignalSema(sysDev9BusLock);
+    return claimed;
+}
+
+int sysIsPccfOwned(void)
+{
+    int owned;
+    if (sysDev9BusLock < 0)
+        return 0;
+    WaitSema(sysDev9BusLock);
+    owned = sysPccfOwned;
+    SignalSema(sysDev9BusLock);
+    return owned;
+}
+
+void sysReleasePccf(void)
+{
+    if (sysDev9BusLock < 0)
+        return;
+    WaitSema(sysDev9BusLock);
+    sysPccfOwned = 0;
+    SignalSema(sysDev9BusLock);
+}
+
 int sysInitDev9(void)
 {
+    if (sysDev9BusLock < 0)
+        return 0;
+    WaitSema(sysDev9BusLock);
+    if (sysPccfOwned) {
+        // Callers pair even a failed initialization with shutdown. Balance that reference
+        // without touching hardware the CF driver owns.
+        dev9InitCount++;
+        SignalSema(sysDev9BusLock);
+        return 0;
+    }
     if (!dev9Initialized) {
         LOG("[DEV9]:\n");
         // DEV9.IRX must have loaded AND returned RESIDENT END for the adapter to be usable.
@@ -190,11 +238,16 @@ int sysInitDev9(void)
     // Refcount every caller regardless, so each sysInitDev9 still pairs with its sysShutdownDev9.
     // On a failed load dev9Loaded stays 0, so the power-off at count 0 is correctly skipped.
     dev9InitCount++;
+    SignalSema(sysDev9BusLock);
     return dev9Loaded;
 }
 
 void sysShutdownDev9(void)
 {
+    if (sysDev9BusLock < 0)
+        return;
+    // Same lock as the claim: a reference must not drop to 0 between its check and the CF claim.
+    WaitSema(sysDev9BusLock);
     if (dev9InitCount > 0) {
         --dev9InitCount;
 
@@ -209,6 +262,7 @@ void sysShutdownDev9(void)
             }
         }
     }
+    SignalSema(sysDev9BusLock);
 }
 
 void sysReset(int modload_mask)
@@ -258,6 +312,8 @@ void sysReset(int modload_mask)
     dev9Initialized = 0;
     dev9Loaded = 0;
     dev9InitCount = 0;
+    // An IOP reset does not prove the PC CARD power registers were restored, so CF ownership
+    // survives it until an explicit release; NBD refuses teardown while owned.
     while (!SifIopSync())
         ;
 
@@ -275,6 +331,7 @@ void sysReset(int modload_mask)
 
     if (sysLoadModuleLock < 0) {
         sysLoadModuleLock = sbCreateSemaphore();
+        sysDev9BusLock = sbCreateSemaphore();
     }
 
     // clears modules list
@@ -467,6 +524,7 @@ constexpr int CORE_IRX_DECI2 = 0x40;
 constexpr int CORE_IRX_ILINK = 0x80;
 #define CORE_IRX_MX4SIO 0x100
 #define CORE_IRX_MMCE   0x200
+#define CORE_IRX_PCCF   0x400
 
 typedef struct
 {
@@ -553,6 +611,8 @@ static unsigned int sendIrxKernelRAM(const char *startup, const char *mode_str, 
         modules |= CORE_IRX_ILINK;
     else if (!strcmp(mode_str, "BDM_M4S_MODE"))
         modules |= CORE_IRX_MX4SIO;
+    else if (!strcmp(mode_str, "BDM_CF_MODE"))
+        modules |= CORE_IRX_PCCF;
     else if (!strcmp(mode_str, "BDM_ATA_MODE"))
         modules |= CORE_IRX_HDD;
     else if (!strcmp(mode_str, "ETH_MODE"))
@@ -579,7 +639,7 @@ static unsigned int sendIrxKernelRAM(const char *startup, const char *mode_str, 
       GetWatchCount() is authoritative here because the launch legs have already
       run sbLoadWatchList() by this point; no list means nothing to send.
     */
-    if (gRATelemetry && host::launch().raWatchCount() > 0)
+    if (strcmp(mode_str, "BDM_CF_MODE") && gRATelemetry && host::launch().raWatchCount() > 0)
         modules |= CORE_IRX_ETH;
 #endif
 
@@ -635,6 +695,10 @@ static unsigned int sendIrxKernelRAM(const char *startup, const char *mode_str, 
     if (modules & CORE_IRX_USB) {
         irxptr_tab[modcount].info = size_usbmass_bd_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_USBMASSBD);
         irxptr_tab[modcount++].ptr = (void *)&usbmass_bd_irx;
+    }
+    if (modules & CORE_IRX_PCCF) {
+        irxptr_tab[modcount].info = size_pccf_game_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_PCCF);
+        irxptr_tab[modcount++].ptr = (void *)&pccf_game_irx;
     }
     if (modules & CORE_IRX_ILINK) {
         irxptr_tab[modcount].info = size_iLinkman_irx | SET_OPL_MOD_ID(OPL_MODULE_ID_ILINK);
@@ -1071,8 +1135,10 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
 #else
     const int discMode = 0;
 #endif
+    // CF games run read-only with no VMC and no RA telemetry: the CF driver owns DEV9.
+    const int cfMode = !strcmp(mode_str, "BDM_CF_MODE");
     // CORE_IRX_VMC also selects our SIO2MAN. Without a VMC image keep the game's own stack.
-    if (!discMode && size_mcemu_irx > 0)
+    if (!discMode && !cfMode && size_mcemu_irx > 0)
         modules |= CORE_IRX_VMC;
 
     LOG("SYSTEM LaunchLoaderElf loading modules\n");
@@ -1084,7 +1150,7 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
        64-byte aligned, so the area is too. Same gate as the network modules:
        an untracked game reserves nothing. */
     void *raWorkArea = NULL;
-    unsigned int raWorkBytes = host::launch().raWorkBytes();
+    unsigned int raWorkBytes = cfMode ? 0 : host::launch().raWorkBytes();
     if (raWorkBytes > 0) {
         raWorkArea = (u8 *)ModuleStorage + ModuleStorageSize;
         ModuleStorageSize += (raWorkBytes + 0x3F) & ~0x3F;
@@ -1152,6 +1218,13 @@ void sysLaunchLoaderElf(const char *filename, const char *mode_str, int size_cdv
 
 #ifdef RETROACHIEVEMENTS
     host::launch().fillCoreConfig(config, discMode, raWorkArea, raWorkBytes);
+    if (cfMode) {
+        config->raWatchList = NULL;
+        config->raWatchCount = 0;
+        config->raSnapBytes = 0;
+        config->raNodeList = NULL;
+        config->raNodeCount = 0;
+    }
 #else
     host::launch().fillCoreConfig(config, discMode, NULL, 0);
 #endif

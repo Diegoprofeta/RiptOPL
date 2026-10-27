@@ -550,3 +550,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: O Neutrino vai iniciar com estes argumentos. Iniciar?
   NEUTRINO_CHEATS_WRITE_FAILED: A lista de cheats não pôde ser guarda na pasta do Neutrino, então o Neutrino não pode usá-la. Iniciar sem cheats?
   HINT_ENABLE_DVR: Descoberta experimental de ISOs DESR DVR. Precisa da origem disco rígido ligada; iniciar jogos precisa de um Neutrino externo com suporte a DVR.
+  HINT_ENABLE_PCCF: CompactFlash na PC CARD dos primeiros PS2 japoneses. Só jogos nativos de PS2; a CF precisa de acesso exclusivo à PC CARD. Reinicie para liberá-la.
+  PCCF_GAMES: Jogos PC CARD CF
+  PCCF_UNAVAILABLE: 'CF indisponível: precisa de um PS2 japonês antigo com PC CARD, um cartão compatível e nenhum driver DEV9/disco rígido/rede ativo.'
+  PCCF_UNSUPPORTED_GAME: A CF por enquanto só suporta jogos nativos de PS2. VMC na CF, carregamento de PS1 e conquistas pela rede não estão disponíveis.

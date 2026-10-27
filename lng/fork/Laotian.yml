@@ -617,3 +617,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino ຈະເລີ່ມ ດ້ວຍອາກິວເມັນເຫຼົ່ານີ້. ເລີ່ມ ບໍ?
   NEUTRINO_CHEATS_WRITE_FAILED: ບັນທຶກລາຍການສູດໂກງ ໃສ່ໂຟນເດີ Neutrino ບໍ່ໄດ້, ດັ່ງນັ້ນ Neutrino ໃຊ້ມັນບໍ່ໄດ້. ເລີ່ມ ໂດຍບໍ່ມີສູດໂກງ ບໍ?
   HINT_ENABLE_DVR: ການຄົ້ນຫາ ISO ຂອງ DESR DVR ແບບທົດລອງ. ຕ້ອງເປີດ ແຫຼ່ງ HDD; ການເລີ່ມເກມ ຕ້ອງການ Neutrino ພາຍນອກ ທີ່ຮອງຮັບ DVR.
+  HINT_ENABLE_PCCF: PC CARD CompactFlash ຂອງ PS2 ຍີ່ປຸ່ນ ລຸ້ນທຳອິດ. ເກມ PS2 ແທ້ ເທົ່ານັ້ນ; CF ຕ້ອງການ ການເຂົ້າເຖິງ PC CARD ແຕ່ຜູ້ດຽວ. ເລີ່ມໃໝ່ ເພື່ອປ່ອຍມັນ.
+  PCCF_GAMES: ເກມ PC CARD CF
+  PCCF_UNAVAILABLE: 'CF ໃຊ້ບໍ່ໄດ້: ຕ້ອງການ PS2 ຍີ່ປຸ່ນ ລຸ້ນທຳອິດ ທີ່ມີ PC CARD, ກາດທີ່ເຂົ້າກັນໄດ້, ແລະ ບໍ່ມີໄດຣເວີ DEV9/HDD/ເຄືອຂ່າຍ ທີ່ເຮັດວຽກ.'
+  PCCF_UNSUPPORTED_GAME: ດຽວນີ້ CF ຮອງຮັບ ເກມ PS2 ແທ້ ເທົ່ານັ້ນ. CF VMC, ການໂຫຼດ PS1 ແລະ ຄວາມສຳເລັດ ຜ່ານເຄືອຂ່າຍ ໃຊ້ບໍ່ໄດ້.

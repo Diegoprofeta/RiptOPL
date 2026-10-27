@@ -62,6 +62,7 @@ enum UI_ITEMS {
     CFG_ENABLEUSB,
     CFG_ENABLEILK,
     CFG_ENABLEMX4SIO,
+    CFG_ENABLEPCCF,
     CFG_ENABLEDVR,
     CFG_ENABLEBDMHDD,
     CFG_ENABLEUDPBD,     // legacy: kept as an unused placeholder (superseded by CFG_NETPROTOCOL)

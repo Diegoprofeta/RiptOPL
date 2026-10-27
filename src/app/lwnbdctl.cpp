@@ -153,6 +153,13 @@ static int loadLwnbdSvr(int *teardownStarted)
         return -1;
     }
 
+    // The IO worker is drained and blocked, so CF cannot claim the slot between this check and
+    // teardown. NBD needs the PC CARD NIC, which CF excludes.
+    if (sysIsPccfOwned()) {
+        ioBlockOps(0);
+        return -1;
+    }
+
     *teardownStarted = 1;
 
     // deinit audio lib while nbd server is running

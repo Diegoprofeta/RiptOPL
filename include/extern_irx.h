@@ -13,6 +13,7 @@ IMPORT_BIN2C(audsrv_irx);
 IMPORT_BIN2C(bdm_irx);
 
 IMPORT_BIN2C(bdm_ata_cdvdman_irx);
+IMPORT_BIN2C(pccf_cdvdman_irx);
 
 IMPORT_BIN2C(bdm_cdvdman_irx);
 
@@ -124,6 +125,9 @@ IMPORT_BIN2C(freezediag_irx);
 IMPORT_BIN2C(sio2man_irx);
 
 IMPORT_BIN2C(mx4sio_bd_irx);
+
+IMPORT_BIN2C(pccf_bd_irx);
+IMPORT_BIN2C(pccf_game_irx);
 
 IMPORT_BIN2C(smap_irx);
 

@@ -359,6 +359,9 @@ int NeutrinoLauncher::abortLaunch(int failResult, config_set_t *configSet)
 // 0 = proceed with the native launch (core is OPL, or Neutrino unavailable on a non-udp device).
 int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, bdm_device_data_t *pDeviceData, config_set_t *configSet)
 {
+    // Native CF driver only; external Neutrino cannot restore this transport.
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF)
+        return 0;
     int coreLoader = gDefaultCoreLoader; // no per-game $CoreLoader key -> follow the global default core
     configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &coreLoader);
     // UDPBD/UDPFS have no embedded cdvdman backend -- the "udp" BDM device can ONLY boot via
@@ -495,6 +498,21 @@ void bdmLaunchGame(item_list_t *itemList, int id, config_set_t *configSet)
         game = gAutoLaunchBDMGame;
     }
 
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF) {
+#ifdef __INGAME_DEBUG
+        host::ui().msgBox(_l(_STR_PCCF_UNSUPPORTED_GAME), 0, NULL);
+        return; // Network/DECI2 game-debug builds cannot own the CF bus.
+#endif
+        char vmc[32];
+        for (int slot = 0; slot < 2; slot++) {
+            configGetVMC(configSet, vmc, sizeof(vmc), slot);
+            if (vmc[0]) {
+                host::ui().msgBox(_l(_STR_PCCF_UNSUPPORTED_GAME), 0, NULL);
+                return;
+            }
+        }
+    }
+
     // Folder browsing: a folder row is never launchable (the dispatch descends instead of reaching
     // here); guard defensively. Otherwise pin the path composers to the current subfolder so a game
     // inside it resolves to <prefix>CD|DVD/<sub>/<name>.
@@ -593,7 +611,8 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     // so this should be unreachable. It is here to make "should" cost a message box instead of a dead
     // console -- and it also closes the udp hole the Neutrino helper's own comment warns about.
     if (!bdmDriverIsUSB(pDeviceData->bdmDriver) && !bdmDriverIsIlink(pDeviceData->bdmDriver) &&
-        !bdmDriverIsMx4sio(pDeviceData->bdmDriver) && !bdmDriverIsATA(pDeviceData->bdmDriver)) {
+        !bdmDriverIsMx4sio(pDeviceData->bdmDriver) && !bdmDriverIsATA(pDeviceData->bdmDriver) &&
+        pDeviceData->bdmDeviceType != BDM_TYPE_PCCF) {
         LOG("BDMSUPPORT launch aborted: device %d has no natively launchable driver token ('%s')\n",
             itemList != NULL ? itemList->mode : -1, pDeviceData->bdmDriver);
         if (gAutoLaunchBDMGame == NULL)
@@ -630,7 +649,7 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     bdm_vmc_infos_t bdm_vmc_infos;
     vmc_superblock_t vmc_superblock;
 
-    for (vmc_id = 0; vmc_id < 2; vmc_id++) {
+    for (vmc_id = 0; vmc_id < 2 && pDeviceData->bdmDeviceType != BDM_TYPE_PCCF; vmc_id++) {
         have_error = NATIVE_VMC_OK;
         memset(&bdm_vmc_infos, 0, sizeof(bdm_vmc_infos_t));
         configGetVMC(configSet, vmc_name, sizeof(vmc_name), vmc_id);
@@ -693,7 +712,10 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
 
     void *irx = NULL;
     int irx_size = 0;
-    if (bdmDriverIsATA(pDeviceData->bdmDriver)) {
+    if (pDeviceData->bdmDeviceType == BDM_TYPE_PCCF) {
+        irx = &pccf_cdvdman_irx;
+        irx_size = size_pccf_cdvdman_irx;
+    } else if (bdmDriverIsATA(pDeviceData->bdmDriver)) {
         irx = &bdm_ata_cdvdman_irx;
         irx_size = size_bdm_ata_cdvdman_irx;
     } else {
@@ -891,7 +913,11 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
     }
 
     LOG("bdm pre sysLaunchLoaderElf\n");
-    if (bdmDriverIsUSB(bdmCurrentDriver)) {
+    if (!strcmp(bdmCurrentDriver, "cf")) {
+        // The CF driver owns DEV9: fake the game's own DEV9/ATAD so they never touch the slot.
+        settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9 | FAKE_MODULE_FLAG_ATAD;
+        sysLaunchLoaderElf(filename, "BDM_CF_MODE", irx_size, static_cast<void **>(irx), 0, NULL, EnablePS2Logo, compatmask);
+    } else if (bdmDriverIsUSB(bdmCurrentDriver)) {
         settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_USBD;
         sysLaunchLoaderElf(filename, "BDM_USB_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, bdm_mcemu_irx, EnablePS2Logo, compatmask);
     } else if (bdmDriverIsIlink(bdmCurrentDriver)) {

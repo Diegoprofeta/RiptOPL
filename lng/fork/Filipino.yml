@@ -586,3 +586,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Magsisimula ang Neutrino gamit ang mga argument na ito. Ilunsad?
   NEUTRINO_CHEATS_WRITE_FAILED: Hindi ma-save ang cheat list sa Neutrino folder, kaya hindi ito magagamit ng Neutrino. Ilunsad nang walang cheat?
   HINT_ENABLE_DVR: Eksperimental na paghahanap ng DESR DVR ISO. Kailangang naka-enable ang HDD source; kailangan ng panlabas na Neutrino na kayang mag-DVR para mailunsad ang laro.
+  HINT_ENABLE_PCCF: Maagang Japanese PS2 PC CARD CompactFlash. Mga native na PS2 na laro lang; kailangan ng CF ang eksklusibong access sa PC CARD. Mag-restart para pakawalan ito.
+  PCCF_GAMES: Mga laro sa PC CARD CF
+  PCCF_UNAVAILABLE: 'Hindi available ang CF: kailangan ng maagang Japanese PC CARD PS2, tugmang card, at walang aktibong DEV9/HDD/network driver.'
+  PCCF_UNSUPPORTED_GAME: Mga native na PS2 na laro lang ang suportado ng CF ngayon. Hindi available ang CF VMC, pag-load ng PS1 at network achievements.

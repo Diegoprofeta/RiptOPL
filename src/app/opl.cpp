@@ -223,6 +223,7 @@ volatile int gLastSaveErrno = 0;
 // error the caller would otherwise report against the target path is meaningless.
 volatile int gLastDeferredTimedOut = 0;
 int gEnableMX4SIO;
+int gEnablePCCF;
 int gEnableDVR;
 int gEnableBdmHDD;
 int gEnableUDPBD;

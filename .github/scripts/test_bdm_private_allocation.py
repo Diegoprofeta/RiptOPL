@@ -69,6 +69,8 @@ typedef struct {
 static item_list_t bdmGameList, bdmDeviceList[MAX_BDM_DEVICES];
 static item_list_t *bdmTemplateList() {return &bdmGameList;}
 static opl_io_module_t owners[MAX_BDM_DEVICES];
+#define BDM_TYPE_PCCF 5
+#define SYS_VMC_CREATE_FAILED 99
 static int bdmDeviceListInitialized, bdmDeviceModeStarted;
 static int gArtDelay=15, initCalls[MAX_BDM_DEVICES], live, allocCall, failAt;
 static void bdmLoadModules(void) {}

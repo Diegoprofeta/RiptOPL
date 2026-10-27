@@ -557,3 +557,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: A Neutrino ezekkel az argumentumokkal indul. Elindítod?
   NEUTRINO_CHEATS_WRITE_FAILED: A csaláslista nem menthető a Neutrino mappájába, így a Neutrino nem tudja használni. Csalások nélkül indítod?
   HINT_ENABLE_DVR: Kísérleti DESR DVR ISO felderítés. Bekapcsolt HDD forrás kell hozzá; a játékindításhoz külső, DVR-képes Neutrino kell.
+  HINT_ENABLE_PCCF: A korai japán PS2-k PC CARD CompactFlash-e. Csak natív PS2 játékok; a CF-nek kizárólagos PC CARD hozzáférés kell. A felszabadításhoz indítsd újra.
+  PCCF_GAMES: PC CARD CF játékok
+  PCCF_UNAVAILABLE: 'A CF nem érhető el: korai japán PC CARD-os PS2, kompatibilis kártya és aktív DEV9/HDD/hálózati illesztőprogram hiánya kell hozzá.'
+  PCCF_UNSUPPORTED_GAME: A CF jelenleg csak natív PS2 játékokat támogat. A CF-es VMC, a PS1 betöltés és a hálózati teljesítmények nem érhetők el.

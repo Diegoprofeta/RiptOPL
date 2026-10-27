@@ -548,3 +548,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino 将使用这些参数启动。启动吗？
   NEUTRINO_CHEATS_WRITE_FAILED: 无法把金手指列表保存到 Neutrino 文件夹，因此 Neutrino 无法使用。不带金手指启动吗？
   HINT_ENABLE_DVR: 实验性的 DESR DVR ISO 发现。需要开启硬盘来源；启动游戏需要外部支持 DVR 的 Neutrino。
+  HINT_ENABLE_PCCF: 早期日版 PS2 的 PC CARD CompactFlash。仅限原生 PS2 游戏；CF 需要独占 PC CARD。重启后释放。
+  PCCF_GAMES: PC CARD CF 游戏
+  PCCF_UNAVAILABLE: CF 不可用：需要带 PC CARD 的早期日版 PS2、兼容的卡，并且没有已启用的 DEV9/硬盘/网络驱动。
+  PCCF_UNSUPPORTED_GAME: CF 目前只支持原生 PS2 游戏。CF 上的 VMC、PS1 加载和网络成就不可用。

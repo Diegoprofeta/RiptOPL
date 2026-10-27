@@ -552,3 +552,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino bu argümanlarla başlayacak. Başlatılsın mı?
   NEUTRINO_CHEATS_WRITE_FAILED: Hile listesi Neutrino klasörüne kaydedilemedi, bu yüzden Neutrino onu kullanamaz. Hilesiz başlatılsın mı?
   HINT_ENABLE_DVR: Deneysel DESR DVR ISO keşfi. HDD kaynağının açık olmasını gerektirir; oyun başlatmak için harici DVR destekli Neutrino gerekir.
+  HINT_ENABLE_PCCF: Erken Japon PS2 PC CARD CompactFlash. Yalnızca yerel PS2 oyunları; CF'nin PC CARD'a özel erişimi gerekir. Serbest bırakmak için yeniden başlatın.
+  PCCF_GAMES: PC CARD CF Oyunları
+  PCCF_UNAVAILABLE: 'CF kullanılamıyor: erken bir Japon PC CARD PS2, uyumlu bir kart ve etkin olmayan DEV9/HDD/ağ sürücüsü gerekir.'
+  PCCF_UNSUPPORTED_GAME: CF şu anda yalnızca yerel PS2 oyunlarını destekler. CF VMC, PS1 yükleme ve ağ başarımları kullanılamaz.

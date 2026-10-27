@@ -48,6 +48,7 @@ row is source/host-tested only; none is hardware-tested.
 | Original VMC contiguity probe (`test_vmc_contiguity.py`) | Ported with this refresh. The after-creation check asked bdmfs_fatfs `CHECK_CHAIN`, which answers 0 for any failure as well as for a fragmented file, and trusted MMCE's success return for an ioctl it does not implement. It now asks for the fragment count and requires `GET_LBA` to replace its sentinel first, so an unknown answer stays silent instead of warning that a good VMC is fragmented. NOT TESTED on hardware. |
 | Original BDM ATA readiness (`test_bdm_ata_readiness.py`) | Ported with this refresh. With APA Off, a drive still spinning up when ATAD probed at module load was never registered with BDM: the HDD loader settles after ATAD/XHDD init and nothing re-probed. The BDM ATA arm now issues one read-only `xhdd0:` `ATA_DEVCTL_IS_48BIT` devctl after a successful load, so xhdd re-runs the retryable `sceAtaInit`; the residency latch is kept for an absent drive so idle refreshes do not loop. The test compiles the real loader, atad and xhdd code and fails against the previous arm. NOT TESTED on hardware. |
 | Original DESR DVR ISO discovery (#955 opt-in, `test_dvr_scan_lifecycle.py`) | Ported with this refresh. With Game Sources > DESR DVR ISOs on (default off) and the DVRP capability bit set, the HDD page loads `dvrdrv`/`dvrfile` once, mounts `dvr_pfs0:`/`dvr_pfs1:` read-only and lists their ISOs after the HDL rows. A row launches only through the DVR Neutrino backend; a failed or truncated scan keeps the last-good rows; teardown keeps the mounts for that launch alone. Ordinary PS2 models never load a module. NOT TESTED on hardware. |
+| Original PC CARD CF (#955, `test_pccf.py`, `tests/pccf`) | Ported with this refresh. With Game Sources > PC CARD CF on (default off) an early Japanese PC CARD console (ROMVER 0100/0101/0120 J, no PSXVER) claims DEV9 exclusively, loads `pccf_bd` and publishes a "cf" BDM page; games launch natively through `pccf_cdvdman` plus `pccf_game` in `BDM_CF_MODE`, with the game's DEV9/ATAD faked, no VMC, no PS1 rows and no RA telemetry. DEV9, SMAP and NBD refuse while CF owns the slot. Fixed in the port: `sysShutdownDev9` takes the same lock as the CF claim; the original's CF-page Refresh reprobe is not ported because it can never run (issue filed). NOT TESTED on hardware. |
 | #1044 release build versions | Already covered: every RiptOPL build job checks out with `fetch-depth: 0`. |
 | #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
 | #1047, #998, #1025 | Original-only documentation; nothing to port. |
@@ -56,7 +57,7 @@ Remaining gaps found by this audit:
 - RA mode/host IP/experimental cards and PS1 watch keys in the RA badge.
 - Found by comparing the original's host tests with this branch's: the
   Caduceus achievement browser, Xerabora browser, RA client mode, verified peer,
-  RA over TLS and RA over Neutrino; DVR and PC CARD CF.
+  RA over TLS and RA over Neutrino. (DVR and PC CARD CF are now ported.)
 
 ## Refresh at original `b35ff38c` (2026-10-18)
 
@@ -113,7 +114,7 @@ preserved locally; inspect current source before treating old ledger rows as gap
 | Config allocation/null wrappers | Destination #49 already guards the read/allocation boundary and ConfigSet free-function wrappers, with host tests. Do not redo the earlier #961 null-read report; audit settings-state behavior separately. |
 | #968/#970 VMC budget/config reuse | Present through destination #51/#52. |
 | #917 CJK fallback, #845 game-type labels, About/QA layout | Present through destination #53/#54/#55. |
-| #947 DESR/DVR and merged #955 PC CARD CF | DVR device mapping, companion/unsafe-argument preflight and filesystem argv contract are now adapted and host-tested. Discovery, GameSource rows, driver loading, mount ownership and cleanup are now ported too (the opt-in `enable_dvr` setting, default off; `test_dvr_scan_lifecycle.py`); hardware acceptance remains; see DESR-DVR.md. #955's custom PCCF targets/driver/handoff remain separate. Do not import #965's explicitly unmerged runtime replacement. |
+| #947 DESR/DVR and merged #955 PC CARD CF | DVR device mapping, companion/unsafe-argument preflight and filesystem argv contract are now adapted and host-tested. Discovery, GameSource rows, driver loading, mount ownership and cleanup are now ported too (the opt-in `enable_dvr` setting, default off; `test_dvr_scan_lifecycle.py`); hardware acceptance remains; see DESR-DVR.md. #955's PCCF targets, driver and handoff are now ported too (`test_pccf.py`). Do not import #965's explicitly unmerged runtime replacement. |
 | Older #959, RA/browser/ORBIT/HTTPS, SaveIcon, defaults, docs | Continue capability-by-capability auditing; these newer ports do not establish full migration parity. Old rows below are historical comparison evidence, not a fresh absence claim. |
 
 All builds, release packages and hardware acceptance remain distinct gates.

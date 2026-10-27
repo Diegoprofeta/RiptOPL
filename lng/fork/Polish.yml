@@ -554,3 +554,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino uruchomi się z tymi argumentami. Uruchomić?
   NEUTRINO_CHEATS_WRITE_FAILED: Nie udało się zapisać listy kodów w folderze Neutrino, więc Neutrino nie może jej użyć. Uruchomić bez kodów?
   HINT_ENABLE_DVR: Eksperymentalne wykrywanie ISO DESR DVR. Wymaga włączonego źródła HDD; uruchamianie gier wymaga zewnętrznego Neutrino z obsługą DVR.
+  HINT_ENABLE_PCCF: CompactFlash w PC CARD wczesnych japońskich PS2. Tylko natywne gry PS2; CF potrzebuje wyłącznego dostępu do PC CARD. Uruchom ponownie, aby go zwolnić.
+  PCCF_GAMES: Gry PC CARD CF
+  PCCF_UNAVAILABLE: 'CF niedostępne: wymaga wczesnej japońskiej PS2 z PC CARD, zgodnej karty i braku aktywnego sterownika DEV9/HDD/sieci.'
+  PCCF_UNSUPPORTED_GAME: CF obecnie obsługuje tylko natywne gry PS2. VMC na CF, wczytywanie PS1 i osiągnięcia sieciowe są niedostępne.

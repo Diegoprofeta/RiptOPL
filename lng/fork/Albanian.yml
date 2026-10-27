@@ -570,3 +570,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino do të niset me këto argumente. Ta nis?
   NEUTRINO_CHEATS_WRITE_FAILED: Lista e mashtrimeve nuk u ruajt dot në dosjen Neutrino, ndaj Neutrino nuk mund ta përdorë. Të niset pa mashtrime?
   HINT_ENABLE_DVR: Zbulim eksperimental i ISO-ve DESR DVR. Kërkon burimin HDD të ndezur; nisja e lojës kërkon një Neutrino të jashtëm që mbështet DVR.
+  HINT_ENABLE_PCCF: CompactFlash përmes PC CARD i PS2-ve të hershme japoneze. Vetëm lojëra native PS2; CF kërkon qasje ekskluzive në PC CARD. Rinis për ta liruar.
+  PCCF_GAMES: Lojërat PC CARD CF
+  PCCF_UNAVAILABLE: 'CF nuk është i disponueshëm: kërkon një PS2 të hershme japoneze me PC CARD, një kartë të përputhshme dhe asnjë drajver aktiv DEV9/HDD/rrjeti.'
+  PCCF_UNSUPPORTED_GAME: CF aktualisht mbështet vetëm lojëra native PS2. VMC në CF, ngarkimi PS1 dhe arritjet në rrjet nuk janë të disponueshme.

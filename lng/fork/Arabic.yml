@@ -601,3 +601,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: سيبدأ Neutrino بهذه الوسائط. تشغيل؟
   NEUTRINO_CHEATS_WRITE_FAILED: تعذّر حفظ قائمة الغش في مجلد Neutrino، لذا لا يستطيع Neutrino استخدامها. التشغيل دون غش؟
   HINT_ENABLE_DVR: اكتشاف تجريبي لملفات DESR DVR ISO. يتطلب تفعيل مصدر القرص الصلب؛ ويحتاج تشغيل اللعبة إلى Neutrino خارجي يدعم DVR.
+  HINT_ENABLE_PCCF: CompactFlash عبر PC CARD لأجهزة PS2 اليابانية المبكرة. ألعاب PS2 الأصلية فقط؛ ويحتاج CF إلى وصول حصري إلى PC CARD. أعد التشغيل لتحريره.
+  PCCF_GAMES: ألعاب PC CARD CF
+  PCCF_UNAVAILABLE: 'CF غير متاح: يتطلب جهاز PS2 ياباني مبكراً بمنفذ PC CARD، وبطاقة متوافقة، وعدم وجود برنامج تشغيل DEV9/HDD/شبكة نشط.'
+  PCCF_UNSUPPORTED_GAME: يدعم CF حالياً ألعاب PS2 الأصلية فقط. VMC على CF وتحميل PS1 وإنجازات الشبكة غير متاحة.

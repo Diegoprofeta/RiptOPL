@@ -31,6 +31,7 @@ extern int iLinkModLoaded;
 extern int iUSBModLoaded;
 extern int ieee1394ModLoaded;
 extern int mx4sioModLoaded;
+extern int pccfModLoaded;
 
 base_game_info_t *bdmActiveGame(item_list_t *itemList, int id);
 void bdmBuildPs1Prefix(char *target, int targetLength, int massSlot);

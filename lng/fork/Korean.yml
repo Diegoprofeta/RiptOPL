@@ -547,3 +547,7 @@ translations:
   NEUTRINO_ARGS_CONFIRM: Neutrino가 이 인수로 시작합니다. 실행할까요?
   NEUTRINO_CHEATS_WRITE_FAILED: 치트 목록을 Neutrino 폴더에 저장할 수 없어서 Neutrino가 쓸 수 없습니다. 치트 없이 실행할까요?
   HINT_ENABLE_DVR: 실험적인 DESR DVR ISO 검색. HDD 소스를 켜야 하며, 게임을 실행하려면 외부의 DVR 지원 Neutrino가 필요합니다.
+  HINT_ENABLE_PCCF: 초기 일본판 PS2의 PC CARD CompactFlash. PS2 전용 게임만 되며, CF는 PC CARD를 혼자 써야 합니다. 해제하려면 재시작하세요.
+  PCCF_GAMES: PC CARD CF 게임
+  PCCF_UNAVAILABLE: 'CF를 쓸 수 없음: PC CARD가 있는 초기 일본판 PS2, 호환되는 카드, 그리고 활성화된 DEV9/HDD/네트워크 드라이버가 없어야 합니다.'
+  PCCF_UNSUPPORTED_GAME: CF는 지금은 PS2 전용 게임만 지원합니다. CF VMC, PS1 불러오기, 네트워크 업적은 쓸 수 없습니다.

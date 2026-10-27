@@ -60,6 +60,9 @@ compile_run("dev9_retry", r'''
 #define DDIOC_OFF 1
 static unsigned char dev9Initialized, dev9Loaded, dev9InitCount;
 static int result = -1, attempts, powered_off, ps2dev9_irx, size_ps2dev9_irx;
+static int sysDev9BusLock, sysPccfOwned, locked;
+static void WaitSema(int) { assert(!locked); locked = 1; }
+static void SignalSema(int) { assert(locked); locked = 0; }
 int sysLoadModuleBuffer(void*, int, int, void*) { ++attempts; return result; }
 int fileXioDevctl(const char*, int, void*, int, void*, int) { ++powered_off; return 0; }
 ''' + function(system, "int sysInitDev9(void)") + function(system, "void sysShutdownDev9(void)") + r'''
