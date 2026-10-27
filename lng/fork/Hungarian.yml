@@ -556,3 +556,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Minden Neutrinós indítás előtt megmutatja az összes argumentumot, amelyet a Neutrino kap, és megkérdezi, folytatod-e. A Vissza indítás nélkül visszatér a menübe.
   NEUTRINO_ARGS_CONFIRM: A Neutrino ezekkel az argumentumokkal indul. Elindítod?
   NEUTRINO_CHEATS_WRITE_FAILED: A csaláslista nem menthető a Neutrino mappájába, így a Neutrino nem tudja használni. Csalások nélkül indítod?
+  HINT_ENABLE_DVR: Kísérleti DESR DVR ISO felderítés. Bekapcsolt HDD forrás kell hozzá; a játékindításhoz külső, DVR-képes Neutrino kell.

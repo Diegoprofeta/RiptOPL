@@ -546,3 +546,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Neutrino で起動するたびに、Neutrino が受け取る引数をすべて表示して続けるか確認します。戻るで起動せずにメニューに戻ります。
   NEUTRINO_ARGS_CONFIRM: Neutrino はこの引数で起動します。起動しますか？
   NEUTRINO_CHEATS_WRITE_FAILED: チートのリストを Neutrino フォルダに保存できなかったため、Neutrino は使えません。チートなしで起動しますか？
+  HINT_ENABLE_DVR: 実験的な DESR DVR ISO の検出。HDD ソースをオンにする必要があります。ゲームの起動には外部の DVR 対応 Neutrino が必要です。

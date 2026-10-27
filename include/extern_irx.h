@@ -38,6 +38,10 @@ IMPORT_BIN2C(ds34bt_irx);
 
 IMPORT_BIN2C(ds34usb_irx);
 
+IMPORT_BIN2C(dvrdrv_irx);
+
+IMPORT_BIN2C(dvrfile_irx);
+
 IMPORT_BIN2C(filexio_irx);
 
 IMPORT_BIN2C(genvmc_irx);

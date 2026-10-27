@@ -610,3 +610,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Toont vóór elke start via Neutrino elk argument dat Neutrino krijgt en vraagt of je wilt doorgaan. Terug keert terug naar het menu zonder te starten.
   NEUTRINO_ARGS_CONFIRM: Neutrino start met deze argumenten. Starten?
   NEUTRINO_CHEATS_WRITE_FAILED: De cheatlijst kon niet in de Neutrino-map worden opgeslagen, dus Neutrino kan hem niet gebruiken. Zonder cheats starten?
+  HINT_ENABLE_DVR: Experimentele detectie van DESR DVR-ISO's. Vereist dat de HDD-bron aan staat; games starten vereist een externe Neutrino met DVR-ondersteuning.

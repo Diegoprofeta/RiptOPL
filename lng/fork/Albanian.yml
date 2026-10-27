@@ -569,3 +569,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Para çdo nisjeje me Neutrino, shfaq çdo argument që do të marrë Neutrino dhe pyet nëse të vazhdojë. Prapa kthehet te menyja pa nisur.
   NEUTRINO_ARGS_CONFIRM: Neutrino do të niset me këto argumente. Ta nis?
   NEUTRINO_CHEATS_WRITE_FAILED: Lista e mashtrimeve nuk u ruajt dot në dosjen Neutrino, ndaj Neutrino nuk mund ta përdorë. Të niset pa mashtrime?
+  HINT_ENABLE_DVR: Zbulim eksperimental i ISO-ve DESR DVR. Kërkon burimin HDD të ndezur; nisja e lojës kërkon një Neutrino të jashtëm që mbështet DVR.

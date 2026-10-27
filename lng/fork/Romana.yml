@@ -601,3 +601,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Înainte de fiecare lansare prin Neutrino, arată fiecare argument pe care îl va primi Neutrino și întreabă dacă continui. Înapoi revine la meniu fără lansare.
   NEUTRINO_ARGS_CONFIRM: Neutrino va porni cu aceste argumente. Lansezi?
   NEUTRINO_CHEATS_WRITE_FAILED: Lista de coduri nu a putut fi salvată în folderul Neutrino, deci Neutrino nu o poate folosi. Lansezi fără coduri?
+  HINT_ENABLE_DVR: Descoperire experimentală a ISO-urilor DESR DVR. Necesită sursa HDD pornită; lansarea jocurilor necesită un Neutrino extern cu suport DVR.

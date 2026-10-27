@@ -551,3 +551,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Her Neutrino başlatmasından önce Neutrino'nun alacağı her argümanı gösterir ve devam edilsin mi diye sorar. Geri, başlatmadan menüye döner.
   NEUTRINO_ARGS_CONFIRM: Neutrino bu argümanlarla başlayacak. Başlatılsın mı?
   NEUTRINO_CHEATS_WRITE_FAILED: Hile listesi Neutrino klasörüne kaydedilemedi, bu yüzden Neutrino onu kullanamaz. Hilesiz başlatılsın mı?
+  HINT_ENABLE_DVR: Deneysel DESR DVR ISO keşfi. HDD kaynağının açık olmasını gerektirir; oyun başlatmak için harici DVR destekli Neutrino gerekir.

@@ -223,6 +223,7 @@ volatile int gLastSaveErrno = 0;
 // error the caller would otherwise report against the target path is meaningless.
 volatile int gLastDeferredTimedOut = 0;
 int gEnableMX4SIO;
+int gEnableDVR;
 int gEnableBdmHDD;
 int gEnableUDPBD;
 int gNetBootProtocol; // NET_BOOT_UDPBD | NET_BOOT_UDPFS (legacy shadow, derived from gNetworkProtocol)

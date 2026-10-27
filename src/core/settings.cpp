@@ -144,6 +144,7 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_COVERFLOW_DIM, &gCoverflowDimCovers),
     intSetting(CONFIG_OPL_ENABLE_ILINK, &gEnableILK, 0),
     intSetting(CONFIG_OPL_ENABLE_MX4SIO, &gEnableMX4SIO, 0),
+    intSetting(CONFIG_OPL_ENABLE_DVR, &gEnableDVR, 0),
     intSetting(CONFIG_OPL_ENABLE_BDMHDD, &gEnableBdmHDD, 0),
     intSetting(CONFIG_OPL_NET_BOOT_PROTOCOL, &gNetBootProtocol, NET_BOOT_UDPBD), // default transport when network boot is enabled (back-compat)
     intSetting(CONFIG_OPL_SFX, &gEnableSFX, 1),                                  // safe now: sfxPlay dispatches asynchronously (#340)

@@ -600,3 +600,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: قبل كل تشغيل عبر Neutrino، يعرض كل وسيط سيتلقاه Neutrino ويسأل هل تتابع. الرجوع يعيدك إلى القائمة دون تشغيل.
   NEUTRINO_ARGS_CONFIRM: سيبدأ Neutrino بهذه الوسائط. تشغيل؟
   NEUTRINO_CHEATS_WRITE_FAILED: تعذّر حفظ قائمة الغش في مجلد Neutrino، لذا لا يستطيع Neutrino استخدامها. التشغيل دون غش؟
+  HINT_ENABLE_DVR: اكتشاف تجريبي لملفات DESR DVR ISO. يتطلب تفعيل مصدر القرص الصلب؛ ويحتاج تشغيل اللعبة إلى Neutrino خارجي يدعم DVR.

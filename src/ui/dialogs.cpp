@@ -446,6 +446,10 @@ struct UIItem diaDeviceConfig[] = {
     {UI_SPACER},
     {UI_BOOL, CFG_ENABLEMX4SIO, 1, 1, _STR_HINT_ENABLE_MX4SIO, 0, 0, {.intvalue = {0, 0}}},
     {UI_BREAK},
+    {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {"      DESR DVR ISOs (experimental)", -1}}},
+    {UI_SPACER},
+    {UI_BOOL, CFG_ENABLEDVR, 1, 1, _STR_HINT_ENABLE_DVR, 0, 0, {.intvalue = {0, 0}}},
+    {UI_BREAK},
 
     {UI_LABEL, 0, 1, 1, -1, -40, 0, {.label = {"      iLink", -1}}},
     {UI_SPACER},

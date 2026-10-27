@@ -1744,3 +1744,5 @@ gui_strings:
   string: "Neutrino will start with these arguments. Launch?"
 - label: NEUTRINO_CHEATS_WRITE_FAILED
   string: "The cheat list could not be saved into the Neutrino folder, so Neutrino cannot use it. Launch without cheats?"
+- label: HINT_ENABLE_DVR
+  string: "Experimental DESR DVR ISO discovery. Requires HDD source enabled; game launch needs external DVR-capable Neutrino."

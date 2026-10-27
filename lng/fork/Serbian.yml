@@ -457,3 +457,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Pre svakog Neutrino pokretanja prikazuje svaki argument koji će Neutrino dobiti i pita da li da nastavi. Nazad vraća u meni bez pokretanja.
   NEUTRINO_ARGS_CONFIRM: Neutrino će se pokrenuti sa ovim argumentima. Pokrenuti?
   NEUTRINO_CHEATS_WRITE_FAILED: Lista varki nije mogla da se sačuva u fasciklu Neutrino, pa Neutrino ne može da je koristi. Pokrenuti bez varki?
+  HINT_ENABLE_DVR: Eksperimentalno otkrivanje DESR DVR ISO datoteka. Zahteva uključen HDD izvor; pokretanje igre zahteva spoljni Neutrino koji podržava DVR.

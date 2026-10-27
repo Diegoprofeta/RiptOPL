@@ -553,3 +553,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Przed każdym uruchomieniem przez Neutrino pokazuje każdy argument, który Neutrino otrzyma, i pyta, czy kontynuować. Wstecz wraca do menu bez uruchamiania.
   NEUTRINO_ARGS_CONFIRM: Neutrino uruchomi się z tymi argumentami. Uruchomić?
   NEUTRINO_CHEATS_WRITE_FAILED: Nie udało się zapisać listy kodów w folderze Neutrino, więc Neutrino nie może jej użyć. Uruchomić bez kodów?
+  HINT_ENABLE_DVR: Eksperymentalne wykrywanie ISO DESR DVR. Wymaga włączonego źródła HDD; uruchamianie gier wymaga zewnętrznego Neutrino z obsługą DVR.

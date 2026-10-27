@@ -547,3 +547,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Antes de cada inicio con Neutrino, muestra todos los argumentos que recibirá Neutrino y pregunta si continuar. Atrás vuelve al menú sin iniciar.
   NEUTRINO_ARGS_CONFIRM: Neutrino se iniciará con estos argumentos. ¿Iniciar?
   NEUTRINO_CHEATS_WRITE_FAILED: La lista de trucos no se pudo guardar en la carpeta de Neutrino, así que Neutrino no puede usarla. ¿Iniciar sin trucos?
+  HINT_ENABLE_DVR: "Detección experimental de ISO para DESR DVR. Requiere la fuente HDD activada; el inicio necesita una versión externa de Neutrino compatible con DVR."

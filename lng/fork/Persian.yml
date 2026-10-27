@@ -780,3 +780,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: پیش از هر اجرای Neutrino، همه آرگومان‌هایی را که Neutrino می‌گیرد نشان می‌دهد و برای ادامه می‌پرسد. بازگشت بدون اجرا به منو برمی‌گرداند.
   NEUTRINO_ARGS_CONFIRM: Neutrino با این آرگومان‌ها شروع می‌شود. اجرا شود؟
   NEUTRINO_CHEATS_WRITE_FAILED: فهرست تقلب‌ها در پوشه Neutrino ذخیره نشد، پس Neutrino نمی‌تواند از آن استفاده کند. بدون تقلب اجرا شود؟
+  HINT_ENABLE_DVR: کشف آزمایشی ISOهای DESR DVR. به منبع هارد روشن نیاز دارد؛ اجرای بازی به Neutrino خارجی با پشتیبانی DVR نیاز دارد.

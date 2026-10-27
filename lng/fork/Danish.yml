@@ -562,3 +562,4 @@ translations:
   HINT_NEUTRINO_SHOW_ARGS: Før hver start via Neutrino vises hvert argument, Neutrino får, og du bliver spurgt, om du vil fortsætte. Tilbage går tilbage til menuen uden at starte.
   NEUTRINO_ARGS_CONFIRM: Neutrino starter med disse argumenter. Start?
   NEUTRINO_CHEATS_WRITE_FAILED: Snydelisten kunne ikke gemmes i Neutrino-mappen, så Neutrino kan ikke bruge den. Start uden snyd?
+  HINT_ENABLE_DVR: Eksperimentel registrering af DESR DVR-ISO'er. Kræver, at HDD-kilden er slået til; spilstart kræver en ekstern Neutrino med DVR-understøttelse.
