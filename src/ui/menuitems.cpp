@@ -454,9 +454,13 @@ void itemExecTriangle(struct menu_item *curMenu)
 
         if (!(flags & MODE_FLAG_NO_COMPAT)) {
             if (menuCheckParentalLock() == 0) {
+                // No config (allocation failed): stay on the list rather than open a menu of stale values.
+                config_set_t *configSet = gameMenuLoadConfig(NULL);
+                if (configSet == NULL)
+                    return;
                 menuInitGameMenu(support);
                 guiSwitchScreen(GUI_SCREEN_GAME_MENU);
-                guiGameLoadConfig(support, gameMenuLoadConfig(NULL));
+                guiGameLoadConfig(support, configSet);
             }
         } else {
             if (menuCheckParentalLock() == 0 && gEnableWrite) {

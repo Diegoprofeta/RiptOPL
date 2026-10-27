@@ -207,6 +207,7 @@ static void *fntReadData(char *path, int *bufferSize, int *owned)
     void *buffer;
 
     *owned = 0;
+    *bufferSize = -1; // readFile() takes a positive incoming size as the exact expected file size
     if (path == NULL) {
         *bufferSize = size_poeveticanew_raw;
         return &poeveticanew_raw;
