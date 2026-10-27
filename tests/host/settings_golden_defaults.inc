@@ -1,4 +1,5 @@
-// GENERATED from the setDefaults() that preceded src/core/settings.cpp: one check per table row.
+// GENERATED from the setDefaults() that preceded src/core/settings.cpp: one check per table row. Audio, menu
+// rumble and widescreen were since changed to the original's fresh defaults (off / 4:3).
 CHECK(gScrollSpeed == (1));
 // gDefaultBgColor: no default in setDefaults (initialiser / another routine owns it)
 // gDefaultTextColor: no default in setDefaults (initialiser / another routine owns it)
@@ -18,7 +19,7 @@ CHECK(gRAExperimentalCards == (0));
 CHECK(gEnableArt == (1));
 CHECK(gEnableDiscArt == (1));
 CHECK(gEnableLogoArt == (1));
-CHECK(gWideScreen == (1));
+CHECK(gWideScreen == (0));
 CHECK(gFontSize == (FONT_SIZE_DEFAULT));
 CHECK(gVMode == (0));
 CHECK(gXOff == (0));
@@ -82,10 +83,10 @@ CHECK(gEnablePCCF == (0));
 CHECK(gEnableDVR == (0));
 CHECK(gEnableBdmHDD == (0));
 CHECK(gNetBootProtocol == (NET_BOOT_UDPBD));
-CHECK(gEnableSFX == (1));
-CHECK(gEnableRumble == (1));
-CHECK(gEnableBootSND == (1));
-CHECK(gEnableBGM == (1));
+CHECK(gEnableSFX == (0));
+CHECK(gEnableRumble == (0));
+CHECK(gEnableBootSND == (0));
+CHECK(gEnableBGM == (0));
 CHECK(gSFXVolume == (90));
 CHECK(gBootSndVolume == (90));
 CHECK(gBGMVolume == (90));
