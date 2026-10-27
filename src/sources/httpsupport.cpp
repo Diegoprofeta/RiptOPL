@@ -802,6 +802,8 @@ void HttpSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     compatmask = sbPrepare(game, configSet, size_http_cdvdman_irx, http_cdvdman_irx, &i);
+    if (compatmask < 0) // sbPrepare failed (patch zone not found): `i` is unset -- bail before using it.
+        return;
     sbEnsureIgrUsbDrivers(compatmask);
 
 #ifdef RETROACHIEVEMENTS

@@ -961,6 +961,8 @@ void EthSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     }
 
     compatmask = sbPrepare(game, configSet, size_smb_cdvdman_irx, smb_cdvdman_irx, &i);
+    if (compatmask < 0) // sbPrepare failed (patch zone not found) and never set `i`: it still holds the
+        return;         // VMC loop's counter, so every settings write below would land at a wrong offset.
     sbEnsureIgrUsbDrivers(compatmask);
 
 #ifdef RETROACHIEVEMENTS

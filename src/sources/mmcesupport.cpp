@@ -1016,9 +1016,9 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     void *irx = &mmce_cdvdman_irx;
     int irx_size = size_mmce_cdvdman_irx;
     compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
+    if (compatmask < 0) // sbPrepare failed (patch zone not found): `index` is unset -- bail before using
+        return;         // it. (The old `if (settings == NULL)` guard was dead: irx + index is never NULL.)
     settings = (struct cdvdman_settings_mmce *)((u8 *)irx + index);
-    if (settings == NULL)
-        return;
 
     // Persist last-played BEFORE any card switch below: on an FMCB-on-MMCE setup this write goes to
     // the card's mcN: surface, and after a GameID switch it would land inside the per-game virtual
@@ -1197,6 +1197,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
                 fileXioClose(vmc_fds[0]);
             if (vmc_fds[1] >= 0)
                 fileXioClose(vmc_fds[1]);
+            sbUnprepare(&settings->common);
             return;
         }
         settings->port = detectedPort;
@@ -1320,6 +1321,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         if (vmc_fds[1] >= 0)
             fileXioClose(vmc_fds[1]);
         host::ui().warning(_l(_STR_ERR_FILE_INVALID), 8); // batch S5: never bail silently
+        sbUnprepare(&settings->common);
         return;
     }
 
