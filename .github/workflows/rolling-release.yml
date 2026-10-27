@@ -25,7 +25,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        edition: [korium, ra, incebtion]
+        # Each channel's kit, plus every Korium configuration for the VARIANTS and DEBUG bundles.
+        target:
+          - {edition: korium, configuration: standard}
+          - {edition: ra, configuration: standard}
+          - {edition: incebtion, configuration: standard}
+          - {edition: korium, configuration: pademu0}
+          - {edition: korium, configuration: ds5}
+          - {edition: korium, configuration: extras}
+          - {edition: korium, configuration: extras_ds5}
+          - {edition: korium, configuration: dtl}
+          - {edition: korium, configuration: diag}
+          - {edition: korium, configuration: debug}
+          - {edition: korium, configuration: debug_uart}
+          - {edition: korium, configuration: ingame_debug}
+          - {edition: korium, configuration: iopcore_debug}
+          - {edition: korium, configuration: eesio_debug}
+          - {edition: korium, configuration: ingame_debug_uart}
+          - {edition: korium, configuration: iopcore_debug_uart}
+          - {edition: korium, configuration: ingamediag}
     env:
       PS2BUILD_HOME: ${{ github.workspace }}/.ps2dev
       PS2DEV_INSTALL_DIR: ${{ github.workspace }}/.ps2dev
@@ -44,9 +62,9 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.ps2dev
-          key: release-ps2build-${{ runner.os }}-${{ matrix.edition }}-${{ github.run_id }}
+          key: release-ps2build-${{ runner.os }}-${{ matrix.target.edition }}-${{ matrix.target.configuration }}-${{ github.run_id }}
           restore-keys: |
-            release-ps2build-${{ runner.os }}-${{ matrix.edition }}-
+            release-ps2build-${{ runner.os }}-${{ matrix.target.edition }}-
             ps2dev-${{ runner.os }}-gcc-v2-
       - name: Install ps2build and its only SDK
         id: sdk1
@@ -71,8 +89,17 @@ jobs:
         shell: bash
         run: |
           mkdir -p build
-          python tools/build_edition.py '${{ matrix.edition }}' 2>&1 | tee build/edition.log
+          python tools/build_edition.py '${{ matrix.target.edition }}' --configuration '${{ matrix.target.configuration }}' 2>&1 | tee build/edition.log
+      - name: Retain the configuration build
+        if: matrix.target.configuration != 'standard'
+        uses: actions/upload-artifact@v4
+        with:
+          name: variant-${{ matrix.target.configuration }}
+          path: dist/configurations/korium-${{ matrix.target.configuration }}-gcc/
+          if-no-files-found: error
+          retention-days: 14
       - name: Download the official companion core
+        if: matrix.target.configuration == 'standard'
         shell: bash
         run: |
           sudo apt-get update -qq
@@ -80,23 +107,25 @@ jobs:
           mkdir -p build/companion
           gh release download latest --repo rickgaiser/neutrino --dir build/companion --pattern '*.7z'
       - name: Package and verify the full install kit
+        if: matrix.target.configuration == 'standard'
         shell: bash
         run: |
           mapfile -t cores < <(find build/companion -maxdepth 1 -name 'neutrino_*.7z' -type f)
           test "${#cores[@]}" -eq 1
-          python tools/package_edition.py '${{ matrix.edition }}' --neutrino-archive "${cores[0]}"
+          python tools/package_edition.py '${{ matrix.target.edition }}' --neutrino-archive "${cores[0]}"
       - name: Retain verified release candidate
+        if: matrix.target.configuration == 'standard'
         uses: actions/upload-artifact@v4
         with:
-          name: release-${{ matrix.edition }}
-          path: dist/releases/${{ matrix.edition }}/
+          name: release-${{ matrix.target.edition }}
+          path: dist/releases/${{ matrix.target.edition }}/
           if-no-files-found: error
           retention-days: 14
       - name: Retain compiler log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: release-log-${{ matrix.edition }}
+          name: release-log-${{ matrix.target.edition }}-${{ matrix.target.configuration }}
           path: build/edition.log
 
   publish:
@@ -119,6 +148,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           pattern: release-*
+          path: dist/downloaded
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: variant-*
           path: dist/downloaded
       - name: Verify and publish the three channels
         run: python tools/publish_editions.py dist/downloaded

@@ -31,7 +31,7 @@ class PublicationTests(unittest.TestCase):
             self.assertIn(f"/{elf})", body)
             self.assertIn(f"/{psu})", body)
             self.assertIn(f"/releases/download/{options['tag']}/RIPTOPL-LANGS.zip)", body)
-            self.assertEqual(4, sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
+            self.assertEqual(6 if options["tag"] == "rolling-korium" else 4, sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
             self.assertIn("Included build: v1.8.0 ", body)
             self.assertNotIn("Release compiler", body)
             self.assertNotIn("Imported production documentation", body)

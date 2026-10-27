@@ -12,7 +12,16 @@ import tempfile
 import time
 import zipfile
 
+from build_configuration import CONFIGURATIONS
 from build_edition import EDITIONS, git
+
+# The original's VARIANTS and DEBUG zips: every Korium configuration, published beside the Korium kit
+# (configurations are never channels of their own). docs/BUILD-CONFIGURATIONS.md describes each one.
+BUNDLES = {"VARIANTS": ("pademu0", "ds5", "extras", "extras_ds5")}
+BUNDLES["DEBUG"] = tuple(c for c in CONFIGURATIONS if c != "standard" and c not in BUNDLES["VARIANTS"])
+BUNDLE_README = ("RiptOPL Korium configuration builds. Each folder holds one RIPTOPL.ELF and the manifest it was\n"
+                 "built from; replace the ELF of an existing Korium install to use one. What each configuration\n"
+                 "changes: https://github.com/NathanNeurotic/RiptOPL/blob/rebuild/main/docs/BUILD-CONFIGURATIONS.md\n")
 
 
 # GitHub's release API intermittently answers 5xx; every call below is safe to repeat.
@@ -51,6 +60,30 @@ def update_tag(repo, tag, sha):
         raise RuntimeError(f"cannot inspect release tag {tag}: {result.stderr.strip()}")
 
 
+def bundle_configurations(root, expected_sha):
+    """Pack the configuration builds into the Korium release and add them to its checksums."""
+    path = root / "release-korium"
+    korium = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+    for name, configurations in BUNDLES.items():
+        archive = path / f"RIPTOPL-{name}.zip"
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+            for configuration in configurations:
+                stage = root / ("variant-" + configuration)
+                manifest = json.loads((stage / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+                elf = (stage / "RIPTOPL.ELF").read_bytes()
+                if (manifest["source_commit"] != expected_sha or manifest["dirty"] or manifest["edition"] != "korium"
+                        or manifest["compiler"] != "gcc" or manifest["configuration"] != configuration
+                        or manifest["ps2build_version"] != korium["ps2build_version"]
+                        or manifest["components"] != korium["components"]
+                        or manifest["elf_sha256"] != hashlib.sha256(elf).hexdigest()):
+                    raise ValueError(f"invalid configuration build: {configuration}")
+                bundle.writestr(f"{configuration}/RIPTOPL.ELF", elf)
+                bundle.writestr(f"{configuration}/BUILD-MANIFEST.json", json.dumps(manifest, indent=2) + "\n")
+            bundle.writestr("README.txt", BUNDLE_README)
+        with (path / "SHA256SUMS.txt").open("a", encoding="utf-8") as sums:
+            sums.write(f"{hashlib.sha256(archive.read_bytes()).hexdigest()}  {archive.name}\n")
+
+
 def verify(root, expected_sha):
     candidates = []
     suites = []
@@ -75,6 +108,8 @@ def verify(root, expected_sha):
         elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
         psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
         required = {elf, psu, "BUILD-MANIFEST.json", "RIPTOPL-src.zip", "RIPTOPL-LANGS.zip", f"RIPTOPL-{options['title']}.zip"}
+        if edition == "korium":
+            required |= {f"RIPTOPL-{name}.zip" for name in BUNDLES}
         if set(sums) != required or actual != required | {"SHA256SUMS.txt"}:
             raise ValueError(f"unexpected release inventory: {edition}")
         if sums[elf] != manifest["elf_sha256"]:
@@ -117,7 +152,11 @@ def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
         f"- [Full install kit]({downloads}/RIPTOPL-{options['title']}.zip) - loader and companions.\n"
         f"- [Loader ELF]({downloads}/{elf}) - update an existing installation.\n"
         f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n"
-        f"- [Languages]({downloads}/RIPTOPL-LANGS.zip) - translations and their fonts.\n\n"
+        f"- [Languages]({downloads}/RIPTOPL-LANGS.zip) - translations and their fonts.\n"
+        + "".join(f"- [{name.title()}]({downloads}/RIPTOPL-{name}.zip) - {what}.\n" for name, what in
+                  (("VARIANTS", "pad emulation off, DualSense and extras builds"), ("DEBUG", "debug and diagnostic builds"))
+                  if options["tag"] == EDITIONS["korium"]["tag"])
+        + "\n"
         f"Included build: {neutrino} -- Neutrino.\n\n"
         "[Installation and guides](https://nathanneurotic.github.io/RiptOPL/) - "
         f"[Wiki]({base}/wiki)\n"
@@ -164,6 +203,7 @@ def main():
     parser.add_argument("--check", action="store_true", help="verify only; never contact GitHub")
     args = parser.parse_args()
     sha = git("rev-parse", "HEAD")
+    bundle_configurations(args.artifacts, sha)
     candidates = verify(args.artifacts, sha)
     if args.check:
         print(f"Verified all three channels at {sha}")

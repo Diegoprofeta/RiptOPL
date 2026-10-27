@@ -192,12 +192,51 @@ class PublisherTests(unittest.TestCase):
                 source_zip.writestr("README.md", "synthetic source")
             with zipfile.ZipFile(path / "RIPTOPL-LANGS.zip", "w") as langs:
                 langs.writestr("README.txt", "synthetic")
+            if edition == "korium":
+                for name in publish_editions.BUNDLES:
+                    (path / f"RIPTOPL-{name}.zip").write_bytes(b"synthetic-bundle")
             with zipfile.ZipFile(path / f"RIPTOPL-{options['title']}.zip", "w") as kit:
                 kit.writestr("BUILD-MANIFEST.json", json.dumps(manifest))
                 kit.writestr(f"APPS/{app}/{elf}", payload)
                 kit.writestr(psu, b"synthetic-psu")
             sums = "".join(hashlib.sha256(p.read_bytes()).hexdigest() + "  " + p.name + "\n" for p in sorted(path.iterdir()))
             (path / "SHA256SUMS.txt").write_text(sums)
+
+    def variants(self, root, **changes):
+        for configuration in publish_editions.CONFIGURATIONS[1:]:
+            stage = root / ("variant-" + configuration)
+            stage.mkdir()
+            payload = b"\x7fELF" + configuration.encode()
+            manifest = {"source_commit": self.sha, "dirty": False, "edition": "korium", "compiler": "gcc",
+                        "configuration": configuration, "ps2build_version": "test", "components": {},
+                        "elf_sha256": hashlib.sha256(payload).hexdigest(), **changes.get(configuration, {})}
+            (stage / "RIPTOPL.ELF").write_bytes(payload)
+            (stage / "BUILD-MANIFEST.json").write_text(json.dumps(manifest))
+
+    def test_configuration_bundles(self):
+        with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
+            root = Path(directory)
+            self.kit(root)
+            for name in publish_editions.BUNDLES:
+                (root / "release-korium" / f"RIPTOPL-{name}.zip").unlink()
+            sums = (root / "release-korium/SHA256SUMS.txt").read_text().splitlines()
+            (root / "release-korium/SHA256SUMS.txt").write_text("".join(l + "\n" for l in sums if "-VARIANTS" not in l and "-DEBUG" not in l))
+            self.variants(root)
+            publish_editions.bundle_configurations(root, self.sha)
+            self.assertEqual(len(publish_editions.verify(root, self.sha)), 3)
+            with zipfile.ZipFile(root / "release-korium/RIPTOPL-VARIANTS.zip") as bundle:
+                self.assertEqual(bundle.read("ds5/RIPTOPL.ELF"), b"\x7fELFds5")
+                self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 4)
+            with zipfile.ZipFile(root / "release-korium/RIPTOPL-DEBUG.zip") as bundle:
+                self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 10)
+        for bad in ({"ds5": {"configuration": "extras"}}, {"debug": {"source_commit": "0" * 40}},
+                    {"dtl": {"elf_sha256": "0" * 64}}, {"diag": {"ps2build_version": "other"}}):
+            with self.subTest(bad=bad), tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
+                root = Path(directory)
+                self.kit(root)
+                self.variants(root, **bad)
+                with self.assertRaisesRegex(ValueError, "invalid configuration build"):
+                    publish_editions.bundle_configurations(root, self.sha)
 
     def test_valid_standard_and_self_consistent_invalid_manifests(self):
         for kwargs in ({}, {"configuration": "debug"}, {"dirty": True}, {"source": "0" * 40}):
