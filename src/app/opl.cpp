@@ -1696,6 +1696,7 @@ void miniInit(int mode)
             // game must resolve the SAME neutrino.elf (device pick / custom path) with the SAME global
             // args as an interactive launch, or it silently boots a different/stale core without flags.
             configReadNeutrinoGlobals(configOPL);
+            configReadRA(configOPL); // or an auto-launched game is never tracked
             if (mode == BDM_MODE) {
                 configGetStrCopy(configOPL, CONFIG_OPL_BDM_PREFIX, gBDMPrefix, sizeof(gBDMPrefix));
                 sanitizePrefix(gBDMPrefix);

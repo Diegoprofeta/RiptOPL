@@ -51,6 +51,7 @@ static unsigned int pccfAttemptGeneration;
 static int bdmAutoLaunch; // Auto Loading waits for its own mass device; skip menu discovery settles
 int hddModLoaded = 0;
 static int udpbdModLoaded = 0;
+static int udpbdNicClaimed = 0; // SMAP resident, even if later block modules failed; only an IOP reset frees it
 /*
   udpbdModLoaded alone is protocol-agnostic: both branches of the loader set it to 1, so once
   either chain is up the module gate short-circuits. But the tab label, the tab icon and the
@@ -676,7 +677,7 @@ static int bdmDiagLoadOptionalModuleArgs(const char *stage, const char *name, vo
 // Exposed for ethsupport's NIC mutual-exclusion: UDPBD and the SMB stack both own the SMAP adapter.
 int bdmIsUDPBDLoaded(void)
 {
-    return udpbdModLoaded;
+    return udpbdNicClaimed; // protect the NIC from another backend even after a partial load
 }
 
 int BdmSupport::loadedNetProtocol() const
@@ -713,6 +714,10 @@ int BdmSupport::ensureNetworkSourceModules(int protocol, u32 timeoutMs)
 
     WaitSema(bdmLoadModuleLock);
 
+    if (udpbdNicClaimed && !udpbdModLoaded) {
+        SignalSema(bdmLoadModuleLock);
+        return 0; // a partial SMAP load cannot be rebound in this IOP session
+    }
     if (udpbdModLoaded) {
         int same = udpbdLoadedProtocol_ == protocol;
         SignalSema(bdmLoadModuleLock);
@@ -727,6 +732,10 @@ int BdmSupport::ensureNetworkSourceModules(int protocol, u32 timeoutMs)
             result = -1; // the failure path below releases the DEV9 reference and module lock
         } else if (protocol == NET_BOOT_UDPFS) {
             result = bdmLoadOptionalModule("UDPFS_SMAP", &udpfs_smap_irx, size_udpfs_smap_irx);
+            if (result >= 0) {
+                udpbdNicClaimed = 1;
+                udpbdLoadedProtocol_ = NET_BOOT_UDPFS;
+            }
             if (result >= 0)
                 result = bdmLoadOptionalModuleArgs("UDPFS_MINISTACK", &udpfs_ministack_irx, size_udpfs_ministack_irx, (int)strlen(ipArg) + 1, ipArg);
             if (result >= 0)
@@ -737,8 +746,9 @@ int BdmSupport::ensureNetworkSourceModules(int protocol, u32 timeoutMs)
 
         if (result >= 0) {
             udpbdModLoaded = 1;
+            udpbdNicClaimed = 1;
             udpbdLoadedProtocol_ = protocol;
-        } else {
+        } else if (!udpbdNicClaimed) {
             sysShutdownDev9();
         }
         SignalSema(bdmLoadModuleLock);
@@ -1101,7 +1111,7 @@ static int bdmShouldQueueModuleLoad(void)
         return 1;
     if (gEnableBdmHDD && !hddModLoaded)
         return 1;
-    if (gEnableUDPBD && !udpbdModLoaded && !ethGetModulesLoaded() && !udpfsGetModulesLoaded())
+    if (gEnableUDPBD && !udpbdNicClaimed && !ethGetModulesLoaded() && !udpfsGetModulesLoaded())
         return 1; // mirror the load gate -- if the SMB or udpfs-filesystem NIC is up, the block chain can't load
 
     return 0;
@@ -1222,7 +1232,7 @@ void bdmLoadBlockDeviceModules(void)
     // Network block device (UDPBD or UDPFS, picked by gNetBootProtocol). NIC-exclusive with the SMB/ETH
     // stack (smap registers "SMAP_driver"), so only load when SMB isn't up. dev9 is refcounted (shared
     // with ATA-HDD). Both need the PS2's static IP as an "ip=" arg -- the ministack has no DHCP client.
-    if (gEnableUDPBD && !udpbdModLoaded && !ethGetModulesLoaded() && !udpfsGetModulesLoaded()) {
+    if (gEnableUDPBD && !udpbdNicClaimed && !ethGetModulesLoaded() && !udpfsGetModulesLoaded()) {
         char ipArg[24];
         int networkResult = -1;
         const char *networkStage = gNetBootProtocol == NET_BOOT_UDPFS ? "UDPFS-BD chain" : "UDPBD";
@@ -1237,12 +1247,17 @@ void bdmLoadBlockDeviceModules(void)
             // UDPFS: a 3-IRX chain loaded in dependency order -- smap (exports to ministack + bd), then
             // ministack (gets the ip= arg, exports to bd), then udpfs_bd (registers the "udp" BDM device).
             networkResult = bdmDiagLoadOptionalModule("UDPFS_SMAP", "UDPFS_SMAP", &udpfs_smap_irx, size_udpfs_smap_irx);
+            if (networkResult >= 0) {
+                udpbdNicClaimed = 1;
+                gBdmSupport.setLoadedNetProtocol(NET_BOOT_UDPFS);
+            }
             if (networkResult >= 0)
                 networkResult = bdmDiagLoadOptionalModuleArgs("UDPFS_MINISTACK", "UDPFS_MINISTACK", &udpfs_ministack_irx, size_udpfs_ministack_irx, (int)strlen(ipArg) + 1, ipArg);
             if (networkResult >= 0)
                 networkResult = bdmDiagLoadOptionalModule("UDPFS_BD", "UDPFS_BD", &udpfs_bd_irx, size_udpfs_bd_irx);
             if (networkResult >= 0) {
                 udpbdModLoaded = 1;
+                udpbdNicClaimed = 1;
                 gBdmSupport.setLoadedNetProtocol(NET_BOOT_UDPFS);
             }
         } else {
@@ -1250,6 +1265,7 @@ void bdmLoadBlockDeviceModules(void)
             networkResult = bdmDiagLoadOptionalModuleArgs("SMAP_UDPBD", "SMAP_UDPBD", &smap_udpbd_irx, size_smap_udpbd_irx, (int)strlen(ipArg) + 1, ipArg);
             if (networkResult >= 0) {
                 udpbdModLoaded = 1;
+                udpbdNicClaimed = 1;
                 gBdmSupport.setLoadedNetProtocol(NET_BOOT_UDPBD);
             }
         }
@@ -1258,7 +1274,8 @@ void bdmLoadBlockDeviceModules(void)
         // UDPBD/UDPFS (both gates re-enter on every device refresh while !udpbdModLoaded) inflates the
         // refcounted dev9InitCount and a later HDD/ETH teardown can never power dev9 down. On success
         // the reference is intentionally kept (the device stays mounted). Mirrors ETH/HDD pairing.
-        if (!udpbdModLoaded)
+        // A partially loaded chain keeps its SMAP and therefore its DEV9 reference.
+        if (!udpbdNicClaimed)
             sysShutdownDev9();
     }
 

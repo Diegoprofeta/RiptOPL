@@ -42,10 +42,16 @@ loader = body(udpfs, "static void udpfsLoadModules(void)")
 check("UDPFS Files refuses without DEV9 before loading SMAP",
       loader.index("if (!sysInitDev9())") < loader.index("udpfs_smap_irx"))
 check("UDPFS Files releases the DEV9 reference it took", "sysShutdownDev9();\n        return;" in loader)
+check("UDPFS Files keeps DEV9 and refuses a retry once SMAP is resident",
+      loader.index("if (udpfsNicClaimed)") < loader.index("sysInitDev9()") and
+      "udpfsNicClaimed = 1;" in loader and "if (!udpfsNicClaimed)\n        sysShutdownDev9();" in loader)
+
 
 bdm = read("src/sources/bdmsupport.cpp")
+check("a partial block chain also keeps the NIC claimed",
+      "if (udpbdNicClaimed && !udpbdModLoaded) {" in bdm and "} else if (!udpbdNicClaimed) {" in bdm)
 for signature in ("int bdmEnsureNetworkSourceModules(int protocol, u32 timeoutMs)",
-                  "if (gEnableUDPBD && !udpbdModLoaded && !ethGetModulesLoaded() && !udpfsGetModulesLoaded()) {"):
+                  "if (gEnableUDPBD && !udpbdNicClaimed && !ethGetModulesLoaded() && !udpfsGetModulesLoaded()) {"):
     start = bdm.index(signature)
     chain = bdm[start:bdm.index("smap_udpbd_irx", start)]
     check(f"block chain checks DEV9 first ({signature[:40]})",

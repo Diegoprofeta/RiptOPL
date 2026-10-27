@@ -37,14 +37,15 @@ static unsigned frame(unsigned char *p, const char *text, unsigned port) {
 
 int main(void) {
     unsigned char p[256];
-    char out[129];
+    char out[133];
     unsigned n;
 
     n = frame(p, "RAU1 42 10 Title", 18195);
+    p[26] = 192; p[27] = 168; p[28] = 1; p[29] = 9;          /* the sender comes first */
     ra_tap_notice(p, n);
     assert(SMAPReadNotice(out, 8) == 0);                      /* too small: kept, not truncated */
-    assert(SMAPReadNotice(out, 128) == 16 && !memcmp(out, "RAU1 42 10 Title", 16));
-    assert(SMAPReadNotice(out, 128) == 0 && intr_depth == 0); /* handed out once */
+    assert(SMAPReadNotice(out, 132) == 20 && !memcmp(out, "\300\250\001\011RAU1 42 10 Title", 20));
+    assert(SMAPReadNotice(out, 132) == 0 && intr_depth == 0); /* handed out once */
     n = frame(p, "RAU1 42", 18196); ra_tap_notice(p, n); assert(SMAPReadNotice(out, 128) == 0);
     n = frame(p, "XXU1 42", 18195); ra_tap_notice(p, n); assert(SMAPReadNotice(out, 128) == 0);
     n = frame(p, "RAR1 ", 18195); ra_tap_notice(p, 46); assert(SMAPReadNotice(out, 128) == 0); /* truncated */
@@ -52,15 +53,15 @@ int main(void) {
     n = frame(p, "RAR1 ", 18195); p[23] = 6; ra_tap_notice(p, n); assert(SMAPReadNotice(out, 128) == 0); /* TCP */
     n = frame(p, "RAR1 ", 18195); ra_tap_notice(p, n);
     n = frame(p, "RAU1 7", 18195); ra_tap_notice(p, n);       /* a second waits for the first to be read */
-    assert(SMAPReadNotice(out, 128) == 5 && !memcmp(out, "RAR1 ", 5));
+    assert(SMAPReadNotice(out, 132) == 9 && !memcmp(out + 4, "RAR1 ", 5));
     {
         char longest[130];
         memset(longest, 'A', sizeof longest); longest[0] = 'R'; longest[128] = 0;
-        n = frame(p, longest, 18195); ra_tap_notice(p, n); assert(SMAPReadNotice(out, 128) == 128);
+        n = frame(p, longest, 18195); ra_tap_notice(p, n); assert(SMAPReadNotice(out, 132) == 132);
         longest[128] = 'A'; longest[129] = 0;                  /* 129 bytes: more than the notice holds */
-        n = frame(p, longest, 18195); ra_tap_notice(p, n); assert(SMAPReadNotice(out, 128) == 0);
+        n = frame(p, longest, 18195); ra_tap_notice(p, n); assert(SMAPReadNotice(out, 132) == 0);
     }
-    puts("PASS: SMAP sets aside one whole RA datagram for port 18195, hands it out once, refuses the rest");
+    puts("PASS: SMAP sets aside one whole RA datagram for port 18195, hands it out once with its sender, refuses the rest");
 
     return 0;
 }

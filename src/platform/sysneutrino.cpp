@@ -1076,8 +1076,11 @@ static int sysRunNeutrinoLaunch(const char *driver, const char *path, const char
     argc = appendArgTokens(argv, argc, argvMax, extraArgsBuf, sizeof(extraArgsBuf), extraArgs, 0, &gameBreak);
     // Cheats (sysNeutrinoHandCheats): after the user's own options, so the -cfg Neutrino keeps -- its
     // last -- is ours, which loads theirs through `depends`. Only for the game the file was written for.
-    if (sysNeutrinoCheatArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoCheatStartup) && argc < argvMax)
+    if (sysNeutrinoCheatArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoCheatStartup)) {
+        if (argc >= argvMax)
+            return -1; // refuse in the preflight rather than boot without the cheats the user enabled
         argv[argc++] = sysNeutrinoCheatArg;
+    }
 #ifdef RETROACHIEVEMENTS
     static char raCfgArg[] = "-cfg=ript-ra";
     if (sysNeutrinoRAArg[0] != '\0' && startup != NULL && !strcmp(startup, sysNeutrinoRAStartup)) {

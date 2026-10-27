@@ -1509,6 +1509,35 @@ static void emberSaveSettings(config_set_t *configOPL)
     configRemoveKey(configOPL, CONFIG_OPL_EMBER_DISPLAY); // migrated on load; never written again
 }
 
+// The RA settings, read and normalised the same way for the menu and for Auto Loading (miniInit).
+void configReadRA(config_set_t *configOPL)
+{
+#ifdef RETROACHIEVEMENTS
+    const char *temp;
+    configGetInt(configOPL, CONFIG_OPL_RA_TELEMETRY, &gRATelemetry);
+    configGetInt(configOPL, CONFIG_OPL_RA_BADGES, &gRABadges);
+    configGetInt(configOPL, CONFIG_OPL_RA_BADGE_SUFFIX, &gRABadgeSuffix);
+    configGetInt(configOPL, CONFIG_OPL_RA_MODE, &gRAMode);
+    configGetInt(configOPL, CONFIG_OPL_RA_EXPERIMENTAL_CARDS, &gRAExperimentalCards);
+    gRABadgeSuffix = (gRABadgeSuffix == 1); // any stored value but 1 is Prefix
+    if (gRAMode != RA_MODE_CADUCEUS)
+        gRAMode = RA_MODE_XERABORA;
+    gRAExperimentalCards = (gRAExperimentalCards == 1); // anything but an explicit 1 is Off
+    int a, b, c, d;
+    char extra;
+    if (configGetStr(configOPL, CONFIG_OPL_RA_HOST_IP, &temp) &&
+        sscanf(temp, "%d.%d.%d.%d%c", &a, &b, &c, &d, &extra) == 4 &&
+        a >= 0 && a <= 255 && b >= 0 && b <= 255 && c >= 0 && c <= 255 && d >= 0 && d <= 255) {
+        gRAHostIp[0] = a;
+        gRAHostIp[1] = b;
+        gRAHostIp[2] = c;
+        gRAHostIp[3] = d;
+    }
+#else
+    (void)configOPL;
+#endif
+}
+
 void _loadConfig()
 {
     int value, themeID = -1, langID = -1;
@@ -1528,22 +1557,7 @@ void _loadConfig()
 
             settingsLoad(configOPL); // every plain key; the special cases below (recovery combo, clamps, migrations) follow
             gFontSize = fntValidFontSize(gFontSize);
-#ifdef RETROACHIEVEMENTS
-            gRABadgeSuffix = (gRABadgeSuffix == 1); // any stored value but 1 is Prefix
-            if (gRAMode != RA_MODE_CADUCEUS)
-                gRAMode = RA_MODE_XERABORA;
-            gRAExperimentalCards = (gRAExperimentalCards == 1); // anything but an explicit 1 is Off
-            int a, b, c, d;
-            char extra;
-            if (configGetStr(configOPL, CONFIG_OPL_RA_HOST_IP, &temp) &&
-                sscanf(temp, "%d.%d.%d.%d%c", &a, &b, &c, &d, &extra) == 4 &&
-                a >= 0 && a <= 255 && b >= 0 && b <= 255 && c >= 0 && c <= 255 && d >= 0 && d <= 255) {
-                gRAHostIp[0] = a;
-                gRAHostIp[1] = b;
-                gRAHostIp[2] = c;
-                gRAHostIp[3] = d;
-            }
-#endif
+            configReadRA(configOPL);
 
 
             if (getKeyPressed(KEY_TRIANGLE) && getKeyPressed(KEY_CROSS)) {

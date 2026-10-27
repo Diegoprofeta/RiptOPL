@@ -2757,8 +2757,8 @@ void HddSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         probed_fd = 0;
         probed_lba = game->start_sector + OPL_HDD_MODE_PS2LOGO_OFFSET;
         ziso_init((ZISO_header *)IOBuffer, *(u32 *)((u8 *)IOBuffer + sizeof(ZISO_header)));
-        ziso_read_sector(IOBuffer, 16, 1);
-        u32 maxLBA = *(u32 *)(IOBuffer + 80);
+        // A failed read leaves the ZSO header in IOBuffer; keep the APA header's layer-1 start then.
+        u32 maxLBA = (ziso_read_sector(IOBuffer, 16, 1) == 1) ? *(u32 *)(IOBuffer + 80) : 0;
         if (maxLBA > 0 && maxLBA < ziso_total_block) {   // dual layer check
             settings->common.layer1_start = maxLBA - 16; // adjust second layer start
         }

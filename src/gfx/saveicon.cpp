@@ -712,7 +712,7 @@ static int siLoadFromVmc(const char *path, const char *serial, saveicon_model_t 
 // The memory cards: the newest save folder of that product code on either, by modification time.
 static int siLoadFromCards(const char *serial, saveicon_model_t *model, saveicon_light_t *light)
 {
-    char best[96], path[96], listName[64];
+    char best[128], path[128], listName[64]; // mc0:/ + a 32-character folder + a 63-character icon name
     saveicon_light_t candidate;
     time_t bestTime = 0;
     unsigned char *data;
@@ -748,7 +748,10 @@ static int siLoadFromCards(const char *serial, saveicon_model_t *model, saveicon
             free(data);
             if (!ok)
                 continue;
-            snprintf(best, sizeof(best), "mc%d:/%s/%s", port, de->d_name, listName);
+            // Built in path first, so a name that does not fit never overwrites the current winner.
+            if (snprintf(path, sizeof(path), "mc%d:/%s/%s", port, de->d_name, listName) >= (int)sizeof(path))
+                continue;
+            memcpy(best, path, sizeof(best));
             bestTime = mtime;
             *light = candidate;
             found = 1;

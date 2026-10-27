@@ -1338,6 +1338,9 @@ static int bsdfsDeviceCapable = 1;
 // row greyed for a VCD game even when the global default core is Neutrino (the locked "Default" row
 // would otherwise resolve to the global and un-grey them).
 static int coreNeverNeutrino = 0;
+// The core whose title defaults filled the compatibility checkboxes in guiGameLoadConfig. Saving compares
+// against that core's defaults: the Loader row can change afterwards without refilling the checkboxes.
+static int compatShownNeutrino = 0;
 
 // Appended "Default" (follow the global) enum indices for the per-game Neutrino Video / GSM-comp
 // pickers: values 0..5 / 0..3 persist 1:1 (system.c gsmVideoTokens); "Default" removes the key so
@@ -1589,10 +1592,10 @@ static int guiGameApplyConfig(config_set_t *configSet, item_list_t *support)
             configRemoveKey(configSet, CONFIG_ITEM_DMA);
     }
 
-    // The screen showed the title default for the chosen core. Saving that unchanged keeps following the
+    // The screen showed the title default for the core it was loaded with. Saving that unchanged keeps following the
     // defaults (a default limited to one core must not become a saved value that applies to both); anything
     // else is saved, including an explicit 0 ("none"), or the title default would come back.
-    if (compatMode == sbTitleCompatDefault(configSet, guiGameDialogCoreIsNeutrino(support, coreNeverNeutrino)))
+    if (compatMode == sbTitleCompatDefault(configSet, compatShownNeutrino))
         configRemoveKey(configSet, CONFIG_ITEM_COMPAT);
     else
         result = configSetInt(configSet, CONFIG_ITEM_COMPAT, compatMode);
@@ -2231,7 +2234,8 @@ void guiGameLoadConfig(item_list_t *support, config_set_t *configSet)
     // coreNeverNeutrino belongs to the last dialog, so work out the sources that only boot the OPL core here.
     int neverNeutrino = support != NULL && (libViewActive(support->mode) == LIB_VIEW_PS1 || support->mode == ETH_MODE ||
                                             support->mode == HTTP_MODE || bdmModeIsPCCF(support->mode));
-    compatMode = sbGetCompatModes(configSet, guiGameDialogCoreIsNeutrino(support, neverNeutrino));
+    compatShownNeutrino = guiGameDialogCoreIsNeutrino(support, neverNeutrino);
+    compatMode = sbGetCompatModes(configSet, compatShownNeutrino);
     for (i = 0; i < COMPAT_MODE_COUNT; ++i)
         diaSetInt(diaCompatConfig, COMPAT_MODE_BASE + i, (compatMode & (1 << i)) > 0 ? 1 : 0);
 

@@ -46,6 +46,7 @@
 static char udpfsPrefix[40]; // full path to the folder that holds all the games ("udpfs:/")
 static char *udpfsBase;      // device root ("udpfs:")
 static int udpfsIomanModLoaded = 0;
+static int udpfsNicClaimed = 0;       // SMAP resident, even if later modules failed; only an IOP reset frees it
 static int udpfsWaitingForServer = 0; // the last scan got no answer from the server; see udpfsSetWaitingForServer
 static int udpfsThemesScanned = 0;    // THM is registered once per active UDPFS session, after THM opens
 static int udpfsLanguagesScanned = 0; // LNG uses the shared registry once its directory becomes readable
@@ -83,6 +84,10 @@ static void udpfsLoadModules(void)
 
     if (udpfsIomanModLoaded)
         return;
+    if (udpfsNicClaimed) {
+        LOG("UDPFSSUPPORT: partial NIC chain resident, requires IOP reset\n");
+        return;
+    }
 
     // NIC-exclusivity: the SMAP adapter registers a single "SMAP_driver". The SMB/ETH stack and the
     // UDPBD/udpfs_bd block chain both own it, so refuse to bring up the UDPFS ioman stack on top of
@@ -107,6 +112,7 @@ static void udpfsLoadModules(void)
 
     LOG("[UDPFS_SMAP]:\n");
     if (sysLoadModuleBuffer(&udpfs_smap_irx, size_udpfs_smap_irx, 0, NULL) >= 0) {
+        udpfsNicClaimed = 1;
         LOG("[UDPFS_MINISTACK]:\n");
         if (sysLoadModuleBuffer(&udpfs_ministack_irx, size_udpfs_ministack_irx, (int)strlen(ipArg) + 1, ipArg) >= 0) {
             LOG("[UDPFS_IOMAN]:\n");
@@ -118,15 +124,17 @@ static void udpfsLoadModules(void)
         }
     }
 
-    // Release the dev9 reference taken above if any load failed -- otherwise a failing/retrying UDPFS
-    // inflates the refcounted dev9InitCount and a later HDD/ETH teardown can never power dev9 down.
+    // Release the dev9 reference taken above if nothing was loaded -- otherwise a failing/retrying UDPFS
+    // inflates the refcounted dev9InitCount and a later HDD/ETH teardown can never power dev9 down. A
+    // resident SMAP still needs DEV9 powered, and cannot be replaced without an IOP reset.
     LOG("UDPFSSUPPORT: module chain failed to load\n");
-    sysShutdownDev9();
+    if (!udpfsNicClaimed)
+        sysShutdownDev9();
 }
 
 int udpfsGetModulesLoaded(void)
 {
-    return udpfsIomanModLoaded;
+    return udpfsNicClaimed; // the NIC interlock must also catch a partial load
 }
 
 int udpfsEnsureReady(u32 timeoutMs)
