@@ -7,6 +7,7 @@ int gEnableDebug = 0;
 #endif
 char gBaseMCDir[64] = "mc0:/";
 char gOPLPart[64] = "";
+char gBootDir[256] = "";
 int gLastSaveErrno = 0;
 unsigned char ps2_ip[4], ps2_netmask[4], ps2_gateway[4];
 void bgmMute(void) {}

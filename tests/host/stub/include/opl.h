@@ -16,6 +16,7 @@
 extern int gEnableDebug;
 extern char gBaseMCDir[];
 extern char gOPLPart[];
+extern char gBootDir[256];
 extern int gLastSaveErrno;
 extern struct { unsigned char ip[4]; } g_unused_ip_marker;
 extern unsigned char ps2_ip[4], ps2_netmask[4], ps2_gateway[4];

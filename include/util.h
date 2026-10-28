@@ -67,4 +67,6 @@ int CheckPS2Logo(int fd, u32 lba);
 void delay(int count);
 void sanitizePrefix(char *prefix);
 
+int oplBootDirIsHostFs(void); // booted from host:/hostN: (PCSX2 or ps2client)
+
 #endif

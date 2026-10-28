@@ -92,6 +92,8 @@ static void close(int) {}
 @PROBE@
 static int gEnableUSB, iUSBModLoaded, gEnableILK, iLinkModLoaded, gEnableMX4SIO, mx4sioModLoaded;
 static int gEnableBdmHDD, hddModLoaded, gEnableUDPBD, udpbdNicClaimed;
+static int hostBoot;
+static int oplBootDirIsHostFs(void) { return hostBoot; }
 static int ethGetModulesLoaded(void) {return 0;}
 static int udpfsGetModulesLoaded(void) {return 0;}
 @QUEUE@
