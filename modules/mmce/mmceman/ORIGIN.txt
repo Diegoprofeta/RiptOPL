@@ -1,5 +1,7 @@
 Source: ps2-mmce/mmceman, mmceman/
-Commit: db3e93f0fdbcf882f88da110cbd9b7db188ec17a
+Commit: de28936fdf45fe445554cfa0b8f058b05fa8212f (merge of 21dbc0a7e5640b4d77520ab362dab62bafccacd8, "fix: don't block mc1 (2nd port)")
+The only file that differs from the previous pin db3e93f0 is src/sio2man_hook.c (PORT_NR off, so a
+memory card in slot 2 is no longer blocked while mmceman is resident). Picked up via RIPPS2's audit.
 License: MIT; LICENSE retained.
 
 Only the files the menu driver builds from are copied (the Makefile's IOP_OBJS plus their headers);

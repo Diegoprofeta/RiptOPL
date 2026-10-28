@@ -18,6 +18,61 @@
 #include <ft2build.h>
 
 #include FT_FREETYPE_H
+#include FT_MODULE_H
+
+// FT_Init_FreeType and FT_Done_FreeType sit in ftinit.c beside the table of every module the library was
+// built with, so calling either links all of them (Type 1, CID, PCF, BDF, PFR, Windows FNT, SDF, SVG...).
+// Fonts here are TrueType and OpenType (.ttf/.otf, docs/INTERFACE.md), so register only what those need.
+// Ported from RIPPS2 build 114 (akilluminati47/RIPPS2, fntsys.c fntNewLibrary).
+extern "C" {
+extern const FT_Module_Class autofit_module_class;
+extern const FT_Module_Class tt_driver_class;
+extern const FT_Module_Class cff_driver_class;
+extern const FT_Module_Class psaux_module_class;    // CFF needs psaux, psnames and pshinter
+extern const FT_Module_Class psnames_module_class;
+extern const FT_Module_Class pshinter_module_class;
+extern const FT_Module_Class sfnt_module_class;
+extern const FT_Module_Class ft_smooth_renderer_class;
+FT_Memory FT_New_Memory(void);         // ftsystem.c, as FT_Init_FreeType uses it
+void FT_Done_Memory(FT_Memory memory); // and as FT_Done_FreeType frees it
+}
+
+static FT_Memory fntMemory; // FT_LibraryRec is opaque outside FreeType, so remember it for fntDoneLibrary
+
+static FT_Error fntNewLibrary(FT_Library *library)
+{
+    static const FT_Module_Class *const modules[] = {
+        &autofit_module_class, &tt_driver_class, &cff_driver_class, &psaux_module_class,
+        &psnames_module_class, &pshinter_module_class, &sfnt_module_class, &ft_smooth_renderer_class};
+    FT_Memory memory = FT_New_Memory();
+    FT_Error error;
+
+    if (memory == NULL)
+        return FT_Err_Out_Of_Memory;
+    if ((error = FT_New_Library(memory, library)) != 0) {
+        FT_Done_Memory(memory);
+        return error;
+    }
+    for (const FT_Module_Class *module : modules) {
+        if ((error = FT_Add_Module(*library, module)) != 0) {
+            FT_Done_Library(*library);
+            FT_Done_Memory(memory);
+            return error;
+        }
+    }
+    // No FT_Set_Default_Properties: it is in ftinit.c too, and only reads a FREETYPE_PROPERTIES
+    // environment variable a PS2 never has.
+    fntMemory = memory;
+    return 0;
+}
+
+static void fntDoneLibrary(FT_Library library)
+{
+    FT_Done_Library(library);
+    if (fntMemory != NULL)
+        FT_Done_Memory(fntMemory);
+    fntMemory = NULL;
+}
 
 typedef FontSystem::font_t font_t;
 typedef FontSystem::fnt_glyph_cache_entry_t fnt_glyph_cache_entry_t;
@@ -247,7 +302,7 @@ int FontSystem::loadSlotLocked(font_t *font, void *buffer, int bufferSize, int o
 void FontSystem::init()
 {
     LOG("FNTSYS Init\n");
-    int error = FT_Init_FreeType(&library_);
+    int error = fntNewLibrary(&library_);
     if (error) {
         // just report over the ps2link
         LOG("FNTSYS Freetype init failed with %x!\n", error);
@@ -351,7 +406,7 @@ void FontSystem::end()
     unlock();
 
     // deinit freetype system
-    FT_Done_FreeType(library_);
+    fntDoneLibrary(library_);
 
     DeleteSema(semaId_);
 

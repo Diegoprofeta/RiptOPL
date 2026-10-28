@@ -83,6 +83,7 @@ typedef enum {
 // Auto and Manual (Vapor). Pair with the retryable-failure change in hddLoadModules.
 
 int hddCheck(void);
+void hddIopWasReset(void); // forget the module latches after an in-menu IOP reset
 int hddIs48bit(void);
 int hddSetTransferMode(int type, int mode);
 void hddSetIdleTimeout(int timeout);

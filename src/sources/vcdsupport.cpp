@@ -2895,6 +2895,49 @@ void vcdPrepareRetroGemBarcode(const char *vcdPath)
     }
 }
 
+// Ported from RIPPS2 builds 85 and 115 (akilluminati47/RIPPS2, vcdsupport.c vcdConfirmPopsFiles).
+static const char *const vcdPopsFiles[] = {"POPS_IOX.PAK", "POPS.ELF", "POPS.PAK", "IOPRP252.IMG"};
+enum { VCD_POPS_IOX = 1, VCD_POPS_ELF = 2, VCD_POPS_PAK = 4, VCD_POPS_IMG = 8 };
+
+static int vcdPopsHave(const char *root)
+{
+    char path[256];
+    int have = 0;
+
+    for (int k = 0; k < 4; k++) {
+        if (snprintf(path, sizeof(path), "%s%s%c%s", root, POPS_FOLDER, vcdSep(root), vcdPopsFiles[k]) >= (int)sizeof(path))
+            continue;
+        int fd = open(path, O_RDONLY);
+        if (fd >= 0) {
+            close(fd);
+            have |= 1 << k;
+        }
+    }
+    return have;
+}
+
+int vcdConfirmPopsFiles(const char *root)
+{
+    char missing[64], msg[512];
+    int have;
+
+    if (root == NULL || root[0] == '\0')
+        return 1;
+    have = vcdPopsHave(root);
+    if ((have & VCD_POPS_IOX) && (have & (VCD_POPS_ELF | VCD_POPS_PAK)))
+        return 1;
+
+    missing[0] = '\0';
+    if (!(have & VCD_POPS_IOX))
+        snprintf(missing, sizeof(missing), "POPS_IOX.PAK");
+    if (!(have & (VCD_POPS_ELF | VCD_POPS_PAK)))
+        snprintf(missing + strlen(missing), sizeof(missing) - strlen(missing), "%sPOPS.PAK / POPS.ELF%s",
+                 missing[0] ? ", " : "", (have & VCD_POPS_IMG) ? "" : " + IOPRP252.IMG");
+    LOG("VCD: POPS files missing in %s%s: %s\n", root, POPS_FOLDER, missing);
+    snprintf(msg, sizeof(msg), _l(_STR_POPS_FILES_MISSING), missing, root, POPS_FOLDER);
+    return host::ui().msgBox(msg, 1, NULL);
+}
+
 /* POPS/MODULE_9.IRX is the slot the RA edition writes rapops into for a tracked USB VCD launch.
    Only a file carrying rapops' block magic is RiptOPL's; anything else belongs to the user and is
    never deleted or overwritten. 0: absent, 1: ours (kept), -1: the user's, -2: cannot tell. */

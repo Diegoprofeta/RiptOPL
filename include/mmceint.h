@@ -80,6 +80,7 @@ public:
     // budget only for a card we have already seen -- a console with genuinely no MMCE must not pay
     // ~1.6s of devctl timeouts on every 2s refresh.
     unsigned char everResolved = 0;
+    int waitCardReady(const char *device);
     int modLoaded = 0;               // latched by loadModules; read by sendGameID's arm check
     char gameIdTarget[8] = {0};      // last device a GameID 0x8 switch was SENT to (gameIdSettle polls it)
     base_game_info_t emptyGame = {}; // sentinel returned for stale/invalid ids (never launched)

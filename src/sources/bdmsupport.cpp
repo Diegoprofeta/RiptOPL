@@ -52,6 +52,19 @@ static int bdmAutoLaunch; // Auto Loading waits for its own mass device; skip me
 int hddModLoaded = 0;
 static int udpbdModLoaded = 0;
 static int udpbdNicClaimed = 0; // SMAP resident, even if later block modules failed; only an IOP reset frees it
+
+// An in-menu IOP reset (reset(), e.g. after the NBD server stops) unloads every module, but these
+// latches kept reading "loaded", so iLink, MX4SIO, ATA, PCCF and UDPBD were never loaded again until
+// a reboot. sysReset clears its own module table; reset() calls this for ours.
+// Ported from RIPPS2 build 115 (akilluminati47/RIPPS2, bdmIopWasReset).
+void bdmIopWasReset(void)
+{
+    if (pccfModLoaded)
+        pccfProbeGeneration++; // CF only retries on an explicit probe; a reset that unloaded it is one
+    iUSBModLoaded = iLinkModLoaded = iLinkManModLoaded = ieee1394ModLoaded = mx4sioModLoaded = 0;
+    pccfModLoaded = hddModLoaded = udpbdModLoaded = udpbdNicClaimed = 0;
+    gBdmSupport.setLoadedNetProtocol(-1);
+}
 /*
   udpbdModLoaded alone is protocol-agnostic: both branches of the loader set it to 1, so once
   either chain is up the module gate short-circuits. But the tab label, the tab icon and the
