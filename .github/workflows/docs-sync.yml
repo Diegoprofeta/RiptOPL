@@ -85,7 +85,9 @@ jobs:
               path = pages / name
               html = path.read_text(encoding="utf-8")
               pages_before[name] = html
-              if 'id="external-tools"' in html:
+              # Match the generated section itself: a page can carry a bare id="external-tools"
+              # forwarding anchor, which would skip both branches and leave the page without it.
+              if '<section class="callout info" id="external-tools">' in html:
                   html = re.sub(r'<section class="callout info" id="external-tools">.*?</section>', html_section, html, count=1, flags=re.DOTALL)
               else:
                   html = html.replace('<main class="content">', '<main class="content">\n' + html_section, 1)

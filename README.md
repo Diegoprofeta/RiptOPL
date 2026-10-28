@@ -65,8 +65,8 @@ build manifests and checksums for all three editions. Channels are published onl
 by an explicit dispatch after verification; unpublished builds are available as
 Actions artifacts. See [release channels and packaging](ROLLING_RELEASE.md).
 
-Imported feature and hardware documentation describes production behavior and
-still needs hardware validation on this C++/ps2build migration. The parity port with the legacy
+Hardware results in the feature documentation were measured on the legacy C edition unless a
+page says otherwise; each still needs a retest on this C++/ps2build edition. The parity port with the legacy
 edition is merged, including the RA browser, client and ORBIT integration; see the
 [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md) and the
 [fork-gap status](docs/FORK-GAP-STATUS-2026-10-28.md), which also covers the RIPPS2 audit by
@@ -732,7 +732,7 @@ To run OPL, you need an entry point for running PS2 titles. You can use everythi
 ## Some notes for DEVS
 
 Use [ps2build](docs/PS2BUILD-MIGRATION.md) for this C++ source tree. The legacy
-Makefile and container instructions belong to the production C lineage and are
+Makefile and container instructions belong to the legacy C edition and are
 not supported here. Run assets and matching audio-package setup, then
 `python tools/build_edition.py korium`, `ra` or `incebtion`; see the complete
 commands and manifest contract in [ROLLING_RELEASE.md](ROLLING_RELEASE.md).
