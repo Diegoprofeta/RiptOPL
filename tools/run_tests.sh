@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.." || exit 1
 keep=0; [ "$1" = "-k" ] && keep=1
 fail=0
 for t in .github/scripts/test_*.py; do
-    case "$t" in *test_site_sync.py) python3 -c "import bs4" 2>/dev/null || { echo "SKIP $t (needs bs4)"; continue; };; esac
+    case "$t" in *test_site_sync.py|*test_wiki_sync.py) python3 -c "import bs4" 2>/dev/null || { echo "SKIP $t (needs bs4)"; continue; };; esac
     if python3 "$t" >/tmp/riptopl-test.log 2>&1; then echo "ok   $t"; else echo "FAIL $t"; tail -5 /tmp/riptopl-test.log; fail=$((fail+1)); [ $keep = 1 ] || exit 1; fi
 done
 if sh tools/pc/http/tests/run.sh >/tmp/riptopl-test.log 2>&1; then echo "ok   tools/pc/http/tests/run.sh"; else echo "FAIL tools/pc/http/tests/run.sh"; tail -5 /tmp/riptopl-test.log; fail=$((fail+1)); fi
