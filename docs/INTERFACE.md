@@ -18,6 +18,28 @@ hides them. Back and L1/R1 keep edits for the session; **Save Changes** keeps th
 
 ---
 
+## Theme selection
+
+**Settings → Interface → Theme** picks the theme: `<OPL>` or a disk theme from `THM/`.
+**Theme View** picks how it draws your games: **List**, **Coverflow** (the centered carousel) or
+**PSBBN Flow** (the PSBBN Definitive Project Game Collection look). `<OPL>` offers all three; a disk
+theme offers the views its author declared, and shows its default view for any other pick. **Default**
+uses the theme's own default. Holding **L3** for half a second on the main page switches to the next
+view the theme offers, without opening the settings. Apply and save to retain the choice. Fresh
+configurations start with `<OPL>` in the List view, 4:3 and Auto video mode; theme, view and aspect are
+separate settings. A configuration that saved the former `<Coverflow>` or `<PSBBN Flow>` theme loads
+`<OPL>` with that view, and the next save writes `<OPL>` plus `theme_view=`.
+
+Both flow views rotate navigation on the main game list: Left/Right browse covers and Up/Down
+change sources. R3 remains Favorite, and info/settings screens keep their normal controls.
+**Coverflow Settings** tunes the `Coverflow` renderer; PSBBN Flow uses its fixed layout and
+25-frame glide. All three views share the editable palette, artwork and audio settings.
+Theme authors declare views with `views=` and `<view>.` blocks; see the
+[Theme Engine reference](THEME_ENGINE.md#views-multi-view-themes--this-fork). Idea and design: KrahJohlito.
+**NOT TESTED on hardware.**
+
+---
+
 ## Menu font size
 
 **Settings → Interface → Font Size.** Choose **Small**, **Default** or **Large**.
