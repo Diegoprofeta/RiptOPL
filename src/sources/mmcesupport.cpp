@@ -519,6 +519,11 @@ void mmceLoadModules(void)
     gMmceSupport.loadModules();
 }
 
+int mmceModulesLoaded(void)
+{
+    return gMmceSupport.modLoaded != 0;
+}
+
 // Δ4 (NHDDL parity): arm the GameID transport OUTSIDE the launch path. NHDDL loads mmceman once at
 // boot; RiptOPL used to self-arm inside sendGameID -- an IRX load/start at the launch's most
 // fragile moment (issue #51's fix, right intent, wrong timing). Called from initAllSupport (boot +

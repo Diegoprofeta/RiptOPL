@@ -2014,6 +2014,18 @@ gui_strings:
   label: GAME_DELETE_FAILED
   string: "%s could not be deleted. Is the device write-protected?"
 
+- comment: Asked before a POPSTARTER (PS1) launch when this drive lacks Sony's POPS files and another drive has them (RIPPS2 RIPPOPS). 1st %s is the folder they were found in, 2nd the files to copy, then the device root and the POPS folder name.
+  label: POPS_COPY_OFFER
+  string: "Sony's POPS files are in %s. Copy %s to %s%s and launch?"
+
+- comment: Shown while one POPS file is copied before a PS1 launch. %s is the file name.
+  label: POPS_COPYING
+  string: Copying %s...
+
+- comment: A POPS file could not be copied before a PS1 launch. 1st %s is the file, then the device root and the POPS folder name.
+  label: POPS_COPY_FAILED
+  string: "%s could not be copied to %s%s. Is the drive full or write-protected?"
+
 - comment: Main menu item and page title for the drive status page (RIPPS2 build 114).
   label: DRIVE_STATUS
   string: Drive Status
