@@ -335,7 +335,7 @@ static void menuHideGame(submenu_list_t **submenu)
 // keeps the plain delete.
 static int menuDeleteEverything(submenu_list_t **submenu, item_list_t *support)
 {
-    char name[HIDDEN_NAME_MAX], part0[256], sepStr[2], msg[700];
+    char name[HIDDEN_NAME_MAX], prefix[256], partPath[256], sepStr[2], msg[700];
     int id = selected_item->item->current->item.id;
     gm_delete_plan_t *plan = static_cast<gm_delete_plan_t *>(malloc(sizeof(*plan)));
 
@@ -350,7 +350,9 @@ static int menuDeleteEverything(submenu_list_t **submenu, item_list_t *support)
     snprintf(name, sizeof(name), "%s", rowName != NULL ? rowName : "");
     sepStr[0] = support->mode == ETH_MODE ? '\\' : '/';
     sepStr[1] = '\0';
-    sbCreatePath(static_cast<base_game_info_t *>(gs->game(support, id)), part0, gs->prefix(support), sepStr, 0);
+    // a copy of the row and its prefix: the delete rebuilds the list they live in
+    base_game_info_t game = *static_cast<base_game_info_t *>(gs->game(support, id));
+    snprintf(prefix, sizeof(prefix), "%s", gs->prefix(support));
 
     snprintf(msg, sizeof(msg), _l(_STR_DELETE_GAME_PLAN), name, plan->parts, plan->cfg, plan->art, plan->cht);
     if (plan->shared)
@@ -368,9 +370,16 @@ static int menuDeleteEverything(submenu_list_t **submenu, item_list_t *support)
     guiSwitchScreen(GUI_SCREEN_MAIN);
     submenuDestroy(submenu);
     gs->deleteGame(support, id); // every part, and a UL game's ul.cfg made again
-    int fd = part0[0] != '\0' ? open(part0, O_RDONLY) : -1;
-    if (fd >= 0) {
-        close(fd);
+    // every part has to be gone before the CFG, art and cheats go: a part left behind keeps them
+    int partLeft = 0, part, fd;
+    for (part = 0; part < game.parts && !partLeft; part++) {
+        sbCreatePath(&game, partPath, prefix, sepStr, part);
+        if ((fd = open(partPath, O_RDONLY)) >= 0) {
+            close(fd);
+            partLeft = 1;
+        }
+    }
+    if (partLeft) {
         snprintf(msg, sizeof(msg), _l(_STR_GAME_DELETE_FAILED), name);
         guiMsgBox(msg, 0, NULL);
     } else {
