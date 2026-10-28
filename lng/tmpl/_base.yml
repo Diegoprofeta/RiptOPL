@@ -1924,3 +1924,5 @@ gui_strings:
   string: "Cannot delete the unused RA module."
 - label: PS1_RA_CLEAN_CONTINUE
   string: "Continue anyway? A leftover RA module can run stale telemetry. No cancels launch."
+- label: HINT_THEME_VIEW
+  string: "How the theme draws your games: List, Coverflow or PSBBN Flow. Hold L3 on the main page to switch. Themes without that look use their default."
