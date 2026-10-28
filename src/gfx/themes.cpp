@@ -17,6 +17,7 @@
 #include "include/favsupport.h"
 #include "include/vcdsupport.h" // vcdDisplayName -- display-only VCD game-ID prefix hide
 #include "include/libview.h"    // libViewActive / libListViewActive -- which list this page shows
+#include "include/themeviews.h"
 #ifdef RETROACHIEVEMENTS
 #include "include/rabadge.h" // RA: mark over the cover
 #endif
@@ -32,6 +33,13 @@ extern const char theme_psbbn_flow_cfg;
 extern u16 size_theme_psbbn_flow_cfg;
 
 theme_t *gTheme;
+
+// The view the user asked for (THM_VIEW_*), -1 = the theme's default. thmLoad falls back to the theme's
+// default when the theme does not offer it.
+int gThemeViewRequest = -1;
+
+// Parse-time only: the "<view>" block prefix of the view thmLoad is building, "" for the base blocks.
+static const char *thmParseViewPrefix = "";
 
 static ThemeCatalog gCatalog;
 
@@ -780,8 +788,7 @@ static int thmFavKindDeclared(config_set_t *themeConfig, const char *prefix, int
     int j, claimsSlot;
 
     for (j = 0; j < count; j++) {
-        snprintf(name, sizeof(name), "%s%d", prefix, j);
-        if (thmBlockPresent(themeConfig, name, &claimsSlot))
+        if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, &prefix, 1, j, name, sizeof(name)) && thmBlockPresent(themeConfig, name, &claimsSlot))
             return 1;
     }
     return 0;
@@ -796,20 +803,15 @@ static int thmSlotListKept(config_set_t *themeConfig, theme_elems_t *today, cons
 {
     char path[64];
     theme_element_t *e;
-    int k, c, claimsSlot, earlier = 0, kept = 0;
+    int k, claimsSlot, earlier = 0, kept = 0;
 
     for (e = today->first; e != NULL; e = e->next) {
         if (e->type == ELEM_TYPE_ITEMS_LIST && !e->deviceFilter)
             kept++;
     }
     for (k = 0; k < j; k++) {
-        for (c = 0; c < chainLen; c++) {
-            snprintf(path, sizeof(path), "%s%d", chain[c], k);
-            if (thmBlockPresent(themeConfig, path, &claimsSlot)) {
-                earlier += claimsSlot;
-                break;
-            }
-        }
+        if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, chain, chainLen, k, path, sizeof(path)) && thmBlockPresent(themeConfig, path, &claimsSlot))
+            earlier += claimsSlot;
     }
     return earlier < kept;
 }
@@ -822,24 +824,34 @@ static int thmSlotListKept(config_set_t *themeConfig, theme_elems_t *today, cons
 static void addFavKindSlot(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_elems_t *elems, theme_elems_t *today, const char *prefix, int j, const char *const *chain, int chainLen)
 {
     char path[64];
-    int c, claimsSlot;
+    int claimsSlot;
 
-    snprintf(path, sizeof(path), "%s%d", prefix, j);
-    if (addGUIElem(themePath, themeConfig, theme, elems, NULL, path))
-        return;
-    for (c = 0; c < chainLen; c++) {
-        snprintf(path, sizeof(path), "%s%d", chain[c], j);
-        if (!thmBlockPresent(themeConfig, path, &claimsSlot))
-            continue;
-        if (claimsSlot && !thmSlotListKept(themeConfig, today, chain, chainLen, j))
-            return;
-        theme_element_t *before = elems->last;
+    if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, &prefix, 1, j, path, sizeof(path))) {
         addGUIElem(themePath, themeConfig, theme, elems, NULL, path);
-        theme_element_t *e = before ? before->next : elems->first;
-        for (; e != NULL; e = e->next)
-            e->inherited = 1;
         return;
     }
+    if (!thmViewResolveSlot(themeConfig, thmParseViewPrefix, chain, chainLen, j, path, sizeof(path)))
+        return;
+    thmBlockPresent(themeConfig, path, &claimsSlot);
+    if (claimsSlot && !thmSlotListKept(themeConfig, today, chain, chainLen, j))
+        return;
+    theme_element_t *before = elems->last;
+    addGUIElem(themePath, themeConfig, theme, elems, NULL, path);
+    theme_element_t *e = before ? before->next : elems->first;
+    for (; e != NULL; e = e->next)
+        e->inherited = 1;
+}
+
+// Parse block j of a slot family through its fallback chain in the view being built (see
+// thmViewResolveSlot for the order). 0 when no block of the chain is present.
+static int addGUIElemSlot(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_elems_t *elems, const char *const *chain, int chainLen, int j)
+{
+    char path[THM_VIEW_BLOCK_NAME_LEN];
+
+    if (!thmViewResolveSlot(themeConfig, thmParseViewPrefix, chain, chainLen, j, path, sizeof(path)))
+        return 0;
+    addGUIElem(themePath, themeConfig, theme, elems, NULL, path);
+    return 1;
 }
 
 static void freeGUIElems(theme_elems_t *elems)
@@ -1120,11 +1132,21 @@ static int thmLoad(const char *themePath)
         configRead(themeConfig); // try to load the theme config file. If it does not exist, defaults will be used.
     }
 
+    // Pick the view to build (docs/MULTI-VIEW-THEMES-PLAN.md). Only that view is parsed; switching views
+    // reloads the theme. A theme that declares no "<view>." keys parses exactly as before.
+    thm_view_info_t viewInfo;
+    thmViewScan(themeConfig, &viewInfo);
+    newT->view = thmViewChoose(&viewInfo, gThemeViewRequest);
+    newT->viewMask = viewInfo.mask;
+    const char *viewPrefix = thmViewPrefix(&viewInfo, newT->view);
+    thmParseViewPrefix = viewPrefix;
+    LOG("THEMES View %s (offered mask 0x%x, native %s, prefix '%s')\n", thmViewName(newT->view), newT->viewMask, thmViewName(viewInfo.native), viewPrefix);
+
     int intValue;
-    if (configGetInt(themeConfig, "use_default", &intValue))
+    if (thmViewGetInt(themeConfig, viewPrefix, "use_default", &intValue))
         newT->useDefault = intValue;
 
-    if (configGetInt(themeConfig, "use_real_height", &intValue)) {
+    if (thmViewGetInt(themeConfig, viewPrefix, "use_real_height", &intValue)) {
         if (intValue)
             newT->usedHeight = gThmScreenHeight;
     }
@@ -1140,24 +1162,24 @@ static int thmLoad(const char *themePath)
     //
     // DISK themes are the opposite case and keep these overrides: their colours belong to the theme
     // file, which is why the picker is greyed out read-only for them (issue #537).
-    configGetColor(themeConfig, "bg_color", newT->bgColor);
+    thmViewGetColor(themeConfig, viewPrefix, "bg_color", newT->bgColor);
     // absent key leaves the thmSetColors default (settings picker value; black out of the box)
-    configGetColor(themeConfig, CONFIG_OPL_PLAS_BLEND_COLOR, newT->plasBlendColor);
+    thmViewGetColor(themeConfig, viewPrefix, CONFIG_OPL_PLAS_BLEND_COLOR, newT->plasBlendColor);
 
     unsigned char color[3];
-    if (configGetColor(themeConfig, "text_color", color))
+    if (thmViewGetColor(themeConfig, viewPrefix, "text_color", color))
         newT->textColor = GS_SETREG_RGBA(color[0], color[1], color[2], 0x80);
 
-    if (configGetColor(themeConfig, "ui_text_color", color))
+    if (thmViewGetColor(themeConfig, viewPrefix, "ui_text_color", color))
         newT->uiTextColor = GS_SETREG_RGBA(color[0], color[1], color[2], 0x80);
 
-    if (configGetColor(themeConfig, "title_color", color))
+    if (thmViewGetColor(themeConfig, viewPrefix, "title_color", color))
         newT->titleColor = GS_SETREG_RGBA(color[0], color[1], color[2], 0x80);
 
-    if (configGetColor(themeConfig, "sel_text_color", color))
+    if (thmViewGetColor(themeConfig, viewPrefix, "sel_text_color", color))
         newT->selTextColor = GS_SETREG_RGBA(color[0], color[1], color[2], 0x80);
 
-    if (configGetInt(themeConfig, "coverflow_cover_offset", &intValue)) {
+    if (thmViewGetInt(themeConfig, viewPrefix, "coverflow_cover_offset", &intValue)) {
         // clamp -- this feeds coverWidth * offset / 256 in drawCoverFlow; an
         // unbounded value from an untrusted theme .cfg would signed-overflow that
         // multiply (Codex audit, Low 1). The range is far wider than any real theme.
@@ -1173,50 +1195,39 @@ static int thmLoad(const char *themePath)
     if (themePath)
         thmLoadFonts(themeConfig, themePath, newT);
 
-    int i = 1, j;
-    snprintf(path, sizeof(path), "main0");
-    while (addGUIElem(themePath, themeConfig, newT, &newT->mainElems, NULL, path))
-        snprintf(path, sizeof(path), "main%d", i++);
+    // Every family resolves block j through its fallback chain, the active view's "<view>." blocks first
+    // (thmViewResolveSlot). The chains are the ones these families always used.
+    static const char *const mainChain[] = {"main"};
+    static const char *const appsMainChain[] = {"appsMain", "main"};
+    static const char *const favsMainChain[] = {"favsMain", "main"};
+    static const char *const vcdMainChain[] = {"vcdMain", "appsMain", "main"};
+    static const char *const infoChain[] = {"info"};
+    static const char *const appsInfoChain[] = {"appsInfo", "info"};
+    static const char *const favsInfoChain[] = {"favsInfo", "info"};
+    static const char *const vcdInfoChain[] = {"vcdInfo", "info"};
 
-    for (j = 0; j < i; j++) {
-        snprintf(path, sizeof(path), "appsMain%d", j);
+    // The base list runs until the first absent block. i ends one past the count, as it always has, so
+    // the kind loops below also try a kind block at the slot right after the last main block.
+    int i, j;
+    for (i = 0; addGUIElemSlot(themePath, themeConfig, newT, &newT->mainElems, mainChain, 1, i); i++)
+        ;
+    i++;
 
-        if (addGUIElem(themePath, themeConfig, newT, &newT->appsMainElems, NULL, path))
-            continue;
-        else {
-            snprintf(path, sizeof(path), "main%d", j);
-            addGUIElem(themePath, themeConfig, newT, &newT->appsMainElems, NULL, path);
-        }
-    }
+    for (j = 0; j < i; j++)
+        addGUIElemSlot(themePath, themeConfig, newT, &newT->appsMainElems, appsMainChain, 2, j);
 
     // Favourites family: favsMain<j> override, else fall back to main<j> (identical to appsMain).
     // Runs after appsMain so a favsMain ItemsList claims the 3rd slot (favsItemsList), and before
     // the info passes so an info ItemsList never steals it.
-    for (j = 0; j < i; j++) {
-        snprintf(path, sizeof(path), "favsMain%d", j);
-
-        if (addGUIElem(themePath, themeConfig, newT, &newT->favsMainElems, NULL, path))
-            continue;
-        else {
-            snprintf(path, sizeof(path), "main%d", j);
-            addGUIElem(themePath, themeConfig, newT, &newT->favsMainElems, NULL, path);
-        }
-    }
+    for (j = 0; j < i; j++)
+        addGUIElemSlot(themePath, themeConfig, newT, &newT->favsMainElems, favsMainChain, 2, j);
 
     // VCD/PS1 view main family: vcdMain<j> override, else fall back to appsMain<j> (the square box),
     // else main<j>. The apps fallback means a theme that defines no vcdMain still gets the square VCD
     // look it had before this family existed. An ItemsList reached via this fallback claims the 4th
     // slot (vcdItemsList) in addGUIElem, giving the VCD list its OWN cover cache (separateVcdCoverCache).
-    for (j = 0; j < i; j++) {
-        snprintf(path, sizeof(path), "vcdMain%d", j);
-        if (addGUIElem(themePath, themeConfig, newT, &newT->vcdMainElems, NULL, path))
-            continue;
-        snprintf(path, sizeof(path), "appsMain%d", j);
-        if (addGUIElem(themePath, themeConfig, newT, &newT->vcdMainElems, NULL, path))
-            continue;
-        snprintf(path, sizeof(path), "main%d", j);
-        addGUIElem(themePath, themeConfig, newT, &newT->vcdMainElems, NULL, path);
-    }
+    for (j = 0; j < i; j++)
+        addGUIElemSlot(themePath, themeConfig, newT, &newT->vcdMainElems, vcdMainChain, 3, j);
 
     // Favourites per-kind MAIN families -- opt-in, built only when the theme declares a block of them.
     // favsVcdMain<j> falls back along vcdMain's own chain (the Favourites PS1 view renders vcdMain today);
@@ -1224,72 +1235,44 @@ static int thmLoad(const char *themePath)
     // after the four slot families with slot claiming off, so they can never take an ItemsList slot.
     newT->parsingFavKindFamily = 1;
     if (thmFavKindDeclared(themeConfig, "favsVcdMain", i)) {
-        static const char *const vcdChain[] = {"vcdMain", "appsMain", "main"};
         for (j = 0; j < i; j++)
-            addFavKindSlot(themePath, themeConfig, newT, &newT->favsVcdMainElems, &newT->vcdMainElems, "favsVcdMain", j, vcdChain, 3);
+            addFavKindSlot(themePath, themeConfig, newT, &newT->favsVcdMainElems, &newT->vcdMainElems, "favsVcdMain", j, vcdMainChain, 3);
     }
     if (thmFavKindDeclared(themeConfig, "favsAppsMain", i)) {
-        static const char *const appsChain[] = {"favsMain", "main"};
         for (j = 0; j < i; j++)
-            addFavKindSlot(themePath, themeConfig, newT, &newT->favsAppsMainElems, &newT->favsMainElems, "favsAppsMain", j, appsChain, 2);
+            addFavKindSlot(themePath, themeConfig, newT, &newT->favsAppsMainElems, &newT->favsMainElems, "favsAppsMain", j, favsMainChain, 2);
     }
     newT->parsingFavKindFamily = 0;
 
-    i = 1;
-    snprintf(path, sizeof(path), "info0");
-    while (addGUIElem(themePath, themeConfig, newT, &newT->infoElems, NULL, path))
-        snprintf(path, sizeof(path), "info%d", i++);
+    for (i = 0; addGUIElemSlot(themePath, themeConfig, newT, &newT->infoElems, infoChain, 1, i); i++)
+        ;
+    i++;
 
-    for (j = 0; j < i; j++) {
-        snprintf(path, sizeof(path), "appsInfo%d", j);
-
-        if (addGUIElem(themePath, themeConfig, newT, &newT->appsInfoElems, NULL, path))
-            continue;
-        else {
-            snprintf(path, sizeof(path), "info%d", j);
-            addGUIElem(themePath, themeConfig, newT, &newT->appsInfoElems, NULL, path);
-        }
-    }
+    for (j = 0; j < i; j++)
+        addGUIElemSlot(themePath, themeConfig, newT, &newT->appsInfoElems, appsInfoChain, 2, j);
 
     // Favourites info family: favsInfo<j> override, else info<j> (identical to appsInfo).
-    for (j = 0; j < i; j++) {
-        snprintf(path, sizeof(path), "favsInfo%d", j);
-
-        if (addGUIElem(themePath, themeConfig, newT, &newT->favsInfoElems, NULL, path))
-            continue;
-        else {
-            snprintf(path, sizeof(path), "info%d", j);
-            addGUIElem(themePath, themeConfig, newT, &newT->favsInfoElems, NULL, path);
-        }
-    }
+    for (j = 0; j < i; j++)
+        addGUIElemSlot(themePath, themeConfig, newT, &newT->favsInfoElems, favsInfoChain, 2, j);
 
     // VCD/PS1 view info family: vcdInfo<j> override, else fall back to info<j>.
-    for (j = 0; j < i; j++) {
-        snprintf(path, sizeof(path), "vcdInfo%d", j);
-
-        if (addGUIElem(themePath, themeConfig, newT, &newT->vcdInfoElems, NULL, path))
-            continue;
-        else {
-            snprintf(path, sizeof(path), "info%d", j);
-            addGUIElem(themePath, themeConfig, newT, &newT->vcdInfoElems, NULL, path);
-        }
-    }
+    for (j = 0; j < i; j++)
+        addGUIElemSlot(themePath, themeConfig, newT, &newT->vcdInfoElems, vcdInfoChain, 2, j);
 
     // Favourites per-kind INFO families, same opt-in rule. favsVcdInfo<j> falls back like vcdInfo (a PS1
     // row's info screen uses vcdInfo today); favsAppsInfo<j> like favsInfo (an app favourite's info
     // screen uses favsInfo today).
     newT->parsingFavKindFamily = 1;
     if (thmFavKindDeclared(themeConfig, "favsVcdInfo", i)) {
-        static const char *const vcdInfoChain[] = {"vcdInfo", "info"};
         for (j = 0; j < i; j++)
             addFavKindSlot(themePath, themeConfig, newT, &newT->favsVcdInfoElems, &newT->vcdInfoElems, "favsVcdInfo", j, vcdInfoChain, 2);
     }
     if (thmFavKindDeclared(themeConfig, "favsAppsInfo", i)) {
-        static const char *const appsInfoChain[] = {"favsInfo", "info"};
         for (j = 0; j < i; j++)
-            addFavKindSlot(themePath, themeConfig, newT, &newT->favsAppsInfoElems, &newT->favsInfoElems, "favsAppsInfo", j, appsInfoChain, 2);
+            addFavKindSlot(themePath, themeConfig, newT, &newT->favsAppsInfoElems, &newT->favsInfoElems, "favsAppsInfo", j, favsInfoChain, 2);
     }
     newT->parsingFavKindFamily = 0;
+    thmParseViewPrefix = "";
 
     validateGUIElems(themePath, themeConfig, newT);
 

@@ -204,6 +204,11 @@ typedef struct theme
     theme_elems_t favsAppsInfoElems;
     int parsingFavKindFamily; // parse-time only: addGUIElem must not claim an ItemsList slot
 
+    // Multi-view themes (include/themeviews.h): the THM_VIEW_* this theme was built for, and the views it
+    // offers as a (1 << THM_VIEW_*) mask.
+    int view;
+    unsigned int viewMask;
+
     theme_element_t *coverflow;
     theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
     int coverflowCoverOffset;
@@ -220,6 +225,9 @@ typedef struct theme
 } theme_t;
 
 extern theme_t *gTheme;
+
+// The view the user asked for (THM_VIEW_*), -1 = the theme's default. Applied by the next theme load.
+extern int gThemeViewRequest;
 
 extern int gCoverflowCount, gCoverflowCenterScale, gCoverflowAnimSpeed, gCoverflowDimCovers;
 void thmTriggerCoverflowAnim(int dir);
