@@ -47,7 +47,11 @@ struct item_list_t {
 };
 struct opl_io_module_t { item_list_t *support; };
 static int gShowHidden = 0;
-static int hiddenHas(item_list_t *, int, const char *) { return 0; } // Hide Game: nothing hidden here
+// Hide Game: "Hidden" everywhere, and the SMB copy of "Rez"
+static int hiddenHas(item_list_t *owner, int, const char *name)
+{
+    return !strcmp(name, "Hidden") || (owner->mode == ETH_MODE && !strcmp(name, "Rez"));
+}
 struct fav_rec_t { item_list_t *owner; int mode, id, icon_id, text_id, kind; char *text, *display; int starred; };
 struct fav_raw_t { int mode, id, icon_id, text_id, kind; char text[FAV_TEXT_MAX]; };
 
@@ -139,24 +143,29 @@ int main(void)
     game(&usb, 0, "Ico", 0, 0);
     game(&usb, 0, "Saves", GAME_FORMAT_FOLDER, 0);
     game(&usb, 0, "Okami", 0, 0);
+    game(&usb, 0, "Rez", 0, 0);
     game(&usb, 1, "SLUS_000.01.Crash", 0, 0);
     game(&usb, 1, "Spyro", 0, 1);
     setup(&hdd, HDD_MODE, 1);
     hdd.vcd = 1; /* POPSTARTER only: an Ember row cannot launch here */
     game(&hdd, 0, "Ico", 0, 0);
+    game(&hdd, 0, "Hidden", 0, 0); /* hidden: never gathered */
     game(&hdd, 1, "Spyro", 0, 1);
     game(&hdd, 1, "Tekken", 0, 0);
     setup(&apps, APP_MODE, 2);
     game(&apps, 0, "uLE", 0, 0);
     setup(&smb, ETH_MODE, 3);
     game(&smb, 0, "Okami", 0, 0);
+    game(&smb, 0, "Rez", 0, 0); /* hidden here: never gathered, and tags no other copy */
     setup(&mmce, MMCE_MODE, 0);
     mmce.enabled = 0; /* on Manual and not started */
     game(&mmce, 0, "Shadow", 0, 0);
 
     fav_raw_t favs[3] = {{BDM_MODE3, 2, 0, 0, FAV_KIND_ISO, "Okami"}, {APP_MODE, 99, 0, 0, FAV_KIND_ELF, "uLE"},
                          {HDD_MODE, 0, 0, 0, FAV_KIND_CUE, "Spyro"}};
-    assert(store.gatherAllGames(LIB_VIEW_ALL, favs, 3) == 8);
+    assert(store.gatherAllGames(LIB_VIEW_ALL, favs, 3) == 9);
+    assert(find("Hidden", FAV_KIND_ISO) < 0 && find("Hidden (HDD Games)", FAV_KIND_ISO) < 0);
+    assert(find("Rez", FAV_KIND_ISO) >= 0 && find("Rez (USB Games)", FAV_KIND_ISO) < 0); /* the hidden copy tags nothing */
     assert(find("Ico (USB Games)", FAV_KIND_ISO) >= 0 && find("Ico (HDD Games)", FAV_KIND_ISO) >= 0);
     assert(find("Okami (USB Games)", FAV_KIND_ISO) >= 0 && find("Okami (SMB Games)", FAV_KIND_ISO) >= 0);
     assert(find("Saves", FAV_KIND_ISO) < 0 && find("Shadow", FAV_KIND_ISO) < 0); /* folder, unstarted source */
@@ -178,17 +187,17 @@ int main(void)
     freeArray();
 
     /* shelves */
-    assert(store.gatherAllGames(LIB_VIEW_ISO, NULL, 0) == 4 && find("uLE", FAV_KIND_ELF) < 0);
+    assert(store.gatherAllGames(LIB_VIEW_ISO, NULL, 0) == 5 && find("uLE", FAV_KIND_ELF) < 0);
     freeArray();
     assert(store.gatherAllGames(LIB_VIEW_PS1, NULL, 0) == 3);
     freeArray();
     assert(store.gatherAllGames(LIB_VIEW_ELF, NULL, 0) == 1);
     freeArray();
     gPCShareName[0] = 0; /* the share picker lists shares, not games */
-    assert(store.gatherAllGames(LIB_VIEW_ISO, NULL, 0) == 3 && find("Okami", FAV_KIND_ISO) >= 0);
+    assert(store.gatherAllGames(LIB_VIEW_ISO, NULL, 0) == 4 && find("Okami", FAV_KIND_ISO) >= 0);
     freeArray();
     apps.enabled = 0;
-    assert(store.gatherAllGames(LIB_VIEW_ALL, NULL, 0) == 6 && armed > 0); /* apps on Manual: scan armed (no SMB share) */
+    assert(store.gatherAllGames(LIB_VIEW_ALL, NULL, 0) == 7 && armed > 0); /* apps on Manual: scan armed (no SMB share) */
     freeArray();
     usb.enabled = hdd.enabled = smb.enabled = 0;
     assert(store.gatherAllGames(LIB_VIEW_ALL, NULL, 0) == 0 && store.array_ == NULL);
