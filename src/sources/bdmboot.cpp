@@ -81,7 +81,7 @@ int BdmBoot::bootElfPresent(int slot, const char *tail, const char *elfName)
 
 // The one slot other than literalSlot whose elfAt() says it holds the booted ELF; -1 when none or
 // several do, since a guess between two copies is exactly what the literal slot rule refuses.
-int bdmPickBootElfSlot(int literalSlot, int slotCount, int (*elfAt)(int slot, void *ctx), void *ctx)
+static int bdmPickBootElfSlot(int literalSlot, int slotCount, int (*elfAt)(int slot, void *ctx), void *ctx)
 {
     int found = -1;
 
@@ -99,7 +99,6 @@ struct BootElfProbe
 {
     const char *tail;
     const char *elfName;
-    int bdmType; // BDM_TYPE_UNKNOWN, or the one family a save-time retry is pinned to
 };
 
 static int bootElfProbe(int slot, void *ctx)
@@ -107,9 +106,7 @@ static int bootElfProbe(int slot, void *ctx)
     const BootElfProbe *probe = (const BootElfProbe *)ctx;
     int type;
 
-    if (!BdmBoot::slotIdentity(slot, &type))
-        return 0;
-    if (probe->bdmType != BDM_TYPE_UNKNOWN && type != probe->bdmType)
+    if (!BdmBoot::slotIdentity(slot, &type) || type == BDM_TYPE_UDPBD)
         return 0;
     return BdmBoot::elfOnSlot(slot, probe->tail, probe->elfName);
 }
@@ -306,12 +303,14 @@ int BdmBoot::resolveWithBudget(char *bootDir, int bootDirSize, const char *elfNa
         // launcher that also had an exFAT HDD or a second drive up the stick it booted from is not
         // necessarily mass0: here. Keeping an EMPTY slot read defaults and failed every save with
         // FatFs's FR_NOT_ENABLED, shown as "(error 12)". A stick that holds the very ELF we run from
-        // is proof, so it is taken -- but only when exactly one slot holds it, and never over a slot
-        // that did mount: dual-USB installs still keep the slot the launcher named.
-        if (result < 0 && *ioBdmType != BDM_TYPE_UDPBD && elfName != NULL && elfName[0] != '\0' &&
+        // is proof, so it is taken -- but only when exactly one slot holds it, never over a slot
+        // that did mount, and only while the home is still unidentified: once boot or a save has
+        // identified the slot (knownType), a stick pulled later must fail the save visibly rather
+        // than move the settings to a second drive that carries another copy of the ELF.
+        if (result < 0 && knownType == BDM_TYPE_UNKNOWN && elfName != NULL && elfName[0] != '\0' &&
             !readLiteralMassIdentity(unit, &unused)) {
             const char *tail = strchr(bootDir, ':') + 1;
-            BootElfProbe probe = {tail, elfName, *ioBdmType};
+            BootElfProbe probe = {tail, elfName};
             int slot = bdmPickBootElfSlot(unit, MAX_BDM_DEVICES, bootElfProbe, &probe);
             int slotType;
 

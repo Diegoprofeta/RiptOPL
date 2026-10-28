@@ -38,6 +38,4 @@ private:
 
 extern BdmBoot gBdmBoot;
 
-int bdmPickBootElfSlot(int literalSlot, int slotCount, int (*elfAt)(int slot, void *ctx), void *ctx);
-
 #endif

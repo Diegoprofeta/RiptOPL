@@ -25,11 +25,13 @@ boot = (ROOT / 'src/sources/bdmboot.cpp').read_text()
 # The fallback must stay behind both guards: the literal slot did not mount, and an ELF name is known.
 assert '!readLiteralMassIdentity(unit, &unused)' in boot
 assert "elfName != NULL && elfName[0] != '\\0'" in boot
+# Only an unidentified home may move: a slot identified earlier (knownType) keeps failing visibly.
+assert 'result < 0 && knownType == BDM_TYPE_UNKNOWN &&' in boot
 assert 'bdmPickBootElfSlot(unit, MAX_BDM_DEVICES, bootElfProbe, &probe)' in boot
 util = (ROOT / 'src/platform/util.cpp').read_text()
 assert 'int savedErrno = bdmFatfsOpenErrno(fpath, errno != 0 ? errno : EIO);' in util
 
-production = function('src/sources/bdmboot.cpp', 'int bdmPickBootElfSlot(')
+production = function('src/sources/bdmboot.cpp', 'static int bdmPickBootElfSlot(')
 production += function('src/platform/util.cpp', 'int bdmFatfsOpenErrno(')
 program = r'''
 #include <assert.h>
