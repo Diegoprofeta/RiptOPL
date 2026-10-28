@@ -60,6 +60,10 @@ int main()
     CHECK(info.mask == (1u << THM_VIEW_PSBBN));
     CHECK(info.defaultView == THM_VIEW_PSBBN);
     configFree(flow);
+    config_set_t *grid = parse("main0:\n\ttype=Background\nmain1:\n\ttype=Grid\n");
+    thmViewScan(grid, &info);
+    CHECK(info.native == THM_VIEW_GRID && info.mask == (1u << THM_VIEW_GRID));
+    configFree(grid);
 
     // ---- a multi-view theme ---------------------------------------------------------------------------
     config_set_t *mv = parse("views=list, coverflow,grid\n"

@@ -147,6 +147,8 @@ typedef struct theme_elems
     // Set when this family contains a SaveIcon, which reads the row's per-game VMC names: the
     // config is requested for it only while 3D Save Icons is on.
     unsigned char needsSaveIconConfig;
+    // Set when this family contains a Grid: Left/Right and Up/Down follow the grid on its pages only.
+    unsigned char hasGrid;
 } theme_elems_t;
 
 typedef struct
@@ -224,6 +226,8 @@ typedef struct theme
 
     theme_element_t *coverflow;
     theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
+    theme_element_t *grid;      // first Grid element: Left/Right step a cover, Up/Down a row (grid.cpp)
+    int gridRows, gridColumns, gridSpacing;
     int coverflowCoverOffset;
 
     int gameCacheCount;

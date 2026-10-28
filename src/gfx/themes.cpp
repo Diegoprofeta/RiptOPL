@@ -31,6 +31,8 @@ extern const char theme_coverflow_cfg;
 extern u16 size_theme_coverflow_cfg;
 extern const char theme_psbbn_flow_cfg;
 extern u16 size_theme_psbbn_flow_cfg;
+extern const char theme_grid_cfg;
+extern u16 size_theme_grid_cfg;
 
 theme_t *gTheme;
 
@@ -67,7 +69,8 @@ const char *const elementsType[ELEM_TYPE_COUNT] = {
     "GameCountText",
     "Coverflow",
     "PSBBNFlow",
-    "SaveIcon"};
+    "SaveIcon",
+    "Grid"};
 
 static void validateBackgroundElems(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_elems_t *mainElems, theme_elems_t *infoElems)
 {
@@ -728,6 +731,12 @@ static int addGUIElem(const char *themePath, config_set_t *themeConfig, theme_t 
                 int size = psbbnFlowSize(gThmScreenWidth, gThmScreenHeight);
                 elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_GAME_IMAGE, gThmScreenWidth - 186, gThmScreenHeight >> 1, ALIGN_CENTER, size, size, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
                 initPsbbnFlow(themePath, themeConfig, theme, elem, name);
+            } else if (!strcmp(elementsType[ELEM_TYPE_GRID], type)) {
+                // x/y place the grid's centre, width/height one cover (GAME_IMAGE-backed like Coverflow).
+                elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_GAME_IMAGE, gThmScreenWidth >> 1, gThmScreenHeight >> 1, ALIGN_CENTER, 80, 112, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
+                initGrid(themePath, themeConfig, theme, elem, name);
+                if (elem->drawElem)
+                    elems->hasGrid = 1;
             } else if (!strcmp(elementsType[ELEM_TYPE_SAVE_ICON], type)) {
                 elems->needsSaveIconConfig = 1;
                 elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_SAVE_ICON, gThmScreenWidth >> 1, gThmScreenHeight >> 1, ALIGN_CENTER, 64, 64, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
@@ -1270,6 +1279,7 @@ static int thmLoad(const char *themePath)
     newT->vcdItemsList = NULL;
     newT->coverflow = NULL;
     newT->psbbnFlow = NULL;
+    newT->grid = NULL;
     newT->coverflowCoverOffset = 0;
     newT->loadingIcon = NULL;
     newT->loadingIconCount = LOAD7_ICON - LOAD0_ICON + 1;
@@ -1283,18 +1293,20 @@ static int thmLoad(const char *themePath)
     }
 
     config_set_t *themeConfig = NULL;
-    // The built-in <OPL> theme offers its List, Coverflow and PSBBN Flow looks as views (they were the
-    // separate <Coverflow> and <PSBBN Flow> themes). Each view is its own embedded cfg, because an edition
+    // The built-in <OPL> theme offers its List, Coverflow, PSBBN Flow and Grid looks as views (Coverflow and
+    // PSBBN Flow were the separate <Coverflow> and <PSBBN Flow> themes). Each view is its own embedded cfg, because an edition
     // such as Korium replaces some of them, so the view picks the buffer.
     int builtinView = -1;
     if (!themePath) {
         // No theme specified. Prepare and load the default theme.
         themeConfig = configAlloc(0, NULL, NULL);
-        builtinView = (gThemeViewRequest == THM_VIEW_COVERFLOW || gThemeViewRequest == THM_VIEW_PSBBN) ? gThemeViewRequest : THM_VIEW_LIST;
+        builtinView = (gThemeViewRequest >= 0 && gThemeViewRequest < THM_VIEW_COUNT) ? gThemeViewRequest : THM_VIEW_LIST;
         if (builtinView == THM_VIEW_COVERFLOW)
             configReadBuffer(themeConfig, &theme_coverflow_cfg, size_theme_coverflow_cfg);
         else if (builtinView == THM_VIEW_PSBBN)
             configReadBuffer(themeConfig, &theme_psbbn_flow_cfg, size_theme_psbbn_flow_cfg);
+        else if (builtinView == THM_VIEW_GRID)
+            configReadBuffer(themeConfig, &theme_grid_cfg, size_theme_grid_cfg);
         else
             configReadBuffer(themeConfig, &conf_theme_OPL_cfg, size_conf_theme_OPL_cfg);
     } else {
@@ -1312,7 +1324,7 @@ static int thmLoad(const char *themePath)
     newT->defaultView = viewInfo.defaultView;
     if (builtinView >= 0) {
         newT->view = builtinView;
-        newT->viewMask = (1u << THM_VIEW_LIST) | (1u << THM_VIEW_COVERFLOW) | (1u << THM_VIEW_PSBBN);
+        newT->viewMask = (1u << THM_VIEW_LIST) | (1u << THM_VIEW_COVERFLOW) | (1u << THM_VIEW_PSBBN) | (1u << THM_VIEW_GRID);
         newT->defaultView = THM_VIEW_LIST;
     }
     const char *viewPrefix = thmViewPrefix(&viewInfo, newT->view);

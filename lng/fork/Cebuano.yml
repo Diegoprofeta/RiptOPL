@@ -662,3 +662,5 @@ translations:
   HINT_OSD_TVASPECT: Porma sa TV nga ihatag sa dula.
   HINT_OSD_VMODE: Video mode nga ihatag sa dula.
   DNAS_ID: DNAS ID
+  THEME_VIEW: "Hitsura sa Tema"
+  HINT_THEME_VIEW: "Giunsa pagpakita sa tema ang imong mga dula: List, Coverflow, PSBBN Flow o Grid. Pugngi ang L3 sa main page aron mobalhin. Ang mga tema nga walay ingon niana nga hitsura mogamit sa ilang default."

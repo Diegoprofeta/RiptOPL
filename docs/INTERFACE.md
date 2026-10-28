@@ -21,8 +21,9 @@ hides them. Back and L1/R1 keep edits for the session; **Save Changes** keeps th
 ## Theme selection
 
 **Settings → Interface → Theme** picks the theme: `<OPL>` or a disk theme from `THM/`.
-**Theme View** picks how it draws your games: **List**, **Coverflow** (the centered carousel) or
-**PSBBN Flow** (the PSBBN Definitive Project Game Collection look). `<OPL>` offers all three; a disk
+**Theme View** picks how it draws your games: **List**, **Coverflow** (the centered carousel),
+**PSBBN Flow** (the PSBBN Definitive Project Game Collection look) or **Grid** (rows and columns of
+covers; Up/Down move one row). `<OPL>` offers all four; a disk
 theme offers the views its author declared, and shows its default view for any other pick. **Default**
 uses the theme's own default. Holding **L3** for half a second on the main page switches to the next
 view the theme offers, without opening the settings. Apply and save to retain the choice. Fresh

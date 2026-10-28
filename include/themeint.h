@@ -57,6 +57,7 @@ enum ELEM_ATTRIBUTE_TYPE {
     ELEM_TYPE_COVERFLOW,
     ELEM_TYPE_PSBBN_FLOW,
     ELEM_TYPE_SAVE_ICON,
+    ELEM_TYPE_GRID,
     ELEM_TYPE_COUNT
 };
 
@@ -116,6 +117,9 @@ void drawInfoHintText(struct menu_list *menu, struct submenu_list *item, config_
 
 // coverflow.cpp
 void initCoverflow(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name);
+
+// grid.cpp
+void initGrid(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name);
 
 // psbbnflow.cpp
 void initPsbbnFlow(const char *themePath, config_set_t *themeConfig, theme_t *theme, theme_element_t *elem, const char *name);
