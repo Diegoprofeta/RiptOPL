@@ -72,9 +72,10 @@ constexpr int MMCE_PRESENCE_RETRY_US = (200 * 1000);
 // slot already holds this game's card, or Game ID is off on the device), and is then waited out on
 // screen: loading an 8 MB card takes ~9 s, creating a new one longer. START launches at once.
 // Ported from RIPPS2 build 115 (akilluminati47/RIPPS2, mmcesupport.c).
-constexpr int MMCE_GAMEID_START_MS = 2000;       // how long a sent Game ID may take to start the switch
-constexpr int MMCE_GAMEID_START_POLL_MS = 50;    // poll interval while waiting for the switch to start
-constexpr int MMCE_CARD_READY_MAX_S = 180;       // the longest the launch waits for the game's card
+constexpr int MMCE_GAMEID_START_MS = 2000;    // how long a sent Game ID may take to start the switch
+constexpr int MMCE_GAMEID_START_POLL_MS = 50; // poll interval while waiting for the switch to start
+constexpr int MMCE_GAMEID_QUERY_FAILURES = 3; // failed busy queries in a row that end the wait (unconfirmed)
+constexpr int MMCE_CARD_READY_MAX_S = 180;    // the longest the launch waits for the game's card
 constexpr int MMCE_CARD_READY_POLL_US = (250 * 1000);
 // Card reset (0x9) wait: poll the busy bit every 200 ms for up to ~3 s.
 constexpr int MMCE_GAMEID_WAIT_TICKS = 15;
@@ -163,13 +164,26 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
     // gate, batch S7) must poll the SAME device, not a guess.
     snprintf(gameIdTarget, sizeof(gameIdTarget), "%s", mmceDevice);
 
+    int queryFailures = 0;
     for (int waited = 0; waited < MMCE_GAMEID_START_MS; waited += MMCE_GAMEID_START_POLL_MS) {
         int status = fileXioDevctl(mmceDevice, 0x2, NULL, 0, NULL, 0);
-        if (status < 0)
-            break; // busy-bit query unsupported/failed -> don't block the launch
+        if (status < 0) {
+            // A failed busy query says nothing about the switch. Retry a few times; a run of failures
+            // (the firmware has no busy query) ends the wait unconfirmed so the launch is not held.
+            if (++queryFailures >= MMCE_GAMEID_QUERY_FAILURES) {
+                LOG("MMCE GameID switch: busy query failed %d times; launching unconfirmed\n", queryFailures);
+                return -1;
+            }
+            DelayThread(MMCE_GAMEID_START_POLL_MS * 1000);
+            continue;
+        }
+        queryFailures = 0;
         if (status & 1) {
             LOG("MMCE GameID %s: the card started switching after %d ms\n", startup, waited);
-            if (!waitCardReady(mmceDevice))
+            int ready = waitCardReady(mmceDevice);
+            if (ready < 0)
+                return -1; // the query failed mid-wait: unconfirmed
+            if (ready == 0)
                 break; // still busy at the cap: launched anyway, not settled
             LOG("Set MMCE GameID to: %s\n", startup);
             return 1; // card finished switching (settle CONFIRMED, or the user pressed START)
@@ -193,7 +207,8 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
 }
 
 // Waits, on screen, while the card reports busy after a Game ID switch. Returns 1 when it is ready or the
-// user pressed START, 0 when it was still busy at MMCE_CARD_READY_MAX_S (the launch goes ahead anyway).
+// user pressed START, 0 when it was still busy at MMCE_CARD_READY_MAX_S, -1 when the busy query failed
+// before the card reported ready (unconfirmed). The launch goes ahead in every case.
 int MmceSupport::waitCardReady(const char *device)
 {
     char line[256];
@@ -213,6 +228,10 @@ int MmceSupport::waitCardReady(const char *device)
         snprintf(line, sizeof(line), _l(_STR_MMCE_GAMEID_CARD_WAIT), seconds);
         host::ui().renderTextScreen(line);
         DelayThread(MMCE_CARD_READY_POLL_US);
+    }
+    if (status < 0) {
+        LOG("MMCE: the card's busy query failed during the wait; not confirmed\n");
+        return -1;
     }
     return 1;
 }
