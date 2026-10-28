@@ -222,6 +222,11 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/site-sync"
           "$RUNNER_TEMP/site-sync/bin/pip" install --quiet beautifulsoup4==4.15.0 markdown-it-py==4.0.0
           "$RUNNER_TEMP/site-sync/bin/python" .github/scripts/test_site_sync.py
+      - name: Check the wiki builder keeps tables, code and anchors
+        run: |
+          python3 -m venv "$RUNNER_TEMP/wiki-sync"
+          "$RUNNER_TEMP/wiki-sync/bin/pip" install --quiet -r .github/requirements-docs.txt
+          cd .github/scripts && "$RUNNER_TEMP/wiki-sync/bin/python" test_wiki_sync.py
 
   # ship/POPS/usbhdfsd.irx.ilink is a checked-in binary built from modules/bdmassault/ilink_bd_assault.
   # Rebuild it with that module's own Makefile in the PS2DEVPINNED container (the toolchain it was

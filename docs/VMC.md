@@ -20,7 +20,7 @@ Neutrino's BDM mapper supports multiple extents and shares a 64-fragment budget 
 
 Report card size/path, PS2 model, exact build, device, filesystem, VMC/PADEMU state, error text, and whether the same unchanged file works after restart. An already expanded Custom ELF path from older config save behavior must be re-entered after updating; repeated save/reload should preserve it after #885.
 
-For historical source defects and validation limits, see the original's [creation/cancellation audit](https://github.com/NathanNeurotic/Open-PS2-Loader/blob/rebuild/main/docs/VMC-AUDIT-2026-10-08.md). The Open-PS2-Loader fixes in [PR #889](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/889) for a semaphore leak and core-aware creation warnings are merged. Console and device-specific validation remains separate from build and host-test results.
+For historical source defects and validation limits, see the [creation/cancellation audit](VMC-AUDIT-2026-10-08.md). The Open-PS2-Loader fixes in [PR #889](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/889) for a semaphore leak and core-aware creation warnings are merged. Console and device-specific validation remains separate from build and host-test results.
 
 ## New native BDM cards: contiguous reservation
 
