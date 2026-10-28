@@ -108,7 +108,7 @@ def render(assets, tag, revision, repository, server, version, neutrino, readme)
         + "<details>\n<summary>Changelog</summary>\n\nLatest 10 commits included in this build:\n\n" + changes
         + f"\n\n[Full changelog]({base}/commits/{sha})\n\n</details>\n\n"
         + "<details>\n<summary>Downloads</summary>\n\n" + "\n".join(downloads)
-        + "\n\n[Installation and guides](https://nathanneurotic.github.io/Open-PS2-Loader/)\n\n</details>"
+        + "\n\n[Installation and guides](https://nathanneurotic.github.io/RiptOPL/)\n\n</details>"
         + "\n\n<details>\n<summary>Credits</summary>\n\n" + credits(readme)
         + "\n\n</details>\n\n" + marker
     )

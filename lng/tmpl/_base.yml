@@ -2156,3 +2156,5 @@ gui_strings:
 - comment: Save Diagnostics could not write the file. %s is the file's path.
   label: DIAG_SAVE_FAILED
   string: "The diagnostics could not be written to %s. Is the device write-protected?"
+- label: HINT_THEME_VIEW
+  string: "How the theme draws your games: List, Coverflow or PSBBN Flow. Hold L3 on the main page to switch. Themes without that look use their default."

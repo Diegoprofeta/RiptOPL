@@ -44,10 +44,15 @@ Use the references below for implementation details, exact limits and contributo
 
 [ps2build migration](PS2BUILD-MIGRATION.md), the [C++ conversion plan](CPP-CONVERSION-PLAN.md) and the
 [parity ledger](UPSTREAM-PARITY-2026-10-12.md) record how RiptOPL tracks Open-PS2-Loader.
+[Fork-gap status: 2026-10-28](FORK-GAP-STATUS-2026-10-28.md) is the current summary: parity with the
+legacy edition, fixes landed in both, the RIPPS2 audit and port plan, and the open hardware checks.
+[Learning across PS2 loader projects](FORK-COLLABORATION.md) says what evidence a candidate from
+another fork needs before it is ported, and [Maintaining documentation](MAINTAINING-DOCS.md) says
+where each page of the website, wiki and these references is edited and how the wiki is rebuilt.
 
 Integration plans, dated audits and community-report handoffs are engineering history. Their old
 DONE/pending states, branches and package names describe that baseline; they are not current
 installation instructions. Historical records: [gap ledger](DOCUMENTATION-GAPS.md),
 [community reports](COMMUNITY_REPORTS_HANDOFF_2026-10-02.md), [contributor roadmap](TECH_CONTRIBUTOR_ROADMAP_2026-10-03.md),
 [Ember plan](EMBER-INTEGRATION-PLAN.md), [HTTP plan](HTTP-INTEGRATION-PLAN.md),
-[RA plan](RETROACHIEVEMENTS-INTEGRATION-PLAN.md) and [legacy changelog](OLD_DETAILED_CHANGELOG).
+[RA plan](RETROACHIEVEMENTS-INTEGRATION-PLAN.md), [VMC audit](VMC-AUDIT-2026-10-08.md) and [legacy changelog](OLD_DETAILED_CHANGELOG).

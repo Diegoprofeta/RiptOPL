@@ -64,5 +64,5 @@ The [fork-gap report](https://nathanneurotic.github.io/RiptOPL/fork-gaps.html)
 tracks source mechanisms, release descriptions, development work and design alternatives.
 RIPPS2 Build 115's Trust Cache, Recent Games, artwork aliases and MMCE coordination are reviewed
 as that project's work; this guide does not claim those settings exist in RiptOPL.
-See the original's [collaboration review practice](https://github.com/NathanNeurotic/Open-PS2-Loader/blob/rebuild/main/docs/FORK-COLLABORATION.md)
+See the [collaboration review practice](FORK-COLLABORATION.md)
 for how candidates become small, credited changes with appropriate checks.

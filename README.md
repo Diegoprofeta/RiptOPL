@@ -65,9 +65,12 @@ build manifests and checksums for all three editions. Channels are published onl
 by an explicit dispatch after verification; unpublished builds are available as
 Actions artifacts. See [release channels and packaging](ROLLING_RELEASE.md).
 
-Imported feature and hardware documentation describes production behavior and
-still needs parity validation on this C++/ps2build migration. The newer RA browser,
-client and ORBIT integration remain in the [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md).
+Hardware results in the feature documentation were measured on the legacy C edition unless a
+page says otherwise; each still needs a retest on this C++/ps2build edition. The parity port with the legacy
+edition is merged, including the RA browser, client and ORBIT integration; see the
+[parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md) and the
+[fork-gap status](docs/FORK-GAP-STATUS-2026-10-28.md), which also covers the RIPPS2 audit by
+akilluminati47 and what is still not tested on hardware.
 
 ## Quick Start
 
@@ -105,10 +108,14 @@ the PS2 and supported backward-compatible PS3 units (see [PS3 BC](#ps3-bc)). Rip
 | SMB | OPL | ISO, ZSO, UL | Server must permit writes for VMC saves |
 | UDPFS Files / IMG and UDPBD | Neutrino | Files under `CD/` / `DVD/`, or a served FAT/exFAT disk image | Depends on backend and write access; see [Neutrino](docs/NEUTRINO.md) |
 | HTTP | OPL | ISO listed in `games.csv`; compressed images refuse to launch | No VMC; use physical memory cards |
+| PC CARD CF (experimental, off by default) | OPL only | ISO on MBR FAT32/exFAT CF, same `CD/`/`DVD/` layout; read-only | CF VMCs refused; use a physical memory card. Japanese SCPH-10000/15000/18000 only; see [PC CARD CF](docs/PC-CARD-CF.md) |
+| PSX DESR DVR ISOs (experimental, off by default) | Neutrino (DVR companion build) | `.iso` files on the DVR partitions, mounted read-only | Needs `bsd-dvr.toml` plus the `dvrdrv`/`dvrfile` modules; see [DESR DVR](docs/DESR-DVR.md) |
 
-Neutrino does not read local ZSO or UL split images. A compatible UDPFS server can instead
-decompress an image on the PC and expose it to the console as an ISO; that is server-side support
-([compressed images](docs/COMPRESSED-IMAGES.md)).
+Neutrino does not read local ZSO or UL split images. CHD and CSO are not decoded on the PS2 by
+either core. A compatible UDPFS server (PS2-Servers Desktop/Core) can instead decompress a CHD, CSO
+or ZSO image on the PC and expose it to the console as an ISO; that is server-side support
+([compressed images](docs/COMPRESSED-IMAGES.md), [game formats](docs/GAME-FORMATS.md)).
+PC CARD CF and DESR DVR are not yet tested on hardware.
 ELF apps and PS1 games have their own launch paths, described below.
 
 >[!NOTE]
@@ -130,7 +137,7 @@ This section is a fast feature map to improve discoverability of core OPL capabi
 - **MMCE support:** OPL supports MMCE devices using the Memory Card Mass Storage protocol for SD-based loading through the Memory Card slot.
 - **MX4SIO support:** OPL supports MX4SIO adapters for SD-based loading through the Memory Card slot. See the **USB/MMCE/MX4SIO/iLink** section for filesystem and layout guidance.
 - **Internal HDD exFAT support:** the internal ATA HDD can be loaded as **exFAT** — mounted through the Block Device Manager (BDMAssault / "BDMA") into the same `massN:` namespace as USB/MX4SIO — in addition to APA/PFS, including GPT partitioning for large disks, for PS2 **and** PS1 (POPSTARTER) games. See the **HDD** section for formatting, the BDMA equip, and fragmentation guidance.
-- **Themes:** Place theme assets in the `THM` folder, then select and apply themes from OPL settings. **UDPFS Files** also reads `udpfs:/THM` once the server is reachable: with Network Connectivity **Auto** this is available during boot; with **Manual** it appears after the UDPFS page starts the connection. This fork ships built-in **`<Coverflow>`** and **`<PSBBN Flow>`** cover themes (optional; fresh configurations start with `<OPL>`) — see the [Theme Engine reference](docs/THEME_ENGINE.md) to author your own themes.
+- **Themes:** Place theme assets in the `THM` folder, then select and apply themes from OPL settings. **UDPFS Files** also reads `udpfs:/THM` once the server is reachable: with Network Connectivity **Auto** this is available during boot; with **Manual** it appears after the UDPFS page starts the connection. The built-in `<OPL>` theme has three views, List, Coverflow and PSBBN Flow: pick one under **Settings → Interface → Theme View**, or hold L3 on the main page to switch (fresh configurations start with List) — see the [Theme Engine reference](docs/THEME_ENGINE.md) to author your own themes.
 - **Cheats / PS2RD:** OPL supports PS2RD `.cht` cheat files from the `CHT` folder, with both auto-apply and launch-time selection modes.
 - **Pad emulation (DS3/DS4):** On any build with PADEMU (the default), a DualShock 3 or DualShock 4 plugged into the console's USB port can navigate the OPL menu right away, with nothing to enable first. To play games with it, turn on **Pad Emulator** under **Settings**, then **Controller Settings** (globally, or per game via **Game Settings**). One caveat: pad emulation shares the SIO2 bus with MX4SIO SD-card loading, so running both can cause a game to hang on a black screen; leave Pad Emulator off if you boot from an MX4SIO card.
 - **GSM (video mode handling):** Builds that include GSM allow game video mode handling/overrides for display compatibility.
@@ -142,12 +149,12 @@ This section is a fast feature map to improve discoverability of core OPL capabi
 
 This build layers several features on top of upstream OPL:
 
-- **`<Coverflow>` theme (built-in, optional):** a centered cover-art carousel for
+- **Coverflow view (built-in, optional):** a centered cover-art carousel for
   the game/app list, with an alpha-faded reflection, animated scrolling, a configurable
   cover count, and aspect-correct covers in both 4:3 and widescreen. Tune it live under
-  **Coverflow Settings** (shown while the Coverflow theme is active). Authoring details
+  **Coverflow Settings** (shown while the Coverflow view is active). Authoring details
   and every theme value live in the **[Theme Engine reference](docs/THEME_ENGINE.md)**.
-- **`<PSBBN Flow>` theme (built-in, optional):** the PSBBN Definitive Project Game Collection look: a
+- **PSBBN Flow view (built-in, optional):** the PSBBN Definitive Project Game Collection look: a
   rounded square focal cover with a tail of covers turned away into the distance, adapted from
   darkladark's LUNA Collection display (#733). Same pages, artwork, palette and controls as Coverflow.
   See [PSBBN Flow](docs/THEME_ENGINE.md#psbbn-flow).
@@ -729,7 +736,7 @@ To run OPL, you need an entry point for running PS2 titles. You can use everythi
 ## Some notes for DEVS
 
 Use [ps2build](docs/PS2BUILD-MIGRATION.md) for this C++ source tree. The legacy
-Makefile and container instructions belong to the production C lineage and are
+Makefile and container instructions belong to the legacy C edition and are
 not supported here. Run assets and matching audio-package setup, then
 `python tools/build_edition.py korium`, `ra` or `incebtion`; see the complete
 commands and manifest contract in [ROLLING_RELEASE.md](ROLLING_RELEASE.md).
@@ -816,13 +823,15 @@ RiptOPL is intended to work with these maintained companion tools:
 - **[udpfs-server](https://github.com/YouKnow-sys/udpfs-server)** by **[YouKnow-sys](https://github.com/YouKnow-sys)** — the same idea **from a phone**: an Android app that shares folders and disk images to the PS2 over **UDPFS**, found by broadcast so there is no server address to type in on the console. Works over a router or a direct cable. Built on **[udpfsd](https://github.com/pcm720/udpfsd)** by **[pcm720](https://github.com/pcm720)**; MIT licensed. An `android-udpfs-server.url` shortcut ships in installable packages.
 - **[OrbitPS2 Manager](https://github.com/Luden02/OrbitPS2-Manager)** by **[Luden](https://github.com/Luden02)** — cross-platform PC library manager for importing discs, artwork/screenshots, ZSO compression, per-game settings and VMC management.
 - **[LUNA](https://github.com/dnunezx/LUNA)** by **[darkladark](https://github.com/dnunezx)** — *Lightweight Unified Neutrino Access*, a visual PS2 loader built on NHDDL and Neutrino, and our **#1 recommended alternative** if RiptOPL is more loader than you need. darkladark also contributes to RiptOPL: the PSBBN Flow theme adapts LUNA's Collection display (#733), keeping the normal R3 favorite action.
-- **[RIPPS2](https://github.com/akilluminati47/RIPPS2)** by **Akilluminati47** — our daughter project: a PS2-inspired front end with a **web-theme beta** at **[akilluminati47.github.io/RIPPS2](https://akilluminati47.github.io/RIPPS2/)**. A custom OPL theme and `RIPPS2.elf` are planned next; the project is still alpha, but we recommend it as an alternative with features intended to be on par with RiptOPL.
+- **[RIPPS2](https://github.com/akilluminati47/RIPPS2)** by **Akilluminati47** — our daughter project: a PS2-inspired front end with a **web-theme beta** at **[akilluminati47.github.io/RIPPS2](https://akilluminati47.github.io/RIPPS2/)**. It now offers a downloadable PS2 ELF; consult its own releases and compatibility notes for current builds.
 - **[OPL PS1 AIO Converter GUI](https://github.com/shaanhomebrew-cloud/OPL-PS1-AIO-Converter-GUI)** by **[shaan](https://github.com/shaanhomebrew-cloud)** — Windows all-in-one PS1/POPStarter preparation tool for converting BIN/CUE backups to VCDs and installing them to USB, MX4SIO, MMCE, iLink, exFAT HDD, SMB and APA internal HDD.
 - **[xeRAbora](https://github.com/hacan359/xerabora)** by **[hacan359](https://github.com/hacan359)** — the PC client for **RetroAchievements** on real PS2 hardware. Required client: **[v0.1.0-alpha.17](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)**. RiptOPL's RA build is paired with and requires **xeRAbora v0.1.0-alpha.17** and its snapshot-only Mode 6 behavior. xeRAbora runs rcheevos, talks to the RetroAchievements servers and unlocks the achievements. It also builds the per-game watch list the console needs. Shipped as a shortcut inside `RIPTOPL-RetroAchievements.zip`; MIT licensed. RiptOPL’s RA stabilization on real hardware was driven by **[oMrRexD](https://github.com/oMrRexD)**, whose PRs #702–#705 fixed the ee_core stack squeeze, MMCE DEV9 path, cold-launch networking and settings placement.
 - **[OPL HTTP PC server](https://github.com/Docmine17/Open-PS2-Loader-HTTP)** by **[Docmine17](https://github.com/Docmine17)** — the PC side of RiptOPL’s **HTTP** protocol: a small static HTTP server with byte-range support that serves your `games.csv` catalog and streams the ISOs themselves. RiptOPL works with it **unmodified** — no new API, no catalog conversion, no changed folder layout — with host conformance checks against the upstream server. PS2 hardware validation is still pending.
 - **[PS2RD CHT Manager](https://github.com/TheRealNextria/PS2RD-CHT-Manager)** by **[TheRealNextria](https://github.com/TheRealNextria)** — PC manager for the PS2RD `.cht` cheat files RiptOPL reads from your device's `CHT` folder. A `PS2RD-CHT-Manager.url` shortcut ships in installable packages.
 - **[Ember](https://github.com/Gageformer/Ember)** by **[Gageformer](https://github.com/Gageformer)** — a PS1 emulator that runs natively on the PS2, used as RiptOPL's **second PS1 core** alongside POPSTARTER. Unlike the others this one is not just a shortcut: an `EMBER/` folder ships **inside** the release package, ready to drop onto a device. It is bundled unmodified under the Ember Public Beta Testing Licence (`EMBER/LICENSE-BETA.txt` in the package); releases: <https://github.com/Gageformer/Ember/releases>.
+- **[BDM-UDPFS Assault](https://github.com/Okeanos86/BDMAssault/releases)** by **[Okeanos](https://github.com/Okeanos86)** — UDPFS Assault 1.0.0, the POPSTARTER network VCD driver RiptOPL ships as `POPS/usbd.irx.udpfs`: it reads every VCD file and writes VMC saves on the PC. Based on israpps' BDM Assault.
 - **[POPStarter](https://www.psx-place.com/resources/popstarter.683/)** by **krHACKen** — a PS1 launcher built around Sony's native **POPS** emulator for the PS2, used as RiptOPL's **primary PS1 core** alongside Ember. POPStarter provides the compatibility and launch layer for running PS1 VCDs from USB, MX4SIO, MMCE, iLink, internal HDD, and SMB; RiptOPL's iLink handoff is wired but still awaiting a passing hardware retest. The official POPStarter r13 package contains **no Sony emulator binaries, libraries, or BIOS files**; those components must be supplied separately by the user. Official download, documentation, compatibility information, and releases are maintained on **[PSX-Place](https://www.psx-place.com/resources/popstarter.683/)**.
+- **[ORBIT Neutrino RA runtime](https://github.com/danielnuld/ps2-launcher/releases/tag/v1.0.2)** by **[Daniel (danielnuld)](https://github.com/danielnuld)** — the existing RA-capable Neutrino runtime, bundled only in the RetroAchievements kit. Based on Neutrino by Maximus32 and xeRAbora protocol work by hacan359; AFL-3.0. The exact release, archive digest and source commit ship in `neutrino/ORBIT-RA.json`. Standard kits retain ordinary upstream Neutrino.
 - **[Neutrino](https://github.com/rickgaiser/neutrino)** by **[rickgaiser](https://github.com/rickgaiser)** — a *"Small, Fast and Modular PS2 Device Emulator"*, and RiptOPL's **second PS2 loader core** alongside OPL's own. Like Ember it is not a shortcut: a ready-to-use `neutrino/` folder ships **inside** each installable ZIP, drag-and-drop to `mc?:/neutrino/`. Neutrino is deliberately **UI-agnostic** — it has no interface of its own, which is exactly what lets a front-end like RiptOPL drive it per game. Licensed **AFL-3.0**; releases: <https://github.com/rickgaiser/neutrino/releases>.
 - **[PSUManager](https://git.techwritescode.dev/techwritescode/PSUManager)** by **techwritescode** — the CC0 PS2 save-container implementation used by RiptOPL release tooling to independently validate `APP_RIPTOPL.psu` and `APP_RIPTOPL-RA.psu`. The exact upstream core and license used by CI are preserved in `third_party/PSUManager/`.
 ## Acknowledgements

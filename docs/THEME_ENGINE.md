@@ -8,14 +8,17 @@ value token, and built-in asset name the engine understands, including this fork
 - A theme is a folder in the `THM` directory containing a **`conf_theme.cfg`** plus its
   image/font assets.
 - Anything not supplied by the theme falls back to OPL's embedded defaults.
-- OPL also ships three built-in themes you can study as references: the default `<OPL>` theme
-  and this fork's optional `<Coverflow>` and `<PSBBN Flow>` themes. Fresh configurations start
-  with `<OPL>`; choosing a flow theme does not change the menu aspect-ratio setting. See
+- OPL ships the built-in `<OPL>` theme with three views you can study as references: List
+  (`misc/conf_theme_OPL.cfg`), Coverflow (`misc/theme_coverflow.cfg`) and PSBBN Flow
+  (`misc/theme_psbbn_flow.cfg`). Fresh configurations start with the List view; choosing a flow
+  view does not change the menu aspect-ratio setting. Configurations that saved the former
+  `<Coverflow>` or `<PSBBN Flow>` themes load `<OPL>` with that view. See
   [Fresh-start defaults](DEFAULTS.md) for this C++ branch's display and audio defaults.
 
 ## PSBBN Flow
 
-Select **`<PSBBN Flow>`** under **Settings → Interface → Theme**, then apply and save.
+With the `<OPL>` theme, select **PSBBN Flow** under **Settings → Interface → Theme View** (or hold L3 on the
+main page until it appears), then apply and save.
 It recreates the Game Collection of CosmicScale's
 [PSBBN Definitive Project](https://github.com/CosmicScale/PSBBN-Definitive-Project): black header
 and button-hint bands with thin rules, a blue star-field nebula between them, the page list where

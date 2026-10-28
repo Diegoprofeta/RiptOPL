@@ -122,8 +122,8 @@ track costs no extra RAM. It looks in this order and takes the first that works:
 
 1. `<theme>/sound/bgm.ogg` — a disk theme's own music.
 2. The **Default Theme Music** path from Audio Settings.
-3. `THM/bgm.ogg` under the active settings home — **built-in themes only** (`<OPL>`,
-   `<Coverflow>` and `<PSBBN Flow>`). A disk theme never falls through to this.
+3. `THM/bgm.ogg` under the active settings home — **the built-in `<OPL>` theme only**, in
+   every view. A disk theme never falls through to this.
 
 That order is why a disk theme with its own `sound/bgm.ogg` ignores your Default Theme Music setting:
 the theme wins. To use your own track everywhere, pick a theme that ships no music of its own.

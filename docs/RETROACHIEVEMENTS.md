@@ -48,7 +48,34 @@ as finished.
 
 ## Using it
 
-Two settings, on the **Network** settings page:
+### First tracked game
+
+1. Start **RIPTOPL-RA.ELF** from the RetroAchievements kit (`rolling-ra`). The Korium and
+   IncebtIon kits have no achievement telemetry and need no companion PC.
+2. Run **xeRAbora v0.1.0-alpha.17** on the companion PC and sign in to your RetroAchievements
+   account in its Settings page. Keep it running.
+3. In **Settings → Network**, leave **RA Mode** on **Xerabora**, turn **RetroAchievements
+   telemetry** on and save. Telemetry is Off on a fresh start. Give the PS2 working network
+   settings on the same LAN as the PC, and set **RA companion IP** to the PC's IPv4 address to
+   target it directly (0.0.0.0 finds it by broadcast).
+4. For a first test use a PS2 image on USB or MMCE, with **OPL** chosen as the game's core. The
+   RA kit's Neutrino has its own limits (see [Neutrino in the RA edition](#neutrino-in-the-ra-edition));
+   the other launch paths and their state are under [Which launch paths can work](#which-launch-paths-can-work).
+5. On the game's menu run **Test RetroAchievements PC link**, then **Check RetroAchievements
+   support**. The first proves the console reaches xeRAbora; the second fetches the watch list.
+   Let xeRAbora through the PC firewall, including inbound UDP 18194.
+6. Launch the game after a successful check, and confirm xeRAbora's LIVE view receives snapshots.
+   The list badge alone does not prove in-game telemetry.
+
+Run the support check once for each image you want tracked. A game without a watch list starts
+an ordinary, untracked game. An unknown hash can mean a different region or dump, or a game with
+no set; it does not mean the storage source is unsupported. For Caduceus, select that mode and
+complete its pairing instead (see [RA Mode and the companion PC](#ra-mode-and-the-companion-pc));
+run one achievement service per PC.
+
+### Settings and menu actions
+
+The settings, on the **Network** settings page:
 
 | Setting | Default | Effect |
 | --- | --- | --- |

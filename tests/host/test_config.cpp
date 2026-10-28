@@ -55,6 +55,19 @@ int main()
     CHECK(num(a, "zzz", -5) == -5);         // missing int leaves the default alone
     CHECK(num(a, "$Foo", -5) != 0 || true); // non-numeric string: just must not crash
 
+    // ---- theme section prefixes with a view name (multi-view themes) -------------------------------
+    // The longest per-family key plus the longest view prefix must survive intact, and must not collide
+    // with the same key in another view or in the base.
+    config_set_t *thm = parse(dir + "thm.cfg",
+                              "favsVcdMain12:\n\treflection_offset=1\n"
+                              "coverflow.favsVcdMain12:\n\treflection_offset=2\n"
+                              "psbbn.favsVcdMain12:\n\treflection_offset=3\n");
+    CHECK(strlen("coverflow.favsVcdMain12_reflection_offset") < CONFIG_KEY_NAME_LEN);
+    CHECK(num(thm, "favsVcdMain12_reflection_offset") == 1);
+    CHECK(num(thm, "coverflow.favsVcdMain12_reflection_offset") == 2);
+    CHECK(num(thm, "psbbn.favsVcdMain12_reflection_offset") == 3);
+    configFree(thm);
+
     // Set / overwrite / remove
     CHECK(configSetStr(a, "added", "1") != 0);
     CHECK(configSetInt(a, "n", 42) != 0);

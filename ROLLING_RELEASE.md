@@ -9,11 +9,11 @@ This repository uses **one SDK: ps2build**. Its three release editions are:
 | IncebtIon | `rolling-incebtion` | IncebtIon | Standard |
 
 The RetroAchievements channel also carries the same kit built with the IncebtIon theme
-(edition `ra_incebtion`), as the original's RA release carries one kit per theme.
+(edition `ra_incebtion`), as the legacy edition's RA release carries one kit per theme.
 
 GCC is the release compiler. GCC and LLVM are both validated by `ps2build.yml`;
 they are compiler choices within ps2build, not separate SDK release flavours.
-The old ps2dev/official pinned and rolling container releases are production
+The old ps2dev/official pinned and rolling container releases are legacy-edition
 history, not build targets here. No Makefile is used by the release workflow.
 
 ## Build and package
@@ -83,17 +83,17 @@ IncebtIon-theme kit as `RIPTOPL-RetroAchievements-IncebtIon.zip`, `RIPTOPL-RA-In
 and `APP_RIPTOPL-RA-IncebtIon.psu`; inside that kit the app is still `APP_RIPTOPL-RA`.
 See [Build configurations](docs/BUILD-CONFIGURATIONS.md).
 
-Standard kits reject RA resources. The RA kit adds the xeRAbora client shortcut;
-the newer production RA browser/client and ORBIT adapter are still tracked in
-the parity ledger and are not implied by a successful RA compile. No BIOS is
+Standard kits reject RA resources. The RA kit adds the xeRAbora client shortcut
+and replaces upstream Neutrino with ORBIT's RA runtime (see
+[RetroAchievements](docs/RETROACHIEVEMENTS.md#neutrino-in-the-ra-edition)). No BIOS is
 redistributed.
 
 ## Preview and publication
 
 `Rolling Release` builds and verifies all three install kits on pull requests,
 integration pushes and manual dispatch. It uploads candidates as Actions
-artifacts without publishing. Release-channel links remain unavailable until
-their first deliberate publication.
+artifacts without publishing; see [Test builds](docs/TEST-BUILDS.md) for
+downloading one.
 
 Publication requires manual dispatch with `publish=true` from `rebuild/main` in
 `NathanNeurotic/RiptOPL`. All three builds must pass. The publisher verifies
@@ -109,4 +109,4 @@ before retrying. No historical production releases are deleted or rewritten.
 
 Build/test/package success is separate from console acceptance. Test the exact
 edition and source SHA on the relevant console, storage backend, core, settings,
-game launch, save/VMC and IGR paths before declaring migration parity.
+game launch, save/VMC and IGR paths before calling a change console-tested.
