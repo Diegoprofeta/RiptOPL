@@ -9,6 +9,7 @@ import os
 from pathlib import Path, PurePosixPath
 import shutil
 import stat
+import subprocess
 import tempfile
 import time
 import urllib.error
@@ -110,6 +111,29 @@ def install(sdk, package, toolchain):
     print(f"  SHA256 {hashlib.sha256(data).hexdigest()}")
 
 
+# ps2build's jpeg package (both compilers) ships objects whose symbol tables list some local symbols
+# after the first global one, under a .symtab sh_info that says otherwise. GNU ld accepts that; ld.lld
+# rejects every such object ("symbol (N) has invalid binding: 0"), so the LLVM link of riptopl fails as
+# soon as JPG art pulls libjpeg in. llvm-objcopy rewrites each member with locals first; it changes no
+# code or data and is idempotent. Remove this once the package is rebuilt upstream.
+LLVM_REPAIRS = ("jpeg/lib/libjpeg.a", "jpeg_ps2_addons/lib/libjpeg_ps2_addons.a")
+
+
+def repair_llvm_symtabs(sdk):
+    world = sdk / "packages-llvm" / "world"
+    candidates = [sdk / "llvm-toolchain" / "llvm" / "bin" / "llvm-objcopy", shutil.which("llvm-objcopy")]
+    objcopy = next((str(c) for c in candidates if c and Path(c).is_file()), None)
+    for relative in LLVM_REPAIRS:
+        library = world / relative
+        if not library.is_file():
+            continue
+        if objcopy is None:
+            print(f"warning: no llvm-objcopy; {library} keeps symbol tables ld.lld rejects", flush=True)
+            return
+        subprocess.run([objcopy, str(library)], check=True)
+        print(f"repaired symbol tables in {library}")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     executable = shutil.which("ps2build")
@@ -129,6 +153,8 @@ def main():
     for compiler in compilers:
         for package in LIBRARIES:
             install(sdk, package, compiler)
+        if compiler == "llvm":
+            repair_llvm_symtabs(sdk)
 
 
 if __name__ == "__main__":
