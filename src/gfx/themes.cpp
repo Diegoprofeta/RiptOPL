@@ -1060,13 +1060,20 @@ constexpr int THM_MMCE_ART_ABORT_WAIT_TICKS = 500;
 */
 #define GLYPH_PNG(set, n)                           \
     extern unsigned char glyph_##set##_##n##_png[]; \
-    extern unsigned int size_glyph_##set##_##n##_png;
-#define GLYPH_SET_PNGS(set)                                                                                \
-    GLYPH_PNG(set, cross)                                                                                  \
-    GLYPH_PNG(set, circle)                                                                                 \
-    GLYPH_PNG(set, square) GLYPH_PNG(set, triangle) GLYPH_PNG(set, start)                                  \
-        GLYPH_PNG(set, select) GLYPH_PNG(set, L1) GLYPH_PNG(set, R1) GLYPH_PNG(set, L3) GLYPH_PNG(set, R3) \
-            GLYPH_PNG(set, left) GLYPH_PNG(set, right)
+    extern unsigned int size_glyph_##set##_##n##_png
+#define GLYPH_SET_PNGS(set)   \
+    GLYPH_PNG(set, cross);    \
+    GLYPH_PNG(set, circle);   \
+    GLYPH_PNG(set, square);   \
+    GLYPH_PNG(set, triangle); \
+    GLYPH_PNG(set, start);    \
+    GLYPH_PNG(set, select);   \
+    GLYPH_PNG(set, L1);       \
+    GLYPH_PNG(set, R1);       \
+    GLYPH_PNG(set, L3);       \
+    GLYPH_PNG(set, R3);       \
+    GLYPH_PNG(set, left);     \
+    GLYPH_PNG(set, right);
 GLYPH_SET_PNGS(standard)
 GLYPH_SET_PNGS(white)
 
@@ -1139,8 +1146,7 @@ static const struct
 {
     const char *name;
     int token;
-} hintAliases[] = {{"start", THM_HINT_MENU}, {"select", THM_HINT_REFRESH}, {"r3", THM_HINT_STAR}, {"l3", THM_HINT_VIEW},
-                   {"cross", THM_HINT_RUN}, {"circle", THM_HINT_RUN}, {"square", THM_HINT_INFO}, {"triangle", THM_HINT_OPTIONS}};
+} hintAliases[] = {{"start", THM_HINT_MENU}, {"select", THM_HINT_REFRESH}, {"r3", THM_HINT_STAR}, {"l3", THM_HINT_VIEW}, {"cross", THM_HINT_RUN}, {"circle", THM_HINT_RUN}, {"square", THM_HINT_INFO}, {"triangle", THM_HINT_OPTIONS}};
 
 int thmHintToken(int iconId)
 {
