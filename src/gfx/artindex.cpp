@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <strings.h> // strcasecmp, strncasecmp
 #include <dirent.h>
 #include <errno.h>
 #include <kernel.h>
@@ -31,6 +32,11 @@ int artIndexMayExist(const char *fullPath)
     return gArtIndex.mayExist(fullPath);
 }
 
+int artIndexFindPicture(const char *stemPath, char *out, int outSize)
+{
+    return gArtIndex.findPicture(stemPath, out, outSize);
+}
+
 void artIndexInvalidate(void)
 {
     gArtIndex.invalidate();
@@ -45,11 +51,11 @@ void artIndexDebug(int *dirsHeld, unsigned int *absentAnswered, unsigned int *sw
 // case-insensitive-preserving, so readdir can hand back "Slus_123.45_COV.PNG" for a path we build as
 // "SLUS_123.45_COV.png". Hashing them differently would make the index answer "absent" for a file
 // that exists -- the one failure this must never have.
-unsigned int ArtIndex::hashName(const char *s)
+unsigned int ArtIndex::hashName(const char *s, size_t n)
 {
     unsigned int h = 2166136261u;
 
-    while (*s) {
+    while (n-- > 0 && *s) {
         unsigned char c = (unsigned char)*s++;
         if (c >= 'a' && c <= 'z')
             c = (unsigned char)(c - 'a' + 'A');
@@ -58,6 +64,41 @@ unsigned int ArtIndex::hashName(const char *s)
     }
 
     return h;
+}
+
+// Where a picture's extension starts (its last '.') when it is .png, .jpg or .jpeg in any letter case; -1 otherwise.
+int ArtIndex::pictureExt(const char *name)
+{
+    const char *dot = strrchr(name, '.');
+
+    if (dot == NULL || dot == name)
+        return -1;
+    if (strcasecmp(dot, ".png") && strcasecmp(dot, ".jpg") && strcasecmp(dot, ".jpeg"))
+        return -1;
+    return (int)(dot - name);
+}
+
+int ArtIndex::picCmp(const void *a, const void *b)
+{
+    unsigned int x = ((const Pic *)a)->hash;
+    unsigned int y = ((const Pic *)b)->hash;
+
+    if (x < y)
+        return -1;
+    return (x > y) ? 1 : 0;
+}
+
+// Owner thread only (see build()).
+void ArtIndex::release(Dir *slot)
+{
+    slot->valid = 0;
+    free(slot->hashes);
+    free(slot->pics);
+    free(slot->names);
+    slot->hashes = NULL;
+    slot->pics = NULL;
+    slot->names = NULL;
+    slot->count = slot->picCount = 0;
 }
 
 int ArtIndex::hashCmp(const void *a, const void *b)
@@ -110,13 +151,7 @@ ArtIndex::Dir *ArtIndex::build(const char *dir)
 
     // Safe to free here and ONLY here: this runs on the owner thread, which is the only thread that
     // ever reads these buffers. invalidate() deliberately does not free for exactly this reason.
-    if (slot->hashes != NULL) {
-        unsigned int *old = slot->hashes;
-        slot->hashes = NULL;
-        slot->count = 0;
-        slot->valid = 0;
-        free(old);
-    }
+    release(slot);
 
     snprintf(slot->dir, sizeof(slot->dir), "%s", dir);
     slot->valid = 0;
@@ -159,6 +194,12 @@ ArtIndex::Dir *ArtIndex::build(const char *dir)
         return slot;
     }
 
+    // The pictures' real names (RIPPS2 build 115), so findPicture can answer for any letter case and for .jpg.
+    // Best effort: if either buffer cannot be had, or the names outgrow kNamesMax, the slot keeps no names.
+    Pic *pics = (Pic *)malloc(kMaxEntries * sizeof(Pic));
+    int picCount = 0, namesUsed = 0, namesSize = 16 * 1024;
+    char *names = pics != NULL ? (char *)malloc(namesSize) : NULL;
+
     int n = 0;
     int overflowed = 0;
     struct dirent *e;
@@ -182,15 +223,42 @@ ArtIndex::Dir *ArtIndex::build(const char *dir)
         }
 
         hashes[n++] = hashName(e->d_name);
+
+        int ext = names != NULL ? pictureExt(e->d_name) : -1;
+        if (ext > 0) {
+            int len = (int)strlen(e->d_name) + 1;
+            if (namesUsed + len > namesSize) {
+                char *grown = namesSize * 2 <= kNamesMax ? (char *)realloc(names, namesSize * 2) : NULL;
+                if (grown == NULL) {
+                    free(names);
+                    names = NULL;
+                    continue;
+                }
+                names = grown;
+                namesSize *= 2;
+            }
+            memcpy(&names[namesUsed], e->d_name, len);
+            pics[picCount].hash = hashName(e->d_name, (size_t)ext);
+            pics[picCount].name = namesUsed;
+            picCount++;
+            namesUsed += len;
+        }
     }
 
     closedir(d);
+
+    if (names == NULL) {
+        free(pics);
+        pics = NULL;
+    }
 
     if (readError != 0) {
         // A failed sweep is unknown, not empty: the slot stays invalid and probes use the device.
         sweepFailed_++;
         LOG("ARTINDEX: '%s' listing failed (errno %d) -- probing files directly\n", dir, readError);
         free(hashes);
+        free(pics);
+        free(names);
         return slot;
     }
 
@@ -199,18 +267,25 @@ ArtIndex::Dir *ArtIndex::build(const char *dir)
         // exists. Throw it away rather than hold a truthful-looking half-index.
         LOG("ARTINDEX: '%s' has more than %d entries -- not indexing\n", dir, kMaxEntries);
         free(hashes);
+        free(pics);
+        free(names);
         return slot;
     }
 
     qsort(hashes, n, sizeof(unsigned int), &hashCmp);
+    if (pics != NULL)
+        qsort(pics, picCount, sizeof(Pic), &picCmp);
 
     // Publish order matters even on one thread: valid LAST, so the slot is never readable with a
     // count that does not match its buffer.
     slot->hashes = hashes;
     slot->count = n;
+    slot->pics = pics;
+    slot->picCount = picCount;
+    slot->names = names;
     slot->valid = 1;
 
-    LOG("ARTINDEX: '%s' indexed, %d entries\n", dir, n);
+    LOG("ARTINDEX: '%s' indexed, %d entries (%d pictures%s)\n", dir, n, picCount, pics != NULL ? "" : ", names not kept");
     return slot;
 }
 
@@ -283,6 +358,64 @@ int ArtIndex::mayExist(const char *fullPath)
 
     absentAnswered_++;
     return 0; // not in the listing, and the listing was complete: genuinely not there
+}
+
+int ArtIndex::findPicture(const char *stemPath, char *out, int outSize)
+{
+    char dir[kDirMax];
+    const char *base = NULL;
+
+    if (stemPath == NULL || stemPath[0] == '\0' || out == NULL || outSize <= 0)
+        return -1;
+    // The same "go and look" cases as mayExist.
+    if (strchr(stemPath, '\\') != NULL || !strncmp(stemPath, "smb", 3) || !strncmp(stemPath, "udpfs", 5))
+        return -1;
+    if (ownerThread_ < 0 || GetThreadId() != ownerThread_)
+        return -1;
+    if (!splitPath(stemPath, dir, sizeof(dir), &base))
+        return -1;
+
+    unsigned int genBefore = gen_;
+
+    Dir *slot = slotFor(dir);
+    if (slot == NULL || !slot->valid || slot->pics == NULL || slot->names == NULL)
+        return -1;
+
+    size_t baseLen = strlen(base);
+    unsigned int want = hashName(base, baseLen);
+    int lo = 0, hi = slot->picCount;
+
+    while (lo < hi) { // the first picture with this hash
+        int mid = lo + ((hi - lo) >> 1);
+        if (slot->pics[mid].hash < want)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+
+    const char *best = NULL;
+    for (; lo < slot->picCount && slot->pics[lo].hash == want; lo++) {
+        const char *name = &slot->names[slot->pics[lo].name];
+        // A hash match is only a maybe: the name must be exactly base plus one picture extension.
+        if (strncasecmp(name, base, baseLen) != 0 || name[baseLen] != '.' || strchr(&name[baseLen + 1], '.') != NULL)
+            continue;
+        if (best == NULL || !strcasecmp(&name[baseLen], ".png")) // a PNG first, as the probes always went
+            best = name;
+    }
+
+    if (gen_ != genBefore)
+        return -1; // invalidated mid-search: the listing may describe a device that has changed
+
+    if (best != NULL) {
+        // dir as the caller built it ("mass0:ART"), so the open takes the same path form as before
+        size_t dirLen = strlen(dir);
+        if (snprintf(out, outSize, "%s%s%s", dir, (dirLen > 0 && dir[dirLen - 1] == ':') ? "" : "/", best) >= outSize)
+            return -1;
+        return 1;
+    }
+
+    absentAnswered_++;
+    return 0;
 }
 
 void ArtIndex::invalidate()

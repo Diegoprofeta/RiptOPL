@@ -51,6 +51,9 @@ Scan_480p1 Scan_480p2 Scan_480p3 Scan_480p4 Scan_480p5 Scan_576i Scan_576p Scan_
 Scan_1080i Scan_1080i2 Scan_1080p Vmode_multi Vmode_ntsc Vmode_pal logo
 logo0 logo1 logo2 logo3 case
 Index_0 Index_1 Index_2 Index_3 Index_4 fav fav_mark R3 L3 L1 R1 PS1 PS2 case_overlay psbbn_bg techwritescode""".split()
+# Button glyph sets (RIPPS2 build 90, akilluminati47): Standard and White, for Settings > Interface > Button Glyphs
+PNG_ASSETS += ["glyph_%s_%s" % (s, n) for s in ("standard", "white")
+               for n in "cross circle square triangle start select L1 R1 L3 R3 left right".split()]
 
 AUDIO = "boot cancel confirm cursor message transition bd_connect bd_disconnect".split()
 

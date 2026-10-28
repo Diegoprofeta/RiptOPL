@@ -34,6 +34,7 @@ public:
     int loadFallback(char *path);
     int loadDefault(char *path);
     void release(int id);
+    void setWeight(int id, int weight);
     void updateAspectRatio();
     int renderString(int id, int x, int y, short aligned, size_t width, size_t height, const char *string, u64 colour);
     int calcDimensions(int id, const char *str);
@@ -76,6 +77,9 @@ public:
         int isValid;
 
         int fontSize;
+
+        /// the weight a theme asked for (100 to 900; 0 the face's own), and how much the outlines grow to reach it
+        int weight, embolden;
 
         /// Texture atlases (default to NULL)
         Atlas *atlases[ATLAS_MAX];

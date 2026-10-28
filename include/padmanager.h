@@ -24,6 +24,7 @@ struct pad_data_t
     int actuators;
     int actAligned; // padSetActAlign confirmed; see padRumbleRealign()
     int needsInit;  // reconnect-edge re-init pending; runs once the verified-idle gate opens (see readPads)
+    int readOk;     // the last native read delivered a sample (rightStick trusts no older one)
 };
 
 class PadManager
@@ -34,6 +35,7 @@ public:
     PadManager &operator=(const PadManager &) = delete;
 
     void faultCounters(u32 *maxNotReady, u32 *maxReadyEmpty);
+    void rightStick(int *x, int *y);
     void actuatorDiag(int *act0, int *aligned0, int *act1, int *aligned1);
     int read();
     int key(int id);

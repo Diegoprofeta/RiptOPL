@@ -295,6 +295,10 @@ void vcdPrepareRetroGemBarcode(const char *vcdPath);
 // launch whether to delete RiptOPL's; 0 means the user cancelled the launch.
 int vcdRemoveRaModule(const char *root);
 int vcdConfirmCleanLaunch(const char *root);
+// POPSTARTER needs Sony's emulator beside the game in <root>POPS/: POPS_IOX.PAK, plus POPS.PAK or
+// POPS.ELF (with IOPRP252.IMG). Without them the launch is a black screen and then the browser, so ask
+// first, naming what is missing. Returns 1 to go on (files present, or the user launches anyway).
+int vcdConfirmPopsFiles(const char *root);
 
 // ---- module runtime state -------------------------------------------------------------
 // The one VcdSupport instance (src/sources/vcdsupport.cpp) owns the mutable state this module keeps

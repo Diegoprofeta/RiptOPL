@@ -57,6 +57,7 @@ private:
 
 extern UdpfsSupport gUdpfsSupport;
 
+void udpfsIopWasReset(void);     // forget the module latches after an in-menu IOP reset
 int udpfsGetModulesLoaded(void); // 1 if the UDPFS ioman NIC stack is loaded (SMB/UDPBD must not load on top).
 // Explicit-loader helper: synchronously load the UDPFS filesystem stack and wait briefly for the
 // server-backed root to answer. Fails closed if SMB/UDPBD already owns the NIC.

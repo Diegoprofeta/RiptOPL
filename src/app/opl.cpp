@@ -5,6 +5,7 @@
 */
 
 #include "include/settings.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/oplint.h"
 #include "include/opl.h"
 #include "include/cfgtitle.h"
@@ -41,6 +42,7 @@
 #include "include/hddsupport.h"
 #include "include/appsupport.h"
 #include "include/favsupport.h"
+#include "include/gamemanage.h"   // Hide Game and Delete everything (RIPPS2)
 #include "include/folderbrowse.h" // folderDepth -- favourites suppression inside subfolders
 #include "include/mmcesupport.h"  // mmceLoadModules() -- MMCE boot branch of resolveBootDirToMass
 #include "include/tar.h"          // tarInvalidate -- re-arm the .tar probe on a settings apply
@@ -248,6 +250,7 @@ int gEnableDiscArt;
 int gEnableLogoArt;
 int gWideScreen;
 int gFontSize = FONT_SIZE_DEFAULT;
+int gGlyphSet = 0; // GLYPH_SET_THEME
 int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
 int gXOff;
 int gYOff;
@@ -356,7 +359,7 @@ void moduleUpdateMenuInternal(opl_io_module_t *mod, int themeChanged, int langCh
 
         menuAddHint(&mod->menuItem, _STR_REFRESH, SELECT_ICON);
 
-        if (gFAVStartMode)
+        if (gFAVStartMode || gAllGames)
             menuAddHint(&mod->menuItem, _STR_FAV_HINT, R3_ICON);
 
         // L3 moves the page around its ring of lists. Both and Mixed expose rings; PS2/PS1 pin an
@@ -465,7 +468,7 @@ void initSupport(item_list_t *itemList, int mode, int force_reinit)
     else if (mode == APP_MODE)
         startMode = gAPPStartMode;
     else if (mode == FAV_MODE)
-        startMode = gFAVStartMode;
+        startMode = gAllGames ? START_MODE_AUTO : gFAVStartMode; // All Games lives on this page
     else if (mode == UDPFS_MODE)
         // UDPFS filesystem tab honours the network start row: Auto loads the udpfs IRX chain + mount at
         // boot, Manual defers it to tab-entry. Live only while its protocol is the selected one, so
@@ -699,6 +702,7 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
     // read the new game list
     struct gui_update_t *gup = NULL;
     int count = gsOf(mdl->support)->update(mdl->support);
+    hiddenReload(mdl->support); // the device's hidden list, read with its games
 
 #ifdef RETROACHIEVEMENTS
     // RA badges: recompute on every list rebuild. This runs on the I/O thread (itemUpdate
@@ -739,6 +743,9 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                 // Pass 0 emits folders, pass 1 emits games (single-pass mode emits every row).
                 if (passes == 2 && ((pass == 0) != (isFolderRow != 0)))
                     continue;
+                // Hide Game: a hidden game leaves every list until Show Hidden Games lists it again.
+                if (!isFolderRow && !gShowHidden && hiddenRow(mdl->support, i))
+                    continue;
 
                 gup = guiOpCreate(GUI_OP_APPEND_MENU);
                 if (!gup) // OOM: skip this entry rather than deref NULL
@@ -754,19 +761,22 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                     // The source name stays the row's identity; the badge is copied now, before the next
                     // raBadgeRefresh frees the cache it lives in. NULL means plain name.
                     const char *badge = raBadgeText(mdl->support, i);
-                    gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);
+                    gup->submenu.text = mdl->support->mode == FAV_MODE ? const_cast<char *>(favGetItemDisplay(i)) : gsOf(mdl->support)->name(mdl->support, i);
                     gup->submenu.raText = badge != NULL ? strdup(badge) : NULL;
                     /* Resolve the cover mark HERE, on the I/O thread that owns the badge cache,
                        and carry the answer to the renderer as a plain int. */
                     gup->submenu.raBadged = (badge != NULL);
                 }
 #else
-                gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);
+                // Favourites/All Games rows draw their display text: a title on two sources names its source.
+                gup->submenu.text = mdl->support->mode == FAV_MODE ? const_cast<char *>(favGetItemDisplay(i)) : gsOf(mdl->support)->name(mdl->support, i);
 #endif
+                gup->submenu.favourited = mdl->support->mode == FAV_MODE ? favGetItemStarred(i) : 0;
                 gup->submenu.text_id = -1;
                 gup->submenu.selected = 0;
                 gup->submenu.autoStart = 0;
                 gup->submenu.isFolder = isFolderRow;
+                gup->submenu.lastPlayed = (gAutosort == AUTOSORT_LAST_PLAYED && !isFolderRow) ? recentRankForRow(mdl->support, i, gup->submenu.text) : 0;
 
                 // Neither auto-select targets a folder row (no startup). The remembered cursor
                 // wins over last-played: it is where the user actually was. Only the persisted
@@ -794,7 +804,8 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
         libViewFinishPending(mdl->support->mode);
     cfgTitleRefresh(mdl->support, count);
 
-    if (gAutosort) {
+    // The Favourites Recent stop is already in play order; sorting it would undo the point.
+    if (gAutosort && !(mdl->support->mode == FAV_MODE && libViewActive(FAV_MODE) == LIB_VIEW_RECENT)) {
         gup = guiOpCreate(GUI_OP_SORT);
         if (gup) { // OOM: an unsorted list beats dereferencing NULL, same as the append loop above
             gup->menu.menu = &mdl->menuItem;
@@ -857,7 +868,7 @@ void menuDeferredUpdate(void *data)
         // against. Re-sync the FAV tab (cheap/idempotent; skipped when FAV is disabled).
         // An L3 flip still counts: favourites resolve against a device's PS1 or PS2 list
         // (favResolveStoredId), and a flip can fill one that was never scanned.
-        if (gFAVStartMode && mod->support->mode != FAV_MODE)
+        if ((gFAVStartMode || gAllGames) && mod->support->mode != FAV_MODE)
             loadFavourites();
     } else if (libViewPending(mod->support->mode)) {
         // A device can reject a scan before it consumes the view-dirty flag (for example, MMCE with
@@ -1114,6 +1125,12 @@ void clearErrorMessageIf(int strId)
 void reset(void)
 {
     sysReset(SYS_LOAD_MC_MODULES | SYS_LOAD_USB_MODULES | SYS_LOAD_ISOFS_MODULE);
+    // The IOP lost every module; the sources' own "loaded" latches must forget them too, or the
+    // next initAllSupport skips loading them (NBD server stop left iLink/MX4SIO/HDD/UDPBD dead).
+    bdmIopWasReset();
+    hddIopWasReset();
+    mmceIopWasReset();
+    udpfsIopWasReset();
 
     mcInit(MC_TYPE_XMC);
 }
@@ -1492,6 +1509,7 @@ static void init(void)
     thmInit();
     guiInit();
     ioInit();
+    hiddenInit();
     bdmSetAutoLaunch(0);
     menuInit();
 
@@ -1580,6 +1598,9 @@ static void deferredInit(void)
             }
         }
     }
+    // All Games: the device pages step aside for the one list, so boot onto it.
+    if (gAllGames && list_support[FAV_MODE].support != NULL)
+        bootMode = FAV_MODE;
     if (list_support[bootMode].support == NULL) {
         if (list_support[MMCE_MODE].support != NULL)
             bootMode = MMCE_MODE;
@@ -1635,6 +1656,7 @@ void miniInit(int mode)
     configInit(gBootDir[0] ? gBootDir : NULL); // settings live in the boot dir (cwd)
 
     ioInit();
+    hiddenInit();
     bdmSetAutoLaunch(1);
     LOG_ENABLE();
 
@@ -1890,6 +1912,7 @@ int main(int argc, char *argv[])
     ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&deferredInit));
 
     guiIntroLoop();
+    diagLog("boot: the menu is up; settings from %s", configGetDir());
 
     // No writable config home? Say so NOW, not after the user has changed settings and lost them.
     // The '?' only survives configGetDir() when the home fell all the way back to the "mc?:OPL"

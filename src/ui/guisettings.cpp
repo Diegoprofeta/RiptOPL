@@ -25,7 +25,8 @@
 #include "include/ioman.h"
 #include "include/lang.h"
 #include "include/themes.h"
-#include "include/favsupport.h" // gFAVStartMode -- Favourites Start Mode row
+#include "include/favsupport.h"
+#include "include/gamesource.h" // gsOf -- the Favourites tab names itself (All Games) // gFAVStartMode -- Favourites Start Mode row
 #include "include/pad.h"
 #include "include/sound.h" // sfxGetPlayDiag/sfxGetDropDiag -- SFX RPC cost + silent-drop counters for the debug HUD
 #include "include/util.h"
@@ -366,6 +367,28 @@ static int guiDeviceConfigUpdater(int modified)
     return 0;
 }
 
+static void guiRefreshCfgTitles(void);
+
+// All Games switched on or off (Game Sources). The device pages now read both lists or go back to
+// their own view, the Favourites tab changes name and rows, and with it on the user lands there.
+static void guiApplyAllGamesChange(void)
+{
+    item_list_t *favList = favGetObject(0);
+    opl_io_module_t *fav = favList != NULL ? static_cast<opl_io_module_t *>(favList->owner) : NULL;
+
+    if (fav != NULL && fav->support != NULL) {
+        fav->menuItem.text_id = gsOf(fav->support)->textId(fav->support);
+        if (gAllGames) {
+            struct gui_update_t *sel = guiOpCreate(GUI_OP_SELECT_MENU);
+            if (sel != NULL) {
+                sel->menu.menu = &fav->menuItem;
+                guiDeferUpdate(sel);
+            }
+        }
+    }
+    guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
+}
+
 void guiShowDeviceConfig(void)
 {
     const char *deviceNames[] = {_l(_STR_BDM_GAMES), _l(_STR_MMCE), _l(_STR_HDD_GAMES), _l(_STR_NET_GAMES), _l(_STR_APPS), _l(_STR_FAV), NULL};
@@ -385,6 +408,8 @@ void guiShowDeviceConfig(void)
     diaSetInt(diaDeviceConfig, CFG_HDDMODE, gHDDStartMode);
     diaSetInt(diaDeviceConfig, CFG_APPMODE, gAPPStartMode);
     diaSetInt(diaDeviceConfig, CFG_FAVMODE, gFAVStartMode);
+    diaSetInt(diaDeviceConfig, CFG_ALLGAMES, gAllGames);
+    diaSetInt(diaDeviceConfig, CFG_SHOWHIDDEN, gShowHidden);
 
     // Block devices (inlined; interlocked with the APA HDD mode)
     diaSetInt(diaDeviceConfig, CFG_ENABLEUSB, gEnableUSB);
@@ -421,6 +446,9 @@ reshow_device:
         diaGetInt(diaDeviceConfig, CFG_APPMODE, &gAPPStartMode);
         diaGetInt(diaDeviceConfig, CFG_MMCEMODE, &gMMCEStartMode);
         diaGetInt(diaDeviceConfig, CFG_FAVMODE, &gFAVStartMode);
+        int previousAllGames = gAllGames, previousShowHidden = gShowHidden;
+        diaGetInt(diaDeviceConfig, CFG_ALLGAMES, &gAllGames);
+        diaGetInt(diaDeviceConfig, CFG_SHOWHIDDEN, &gShowHidden);
 
         diaGetInt(diaDeviceConfig, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(diaDeviceConfig, CFG_ENABLEILK, &gEnableILK);
@@ -442,6 +470,10 @@ reshow_device:
 
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
+        if (previousAllGames != gAllGames)
+            guiApplyAllGamesChange();
+        else if (previousShowHidden != gShowHidden)
+            guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
     }
 }
 
@@ -691,6 +723,8 @@ reshow_ui:
     guiUnlock();
     diaSetEnum(diaUIConfig, UICFG_THEME, themeNamesSnap != NULL ? themeNamesSnap : (const char **)thmGetGuiList());
     diaSetInt(diaUIConfig, UICFG_THEME, thmGetGuiValue());
+    const char *sortNames[] = {_l(_STR_OFF), _l(_STR_SORT_AZ), _l(_STR_SORT_LAST_PLAYED), NULL};
+    diaSetEnum(diaUIConfig, UICFG_AUTOSORT, sortNames);
     diaSetInt(diaUIConfig, UICFG_AUTOSORT, gAutosort);
     diaSetInt(diaUIConfig, UICFG_AUTOREFRESH, gAutoRefresh);
     diaSetInt(diaUIConfig, UICFG_NOTIFICATIONS, gEnableNotifications);
@@ -705,6 +739,9 @@ reshow_ui:
     const char *fontSizeNames[] = {_l(_STR_SMALL), _l(_STR_DEFAULT), _l(_STR_LARGE), NULL};
     diaSetEnum(diaUIConfig, UICFG_FONT_SIZE, fontSizeNames);
     diaSetInt(diaUIConfig, UICFG_FONT_SIZE, gFontSize);
+    const char *glyphSetNames[] = {_l(_STR_THEME), _l(_STR_GLYPHS_BUILTIN), _l(_STR_GLYPHS_STANDARD), _l(_STR_GLYPHS_WHITE), NULL};
+    diaSetEnum(diaUIConfig, UICFG_GLYPH_SET, glyphSetNames);
+    diaSetInt(diaUIConfig, UICFG_GLYPH_SET, gGlyphSet);
 
     int ret = diaExecuteDialog(diaUIConfig, -1, 1, NULL);
 
@@ -736,18 +773,21 @@ reshow_ui:
 
     if (ret) {
         diaGetInt(diaUIConfig, UICFG_THEME, &themeID);
+        int previousSort = gAutosort;
         diaGetInt(diaUIConfig, UICFG_AUTOSORT, &gAutosort);
         diaGetInt(diaUIConfig, UICFG_AUTOREFRESH, &gAutoRefresh);
         diaGetInt(diaUIConfig, UICFG_NOTIFICATIONS, &gEnableNotifications);
         int previousCfgTitles = gCfgTitlesInLists;
         diaGetInt(diaUIConfig, UICFG_CFG_TITLES, &gCfgTitlesInLists);
-        int cfgTitlesChanged = previousCfgTitles != gCfgTitlesInLists;
+        // A new sort needs the rows rebuilt: Last played ranks are resolved as each row is built.
+        int cfgTitlesChanged = previousCfgTitles != gCfgTitlesInLists || previousSort != gAutosort;
         diaGetInt(diaUIConfig, UICFG_GAME_TYPE_LABELS, &gGameTypeLabels);
         int gameViewChanged = guiReadGameViewPicker(diaUIConfig);
         int appsViewChanged = guiReadAppsViewPicker(diaUIConfig);
         int themeViewChanged = guiReadThemeViewPicker(diaUIConfig);
         diaGetInt(diaUIConfig, UICFG_VMODE, &gVMode);
         diaGetInt(diaUIConfig, UICFG_FONT_SIZE, &gFontSize);
+        diaGetInt(diaUIConfig, UICFG_GLYPH_SET, &gGlyphSet);
 
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
@@ -765,7 +805,7 @@ reshow_ui:
             // uses the new VCD view, without racing the theme/menu bookkeeping above.
             guiRefreshGameViews();
         }
-        if (appsViewChanged)
+        if (appsViewChanged || (cfgTitlesChanged && previousSort != gAutosort))
             guiRefreshAppsView();
         sfxInit(0);
 
@@ -2507,6 +2547,8 @@ static int guiSettingsShowSources(void)
     diaSetInt(ui, CFG_HDDMODE, gHDDStartMode);
     diaSetInt(ui, CFG_APPMODE, gAPPStartMode);
     diaSetInt(ui, CFG_FAVMODE, gFAVStartMode);
+    diaSetInt(ui, CFG_ALLGAMES, gAllGames);
+    diaSetInt(ui, CFG_SHOWHIDDEN, gShowHidden);
     diaSetInt(ui, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(ui, CFG_ENABLEILK, gEnableILK);
     diaSetInt(ui, CFG_ENABLEMX4SIO, gEnableMX4SIO);
@@ -2544,6 +2586,9 @@ reshow_sources:
         diaGetInt(ui, CFG_APPMODE, &gAPPStartMode);
         diaGetInt(ui, CFG_MMCEMODE, &gMMCEStartMode);
         diaGetInt(ui, CFG_FAVMODE, &gFAVStartMode);
+        int previousAllGames = gAllGames, previousShowHidden = gShowHidden;
+        diaGetInt(ui, CFG_ALLGAMES, &gAllGames);
+        diaGetInt(ui, CFG_SHOWHIDDEN, &gShowHidden);
         diaGetInt(ui, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(ui, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(ui, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
@@ -2558,6 +2603,10 @@ reshow_sources:
         bdmForceDeviceRefresh();
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
+        if (previousAllGames != gAllGames)
+            guiApplyAllGamesChange();
+        else if (previousShowHidden != gShowHidden)
+            guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
     }
 
     gSettingsShell.endDialog();
@@ -2599,6 +2648,8 @@ static int guiSettingsDisplayUpdater(int modified)
         gFontSize = temp;
         guiUpdateScreenScale();
     }
+    if (diaGetInt(activeDialog, UICFG_GLYPH_SET, &temp))
+        gGlyphSet = temp; // the next frame swaps the glyphs (thmGlyphSetRefresh)
     return 0;
 }
 
@@ -2639,6 +2690,8 @@ static int guiSettingsShowInterface(void)
     guiSetThemeViewPicker(ui);
     diaSetEnum(ui, UICFG_VMODE, vmodeNames);
     diaSetInt(ui, UICFG_THEME, thmGetGuiValue());
+    const char *sortNames[] = {_l(_STR_OFF), _l(_STR_SORT_AZ), _l(_STR_SORT_LAST_PLAYED), NULL};
+    diaSetEnum(ui, UICFG_AUTOSORT, sortNames);
     diaSetInt(ui, UICFG_AUTOSORT, gAutosort);
     diaSetInt(ui, UICFG_AUTOREFRESH, gAutoRefresh);
     diaSetInt(ui, UICFG_NOTIFICATIONS, gEnableNotifications);
@@ -2652,6 +2705,9 @@ static int guiSettingsShowInterface(void)
     const char *fontSizeNames[] = {_l(_STR_SMALL), _l(_STR_DEFAULT), _l(_STR_LARGE), NULL};
     diaSetEnum(ui, UICFG_FONT_SIZE, fontSizeNames);
     diaSetInt(ui, UICFG_FONT_SIZE, gFontSize);
+    const char *glyphSetNames[] = {_l(_STR_THEME), _l(_STR_GLYPHS_BUILTIN), _l(_STR_GLYPHS_STANDARD), _l(_STR_GLYPHS_WHITE), NULL};
+    diaSetEnum(ui, UICFG_GLYPH_SET, glyphSetNames);
+    diaSetInt(ui, UICFG_GLYPH_SET, gGlyphSet);
     diaSetInt(ui, UICFG_XOFF, gXOff);
     diaSetInt(ui, UICFG_YOFF, gYOff);
     diaSetInt(ui, UICFG_OVERSCAN, gOverscan);
@@ -2687,12 +2743,14 @@ reshow_interface:
     padRumbleFlush();
     if (result != UIID_BTN_CANCEL && result != -1) {
         diaGetInt(ui, UICFG_THEME, &themeID);
+        int previousSort = gAutosort;
         diaGetInt(ui, UICFG_AUTOSORT, &gAutosort);
         diaGetInt(ui, UICFG_AUTOREFRESH, &gAutoRefresh);
         diaGetInt(ui, UICFG_NOTIFICATIONS, &gEnableNotifications);
         int previousCfgTitles = gCfgTitlesInLists;
         diaGetInt(ui, UICFG_CFG_TITLES, &gCfgTitlesInLists);
-        int cfgTitlesChanged = previousCfgTitles != gCfgTitlesInLists;
+        // A new sort needs the rows rebuilt: Last played ranks are resolved as each row is built.
+        int cfgTitlesChanged = previousCfgTitles != gCfgTitlesInLists || previousSort != gAutosort;
         diaGetInt(ui, UICFG_GAME_TYPE_LABELS, &gGameTypeLabels);
         gameViewChanged = guiReadGameViewPicker(ui);
         appsViewChanged = guiReadAppsViewPicker(ui);
@@ -2700,6 +2758,7 @@ reshow_interface:
         diaGetInt(ui, UICFG_VMODE, &gVMode);
         diaGetInt(ui, UICFG_WIDESCREEN, &gWideScreen);
         diaGetInt(ui, UICFG_FONT_SIZE, &gFontSize);
+        diaGetInt(ui, UICFG_GLYPH_SET, &gGlyphSet);
         diaGetInt(ui, UICFG_XOFF, &gXOff);
         diaGetInt(ui, UICFG_YOFF, &gYOff);
         diaGetInt(ui, UICFG_OVERSCAN, &gOverscan);
@@ -2721,7 +2780,7 @@ reshow_interface:
         } else if (gameViewChanged) {
             guiRefreshGameViews();
         }
-        if (appsViewChanged)
+        if (appsViewChanged || (cfgTitlesChanged && previousSort != gAutosort))
             guiRefreshAppsView();
         sfxInit(0);
         if (gEnableBGM && !isBgmPlaying())
@@ -2957,6 +3016,8 @@ void SettingsShell::readSourceState(SourceState *state)
     state->appStartMode = gAPPStartMode;
     state->mmceStartMode = gMMCEStartMode;
     state->favStartMode = gFAVStartMode;
+    state->allGames = gAllGames;
+    state->showHidden = gShowHidden;
     state->enableUSB = gEnableUSB;
     state->enableILK = gEnableILK;
     state->enableMX4SIO = gEnableMX4SIO;
@@ -3002,6 +3063,9 @@ void SettingsShell::restoreSourceState()
     gAPPStartMode = sourceState_.appStartMode;
     gMMCEStartMode = sourceState_.mmceStartMode;
     gFAVStartMode = sourceState_.favStartMode;
+    int previousAllGames = gAllGames, previousShowHidden = gShowHidden;
+    gAllGames = sourceState_.allGames;
+    gShowHidden = sourceState_.showHidden;
     gEnableUSB = sourceState_.enableUSB;
     gEnableILK = sourceState_.enableILK;
     gEnableMX4SIO = sourceState_.enableMX4SIO;
@@ -3027,6 +3091,10 @@ void SettingsShell::restoreSourceState()
     bdmForceDeviceRefresh();
     applyConfig(-1, -1, 0);
     menuReinitMainMenu();
+    if (previousAllGames != gAllGames)
+        guiApplyAllGamesChange();
+    else if (previousShowHidden != gShowHidden)
+        guiRefreshCfgTitles();
 }
 
 int SettingsShell::promptSave(void)

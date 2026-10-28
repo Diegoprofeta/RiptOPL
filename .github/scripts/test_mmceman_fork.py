@@ -16,7 +16,7 @@ root = Path(__file__).resolve().parents[2]
 tree = root / 'modules/mmce/mmceman'
 PATCHES = ['mmceman-fs-close-fd-leak.patch', 'mmceman-fs-open-enoent.patch',
            'mmceman-fs-dopen-enoent.patch', 'mmceman-fs-dread-eof.patch']
-# sha256 of ps2-mmce/mmceman @ db3e93f0fdbcf882f88da110cbd9b7db188ec17a
+# sha256 of ps2-mmce/mmceman @ de28936f (mmce_fs.c and mmce_cmds.h are unchanged since db3e93f0)
 PINNED = {
     'src/mmce_fs.c': '0f6ffa10a03dcdd3a453ae65b99426e126d30570ebe8cffaaa489896384efdc9',
     'include/mmce_cmds.h': '1163e81f9f4557ef6ee54c35abc6cdc0df9bf8eca7f18fdb759f863a09f00b8a',

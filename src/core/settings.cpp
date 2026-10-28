@@ -75,6 +75,7 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_ENABLE_LOGOART, &gEnableLogoArt, 1), // preserve existing LGO artwork unless the user disables it
     intSetting(CONFIG_OPL_WIDESCREEN, &gWideScreen, 0), // fresh configurations use 4:3; a saved choice overrides
     intSetting(CONFIG_OPL_FONT_SIZE, &gFontSize, FONT_SIZE_DEFAULT),
+    intSetting(CONFIG_OPL_GLYPH_SET, &gGlyphSet, 0), // GLYPH_SET_THEME: the theme's own (RIPPS2 build 90)
     intSetting(CONFIG_OPL_VMODE, &gVMode, 0, /*loadPlain=*/false),
     intSetting(CONFIG_OPL_XOFF, &gXOff, 0),
     intSetting(CONFIG_OPL_YOFF, &gYOff, 0),
@@ -110,6 +111,8 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_SMB_CACHE, &smbCacheSize, 16),
     intSetting(CONFIG_OPL_ENABLE_USB, &gEnableUSB, 0), // USB block device is opt-in, like the other BDM transports
     intSetting(CONFIG_OPL_FAV_MODE, &gFAVStartMode, START_MODE_DISABLED),
+    intSetting(CONFIG_OPL_ALL_GAMES, &gAllGames, 0),     // All Games list (RIPPS2), off by default
+    intSetting(CONFIG_OPL_SHOW_HIDDEN, &gShowHidden, 0), // Show Hidden Games (RIPPS2 Hide Game), off by default
     // Visual GameID barcode ships OFF, matching fork commit cc2cdfed ("GameID defaults OFF"): the
     // HDMI auto-profile latch is only verifiable on real GameID hardware, so it stays opt-in.
     intSetting(CONFIG_OPL_APPLY_GAMEID, &gApplyGameID, 0),

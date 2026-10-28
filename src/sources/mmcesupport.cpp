@@ -1,8 +1,10 @@
 #include <new>
 #include "include/host.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/opl.h"
 #include "include/lang.h"
 #include "include/gui.h"
+#include "include/pad.h" // readPads/getKeyOn: START skips the Game ID card wait
 #include "include/supportbase.h"
 #include "include/nativevmc.h"
 #include "include/mmcesupport.h"
@@ -35,6 +37,13 @@
 // constant-initialized (EE rule: no dynamic initialization before main).
 MmceSupport gMmceSupport;
 
+// An in-menu IOP reset unloads every module; forget the latches so the next refresh loads them again.
+// Ported from RIPPS2 build 115 (akilluminati47/RIPPS2).
+void mmceIopWasReset(void)
+{
+    gMmceSupport.modLoaded = 0;
+}
+
 // VCD-scan retry budget (member ps1ScanRetries): ~15 passes at the ~2s cadence, re-armed by a fresh
 // L3 toggle, self-quiescing on success/expiry. (The other half of the old "-1 for both" ambiguity
 // is split at the source: vcdScanOpenDir returns 0 for a genuinely-ABSENT POPS folder -- #154
@@ -54,14 +63,24 @@ constexpr int MMCE_FOLDER_RETRY_MAX = 5;
 // and declares the card present.
 constexpr int MMCE_PRESENCE_PROBE_MAX = 3;
 constexpr int MMCE_PRESENCE_RETRY_US = (200 * 1000);
-// Card-switch wait: poll the MMCE busy bit every 200 ms for up to ~3 s, matching mmceman's own
-// switch handshake. On a CROSS-DEVICE launch (a USB/HDD/SMB game whose per-game card lives on the
-// MMCE) the 0x8 push physically switches the SD card, and the launch MUST wait for that to finish --
-// otherwise the game boots while the card is still mounting and freezes at its MC check (issue #50,
-// cross-device path). A prior change had collapsed the per-poll gap to a sub-ms nopdelay(), which
-// gutted the wait so it returned in well under a second; a real sleep restores it.
-constexpr int MMCE_GAMEID_WAIT_TICKS = 15;        // max polls of the card-switch busy bit
-constexpr int MMCE_GAMEID_POLL_US = (200 * 1000); // 200 ms between polls -> ~3 s total budget (was 500 ms x 15 = 7.5 s)
+// Card-switch wait. On a CROSS-DEVICE launch (a USB/HDD/SMB game whose per-game card lives on the MMCE)
+// the 0x8 push physically switches the SD card, and the launch MUST wait for that to finish -- otherwise
+// the game boots while the card is still mounting and freezes at its MC check (issue #50).
+// sd2psXtd starts the switch on a LATER pass of its main loop, not while it answers the 0x8 send, so a
+// poll straight after the send reads "not busy" before the switch has begun and the game boots while
+// the card is still loading (or creating) its per-game card from the SD the game streams from -- the
+// reported Burnout 3 hang. So busy must be SEEN first, within MMCE_GAMEID_START_MS (never seen: the
+// slot already holds this game's card, or Game ID is off on the device), and is then waited out on
+// screen: loading an 8 MB card takes ~9 s, creating a new one longer. START launches at once.
+// Ported from RIPPS2 build 115 (akilluminati47/RIPPS2, mmcesupport.c).
+constexpr int MMCE_GAMEID_START_MS = 2000;    // how long a sent Game ID may take to start the switch
+constexpr int MMCE_GAMEID_START_POLL_MS = 50; // poll interval while waiting for the switch to start
+constexpr int MMCE_GAMEID_QUERY_FAILURES = 3; // failed busy queries in a row that end the wait (unconfirmed)
+constexpr int MMCE_CARD_READY_MAX_S = 180;    // the longest the launch waits for the game's card
+constexpr int MMCE_CARD_READY_POLL_US = (250 * 1000);
+// Card reset (0x9) wait: poll the busy bit every 200 ms for up to ~3 s.
+constexpr int MMCE_GAMEID_WAIT_TICKS = 15;
+constexpr int MMCE_GAMEID_POLL_US = (200 * 1000);
 /* The MMCE worker checks its abort flag between 32 KB staged reads. A
  * 500 ms wait gives a slow card time to reach the next safe checkpoint. */
 constexpr int MMCE_ART_ABORT_WAIT_TICKS = 500;
@@ -146,24 +165,40 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
     // gate, batch S7) must poll the SAME device, not a guess.
     snprintf(gameIdTarget, sizeof(gameIdTarget), "%s", mmceDevice);
 
-    // Wait until the busy bit clears -- i.e. until the physical card has finished switching to the
-    // per-game folder. This runs on the single GUI thread BEFORE deinit, so every millisecond here is a
-    // frozen loading screen. POLL FIRST, sleep only if still busy: a card that switches instantly (the
-    // common case) now costs ~0 ms instead of a guaranteed 500 ms (the old loop slept 500 ms before its
-    // first poll, taxing EVERY cross-device launch -- a regression on slow late-slim MC buses). The total
-    // budget is generous enough (~3 s) to still cover a slow switch before we launch anyway (#50 race),
-    // but no longer the 7.5 s worst case that read as a hard freeze on hardware. Break the instant it clears.
-    for (int i = 0; i < MMCE_GAMEID_WAIT_TICKS; i++) {
+    int queryFailures = 0;
+    for (int waited = 0; waited < MMCE_GAMEID_START_MS; waited += MMCE_GAMEID_START_POLL_MS) {
         int status = fileXioDevctl(mmceDevice, 0x2, NULL, 0, NULL, 0);
-        if (status < 0)
-            break; // busy-bit query unsupported/failed -> don't block the launch
-
-        if ((status & 1) == 0) {
-            LOG("Set MMCE GameID to: %s\n", startup);
-            return 1; // card finished switching (settle CONFIRMED)
+        if (status < 0) {
+            // A failed busy query says nothing about the switch. Retry a few times; a run of failures
+            // (the firmware has no busy query) ends the wait unconfirmed so the launch is not held.
+            if (++queryFailures >= MMCE_GAMEID_QUERY_FAILURES) {
+                LOG("MMCE GameID switch: busy query failed %d times; launching unconfirmed\n", queryFailures);
+                diagLog("gameid %s: busy query failed %d times; launching unconfirmed", startup, queryFailures);
+                return -1;
+            }
+            DelayThread(MMCE_GAMEID_START_POLL_MS * 1000);
+            continue;
         }
-
-        DelayThread(MMCE_GAMEID_POLL_US); // still busy -> wait a short interval, then re-poll
+        queryFailures = 0;
+        if (status & 1) {
+            LOG("MMCE GameID %s: the card started switching after %d ms\n", startup, waited);
+            diagLog("gameid %s: the card switching after %d ms", startup, waited);
+            int ready = waitCardReady(mmceDevice);
+            if (ready < 0)
+                return -1; // the query failed mid-wait: unconfirmed
+            if (ready == 0)
+                break; // still busy at the cap: launched anyway, not settled
+            LOG("Set MMCE GameID to: %s\n", startup);
+            return 1; // card finished switching (settle CONFIRMED, or the user pressed START)
+        }
+        DelayThread(MMCE_GAMEID_START_POLL_MS * 1000);
+    }
+    int idle = fileXioDevctl(mmceDevice, 0x2, NULL, 0, NULL, 0);
+    if (idle >= 0 && (idle & 1) == 0) {
+        LOG("MMCE GameID %s: no switch within %d ms (this game's card already, or Game ID off on the card)\n", startup,
+            MMCE_GAMEID_START_MS);
+        diagLog("gameid %s: no switch within %d ms", startup, MMCE_GAMEID_START_MS);
+        return 1;
     }
 
     // Tri-state (batch S7): -1 = the 0x8 switch WAS sent but the settle was never confirmed (busy
@@ -173,6 +208,40 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
     // with the SD enumeration the launch is about to depend on.
     LOG("MMCE GameID switch not confirmed within budget; launching anyway\n");
     return -1;
+}
+
+// Waits, on screen, while the card reports busy after a Game ID switch. Returns 1 when it is ready or the
+// user pressed START, 0 when it was still busy at MMCE_CARD_READY_MAX_S, -1 when the busy query failed
+// before the card reported ready (unconfirmed). The launch goes ahead in every case.
+int MmceSupport::waitCardReady(const char *device)
+{
+    char line[256];
+    int status, polls;
+
+    for (polls = 0; (status = fileXioDevctl(device, 0x2, NULL, 0, NULL, 0)) >= 0 && (status & 1); polls++) {
+        int seconds = polls * MMCE_CARD_READY_POLL_US / 1000000;
+        if (seconds >= MMCE_CARD_READY_MAX_S) {
+            LOG("MMCE: the game's memory card was still busy after %d s; launching\n", seconds);
+            diagLog("mmce: the game's card still busy after %d s; launching", seconds);
+            return 0;
+        }
+        readPads();
+        if (getKeyOn(KEY_START)) {
+            LOG("MMCE: START pressed after %d s of the card's wait; launching\n", seconds);
+            diagLog("mmce: START after %d s of the card's wait; launching", seconds);
+            return 1;
+        }
+        snprintf(line, sizeof(line), _l(_STR_MMCE_GAMEID_CARD_WAIT), seconds);
+        host::ui().renderTextScreen(line);
+        DelayThread(MMCE_CARD_READY_POLL_US);
+    }
+    if (status < 0) {
+        LOG("MMCE: the card's busy query failed during the wait; not confirmed\n");
+        diagLog("mmce: the card's busy query failed during the wait");
+        return -1;
+    }
+    diagLog("mmce: the game's card ready after %d ms", polls * MMCE_CARD_READY_POLL_US / 1000);
+    return 1;
 }
 
 int mmceSendGameID(const char *startup, const char *protectMcPath, int vmcSlotMask)
@@ -348,7 +417,7 @@ static int mmceTryLoadImage(const char *prefix, char *folder, int isRelative, ch
     else
         snprintf(path, sizeof(path), "%s%s_%s", folder, value, suffix);
 
-    return texDiscoverLoad(resultTex, path, -1);
+    return texDiscoverArt(resultTex, path);
 }
 
 int MmceSupport::detectSlot(void)
@@ -448,6 +517,11 @@ void MmceSupport::loadModules(void)
 void mmceLoadModules(void)
 {
     gMmceSupport.loadModules();
+}
+
+int mmceModulesLoaded(void)
+{
+    return gMmceSupport.modLoaded != 0;
 }
 
 // Δ4 (NHDDL parity): arm the GameID transport OUTSIDE the launch path. NHDDL loads mmceman once at
@@ -943,6 +1017,8 @@ void MmceSource::launchVcd(item_list_t *itemList, const char *vcdName, config_se
         host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
+    if (!vcdConfirmPopsFiles(ps1Root)) // before the card is prepared: a missing emulator is a black screen
+        return;
     vcdBuildSelector(ps1Root, VCD_PREFIX_MASS, vcdName, vcdSelector, sizeof(vcdSelector));
 
     // Source MC-side externals from this MMCE card's direct POPS/ folder; never overwrite card files.
@@ -1001,7 +1077,12 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         // The card is still busy. Leave the menu and worker intact so the user
         // can retry after the current read returns.
         host::ui().warning(_l(_STR_ERR_FILE_INVALID), 8);
+        diagLog("launch: %s from MMCE refused: an art read would not stop", game != NULL ? game->name : "?");
         return;
+    }
+    if (game != NULL) {
+        diagLog("launch: %s (%s) from MMCE, Game ID %s", game->name, game->startup, gMMCEEnableGameID ? "on" : "off");
+        diagSaveBeforeLaunch(); // Debug on only: a launch that hangs still leaves its steps in DIAG.TXT
     }
 
     // VCD view: hand off to POPSTARTER (by name) instead of the disc path below. Menu-launch only.
@@ -1057,6 +1138,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
             // embedded; sysLaunchLoaderElf reads rom0: only).
             if (mmceSendGameID(game->startup, NULL, vmcMask))
                 gMmceSupport.settleAfterSwitch();
+            diagSaveBeforeLaunch(); // again, now with the Game ID switch and the card's wait in it
         }
     }
 
@@ -1303,6 +1385,7 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         // just-switched card -- wait for the switched slot's fs to answer first (issue #56/#68).
         if (gameIdSwitched)
             gMmceSupport.settleAfterSwitch();
+        diagSaveBeforeLaunch(); // again, now with the Game ID switch and the card's wait in it
         // Neutrino keep-IOP handoff (sysLoadELFKeepIOP): Neutrino opens the mmce-hosted game through
         // OUR mmceman mount and its config/modules from the neutrino.elf device (-cwd) before its own
         // IOP reset -- keep BOTH mounted. An MC-hosted neutrino needs no exception (-1 second slot).

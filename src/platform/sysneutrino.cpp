@@ -22,6 +22,7 @@ constexpr int SYS_DISC_REDETECT_MS = 4000; // spin-up + re-detect after a NODISC
 // DETCT is seen the FULL budget applies again, so a slow-but-working drive is unaffected.
 constexpr int SYS_DISC_NODISC_MS = 2000;
 #include "include/host.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/opl.h"
 #include "include/gui.h"
 #include "include/lang.h"       // _l(_STR_...) -- Neutrino preflight abort toasts
@@ -1165,5 +1166,7 @@ int sysNeutrinoArgsPreflight(const char *driver, const char *path, const char *s
 
 void sysLaunchNeutrino(const char *driver, const char *path, const char *startup, int compatmask, int EnablePS2Logo, const char *neutrinoPath, const char *extraArgs, int neutrinoVideo, int neutrinoGsmComp, int neutrinoBsdfs, int bdDevNr, const neutrino_vmc_args_t *vmcArgs)
 {
+    diagLog("launch: Neutrino %s, %s %s (%s)", neutrinoPath != NULL ? neutrinoPath : "?", driver != NULL ? driver : "?",
+            path != NULL ? path : "?", startup != NULL ? startup : "?");
     sysRunNeutrinoLaunch(driver, path, startup, compatmask, EnablePS2Logo, neutrinoPath, extraArgs, neutrinoVideo, neutrinoGsmComp, neutrinoBsdfs, bdDevNr, vmcArgs, 0);
 }

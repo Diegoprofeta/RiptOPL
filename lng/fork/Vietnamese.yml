@@ -678,3 +678,6 @@ translations:
   HINT_OSD_TVASPECT: Dạng TV truyền cho trò chơi.
   HINT_OSD_VMODE: Chế độ video truyền cho trò chơi.
   DNAS_ID: ID DNAS
+  # Filled from RIPPS2 (Akilluminati47) where Open PS2 Loader had no translation yet
+  'YES': Có
+  'NO': Không

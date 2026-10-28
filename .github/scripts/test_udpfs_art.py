@@ -14,7 +14,7 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 UDPFS = (ROOT / "src/sources/udpfssupport.cpp").read_text(encoding="utf-8")
-INDEX = (ROOT / "src/sources/artindex.cpp").read_text(encoding="utf-8")
+INDEX = (ROOT / "src/gfx/artindex.cpp").read_text(encoding="utf-8")
 TEXCACHE = (ROOT / "src/gfx/texcache.cpp").read_text(encoding="utf-8")
 failures = []
 

@@ -33,9 +33,12 @@
 #include "include/ethsupport.h" // ETH ISO favourite resolution while the live source is in VCD view
 #include "include/bdmsupport.h" // bdmSupportIsUDPBD -- POPSTARTER favourites cannot bind to UDPBD
 #include "include/favsupport.h"
+#include "include/gamemanage.h" // Hide Game: hidden games are not gathered (RIPPS2)
 #include "include/gamesource.h"
+#include "include/folderbrowse.h" // folderModeSupported -- All Games skips folder rows
 
 int gFAVStartMode;
+int gAllGames; // All Games list: the Favourites page lists every game of every started source
 
 // The one Favourites store; the public favXxx functions below and the FavSource callbacks
 // forward to it. Constant-initialized only (no dynamic init before main).
@@ -52,9 +55,15 @@ static char *favStrdup(const char *s)
 
 // ---- on-disk path -------------------------------------------------------------
 
+// The two stores that share this record format: the starred games, and the last games launched
+// (RECENT_MAX_ITEMS, newest first; the Favourites Recent stop and Sort Games: Last played read it).
+#define FAV_FILE_NAME "favourites.bin"
+static const char kRecentFile[] = "recents.bin";
+
 // favourites.bin lives next to the master config in the SHARED OPL config dir (not renamed to
 // riptopl) so favourites carry across OPL / uOPL / wOPL -- only our settings file is private.
-static void favGetFilePath(char *out, int outSize)
+// recents.bin sits beside it.
+static void favGetFilePath(char *out, int outSize, const char *name = FAV_FILE_NAME)
 {
     config_set_t *cfg = configGetByType(CONFIG_OPL);
     const char *fn = (cfg != NULL && cfg->filename() != NULL) ? cfg->filename() : "mc0:OPL/" CONFIG_OPL_FILENAME;
@@ -63,15 +72,15 @@ static void favGetFilePath(char *out, int outSize)
     int blen = (int)strlen(base);
     if (len >= blen && strcmp(fn + len - blen, base) == 0) {
         int dirLen = len - blen;
-        if (dirLen + (int)strlen("favourites.bin") >= outSize) {
+        if (dirLen + (int)strlen(name) >= outSize) {
             out[0] = '\0';
             return;
         }
         memcpy(out, fn, dirLen);
         out[dirLen] = '\0';
-        strncat(out, "favourites.bin", outSize - strlen(out) - 1);
+        strncat(out, name, outSize - strlen(out) - 1);
     } else {
-        snprintf(out, outSize, "mc0:OPL/favourites.bin");
+        snprintf(out, outSize, "mc0:OPL/%s", name);
     }
 }
 
@@ -363,10 +372,9 @@ static FavImage favLoadImage(const char *path)
     return image;
 }
 
-static bool favStoragePaths(char *path, int pathSize, char *staged, int stagedSize)
+static bool favStoragePaths(char *path, int pathSize, char *staged, int stagedSize, const char *name = FAV_FILE_NAME)
 {
-    favGetFilePath(path, pathSize);
-    const char *name = "favourites.bin";
+    favGetFilePath(path, pathSize, name);
     int size = strlen(path), suffix = strlen(name);
     return size >= suffix && strcmp(path + size - suffix, name) == 0 &&
            (unsigned int)snprintf(staged, stagedSize, "%s.new", path) < (unsigned int)stagedSize;
@@ -384,13 +392,13 @@ static fav_raw_t *favReadPath(const char *path, int *count, int *complete, int *
     return records;
 }
 
-static fav_raw_t *favReadFile(int *outCount, int *editable = NULL)
+static fav_raw_t *favReadFile(int *outCount, int *editable = NULL, const char *name = FAV_FILE_NAME)
 {
     char path[256], staged[264];
     *outCount = 0;
     if (editable != NULL)
         *editable = 0;
-    if (!favStoragePaths(path, sizeof(path), staged, sizeof(staged)))
+    if (!favStoragePaths(path, sizeof(path), staged, sizeof(staged), name))
         return NULL;
     int complete, recoverable, missing;
     fav_raw_t *primary = favReadPath(path, outCount, &complete, &recoverable, &missing, 1);
@@ -536,14 +544,14 @@ static bool favPrepareSave(const char *path, const char *staged)
     return ok;
 }
 
-static int favWriteFile(fav_raw_t *recs, int count)
+static int favWriteFile(fav_raw_t *recs, int count, const char *name = FAV_FILE_NAME)
 {
     int size;
     u8 *image = favBuildImage(recs, count, &size);
     if (image == NULL)
         return 0;
     char path[256], staged[264];
-    if (!favStoragePaths(path, sizeof(path), staged, sizeof(staged)) || !favPrepareSave(path, staged)) {
+    if (!favStoragePaths(path, sizeof(path), staged, sizeof(staged), name) || !favPrepareSave(path, staged)) {
         free(image);
         return 0;
     }
@@ -678,7 +686,8 @@ static int favSupportLaunches(const item_list_t *support, int needCue)
     return needCue ? (gsOf(support)->hasLaunchCue()) : (gsOf(support)->hasLaunchVcd());
 }
 
-static item_list_t *favResolve(int mode, int id, const char *text, int kind, int *outMode, int *outId)
+// markStars = 0 resolves without touching any source row's star: a Recent entry is not a favourite.
+static item_list_t *favResolve(int mode, int id, const char *text, int kind, int *outMode, int *outId, int markStars = 1)
 {
     *outMode = mode;
     *outId = id;
@@ -693,14 +702,16 @@ static item_list_t *favResolve(int mode, int id, const char *text, int kind, int
         if (mode >= BDM_MODE && mode <= BDM_MODE_LAST) {
             opl_io_module_t *mod = oplGetModule(mode);
             if (mod != NULL && mod->support != NULL && favSupportLaunches(mod->support, needCue)) {
-                favVcdMarkStar(mod, id, text);
+                if (markStars)
+                    favVcdMarkStar(mod, id, text);
                 return mod->support;
             }
             for (int m = BDM_MODE; m <= BDM_MODE_LAST; m++) {
                 opl_io_module_t *bm = oplGetModule(m);
                 if (bm != NULL && bm->support != NULL && favSupportLaunches(bm->support, needCue)) {
                     *outMode = m;
-                    favVcdMarkStar(bm, id, text);
+                    if (markStars)
+                        favVcdMarkStar(bm, id, text);
                     return bm->support;
                 }
             }
@@ -711,7 +722,8 @@ static item_list_t *favResolve(int mode, int id, const char *text, int kind, int
         opl_io_module_t *mod = oplGetModule(mode);
         if (mod == NULL || mod->support == NULL || !favSupportLaunches(mod->support, needCue))
             return NULL;
-        favVcdMarkStar(mod, id, text);
+        if (markStars)
+            favVcdMarkStar(mod, id, text);
         return mod->support;
     }
 
@@ -725,7 +737,7 @@ static item_list_t *favResolve(int mode, int id, const char *text, int kind, int
                 continue;
             int liveId = id;
             if (favResolveStoredId(mod->support, id, text, 0, &liveId)) {
-                submenu_list_t *src = favFindVisibleSource(mod, liveId, text, LIB_VIEW_ISO);
+                submenu_list_t *src = markStars ? favFindVisibleSource(mod, liveId, text, LIB_VIEW_ISO) : NULL;
                 if (src != NULL)
                     src->item.favourited = 1;
                 *outMode = m;
@@ -746,8 +758,7 @@ static item_list_t *favResolve(int mode, int id, const char *text, int kind, int
     if (!favResolveStoredId(mod->support, id, text, 0, &liveId))
         return NULL;
 
-    submenu_list_t *src = favFindVisibleSource(mod, liveId, text,
-                                               mode == APP_MODE ? LIB_VIEW_ELF : LIB_VIEW_ISO);
+    submenu_list_t *src = markStars ? favFindVisibleSource(mod, liveId, text, mode == APP_MODE ? LIB_VIEW_ELF : LIB_VIEW_ISO) : NULL;
     if (src != NULL)
         src->item.favourited = 1;
     *outId = liveId;
@@ -778,21 +789,34 @@ static int favModesMatch(int a, int b)
 void FavSupport::clear()
 {
     if (array_ != NULL) {
-        for (int i = 0; i < count_; i++)
+        for (int i = 0; i < count_; i++) {
             free(array_[i].text);
+            free(array_[i].display);
+        }
         free(array_);
         array_ = NULL;
     }
     count_ = 0;
 }
 
-int FavSupport::ingest(const fav_raw_t *recs, int rawCount)
+void FavSupport::markStars(const fav_raw_t *recs, int rawCount)
+{
+    for (int i = 0; i < rawCount; i++) {
+        int resolvedMode, resolvedId;
+        favResolve(recs[i].mode, recs[i].id, recs[i].text, recs[i].kind, &resolvedMode, &resolvedId);
+    }
+}
+
+int FavSupport::ingest(const fav_raw_t *recs, int rawCount, bool recent)
 {
     array_ = (fav_rec_t *)calloc(rawCount, sizeof(fav_rec_t));
     if (array_ == NULL)
         return 0;
 
-    int favShelf = host::library().viewActive(FAV_MODE);
+    // The Recent stop shows every kind, newest first, and lights no stars. The All Games ring's
+    // Favourites stop shows every kind too.
+    int view = host::library().viewActive(FAV_MODE);
+    int favShelf = (recent || view == LIB_VIEW_FAVS) ? LIB_VIEW_ALL : view;
 
     // Resolve EVERY record before filtering the Favorites tab's independent view. Resolution
     // also restores the star on the source submenu. Filtering first meant a saved VCD record was never
@@ -801,7 +825,7 @@ int FavSupport::ingest(const fav_raw_t *recs, int rawCount)
     for (int i = 0; i < rawCount; i++) {
         int resolvedMode = recs[i].mode;
         int resolvedId = recs[i].id;
-        item_list_t *owner = favResolve(recs[i].mode, recs[i].id, recs[i].text, recs[i].kind, &resolvedMode, &resolvedId);
+        item_list_t *owner = favResolve(recs[i].mode, recs[i].id, recs[i].text, recs[i].kind, &resolvedMode, &resolvedId, !recent);
 
         // The FAV page keeps its own L3 ring (All / PS2 / PS1 / ELF): resolution above is global
         // star/state reconciliation. All accepts every kind; the other stops filter one shelf.
@@ -864,6 +888,18 @@ int FavSupport::itemView(int id) const
     return validIndex(id) ? favKindView(array_[id].kind) : -1;
 }
 
+const char *FavSupport::itemDisplay(int id) const
+{
+    if (!validIndex(id))
+        return "";
+    return array_[id].display != NULL ? array_[id].display : array_[id].text;
+}
+
+int FavSupport::itemStarred(int id) const
+{
+    return validIndex(id) ? array_[id].starred : 0;
+}
+
 // Resolve an art-cache `value` (a source item's startup, or a VCD favourite's .VCD name /
 // strict PS1 id) to the favourite's SOURCE device mode, using the same matching FavSource::image
 // uses to route the actual read. Lets texcache apply MMCE idle deferral, abort,
@@ -884,7 +920,14 @@ int FavSupport::artMode(const char *value)
 {
     if (!live() || value == NULL)
         return -1;
-    for (int i = 0; i < count_; i++) {
+    // All Games can hold thousands of rows and this runs for every art request, so search outward
+    // from the last match: the rows asked about next are almost always its neighbours.
+    if (artHint_ >= count_)
+        artHint_ = 0;
+    for (int step = 0; step < 2 * count_; step++) {
+        int i = artHint_ + ((step & 1) ? -(step + 1) / 2 : step / 2);
+        if (i < 0 || i >= count_)
+            continue;
         item_list_t ownerView;
         item_list_t *o = this->ownerView(i, &ownerView);
         if (o == NULL)
@@ -896,13 +939,16 @@ int FavSupport::artMode(const char *value)
                     strcmp(fallbackKey, value) != 0)
                     continue;
             }
+            artHint_ = i;
             return array_[i].mode;
         }
         if (!favOwnerHasId(o, array_[i].id))
             continue;
         char *s = gsOf(o)->startup(o, array_[i].id);
-        if (s != NULL && strcmp(s, value) == 0)
+        if (s != NULL && strcmp(s, value) == 0) {
+            artHint_ = i;
             return array_[i].mode;
+        }
     }
     return -1;
 }
@@ -1088,6 +1134,17 @@ public:
     int createVmc(item_list_t *itemList, char *name, int createSize, int requireContiguous) override;
 };
 
+// All Games: these Favourites-page stops list every source's games instead of favourites.bin.
+static bool favViewListsAllGames(int view)
+{
+    return gAllGames && (view == LIB_VIEW_ALL || view == LIB_VIEW_ISO || view == LIB_VIEW_PS1 || view == LIB_VIEW_ELF);
+}
+
+int favListsAllGames(void)
+{
+    return favViewListsAllGames(host::library().viewActive(FAV_MODE));
+}
+
 static FavSource *favInstance()
 {
     static FavSource *instance = NULL;
@@ -1098,7 +1155,7 @@ static FavSource *favInstance()
     return instance;
 }
 
-int FavSource::textId(item_list_t *itemList) { return _STR_FAV; }
+int FavSource::textId(item_list_t *itemList) { return gAllGames ? _STR_ALL_GAMES : _STR_FAV; }
 int FavSource::iconId(item_list_t *itemList) { return FAV_ICON; }
 
 int FavSource::needsUpdate(item_list_t *itemList)
@@ -1127,10 +1184,26 @@ int FavSource::update(item_list_t *itemList)
 
     int rawCount = 0;
     fav_raw_t *recs = favReadFile(&rawCount);
+    int view = host::library().viewActive(FAV_MODE);
+    bool recent = view == LIB_VIEW_RECENT;
+    bool allGames = favViewListsAllGames(view);
+    // The Recent stop lists recents.bin and the All Games stops list every source, but favourites
+    // still own the stars on the source pages (#495): resolve them for that first.
+    if ((recent || allGames) && recs != NULL)
+        gFavSupport.markStars(recs, rawCount);
+    if (allGames) {
+        int n = gFavSupport.gatherAllGames(view, recs, recs != NULL ? rawCount : 0);
+        free(recs);
+        return n;
+    }
+    if (recent) {
+        free(recs);
+        recs = favReadFile(&rawCount, NULL, kRecentFile);
+    }
     if (recs == NULL)
         return 0;
 
-    int n = gFavSupport.ingest(recs, rawCount);
+    int n = gFavSupport.ingest(recs, rawCount, recent);
     free(recs);
     return n;
 }
@@ -1404,6 +1477,311 @@ int addFavouriteItem(int mode, int id, int icon_id, int text_id, const char *tex
 int removeFavouriteByIdAndText(int mode, int id, const char *text, int kind)
 {
     return gFavSupport.removeByIdAndText(mode, id, text, kind);
+}
+
+// ---- recently played (recents.bin) -----------------------------------------------------------
+// Ported from RIPPS2 (akilluminati47) build 115's recents list. Same record format as the
+// favourites, newest first, capped at RECENT_MAX_ITEMS. Each launch moves its game to the front.
+
+int recentRecord(int mode, int id, int icon_id, int text_id, const char *text, int kind)
+{
+    if (text == NULL || text[0] == '\0')
+        return 0;
+
+    int count = 0, editable = 0;
+    fav_raw_t *recs = favReadFile(&count, &editable, kRecentFile);
+    if (!editable) { // an unreadable or foreign-version file is never replaced (as favourites.bin)
+        free(recs);
+        return 0;
+    }
+    fav_raw_t *out = (fav_raw_t *)calloc(RECENT_MAX_ITEMS, sizeof(fav_raw_t));
+    if (out == NULL) {
+        free(recs);
+        return 0;
+    }
+    out[0].mode = mode;
+    out[0].id = id;
+    out[0].icon_id = icon_id;
+    out[0].text_id = text_id;
+    out[0].kind = kind;
+    snprintf(out[0].text, FAV_TEXT_MAX, "%s", text);
+    int n = 1;
+    for (int i = 0; i < count && n < RECENT_MAX_ITEMS; i++) {
+        // One row per game: same device (BDM slots are one), same shelf and core, same name. Not
+        // the id: it moves when games are added, and a replay must not leave a stale duplicate.
+        if (favModesMatch(recs[i].mode, mode) && recs[i].kind == kind && strcmp(recs[i].text, text) == 0)
+            continue;
+        out[n++] = recs[i];
+    }
+    int ok = favWriteFile(out, n, kRecentFile);
+    free(out);
+    free(recs);
+    recentInvalidate();
+    return ok;
+}
+
+// The ranks Sort Games: Last played reads while a list is rebuilt on the IO thread. Loaded once and
+// kept until a launch is recorded or the settings folder moves. The count is published last, so a
+// reader that runs mid-load sees either the old count of whole records or -1.
+static fav_raw_t recentCache[RECENT_MAX_ITEMS];
+static volatile int recentCacheCount = -1;
+static char recentCachePath[256];
+
+void recentInvalidate(void)
+{
+    recentCacheCount = -1;
+}
+
+static void recentCacheEnsure(void)
+{
+    char path[256];
+    favGetFilePath(path, sizeof(path), kRecentFile);
+    if (recentCacheCount >= 0 && strcmp(path, recentCachePath) == 0)
+        return;
+    recentCacheCount = -1;
+    int count = 0;
+    fav_raw_t *recs = favReadFile(&count, NULL, kRecentFile);
+    if (count > RECENT_MAX_ITEMS)
+        count = RECENT_MAX_ITEMS;
+    if (recs != NULL && count > 0)
+        memcpy(recentCache, recs, count * sizeof(fav_raw_t));
+    free(recs);
+    snprintf(recentCachePath, sizeof(recentCachePath), "%s", path);
+    recentCacheCount = recs != NULL ? count : 0;
+}
+
+static int recentRank(int mode, int view, const char *text)
+{
+    for (int i = 0; i < recentCacheCount; i++) {
+        if (favModesMatch(recentCache[i].mode, mode) && favKindView(recentCache[i].kind) == view &&
+            strcmp(recentCache[i].text, text) == 0)
+            return i + 1;
+    }
+    return 0;
+}
+
+int recentRankForRow(item_list_t *support, int id, const char *text)
+{
+    if (support == NULL || text == NULL)
+        return 0;
+    recentCacheEnsure();
+    if (support->mode == FAV_MODE) {
+        const fav_rec_t *fav = gFavSupport.entry(id);
+        return fav != NULL ? recentRank(fav->mode, favKindView(fav->kind), fav->text) : 0;
+    }
+    // Rows are matched by device, shelf and name, not by id: ids move when games are added.
+    int view = support->mode == APP_MODE ? LIB_VIEW_ELF : (host::library().listRowView(support, id) == LIB_VIEW_PS1 ? LIB_VIEW_PS1 : LIB_VIEW_ISO);
+    return recentRank(support->mode, view, text);
+}
+
+// ---- All Games (RIPPS2 builds 114-116, akilluminati47) ---------------------------------------
+// One list of every game on every started source, PS2, PS1 and apps together, built on the IO
+// worker like the favourites. Each row proxies launch, config and art to the list it came from
+// through the same forced PS2/PS1 view a favourite uses, so nothing below the page changes. Unlike
+// RIPPS2, a title found on two sources is listed once per source, each tagged with its source.
+
+// Source order: the order rows are gathered in, which is also the order equal titles keep.
+static const int kAllGamesModes[] = {HDD_MODE, BDM_MODE, BDM_MODE1, BDM_MODE2, BDM_MODE3, BDM_MODE4, BDM_MODE5,
+                                     BDM_MODE6, BDM_MODE7, MMCE_MODE, ETH_MODE, UDPFS_MODE, HTTP_MODE, APP_MODE};
+
+// Appends one row; out == NULL only counts it.
+static int favGatherAdd(fav_rec_t *out, int n, int cap, item_list_t *owner, int id, int kind, const char *name)
+{
+    // A hidden game is not gathered, so it cannot tag its other copies with a device name either.
+    if (kind != FAV_KIND_ELF && !gShowHidden && hiddenHas(owner, favKindView(kind) == LIB_VIEW_PS1, name))
+        return n;
+    if (out == NULL)
+        return n + 1;
+    if (n >= cap)
+        return n;
+    char *txt = favStrdup(name);
+    if (txt == NULL)
+        return n; // OOM: skip this row rather than store a NULL name
+    memset(&out[n], 0, sizeof(out[n]));
+    out[n].owner = owner;
+    out[n].mode = owner->mode;
+    out[n].id = id;
+    out[n].icon_id = -1;
+    out[n].text_id = -1;
+    out[n].kind = kind;
+    out[n].text = txt;
+    return n + 1;
+}
+
+// A folder-browse row lists a folder, not a game.
+static bool favIsFolderRow(item_list_t *view, int id)
+{
+    if (!folderModeSupported(view->mode) || !gsOf(view)->hasGame())
+        return false;
+    base_game_info_t *game = (base_game_info_t *)gsOf(view)->game(view, id);
+    return game == NULL || game->format == GAME_FORMAT_FOLDER;
+}
+
+// One pass over every started source's rows on the given shelf.
+int FavSupport::gatherPass(fav_rec_t *out, int cap, int shelf)
+{
+    int n = 0;
+
+    for (int mode : kAllGamesModes) {
+        opl_io_module_t *mod = oplGetModule(mode);
+        if (mod == NULL || mod->support == NULL)
+            continue;
+        item_list_t *src = mod->support;
+        if (src->mode == APP_MODE && !src->enabled && gAPPStartMode != START_MODE_DISABLED &&
+            (shelf == LIB_VIEW_ALL || shelf == LIB_VIEW_ELF))
+            armAppsScan(); // the apps join the list once their scan lands
+        if (!src->enabled)
+            continue;
+        // A network share picker lists shares, not games.
+        if (src->mode == ETH_MODE && gPCShareName[0] == '\0')
+            continue;
+
+        if (src->mode == APP_MODE) {
+            if (shelf != LIB_VIEW_ALL && shelf != LIB_VIEW_ELF)
+                continue;
+            // The same forced view an app favourite resolves through (favResolveStoredId).
+            item_list_t view = *src;
+            view.viewOverride = ITEM_VIEW_FORCE_ISO;
+            int count = gsOf(&view)->count(&view);
+            for (int i = 0; i < count; i++) {
+                char *name = gsOf(&view)->name(&view, i);
+                if (name != NULL && name[0] != '\0')
+                    n = favGatherAdd(out, n, cap, src, i, FAV_KIND_ELF, name);
+            }
+            continue;
+        }
+
+        if (shelf == LIB_VIEW_ALL || shelf == LIB_VIEW_ISO) {
+            item_list_t view = *src;
+            view.viewOverride = ITEM_VIEW_FORCE_ISO;
+            int count = gsOf(&view)->count(&view);
+            for (int i = 0; i < count; i++) {
+                if (favIsFolderRow(&view, i))
+                    continue;
+                char *name = gsOf(&view)->name(&view, i);
+                int liveId = i;
+                if (name != NULL && name[0] != '\0' && favResolveStoredId(src, i, name, FAV_KIND_ISO, &liveId))
+                    n = favGatherAdd(out, n, cap, src, liveId, FAV_KIND_ISO, name);
+            }
+        }
+
+        if ((shelf == LIB_VIEW_ALL || shelf == LIB_VIEW_PS1) && (favSupportLaunches(src, 0) || favSupportLaunches(src, 1))) {
+            item_list_t view = *src;
+            view.viewOverride = ITEM_VIEW_FORCE_PS1;
+            int count = gsOf(&view)->count(&view);
+            for (int i = 0; i < count; i++) {
+                char *name = gsOf(&view)->name(&view, i);
+                int kind = FAV_KIND_VCD;
+                if (name == NULL || name[0] == '\0')
+                    continue;
+                if (gsOf(&view)->hasGame()) {
+                    base_game_info_t *game = (base_game_info_t *)gsOf(&view)->game(&view, i);
+                    if (game == NULL || game->format == GAME_FORMAT_FOLDER)
+                        continue;
+                    kind = cueIsCueEntry(game) ? FAV_KIND_CUE : FAV_KIND_VCD;
+                }
+                if (favSupportLaunches(src, kind == FAV_KIND_CUE))
+                    n = favGatherAdd(out, n, cap, src, i, kind, name);
+            }
+        }
+    }
+    return n;
+}
+
+static const fav_rec_t *favDupBase; // qsort has no context argument; IO worker only
+static int favDupCompare(const void *a, const void *b)
+{
+    const fav_rec_t *x = &favDupBase[*(const int *)a], *y = &favDupBase[*(const int *)b];
+    int vx = favKindView(x->kind), vy = favKindView(y->kind);
+    int c = vx != vy ? vx - vy : strcmp(x->text, y->text);
+    return c != 0 ? c : *(const int *)a - *(const int *)b;
+}
+
+// A title on two sources is listed twice; name each copy's source so the two can be told apart.
+static void favTagDuplicates(fav_rec_t *recs, int count)
+{
+    int *order = count > 1 ? (int *)malloc(count * sizeof(int)) : NULL;
+    if (order == NULL)
+        return; // OOM: the rows stay untagged, which only costs the hint
+    for (int i = 0; i < count; i++)
+        order[i] = i;
+    favDupBase = recs;
+    qsort(order, count, sizeof(int), favDupCompare);
+    for (int i = 0; i < count;) {
+        int j = i + 1;
+        while (j < count && favKindView(recs[order[j]].kind) == favKindView(recs[order[i]].kind) &&
+               strcmp(recs[order[j]].text, recs[order[i]].text) == 0)
+            j++;
+        for (int k = i; j - i > 1 && k < j; k++) {
+            fav_rec_t *r = &recs[order[k]];
+            const char *where = _l(gsOf(r->owner)->textId(r->owner));
+            int len = (int)strlen(r->text) + (int)strlen(where) + 4;
+            r->display = (char *)malloc(len);
+            if (r->display != NULL)
+                snprintf(r->display, len, "%s (%s)", r->text, where);
+        }
+        i = j;
+    }
+    free(order);
+}
+
+// Is this All Games row also a favourite? The same identity favourites use: mode (BDM-lenient),
+// kind and name, plus the source id for a PS2 disc game.
+static int favRecIsStarred(const fav_rec_t *r, const fav_raw_t *favs, int count)
+{
+    for (int i = 0; i < count; i++) {
+        if (favs[i].kind == r->kind && favModesMatch(favs[i].mode, r->mode) &&
+            (favKindIsNameAddressed(r->kind) || favIdsMatchForMode(r->mode, favs[i].id, r->id)) &&
+            strcmp(favs[i].text, r->text) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+int FavSupport::gatherAllGames(int shelf, const fav_raw_t *favs, int favCount)
+{
+    int cap = gatherPass(NULL, 0, shelf);
+    if (cap <= 0)
+        return 0;
+    fav_rec_t *rows = (fav_rec_t *)calloc(cap, sizeof(fav_rec_t));
+    if (rows == NULL)
+        return 0;
+    int n = gatherPass(rows, cap, shelf);
+    for (int i = 0; i < n; i++)
+        rows[i].starred = favRecIsStarred(&rows[i], favs, favCount);
+    favTagDuplicates(rows, n);
+    // Publish only once every row is complete (see artMode's thread-safety note).
+    array_ = rows;
+    count_ = n;
+    return count_;
+}
+
+int FavSupport::toggleByIndex(int favIndex)
+{
+    if (!validIndex(favIndex))
+        return -1;
+    fav_rec_t *r = &array_[favIndex];
+    int ok = r->starred ? removeByIdAndText(r->mode, r->id, r->text, r->kind) :
+                          addItem(r->mode, r->id, -1, -1, r->text, r->kind);
+    if (!ok)
+        return -1;
+    r->starred = !r->starred;
+    return r->starred;
+}
+
+const char *favGetItemDisplay(int id)
+{
+    return gFavSupport.itemDisplay(id);
+}
+
+int favGetItemStarred(int id)
+{
+    return gFavSupport.itemStarred(id);
+}
+
+int favToggleByIndex(int favIndex)
+{
+    return gFavSupport.toggleByIndex(favIndex);
 }
 
 item_list_t *favGetObject(int initOnly)

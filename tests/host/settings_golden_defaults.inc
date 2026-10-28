@@ -21,6 +21,7 @@ CHECK(gEnableDiscArt == (1));
 CHECK(gEnableLogoArt == (1));
 CHECK(gWideScreen == (0));
 CHECK(gFontSize == (FONT_SIZE_DEFAULT));
+CHECK(gGlyphSet == (0)); // GLYPH_SET_THEME
 CHECK(gVMode == (0));
 CHECK(gXOff == (0));
 CHECK(gYOff == (0));
@@ -56,6 +57,8 @@ CHECK(hddCacheSize == (8));
 CHECK(smbCacheSize == (16));
 CHECK(gEnableUSB == (0));
 CHECK(gFAVStartMode == (START_MODE_DISABLED));
+CHECK(gAllGames == (0));
+CHECK(gShowHidden == (0));
 CHECK(gApplyGameID == (0));
 CHECK(gDefaultGameView == (GAME_VIEW_BOTH));
 CHECK(gAppsDisplay == (APPS_DISPLAY_MIXED));

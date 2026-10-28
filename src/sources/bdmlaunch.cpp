@@ -145,6 +145,8 @@ void BdmLauncher::launchVcd(item_list_t *itemList, const char *vcdName, config_s
         host::ui().missingFile(_l(_STR_POPSTARTER_NOT_FOUND), vcdElf);
         return;
     }
+    if (!vcdConfirmPopsFiles(vcdPrefix)) // before the card is prepared: a missing emulator is a black screen
+        return;
     // vcdBuildSelector emits the BARE POPSTARTER label ("mass:/POPS/XX.<name>.ELF"), NOT this live
     // unit-numbered mount -- POPSTARTER remounts under "mass:" after its own IOP reset (see the function).
     vcdBuildSelector(vcdPrefix, VCD_PREFIX_MASS, vcdName, vcdSelector, sizeof(vcdSelector));

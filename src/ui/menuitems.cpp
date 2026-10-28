@@ -81,6 +81,26 @@ static void itemInitSupport(item_list_t *support)
     ioPutRequest(IO_MENU_UPDATE_DEFFERED, &support->mode);
 }
 
+static int itemFavKind(item_list_t *support, int id, const char *text);
+
+// Put the game about to launch at the front of recents.bin. Only when something reads it: the
+// Favourites Recent stop or Sort Games: Last played. Otherwise a launch writes nothing new.
+static void itemRecordRecent(item_list_t *support, submenu_item_t *it)
+{
+    if (!gFAVStartMode && !gAllGames && gAutosort != AUTOSORT_LAST_PLAYED)
+        return;
+    if (support->mode == FAV_MODE) {
+        const fav_rec_t *fav = gFavSupport.entry(it->id); // the game itself, not its Favourites row
+        if (fav != NULL)
+            recentRecord(fav->mode, fav->id, fav->icon_id, fav->text_id, fav->text, fav->kind);
+        return;
+    }
+    int kind = itemFavKind(support, it->id, it->text);
+    int sourceId = libListSourceId(support, it->id);
+    if (kind >= 0 && sourceId >= 0)
+        recentRecord(support->mode, sourceId, it->icon_id, it->text_id, it->text, kind);
+}
+
 static void itemExecSelect(struct menu_item *curMenu)
 {
 #ifdef RETROACHIEVEMENTS
@@ -168,6 +188,7 @@ static void itemExecSelect(struct menu_item *curMenu)
                         configFree(configSet);
                     return;
                 }
+                itemRecordRecent(support, &curMenu->current->item);
                 gsOf(support)->launch(support, launchId, configSet);
                 if (ownsConfig)
                     configFree(configSet); // successful handoff never returns
@@ -253,14 +274,21 @@ void itemExecToggleView(struct menu_item *curMenu)
     cacheDropQueuedArt();
 
     sfxPlay(SFX_CONFIRM);
-    // Favorites has four stops (PS2 -> PS1 -> ELF -> All), so the toast names the
+    // Favorites has five stops (PS2 -> PS1 -> ELF -> All -> Recent), so the toast names the
     // one you landed on rather than reading as an on/off flag.
     {
         int view = libViewPendingTarget(support->mode);
         int msg;
-        if (support->mode == FAV_MODE)
+        if (support->mode == FAV_MODE && gAllGames)
+            msg = (view == LIB_VIEW_ISO) ? _STR_VCD_OFF : (view == LIB_VIEW_PS1) ? _STR_VCD_ON :
+                                                      (view == LIB_VIEW_ELF)     ? _STR_VIEW_APPS :
+                                                      (view == LIB_VIEW_FAVS)    ? _STR_VIEW_FAVORITES :
+                                                      (view == LIB_VIEW_RECENT)  ? _STR_VIEW_RECENT :
+                                                                                   _STR_VIEW_ALL_GAMES;
+        else if (support->mode == FAV_MODE)
             msg = (view == LIB_VIEW_PS1) ? _STR_VIEW_PS1 : (view == LIB_VIEW_ELF) ? _STR_VIEW_ELF :
                                                        (view == LIB_VIEW_ALL)     ? _STR_VIEW_ALL :
+                                                       (view == LIB_VIEW_RECENT)  ? _STR_VIEW_RECENT :
                                                                                     _STR_VIEW_PS2;
         else if (support->mode == APP_MODE)
             msg = view == LIB_VIEW_PS1_ELF ? _STR_VIEW_PS1_ELF : _STR_VIEW_APPS;
@@ -367,7 +395,7 @@ static int itemFavKind(item_list_t *support, int id, const char *text)
 // itself R3 removes; on any source list it adds/removes by (mode, id, text).
 void itemExecFav(struct menu_item *curMenu)
 {
-    if (!gFAVStartMode) // Favourites disabled -> R3 is a no-op (no hidden writes)
+    if (!gFAVStartMode && !gAllGames) // Favourites and All Games both off -> R3 is a no-op (no hidden writes)
         return;
 
     if (!curMenu->current)
@@ -385,7 +413,29 @@ void itemExecFav(struct menu_item *curMenu)
     if (support->mode != FAV_MODE && (it->isFolder || folderDepth(support->mode) > 0))
         return;
 
-    if (support->mode == FAV_MODE) {
+    if (support->mode == FAV_MODE && favListsAllGames()) {
+        // All Games: R3 stars or unstars the row as a favourite, as it does on a device page.
+        int starred = favToggleByIndex(it->id);
+        if (starred < 0) {
+            guiShowToast(_l(it->favourited ? _STR_FAV_REMOVE_FAILED : _STR_FAV_SAVE_FAILED));
+            return;
+        }
+        it->favourited = starred;
+        guiShowToast(_l(starred ? _STR_FAV_SAVED : _STR_FAV_REMOVED));
+        sfxPlay(SFX_CONFIRM);
+        return; // the stars live in this list; nothing else to rebuild
+    } else if (support->mode == FAV_MODE && libViewActive(FAV_MODE) == LIB_VIEW_RECENT) {
+        // A Recent row is not a favourite, so R3 stars it instead of removing anything.
+        const fav_rec_t *fav = gFavSupport.entry(it->id);
+        if (fav == NULL)
+            return;
+        guiShowToast(_l(_STR_FAV_SAVING));
+        if (!addFavouriteItem(fav->mode, fav->id, fav->icon_id, fav->text_id, fav->text, fav->kind)) {
+            guiShowToast(_l(_STR_FAV_SAVE_FAILED));
+            return;
+        }
+        guiShowToast(_l(_STR_FAV_SAVED));
+    } else if (support->mode == FAV_MODE) {
         if (!favRemoveByIndex(it->id)) {
             guiShowToast(_l(_STR_FAV_REMOVE_FAILED));
             return;

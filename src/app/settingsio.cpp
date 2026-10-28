@@ -5,6 +5,7 @@
 */
 
 #include "include/settings.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/oplint.h"
 #include "include/diag.h"
 #include "include/opl.h"
@@ -1540,6 +1541,10 @@ void _loadConfig()
 
             settingsLoad(configOPL); // every plain key; the special cases below (recovery combo, clamps, migrations) follow
             gFontSize = fntValidFontSize(gFontSize);
+            if (gAutosort < AUTOSORT_OFF || gAutosort >= AUTOSORT_COUNT)
+                gAutosort = AUTOSORT_AZ; // older builds stored any non-zero as "on"
+            gAllGames = gAllGames != 0;
+            gShowHidden = gShowHidden != 0;
             configReadRA(configOPL);
 
 
@@ -2422,7 +2427,7 @@ void applyConfig(int themeID, int langID, int skipDeviceRefresh)
         gDefaultDevice = MMCE_MODE;
     // Favourites is a valid startup page only while the FAV tab is enabled; otherwise a stale
     // choice would boot into a hidden tab with no way back to a visible one.
-    if (gDefaultDevice == FAV_MODE && !gFAVStartMode)
+    if (gDefaultDevice == FAV_MODE && !gFAVStartMode && !gAllGames)
         gDefaultDevice = MMCE_MODE;
     if (gDefaultDevice == MMCE_MODE && gMMCEStartMode == START_MODE_DISABLED)
         gDefaultDevice = APP_MODE;
@@ -2524,6 +2529,7 @@ int saveConfig(int types, int showUI)
             else {
                 const char *failedPath = gLastSaveTarget[0] != '\0' ? gLastSaveTarget : configGetDir();
                 snprintf(notification, sizeof(notification), _l(_STR_ERROR_SAVING_SETTINGS_TO), failedPath, gLastSaveErrno);
+                diagLog("settings: not saved to %s, error %d", failedPath, gLastSaveErrno);
             }
             guiMsgBox(notification, 0, NULL);
         }

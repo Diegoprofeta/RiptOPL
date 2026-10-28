@@ -78,7 +78,9 @@ menusys = (ROOT / "src/ui/menusys.cpp").read_text(encoding="utf-8")
 compare_at = menusys.index("static int submenuSortCompare(")
 compare = menusys[compare_at:menusys.index("\n}", compare_at) + 2]
 source += r'''
-struct submenu_list_t { struct {int isFolder, id; char *text; int text_id;} item; };
+struct submenu_list_t { struct {int isFolder, id; char *text; int text_id, lastPlayed;} item; };
+enum { AUTOSORT_OFF, AUTOSORT_AZ, AUTOSORT_LAST_PLAYED };
+static int gAutosort = AUTOSORT_AZ;
 static char *_l(int id) { (void)id; return NULL; }
 ''' + compare
 tests = r'''
@@ -256,7 +258,7 @@ update = update[:update.index("\n}\n")]
 assert update.index("cfgTitleForget(mdl->support);") < update.index("gsOf(mdl->support)->update(mdl->support)") < update.index("guiDeferUpdate(gup);")
 assert update.index("guiDeferUpdate(gup);") < update.index("cfgTitleRefresh(mdl->support, count);") < update.index("GUI_OP_SORT")
 assert update.index("libViewFinishPending(") < update.index("cfgTitleRefresh(mdl->support, count);")
-assert "gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);" in update  # identity unchanged
+assert "gup->submenu.text = mdl->support->mode == FAV_MODE ? const_cast<char *>(favGetItemDisplay(i)) : gsOf(mdl->support)->name(mdl->support, i);" in update  # identity unchanged
 menusys = (ROOT / "src/ui/menusys.cpp").read_text(encoding="utf-8")
 sort = menusys[menusys.index("static int submenuSortCompare("):]
 sort = sort[:sort.index("\n}\n")]
@@ -275,17 +277,17 @@ gui = (ROOT / "src/ui/guisettings.cpp").read_text(encoding="utf-8")
 assert gui.count("diaGetInt(diaUIConfig, UICFG_CFG_TITLES") + gui.count("diaGetInt(ui, UICFG_CFG_TITLES") == 2
 # A flip must rebuild every game list: mark the pages dirty (each NeedsUpdate consumes it) and
 # queue HTTP too, which oplQueueLibraryDeviceUpdates leaves out.
-refresh = gui[gui.index("static void guiRefreshCfgTitles(void)"):]
+refresh = gui[gui.index("static void guiRefreshCfgTitles(void)\n{"):]
 refresh = refresh[:refresh.index("\n}\n")]
 assert "libViewMarkAllDirty();" in refresh and "oplQueueLibraryDeviceUpdates();" in refresh and "httpGetObject(0)" in refresh
-assert gui.count("guiRefreshCfgTitles();") == 3  # both CFG-title flips + the RA badge (#1039) flip
+assert gui.count("guiRefreshCfgTitles();") == 7  # both CFG-title flips, the RA badge (#1039) flip, the All Games flip, 3 Show Hidden Games flips
 base = (ROOT / "lng/tmpl/_base.yml").read_text(encoding="utf-8")
 assert base.index("- label: CFG_TITLES") > base.index("- label: AUTO_VMC_TIMEOUT")
 print("PASS: CFG titles in game lists are opt-in, display-only and read once per rebuild")
 
 # Execute the settings refresh helper: dirty flags alone do not enqueue HDD or
 # HTTP, and Favorites must resolve after every enabled source has been queued.
-helper = gui[gui.index("static void guiRefreshCfgTitles(void)"):]
+helper = gui[gui.index("static void guiRefreshCfgTitles(void)\n{"):]
 helper = helper[:helper.index("\n}") + 2]
 with tempfile.TemporaryDirectory() as tmp:
     cpp, exe = Path(tmp) / "refresh.cpp", Path(tmp) / "refresh"

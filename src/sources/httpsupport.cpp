@@ -873,7 +873,7 @@ int HttpSource::image(item_list_t *itemList, char *folder, int isRelative, char 
     else
         snprintf(path, sizeof(path), "%s%s_%s", folder, value, suffix);
 
-    return texDiscoverLoad(resultTex, path, -1);
+    return texDiscoverArt(resultTex, path);
 }
 
 void HttpSource::cleanUp(item_list_t *itemList, int exception)

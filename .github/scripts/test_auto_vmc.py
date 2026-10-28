@@ -232,6 +232,9 @@ static int guiGameAutoCreateVmc(item_list_t*,int,config_set_t *cfg) {
     return autoResult;
 }
 static void guiShowGameID(const char*) {gameIds++;if(mutation==5)selected.item.id=8;}
+// Recents are recorded only after every identity check, right before the handoff.
+static int recents;
+template <class S, class I> static void itemRecordRecent(S*, I*) {recents++;}
 ''' + function(read('src/ui/menusys.cpp'),'config_set_t *menuTakeLaunchConfig(')
     + '\n' + function(read('src/ui/menusys.cpp'),'void menuInvalidateConfig(')
     + '\n' + function(read('src/ui/menuitems.cpp'),'static void itemExecSelect(') + r'''
@@ -241,9 +244,9 @@ static void reset() {
     gAutoCreateVmc=1;name="SLUS_123.45";launches=autoCalls=gameIds=mutation=0;autoResult=1;
 }
 int main() {
-    reset();itemExecSelect(&menu);assert(launches==1 && config.freed==1 && !replacement.freed);
+    recents=0;reset();itemExecSelect(&menu);assert(launches==1 && recents==1 && config.freed==1 && !replacement.freed);
     for(int value=1;value<=5;value++) {
-        reset();mutation=value;itemExecSelect(&menu);assert(!launches && config.freed==1 && !replacement.freed);
+        recents=0;reset();mutation=value;itemExecSelect(&menu);assert(!launches && !recents && config.freed==1 && !replacement.freed);
     }
     reset();autoResult=0;itemExecSelect(&menu);assert(!launches && !gameIds && config.freed==1);
     reset();itemConfig=&replacement;itemExecSelect(&menu);assert(!autoCalls && !launches && !config.freed && !replacement.freed);

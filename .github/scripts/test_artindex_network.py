@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-src = (Path(__file__).resolve().parents[2] / 'src/sources/artindex.cpp').read_text()
+src = (Path(__file__).resolve().parents[2] / 'src/gfx/artindex.cpp').read_text()
 body = src[src.index('int ArtIndex::mayExist(const char *fullPath)'):]
 body = body[:body.index('\n}\n')]
 guard = re.search(r'if \(([^\n]*!strncmp\(fullPath, "smb", 3\)[^\n]*)\)\n\s*return 1;', body)

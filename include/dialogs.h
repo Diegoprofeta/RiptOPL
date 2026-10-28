@@ -28,6 +28,7 @@ enum UI_ITEMS {
     UICFG_ART_DELAY,
     UICFG_WIDESCREEN,
     UICFG_FONT_SIZE, // original #1038: Interface page Font Size (FONT_SIZE_*)
+    UICFG_GLYPH_SET, // Interface page Button Glyphs (GLYPH_SET_*)
     UICFG_AUTOREFRESH,
     UICFG_VMODE,
     UICFG_XOFF,
@@ -49,6 +50,8 @@ enum UI_ITEMS {
     CFG_APPMODE,
     CFG_MMCEMODE,
     CFG_FAVMODE,
+    CFG_ALLGAMES,   // All Games list (RIPPS2): one page for every started source
+    CFG_SHOWHIDDEN, // Show Hidden Games (RIPPS2 Hide Game)
     CFG_MMCEPREFIX,
     CFG_MMCESLOT,
     CFG_MMCEIGRSLOT,
@@ -285,6 +288,15 @@ enum UI_ITEMS {
     VMC_PROGRESS,
     VMC_REFRESH,
     VMC_BUTTON_REBUILD,
+    VMC_BUTTON_SAVES,
+
+    VMCSAVES_CARD,
+    VMCSAVES_FREE,
+    VMCSAVES_FOLDER,
+    VMCSAVES_PATH,
+    VMCSAVES_EXPORT,
+    VMCSAVES_IMPORT,
+    VMCSAVES_DELETE,
 
     OSD_LANGUAGE_SOURCE,
     OSD_LANGUAGE_ENABLE,
@@ -395,7 +407,9 @@ extern struct UIItem diaCheatConfig[];
 
 extern struct UIItem diaConfig[];
 extern struct UIItem diaAbout[];
+extern struct UIItem diaDriveStatus[];
 extern struct UIItem diaVMC[];
+extern struct UIItem diaVMCSaves[];
 
 extern struct UIItem diaOSDConfig[];
 extern struct UIItem diaCoverflowConfig[];

@@ -204,6 +204,11 @@ enum {
     APPS_DISPLAY_SPLIT      // Apps <-> PS1ELF via L3; [PS1] in the title selects PS1ELF
 };
 extern int gAppsDisplay;
+// All Games list (RIPPS2): the Favourites page lists every game of every started source, and the
+// device tabs whose games it holds step aside. Defined in favsupport.cpp; CONFIG_OPL_ALL_GAMES.
+extern int gAllGames;
+// Show Hidden Games (RIPPS2 Hide Game): list hidden games anyway. Defined in gamemanage.cpp; CONFIG_OPL_SHOW_HIDDEN.
+extern int gShowHidden;
 extern int gCfgTitlesInLists; // default-off presentation; identity always stays source-owned
 extern int gGameTypeLabels;   // optional [PS1]/[PS2] prefixes in game lists; default off
 // Ember's own settings, brought into the settings.txt files Ember reads when a game launches
@@ -334,7 +339,13 @@ extern int gNetStartMode;    // START_MODE_* -- network start row (Off/Manual/Au
 extern int gNetProtocolPick;
 extern int gUdpfsAccessMode; // UDPFS Files(0)/IMG(1) preference, independent of UDPBD
 
-extern int gAutosort;
+extern int gAutosort; // AUTOSORT_*
+enum AUTOSORT_MODES {
+    AUTOSORT_OFF = 0,
+    AUTOSORT_AZ,          // by title (the old "Sort Games Alphabetically": on)
+    AUTOSORT_LAST_PLAYED, // recents.bin order first, then the rest by title
+    AUTOSORT_COUNT
+};
 extern int gAutoRefresh;
 extern int gEnableNotifications;
 #ifdef RETROACHIEVEMENTS
@@ -361,6 +372,7 @@ extern int gEnableDiscArt; // ItemIcon/ICO disc artwork; independent of cover ar
 extern int gEnableLogoArt; // per-game LGO logo artwork; independent of cover, disc and boot logo
 extern int gWideScreen;
 extern int gFontSize; // FONT_SIZE_* (fntsys.h)
+extern int gGlyphSet; // GLYPH_SET_* (themes.h); GLYPH_SET_THEME follows the theme
 extern int gVMode;    // 0 - Auto, 1 - PAL, 2 - NTSC
 extern int gXOff;
 extern int gYOff;

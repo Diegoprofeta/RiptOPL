@@ -30,6 +30,7 @@ struct item_list { int mode; config_set_t *(*itemGetConfig)(item_list_t *,int); 
 typedef struct { struct { int id; } item; } Row;
 typedef struct { int visible; item_list_t *userdata; Row *current; char *text; int text_id; } Item;
 typedef struct menu_list { Item *item; struct menu_list *next,*prev; } menu_list_t;
+static int menuItemShown(const Item *item) { return item != NULL && item->visible; }
 static menu_list_t *selected_item, *replaceOnLock;
 static int itemConfigId=-1, menuSemaId=1, depth, waits, signals, sounds, resets, queues;
 static unsigned int itemConfigGeneration;

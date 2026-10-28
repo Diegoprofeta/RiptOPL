@@ -5,6 +5,9 @@
 #include "include/hdd.h"
 
 int hddEquipPopstarterBdmaFromCommon(int mode, char *diag, int diagSize);
+// Hand visit() __common/POPS/, read only, when the HDD stack is already up (nothing is started for it).
+// Returns what visit() returned, 0 when the folder could not be reached.
+int hddVisitCommonPops(int (*visit)(const char *folder, void *arg), void *arg);
 
 #define HDD_MODE_UPDATE_DELAY MENU_UPD_DELAY_NOUPDATE
 
@@ -83,6 +86,8 @@ typedef enum {
 // Auto and Manual (Vapor). Pair with the retryable-failure change in hddLoadModules.
 
 int hddCheck(void);
+int hddGetSpace(u32 *totalSectors, u32 *freeSectors); // Drive Status: 0 when no formatted APA drive answers
+void hddIopWasReset(void);                            // forget the module latches after an in-menu IOP reset
 int hddIs48bit(void);
 int hddSetTransferMode(int type, int mode);
 void hddSetIdleTimeout(int timeout);
