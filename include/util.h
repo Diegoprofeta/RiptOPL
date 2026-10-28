@@ -36,6 +36,7 @@ typedef struct
 
 file_buffer_t *openFileBufferBuffer(short allocResult, const void *buffer, unsigned int size);
 file_buffer_t *openFileBuffer(char *fpath, int mode, short allocResult, unsigned int size);
+int bdmFatfsOpenErrno(const char *path, int err);
 int readFileBuffer(file_buffer_t *readContext, char **outBuf);
 void writeFileBuffer(file_buffer_t *fileBuffer, char *inBuf, int size);
 // Returns 0 on success, -1 if any write()/close() during the buffered write failed (short write,

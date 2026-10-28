@@ -38,6 +38,7 @@ jobs:
           python3 .github/scripts/test_config_prefetch_generation.py
           python3 .github/scripts/test_release_publication.py
           python3 .github/scripts/test_config_save_integrity.py
+          python3 .github/scripts/test_bdm_empty_literal_slot.py
           python3 .github/scripts/test_neutrino_dvr_contract.py
           python3 .github/scripts/test_bdma_shipped_pairs.py
       - name: Check C++ Coverflow page navigation
