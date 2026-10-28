@@ -34,9 +34,10 @@ class PublicationTests(unittest.TestCase):
             self.assertIn(f"/{psu})", body)
             self.assertIn(f"/releases/download/{options['tag']}/RIPTOPL-LANGS.zip)", body)
             if options["tag"] == "rolling-ra":
-                for name in ("RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu"):
+                for name in ("RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu",
+                             "RIPTOPL-RA-VARIANTS-IncebtIon.zip"):
                     self.assertIn(f"/releases/download/rolling-ra/{name})", body)
-            self.assertEqual({"rolling-korium": 6, "rolling-ra": 5}.get(options["tag"], 4), sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
+            self.assertEqual({"rolling-ra": 5}.get(options["tag"], 6), sum(line.startswith("- [") for line in body.split("## Downloads\n\n", 1)[1].splitlines()))
             self.assertIn("Included build: v1.8.0 ", body)
             self.assertNotIn("Release compiler", body)
             self.assertNotIn("Imported production documentation", body)

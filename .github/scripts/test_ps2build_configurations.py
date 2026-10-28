@@ -193,9 +193,8 @@ class PublisherTests(unittest.TestCase):
                 source_zip.writestr("README.md", "synthetic source")
             with zipfile.ZipFile(path / "RIPTOPL-LANGS.zip", "w") as langs:
                 langs.writestr("README.txt", "synthetic")
-            for name, bundle in publish_editions.BUNDLES.items():
-                if bundle[0] == edition:
-                    (path / f"RIPTOPL-{name}.zip").write_bytes(b"synthetic-bundle")
+            for name, _, _ in publish_editions.bundles(options):
+                (path / f"RIPTOPL-{name}.zip").write_bytes(b"synthetic-bundle")
             with zipfile.ZipFile(path / f"RIPTOPL-{options['title']}.zip", "w") as kit:
                 kit.writestr("BUILD-MANIFEST.json", json.dumps(manifest))
                 kit.writestr(f"APPS/{app}/{elf}", payload)
@@ -204,8 +203,8 @@ class PublisherTests(unittest.TestCase):
             (path / "SHA256SUMS.txt").write_text(sums)
 
     def variants(self, root, **changes):
-        for edition, configurations, _ in publish_editions.BUNDLES.values():
-            for configuration in configurations:
+        for edition, options in publish_editions.EDITIONS.items():
+            for configuration in (c for _, configurations, _ in publish_editions.bundles(options) for c in configurations):
                 stage = root / f"variant-{edition}-{configuration}"
                 stage.mkdir()
                 payload = b"\x7fELF" + configuration.encode()
@@ -219,21 +218,25 @@ class PublisherTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
             root = Path(directory)
             self.kit(root)
-            for name, (edition, _, _) in publish_editions.BUNDLES.items():
-                (root / f"release-{edition}" / f"RIPTOPL-{name}.zip").unlink()
-                listing = root / f"release-{edition}/SHA256SUMS.txt"
-                listing.write_text("".join(l + "\n" for l in listing.read_text().splitlines() if not l.endswith(f"  RIPTOPL-{name}.zip")))
+            for edition, options in publish_editions.EDITIONS.items():
+                for name, _, _ in publish_editions.bundles(options):
+                    (root / f"release-{edition}" / f"RIPTOPL-{name}.zip").unlink()
+                    listing = root / f"release-{edition}/SHA256SUMS.txt"
+                    listing.write_text("".join(l + "\n" for l in listing.read_text().splitlines() if not l.endswith(f"  RIPTOPL-{name}.zip")))
             self.variants(root)
             publish_editions.bundle_configurations(root, self.sha)
             self.assertEqual(len(publish_editions.verify(root, self.sha)), 4)
-            with zipfile.ZipFile(root / "release-korium/RIPTOPL-VARIANTS.zip") as bundle:
-                self.assertEqual(bundle.read("ds5/RIPTOPL.ELF"), b"\x7fELFds5")
-                self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 4)
-            with zipfile.ZipFile(root / "release-korium/RIPTOPL-DEBUG.zip") as bundle:
-                self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 10)
-            with zipfile.ZipFile(root / "release-ra/RIPTOPL-RA-VARIANTS.zip") as bundle:
-                self.assertEqual(bundle.read("pademu0/RIPTOPL-RA.ELF"), b"\x7fELFpademu0")
-                self.assertIn("RIPTOPL-RA.ELF", bundle.read("README.txt").decode())
+            # Every theme carries the same configuration builds.
+            for edition in ("korium", "incebtion"):
+                with zipfile.ZipFile(root / f"release-{edition}/RIPTOPL-VARIANTS.zip") as bundle:
+                    self.assertEqual(bundle.read("ds5/RIPTOPL.ELF"), b"\x7fELFds5")
+                    self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 4)
+                with zipfile.ZipFile(root / f"release-{edition}/RIPTOPL-DEBUG.zip") as bundle:
+                    self.assertEqual(len([n for n in bundle.namelist() if n.endswith(".ELF")]), 10)
+            for edition in ("ra", "ra_incebtion"):
+                with zipfile.ZipFile(root / f"release-{edition}/RIPTOPL-RA-VARIANTS.zip") as bundle:
+                    self.assertEqual(bundle.read("pademu0/RIPTOPL-RA.ELF"), b"\x7fELFpademu0")
+                    self.assertIn("RIPTOPL-RA.ELF", bundle.read("README.txt").decode())
         for bad in ({"ds5": {"configuration": "extras"}}, {"debug": {"source_commit": "0" * 40}},
                     {"dtl": {"elf_sha256": "0" * 64}}, {"diag": {"ps2build_version": "other"}}):
             with self.subTest(bad=bad), tempfile.TemporaryDirectory(dir=TEMP_DIR) as directory:
@@ -262,7 +265,8 @@ class PublisherTests(unittest.TestCase):
             channels = publish_editions.fold_companions(candidates)
             self.assertEqual([c[0] for c in channels], ["korium", "ra", "incebtion"])
             ra = root / "release-ra"
-            folded = ["RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu"]
+            folded = ["RIPTOPL-RetroAchievements-IncebtIon.zip", "RIPTOPL-RA-IncebtIon.ELF", "APP_RIPTOPL-RA-IncebtIon.psu",
+                      "RIPTOPL-RA-VARIANTS-IncebtIon.zip"]
             sums = dict(reversed(line.split("  ", 1)) for line in (ra / "SHA256SUMS.txt").read_text().splitlines())
             for name in folded:
                 self.assertEqual(sums[name], hashlib.sha256((ra / name).read_bytes()).hexdigest())

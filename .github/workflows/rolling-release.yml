@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Each channel's kit, plus the configurations for the VARIANTS, DEBUG and RA-VARIANTS bundles.
+        # Each channel's kit, plus the configurations for every theme's VARIANTS, DEBUG and RA-VARIANTS bundles.
         target:
           - {edition: korium, configuration: standard}
           - {edition: ra, configuration: standard}
@@ -46,6 +46,21 @@ jobs:
           - {edition: korium, configuration: iopcore_debug_uart}
           - {edition: korium, configuration: ingamediag}
           - {edition: ra, configuration: pademu0}
+          - {edition: incebtion, configuration: pademu0}
+          - {edition: incebtion, configuration: ds5}
+          - {edition: incebtion, configuration: extras}
+          - {edition: incebtion, configuration: extras_ds5}
+          - {edition: incebtion, configuration: dtl}
+          - {edition: incebtion, configuration: diag}
+          - {edition: incebtion, configuration: debug}
+          - {edition: incebtion, configuration: debug_uart}
+          - {edition: incebtion, configuration: ingame_debug}
+          - {edition: incebtion, configuration: iopcore_debug}
+          - {edition: incebtion, configuration: eesio_debug}
+          - {edition: incebtion, configuration: ingame_debug_uart}
+          - {edition: incebtion, configuration: iopcore_debug_uart}
+          - {edition: incebtion, configuration: ingamediag}
+          - {edition: ra_incebtion, configuration: pademu0}
     env:
       PS2BUILD_HOME: ${{ github.workspace }}/.ps2dev
       PS2DEV_INSTALL_DIR: ${{ github.workspace }}/.ps2dev

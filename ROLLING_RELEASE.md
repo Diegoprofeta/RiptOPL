@@ -75,12 +75,14 @@ Each channel carries exactly these assets (the app/ELF names differ for RA):
 - `RIPTOPL-LANGS.zip`: every translation and the font its script needs, one folder per language.
 - `BUILD-MANIFEST.json` and `SHA256SUMS.txt`: build identity and asset checksums.
 
-The Korium channel also carries `RIPTOPL-VARIANTS.zip` (pademu0, ds5, extras, extras_ds5) and
-`RIPTOPL-DEBUG.zip` (every debug and diagnostic configuration): one folder per configuration with
-its RIPTOPL.ELF and manifest, each checked against the Korium kit's commit and SDK components.
+The Korium and IncebtIon channels also carry `RIPTOPL-VARIANTS.zip` (pademu0, ds5, extras, extras_ds5)
+and `RIPTOPL-DEBUG.zip` (every debug and diagnostic configuration), each built with that channel's
+theme: one folder per configuration with its RIPTOPL.ELF and manifest, each checked against the
+channel kit's commit and SDK components.
 The RetroAchievements channel also carries `RIPTOPL-RA-VARIANTS.zip` (pademu0) and the
-IncebtIon-theme kit as `RIPTOPL-RetroAchievements-IncebtIon.zip`, `RIPTOPL-RA-IncebtIon.ELF`
-and `APP_RIPTOPL-RA-IncebtIon.psu`; inside that kit the app is still `APP_RIPTOPL-RA`.
+IncebtIon-theme kit as `RIPTOPL-RetroAchievements-IncebtIon.zip`, `RIPTOPL-RA-IncebtIon.ELF`,
+`APP_RIPTOPL-RA-IncebtIon.psu` and `RIPTOPL-RA-VARIANTS-IncebtIon.zip`; inside that kit the app is
+still `APP_RIPTOPL-RA`.
 See [Build configurations](docs/BUILD-CONFIGURATIONS.md).
 
 Standard kits reject RA resources. The RA kit adds the xeRAbora client shortcut

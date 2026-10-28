@@ -5,11 +5,12 @@ and IncebtIon. `--configuration` selects optional controller, diagnostic or debu
 settings within an edition. GCC and LLVM select compilers. Configuration
 candidates are not extra release channels and cannot replace standard release kits.
 
-Releases carry them as the original did: the Korium channel publishes
-`RIPTOPL-VARIANTS.zip` (`pademu0`, `ds5`, `extras`, `extras_ds5`) and
-`RIPTOPL-DEBUG.zip` (every other nonstandard configuration), one folder per
-configuration with its GCC `RIPTOPL.ELF` and build manifest; the RetroAchievements
-channel publishes `RIPTOPL-RA-VARIANTS.zip` (`pademu0`, as `RIPTOPL-RA.ELF`). The
+Releases carry them for every theme, as the original did: the Korium and IncebtIon
+channels each publish `RIPTOPL-VARIANTS.zip` (`pademu0`, `ds5`, `extras`, `extras_ds5`)
+and `RIPTOPL-DEBUG.zip` (every other nonstandard configuration), built with that channel's
+theme, one folder per configuration with its GCC `RIPTOPL.ELF` and build manifest; the
+RetroAchievements channel publishes `RIPTOPL-RA-VARIANTS.zip` (`pademu0`, as `RIPTOPL-RA.ELF`)
+and `RIPTOPL-RA-VARIANTS-IncebtIon.zip` for its IncebtIon-theme kit. The
 publisher packs them only from builds of the released commit and SDK suite. Every channel
 also publishes `RIPTOPL-LANGS.zip`, the translations and their fonts.
 

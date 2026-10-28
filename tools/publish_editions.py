@@ -16,16 +16,21 @@ import zipfile
 from build_configuration import CONFIGURATIONS
 from build_edition import EDITIONS, git
 
-# The original's VARIANTS and DEBUG zips (every Korium configuration) and its RA nopademu loader, each
-# published beside its edition's kit: configurations are never channels of their own.
-# name: (edition, configurations, release-notes description). docs/BUILD-CONFIGURATIONS.md has each one.
+# The original's VARIANTS and DEBUG zips and its RA nopademu loader, published for every theme beside
+# its edition's kit: configurations are never channels of their own.
+# (name, configurations, release-notes description). docs/BUILD-CONFIGURATIONS.md has each one.
 VARIANTS = ("pademu0", "ds5", "extras", "extras_ds5")
-BUNDLES = {
-    "VARIANTS": ("korium", VARIANTS, "pad emulation off, DualSense and extras builds"),
-    "DEBUG": ("korium", tuple(c for c in CONFIGURATIONS if c != "standard" and c not in VARIANTS),
-              "debug and diagnostic builds"),
-    "RA-VARIANTS": ("ra", ("pademu0",), "pad emulation off"),
-}
+STANDARD_BUNDLES = (
+    ("VARIANTS", VARIANTS, "pad emulation off, DualSense and extras builds"),
+    ("DEBUG", tuple(c for c in CONFIGURATIONS if c != "standard" and c not in VARIANTS), "debug and diagnostic builds"),
+)
+RA_BUNDLES = (("RA-VARIANTS", ("pademu0",), "pad emulation off"),)
+
+
+def bundles(options):
+    return RA_BUNDLES if options["ra"] else STANDARD_BUNDLES
+
+
 BUNDLE_README = ("RiptOPL {title} configuration builds. Each folder holds one {elf} and the manifest it was\n"
                  "built from; replace the ELF of an existing {title} install to use one. What each configuration\n"
                  "changes: https://github.com/NathanNeurotic/RiptOPL/blob/rebuild/main/docs/BUILD-CONFIGURATIONS.md\n")
@@ -77,26 +82,27 @@ def add_sum(path, name, digest):
 
 def bundle_configurations(root, expected_sha):
     """Pack the configuration builds into their edition's release and add them to its checksums."""
-    for name, (edition, configurations, _) in BUNDLES.items():
-        path = root / ("release-" + edition)
-        kit = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
-        elf_name = "RIPTOPL-RA.ELF" if EDITIONS[edition]["ra"] else "RIPTOPL.ELF"
-        archive = path / f"RIPTOPL-{name}.zip"
-        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
-            for configuration in configurations:
-                stage = root / f"variant-{edition}-{configuration}"
-                manifest = json.loads((stage / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
-                elf = (stage / "RIPTOPL.ELF").read_bytes()
-                if (manifest["source_commit"] != expected_sha or manifest["dirty"] or manifest["edition"] != edition
-                        or manifest["compiler"] != "gcc" or manifest["configuration"] != configuration
-                        or manifest["ps2build_version"] != kit["ps2build_version"]
-                        or manifest["components"] != kit["components"] or manifest["ports"] != kit["ports"]
-                        or manifest["elf_sha256"] != hashlib.sha256(elf).hexdigest()):
-                    raise ValueError(f"invalid configuration build: {edition}/{configuration}")
-                bundle.writestr(f"{configuration}/{elf_name}", elf)
-                bundle.writestr(f"{configuration}/BUILD-MANIFEST.json", json.dumps(manifest, indent=2) + "\n")
-            bundle.writestr("README.txt", BUNDLE_README.format(title=EDITIONS[edition]["title"], elf=elf_name))
-        add_sum(path, archive.name, hashlib.sha256(archive.read_bytes()).hexdigest())
+    for edition, options in EDITIONS.items():
+        for name, configurations, _ in bundles(options):
+            path = root / ("release-" + edition)
+            kit = json.loads((path / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+            elf_name = "RIPTOPL-RA.ELF" if EDITIONS[edition]["ra"] else "RIPTOPL.ELF"
+            archive = path / f"RIPTOPL-{name}.zip"
+            with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+                for configuration in configurations:
+                    stage = root / f"variant-{edition}-{configuration}"
+                    manifest = json.loads((stage / "BUILD-MANIFEST.json").read_text(encoding="utf-8"))
+                    elf = (stage / "RIPTOPL.ELF").read_bytes()
+                    if (manifest["source_commit"] != expected_sha or manifest["dirty"] or manifest["edition"] != edition
+                            or manifest["compiler"] != "gcc" or manifest["configuration"] != configuration
+                            or manifest["ps2build_version"] != kit["ps2build_version"]
+                            or manifest["components"] != kit["components"] or manifest["ports"] != kit["ports"]
+                            or manifest["elf_sha256"] != hashlib.sha256(elf).hexdigest()):
+                        raise ValueError(f"invalid configuration build: {edition}/{configuration}")
+                    bundle.writestr(f"{configuration}/{elf_name}", elf)
+                    bundle.writestr(f"{configuration}/BUILD-MANIFEST.json", json.dumps(manifest, indent=2) + "\n")
+                bundle.writestr("README.txt", BUNDLE_README.format(title=EDITIONS[edition]["title"], elf=elf_name))
+            add_sum(path, archive.name, hashlib.sha256(archive.read_bytes()).hexdigest())
 
 
 def verify(root, expected_sha):
@@ -123,7 +129,7 @@ def verify(root, expected_sha):
         elf = "RIPTOPL-RA.ELF" if options["ra"] else "RIPTOPL.ELF"
         psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
         required = {elf, psu, "BUILD-MANIFEST.json", "RIPTOPL-src.zip", "RIPTOPL-LANGS.zip", f"RIPTOPL-{options['title']}.zip"}
-        required |= {f"RIPTOPL-{name}.zip" for name, bundle in BUNDLES.items() if bundle[0] == edition}
+        required |= {f"RIPTOPL-{name}.zip" for name, _, _ in bundles(options)}
         if set(sums) != required or actual != required | {"SHA256SUMS.txt"}:
             raise ValueError(f"unexpected release inventory: {edition}")
         if sums[elf] != manifest["elf_sha256"]:
@@ -150,7 +156,8 @@ def companion_assets(options):
     psu = "APP_RIPTOPL-RA.psu" if options["ra"] else "APP_RIPTOPL.psu"
     label = options["label"]
     return {f"RIPTOPL-{options['title']}.zip": f"RIPTOPL-{options['title']}.zip",
-            elf: elf.replace(".ELF", f"-{label}.ELF"), psu: psu.replace(".psu", f"-{label}.psu")}
+            elf: elf.replace(".ELF", f"-{label}.ELF"), psu: psu.replace(".psu", f"-{label}.psu"),
+            **{f"RIPTOPL-{name}.zip": f"RIPTOPL-{name}-{label}.zip" for name, _, _ in bundles(options)}}
 
 
 def fold_companions(candidates):
@@ -192,9 +199,10 @@ def release_notes(options, sha, neutrino, repo="NathanNeurotic/RiptOPL"):
         f"- [Memory-card app]({downloads}/{psu}) - PSU import.\n"
         f"- [Languages]({downloads}/RIPTOPL-LANGS.zip) - translations and their fonts.\n"
         + "".join(f"- [{name.replace('-', ' ').title().replace('Ra ', 'RA ')}]({downloads}/RIPTOPL-{name}.zip) - {what}.\n"
-                  for name, (edition, _, what) in BUNDLES.items() if EDITIONS[edition] is options)
+                  for name, _, what in bundles(options))
         + "".join(f"- {other['label']} theme: " + ", ".join(f"[{what}]({downloads}/{name})" for what, name in
-                  zip(("install kit", "ELF", "app"), companion_assets(other).values())) + ".\n"
+                  zip(("install kit", "ELF", "app", *(what for _, _, what in bundles(other))),
+                      companion_assets(other).values())) + ".\n"
                   for other in EDITIONS.values() if EDITIONS.get(other.get("into")) is options)
         + "\n"
         f"Included build: {neutrino} -- Neutrino.\n\n"
