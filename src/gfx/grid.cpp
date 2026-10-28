@@ -16,6 +16,20 @@
  * (menusys.cpp). The element's x/y place the grid's centre, width/height one cover; rows, columns and
  * spacing come from the theme's first Grid block. Covers come from the COV cache like Coverflow. */
 
+// The size a cover takes in a cell: the page element's size, or, for a cover another family draws (a
+// square app or PS1 cover on a mixed page), that element's shape fitted into the cell.
+static void gridCoverSize(theme_element_t *elem, theme_element_t *coverElem, int *w, int *h)
+{
+    *w = elem->width;
+    *h = elem->height;
+    if (coverElem == elem || coverElem->width <= 0 || coverElem->height <= 0)
+        return;
+    if (coverElem->width * elem->height > elem->width * coverElem->height)
+        *h = coverElem->height * elem->width / coverElem->width; // wider than the cell
+    else
+        *w = coverElem->width * elem->height / coverElem->height;
+}
+
 static void drawCell(struct menu_list *menu, struct submenu_list *item, theme_element_t *elem, int x, int y, u64 color)
 {
     theme_element_t *coverElem = thmGetElemForItem(menu, item, elem);
@@ -28,8 +42,9 @@ static void drawCell(struct menu_list *menu, struct submenu_list *item, theme_el
     if (texture == NULL || texture->Mem == NULL)
         return;
 
-    // Every cell has the page element's size; a Favourites app cover keeps its own frame insets.
-    int w = elem->width, h = elem->height;
+    // Frame insets scale from the element that owns the overlay to the size drawn here.
+    int w, h;
+    gridCoverSize(elem, coverElem, &w, &h);
     if (image->overlayTexture) {
         image_texture_t *ov = image->overlayTexture;
         int cw = coverElem->width > 0 ? coverElem->width : 1;
@@ -95,8 +110,11 @@ static void drawGrid(struct menu_list *menu, struct submenu_list *item, config_s
         }
         drawCell(menu, cell, elem, x, y, cell == item ? gDefaultCol : dim);
     }
-    if (shown)
-        drawFrame(selX, selY, cellW, elem->height, gTheme->selTextColor);
+    if (shown) {
+        int coverW, coverH;
+        gridCoverSize(elem, thmGetElemForItem(menu, item, elem), &coverW, &coverH);
+        drawFrame(selX, selY, rmWideScale(coverW), coverH, gTheme->selTextColor);
+    }
 
     // Position in the page, under the grid's lower right corner.
     char counter[32];

@@ -735,6 +735,8 @@ static int addGUIElem(const char *themePath, config_set_t *themeConfig, theme_t 
                 // x/y place the grid's centre, width/height one cover (GAME_IMAGE-backed like Coverflow).
                 elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_GAME_IMAGE, gThmScreenWidth >> 1, gThmScreenHeight >> 1, ALIGN_CENTER, 80, 112, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
                 initGrid(themePath, themeConfig, theme, elem, name);
+                if (elem->drawElem)
+                    elems->hasGrid = 1;
             } else if (!strcmp(elementsType[ELEM_TYPE_SAVE_ICON], type)) {
                 elems->needsSaveIconConfig = 1;
                 elem = initBasic(themePath, themeConfig, theme, name, ELEM_TYPE_SAVE_ICON, gThmScreenWidth >> 1, gThmScreenHeight >> 1, ALIGN_CENTER, 64, 64, SCALING_RATIO, gDefaultCol, theme->fonts[0]);
