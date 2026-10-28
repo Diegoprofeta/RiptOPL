@@ -1,5 +1,6 @@
 #include <new>
 #include "include/host.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/opl.h"
 #include "include/lang.h"
 #include "include/gui.h"
@@ -172,6 +173,7 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
             // (the firmware has no busy query) ends the wait unconfirmed so the launch is not held.
             if (++queryFailures >= MMCE_GAMEID_QUERY_FAILURES) {
                 LOG("MMCE GameID switch: busy query failed %d times; launching unconfirmed\n", queryFailures);
+                diagLog("gameid %s: busy query failed %d times; launching unconfirmed", startup, queryFailures);
                 return -1;
             }
             DelayThread(MMCE_GAMEID_START_POLL_MS * 1000);
@@ -180,6 +182,7 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
         queryFailures = 0;
         if (status & 1) {
             LOG("MMCE GameID %s: the card started switching after %d ms\n", startup, waited);
+            diagLog("gameid %s: the card switching after %d ms", startup, waited);
             int ready = waitCardReady(mmceDevice);
             if (ready < 0)
                 return -1; // the query failed mid-wait: unconfirmed
@@ -194,6 +197,7 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
     if (idle >= 0 && (idle & 1) == 0) {
         LOG("MMCE GameID %s: no switch within %d ms (this game's card already, or Game ID off on the card)\n", startup,
             MMCE_GAMEID_START_MS);
+        diagLog("gameid %s: no switch within %d ms", startup, MMCE_GAMEID_START_MS);
         return 1;
     }
 
@@ -212,17 +216,19 @@ int MmceSupport::sendGameID(const char *startup, const char *protectMcPath, int 
 int MmceSupport::waitCardReady(const char *device)
 {
     char line[256];
-    int status;
+    int status, polls;
 
-    for (int polls = 0; (status = fileXioDevctl(device, 0x2, NULL, 0, NULL, 0)) >= 0 && (status & 1); polls++) {
+    for (polls = 0; (status = fileXioDevctl(device, 0x2, NULL, 0, NULL, 0)) >= 0 && (status & 1); polls++) {
         int seconds = polls * MMCE_CARD_READY_POLL_US / 1000000;
         if (seconds >= MMCE_CARD_READY_MAX_S) {
             LOG("MMCE: the game's memory card was still busy after %d s; launching\n", seconds);
+            diagLog("mmce: the game's card still busy after %d s; launching", seconds);
             return 0;
         }
         readPads();
         if (getKeyOn(KEY_START)) {
             LOG("MMCE: START pressed after %d s of the card's wait; launching\n", seconds);
+            diagLog("mmce: START after %d s of the card's wait; launching", seconds);
             return 1;
         }
         snprintf(line, sizeof(line), _l(_STR_MMCE_GAMEID_CARD_WAIT), seconds);
@@ -231,8 +237,10 @@ int MmceSupport::waitCardReady(const char *device)
     }
     if (status < 0) {
         LOG("MMCE: the card's busy query failed during the wait; not confirmed\n");
+        diagLog("mmce: the card's busy query failed during the wait");
         return -1;
     }
+    diagLog("mmce: the game's card ready after %d ms", polls * MMCE_CARD_READY_POLL_US / 1000);
     return 1;
 }
 
@@ -1064,7 +1072,12 @@ void MmceSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         // The card is still busy. Leave the menu and worker intact so the user
         // can retry after the current read returns.
         host::ui().warning(_l(_STR_ERR_FILE_INVALID), 8);
+        diagLog("launch: %s from MMCE refused: an art read would not stop", game != NULL ? game->name : "?");
         return;
+    }
+    if (game != NULL) {
+        diagLog("launch: %s (%s) from MMCE, Game ID %s", game->name, game->startup, gMMCEEnableGameID ? "on" : "off");
+        diagSaveBeforeLaunch(); // Debug on only: a launch that hangs still leaves its steps in DIAG.TXT
     }
 
     // VCD view: hand off to POPSTARTER (by name) instead of the disc path below. Menu-launch only.

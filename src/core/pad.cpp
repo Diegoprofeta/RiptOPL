@@ -5,6 +5,7 @@
 */
 
 #include "include/opl.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/pad.h"
 #include "include/padmanager.h"
 #include "include/ioman.h"
@@ -417,6 +418,8 @@ int PadManager::readOne(struct pad_data_t *pad, int *pollClean)
         if (notReadyRun_ > maxNotReadyRun_)
             maxNotReadyRun_ = notReadyRun_;
     } else {
+        if (notReadyRun_ >= 4) // a press spans 4-6 frames, so a run this long can swallow one
+            diagLog("pad: %u polls in a row could not be read", (unsigned)notReadyRun_);
         notReadyRun_ = 0;
         if (newpdata == 0x0) {
             emptyRun_++;

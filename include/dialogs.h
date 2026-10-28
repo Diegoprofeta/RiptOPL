@@ -396,6 +396,7 @@ extern struct UIItem diaCheatConfig[];
 
 extern struct UIItem diaConfig[];
 extern struct UIItem diaAbout[];
+extern struct UIItem diaDriveStatus[];
 extern struct UIItem diaVMC[];
 
 extern struct UIItem diaOSDConfig[];

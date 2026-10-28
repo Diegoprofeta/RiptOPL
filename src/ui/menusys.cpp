@@ -5,6 +5,8 @@
 */
 
 #include "include/sema_lock.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
+#include "include/drivestatus.h" // Drive Status (RIPPS2 build 114)
 #include "include/opl.h"
 #include "include/cfgtitle.h"
 #include "include/diag.h"
@@ -46,6 +48,7 @@ enum MENU_IDs {
     // Retired Network Update slot. Keep subsequent menu IDs stable even though the item itself is gone.
     MENU_RETIRED_NETWORK_UPDATE,
     MENU_NBD,
+    MENU_DRIVE_STATUS, // RIPPS2 build 114 (akilluminati47): drives, their space, DIAG.TXT
     MENU_ABOUT,
     MENU_SAVE_CHANGES,
     MENU_EXIT,
@@ -655,9 +658,11 @@ static void _menuSaveConfig()
 
     bdmLogConfigWriteResult(&diag, result);
 
-    if (!result)
+    if (!result) {
         // gLastSaveErrno was latched inside configWrite at the real failure site.
         setErrorMessagePathCode(_STR_ERROR_SAVING_SETTINGS_TO, itemConfig ? itemConfig->filename() : "", gLastSaveErrno);
+        diagLog("game settings: not saved to %s, error %d", itemConfig ? itemConfig->filename() : "", gLastSaveErrno);
+    }
 }
 
 // Every path out of here MUST either queue a load that will clear actionStatus, or clear it itself.
@@ -1137,6 +1142,7 @@ static void menuInitMainMenu(void)
 #endif
     submenuAppendItem(&mainMenu, -1, NULL, MENU_SETTINGS, _STR_SETTINGS);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_NBD, _STR_STARTNBD);
+    submenuAppendItem(&mainMenu, -1, NULL, MENU_DRIVE_STATUS, _STR_DRIVE_STATUS);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_ABOUT, _STR_ABOUT);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_EXIT, _STR_EXIT);
     submenuAppendItem(&mainMenu, -1, NULL, MENU_POWER_OFF, _STR_POWEROFF);
@@ -2204,6 +2210,8 @@ void menuHandleInputMenu()
         } else if (id == MENU_NBD) {
             if (menuCheckParentalLock() == 0)
                 handleLwnbdSrv();
+        } else if (id == MENU_DRIVE_STATUS) {
+            guiShowDriveStatus();
         } else if (id == MENU_ABOUT) {
             guiShowAbout();
         } else if (id == MENU_SAVE_CHANGES) {

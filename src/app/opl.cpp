@@ -5,6 +5,7 @@
 */
 
 #include "include/settings.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/oplint.h"
 #include "include/opl.h"
 #include "include/cfgtitle.h"
@@ -1910,6 +1911,7 @@ int main(int argc, char *argv[])
     ioPutRequest(IO_CUSTOM_SIMPLEACTION, reinterpret_cast<void *>(&deferredInit));
 
     guiIntroLoop();
+    diagLog("boot: the menu is up; settings from %s", configGetDir());
 
     // No writable config home? Say so NOW, not after the user has changed settings and lost them.
     // The '?' only survives configGetDir() when the home fell all the way back to the "mc?:OPL"

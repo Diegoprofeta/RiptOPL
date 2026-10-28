@@ -5,6 +5,7 @@
 */
 
 #include "include/settings.h"
+#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/oplint.h"
 #include "include/diag.h"
 #include "include/opl.h"
@@ -2511,6 +2512,7 @@ int saveConfig(int types, int showUI)
             else {
                 const char *failedPath = gLastSaveTarget[0] != '\0' ? gLastSaveTarget : configGetDir();
                 snprintf(notification, sizeof(notification), _l(_STR_ERROR_SAVING_SETTINGS_TO), failedPath, gLastSaveErrno);
+                diagLog("settings: not saved to %s, error %d", failedPath, gLastSaveErrno);
             }
             guiMsgBox(notification, 0, NULL);
         }

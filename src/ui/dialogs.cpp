@@ -1,4 +1,5 @@
 #include "include/dialogs.h"
+#include "include/drivestatus.h"
 #include "include/opl.h"
 #include "include/dia.h"
 #include "include/lang.h"
@@ -1766,6 +1767,54 @@ struct UIItem diaPadMacroConfig[] = {
     // end of dialog
     {UI_TERMINATOR}};
 #endif
+
+// Drive Status (main menu; RIPPS2 build 114 by akilluminati47): one line per drive, set by guiShowDriveStatus; unused
+// lines are hidden and take no room
+struct UIItem diaDriveStatus[] = {
+    {UI_HEADER, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_DRIVE_STATUS}}},
+    {UI_SPLITTER},
+
+    {UI_LABEL, DSTAT_LINE_FIRST + 0, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 1, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 2, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 3, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 4, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 5, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 6, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 7, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 8, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 9, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 10, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 11, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 12, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 13, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 14, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+    {UI_LABEL, DSTAT_LINE_FIRST + 15, 1, 1, -1, 0, 0, {.label = {NULL, -1}}},
+    {UI_BREAK},
+
+    {UI_SPLITTER},
+    {UI_BUTTON, DSTAT_SAVE_DIAG, 1, 1, _STR_HINT_SAVE_DIAGNOSTICS, 0, 0, {.label = {NULL, _STR_SAVE_DIAGNOSTICS}}},
+    {UI_BREAK},
+
+    {UI_OK, 0, 1, 1, -1, 0, 0, {.label = {NULL, _STR_OK}}},
+    {UI_BREAK},
+
+    {UI_TERMINATOR}};
 
 // About Menu
 struct UIItem diaAbout[] = {
