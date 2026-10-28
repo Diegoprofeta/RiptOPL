@@ -119,6 +119,8 @@ functions = ''.join(function_text(dia_c, 'src/ui/dia.cpp', sig) for sig in (
     'static int diaShouldBreakLine(',
     'static int diaShouldBreakLineAfter(',
     'static int diaItemHeight(',
+    'static void diaRowState(',
+    'static int diaRowCollapses(',
     'static int diaLayoutBottom(',
     'static int diaSettingsFitGap(',
 ))
