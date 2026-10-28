@@ -88,8 +88,10 @@ base count and the view's own count.
 ## Prerequisite: config key length
 
 `CONFIG_KEY_NAME_LEN` was 32, and `favsVcdMain12_reflection_offset` is already 31 characters. A view
-prefix would silently truncate keys, so the limit goes to 64 first (step 1). Key names in a config file
-longer than the limit are now rejected rather than truncated, so two long keys can no longer collide.
+prefix would silently truncate keys, so the limit goes to 48 first (step 1). The longest prefixed key,
+`coverflow.favsVcdMain12_reflection_offset`, is 41 characters. The cost is 16 bytes per loaded config
+entry. Longer keys are still truncated as before: rejecting them would drop conf_apps.cfg titles that
+load today. A side effect: app titles in conf_apps.cfg can now be up to 47 characters instead of 31.
 
 ## Switching
 
@@ -114,7 +116,7 @@ This ships behind a setting until it has been checked against community themes i
 
 ## Steps
 
-1. Raise `CONFIG_KEY_NAME_LEN`; reject over-long keys; host test.
+1. Raise `CONFIG_KEY_NAME_LEN` to 48; host test. (Done.)
 2. View-aware block lookup in the theme loader: `views=`, `default_view=`, prefixed blocks, append and
    disable, view-scoped globals. Active view chosen at load; switching reloads. Host test of the
    resolution order.

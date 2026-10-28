@@ -246,7 +246,10 @@ enum CONFIG_INDEX {
 #define CONFIG_NET_HTTP_BASE_PATH     "http_base_path"
 #define CONFIG_NET_NBD_DEFAULT_EXPORT "nbd_default_export"
 
-#define CONFIG_KEY_NAME_LEN  32
+// 48, not OPL's 32: a multi-view theme prefixes blocks with a view name (coverflow.main2_type), and the
+// longest per-family theme key (favsVcdMain12_reflection_offset) already used 31 of the 31 usable bytes.
+// The longest view prefix is 10 ("coverflow."), so 41 + NUL fits. Costs 16 bytes per loaded config entry.
+#define CONFIG_KEY_NAME_LEN  48
 #define CONFIG_KEY_VALUE_LEN 256
 
 // On-disk syntax of a config file. We support BOTH as first-class citizens and NEVER convert a user's
