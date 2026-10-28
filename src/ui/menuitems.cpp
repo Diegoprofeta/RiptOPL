@@ -395,7 +395,7 @@ static int itemFavKind(item_list_t *support, int id, const char *text)
 // itself R3 removes; on any source list it adds/removes by (mode, id, text).
 void itemExecFav(struct menu_item *curMenu)
 {
-    if (!gFAVStartMode) // Favourites disabled -> R3 is a no-op (no hidden writes)
+    if (!gFAVStartMode && !gAllGames) // Favourites and All Games both off -> R3 is a no-op (no hidden writes)
         return;
 
     if (!curMenu->current)

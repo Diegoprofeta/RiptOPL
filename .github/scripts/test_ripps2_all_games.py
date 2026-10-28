@@ -243,6 +243,8 @@ assert 'if (gAllGames)\n        return LIB_VIEW_MIXED;' in libview, 'device page
 print('ok   L3: All -> PS2 -> PS1 -> APP -> Favourites -> Recent; devices read PS2 and PS1')
 
 opl = (root / 'src/app/opl.cpp').read_text()
+assert 'if (gFAVStartMode || gAllGames)\n            menuAddHint(&mod->menuItem, _STR_FAV_HINT, R3_ICON);' in opl, 'the R3 hint must show with All Games on'
+assert 'if (!gFAVStartMode && !gAllGames) // Favourites and All Games both off' in (root / 'src/ui/menuitems.cpp').read_text(), 'R3 must work with All Games on and Favourites off'
 assert 'startMode = gAllGames ? START_MODE_AUTO : gFAVStartMode;' in opl
 assert 'if (gAllGames && list_support[FAV_MODE].support != NULL)\n        bootMode = FAV_MODE;' in opl
 assert '(gFAVStartMode || gAllGames) && mod->support->mode != FAV_MODE' in opl, 'source changes must rebuild the list'

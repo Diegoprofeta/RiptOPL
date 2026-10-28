@@ -86,7 +86,7 @@ struct row { submenu_item_t item; };
 struct menu_item { row *current; void *userdata; };
 static bool starState;
 static bool gFavStarred() { return starState; }
-static bool gFAVStartMode = true, writeOK, launchVcd = true, launchCue = true;
+static bool gFAVStartMode = true, gAllGames, writeOK, launchVcd = true, launchCue = true;
 static int depth, kind, sourceId = 17, writes, sounds, reloads;
 static std::vector<int> notices;
 struct GameSource {

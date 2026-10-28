@@ -357,7 +357,7 @@ void moduleUpdateMenuInternal(opl_io_module_t *mod, int themeChanged, int langCh
 
         menuAddHint(&mod->menuItem, _STR_REFRESH, SELECT_ICON);
 
-        if (gFAVStartMode)
+        if (gFAVStartMode || gAllGames)
             menuAddHint(&mod->menuItem, _STR_FAV_HINT, R3_ICON);
 
         // L3 moves the page around its ring of lists. Both and Mixed expose rings; PS2/PS1 pin an
