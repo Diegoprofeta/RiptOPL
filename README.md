@@ -108,10 +108,14 @@ the PS2 and supported backward-compatible PS3 units (see [PS3 BC](#ps3-bc)). Rip
 | SMB | OPL | ISO, ZSO, UL | Server must permit writes for VMC saves |
 | UDPFS Files / IMG and UDPBD | Neutrino | Files under `CD/` / `DVD/`, or a served FAT/exFAT disk image | Depends on backend and write access; see [Neutrino](docs/NEUTRINO.md) |
 | HTTP | OPL | ISO listed in `games.csv`; compressed images refuse to launch | No VMC; use physical memory cards |
+| PC CARD CF (experimental, off by default) | OPL only | ISO on MBR FAT32/exFAT CF, same `CD/`/`DVD/` layout; read-only | CF VMCs refused; use a physical memory card. Japanese SCPH-10000/15000/18000 only; see [PC CARD CF](docs/PC-CARD-CF.md) |
+| PSX DESR DVR ISOs (experimental, off by default) | Neutrino (DVR companion build) | `.iso` files on the DVR partitions, mounted read-only | Needs `bsd-dvr.toml` plus the `dvrdrv`/`dvrfile` modules; see [DESR DVR](docs/DESR-DVR.md) |
 
-Neutrino does not read local ZSO or UL split images. A compatible UDPFS server can instead
-decompress an image on the PC and expose it to the console as an ISO; that is server-side support
-([compressed images](docs/COMPRESSED-IMAGES.md)).
+Neutrino does not read local ZSO or UL split images. CHD and CSO are not decoded on the PS2 by
+either core. A compatible UDPFS server (PS2-Servers Desktop/Core) can instead decompress a CHD, CSO
+or ZSO image on the PC and expose it to the console as an ISO; that is server-side support
+([compressed images](docs/COMPRESSED-IMAGES.md), [game formats](docs/GAME-FORMATS.md)).
+PC CARD CF and DESR DVR are not yet tested on hardware.
 ELF apps and PS1 games have their own launch paths, described below.
 
 >[!NOTE]
