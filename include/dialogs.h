@@ -28,6 +28,7 @@ enum UI_ITEMS {
     UICFG_ART_DELAY,
     UICFG_WIDESCREEN,
     UICFG_FONT_SIZE, // original #1038: Interface page Font Size (FONT_SIZE_*)
+    UICFG_GLYPH_SET, // Interface page Button Glyphs (GLYPH_SET_*)
     UICFG_AUTOREFRESH,
     UICFG_VMODE,
     UICFG_XOFF,

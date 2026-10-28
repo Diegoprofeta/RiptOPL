@@ -250,6 +250,7 @@ int gEnableDiscArt;
 int gEnableLogoArt;
 int gWideScreen;
 int gFontSize = FONT_SIZE_DEFAULT;
+int gGlyphSet = 0; // GLYPH_SET_THEME
 int gVMode; // 0 - Auto, 1 - PAL, 2 - NTSC
 int gXOff;
 int gYOff;

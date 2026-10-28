@@ -711,6 +711,9 @@ reshow_ui:
     const char *fontSizeNames[] = {_l(_STR_SMALL), _l(_STR_DEFAULT), _l(_STR_LARGE), NULL};
     diaSetEnum(diaUIConfig, UICFG_FONT_SIZE, fontSizeNames);
     diaSetInt(diaUIConfig, UICFG_FONT_SIZE, gFontSize);
+    const char *glyphSetNames[] = {_l(_STR_THEME), _l(_STR_GLYPHS_BUILTIN), _l(_STR_GLYPHS_STANDARD), _l(_STR_GLYPHS_WHITE), NULL};
+    diaSetEnum(diaUIConfig, UICFG_GLYPH_SET, glyphSetNames);
+    diaSetInt(diaUIConfig, UICFG_GLYPH_SET, gGlyphSet);
 
     int ret = diaExecuteDialog(diaUIConfig, -1, 1, NULL);
 
@@ -755,6 +758,7 @@ reshow_ui:
         int appsViewChanged = guiReadAppsViewPicker(diaUIConfig);
         diaGetInt(diaUIConfig, UICFG_VMODE, &gVMode);
         diaGetInt(diaUIConfig, UICFG_FONT_SIZE, &gFontSize);
+        diaGetInt(diaUIConfig, UICFG_GLYPH_SET, &gGlyphSet);
 
         if (previousTheme != themeID && isBgmPlaying())
             bgmStop();
@@ -2613,6 +2617,8 @@ static int guiSettingsDisplayUpdater(int modified)
         gFontSize = temp;
         guiUpdateScreenScale();
     }
+    if (diaGetInt(activeDialog, UICFG_GLYPH_SET, &temp))
+        gGlyphSet = temp; // the next frame swaps the glyphs (thmGlyphSetRefresh)
     return 0;
 }
 
@@ -2666,6 +2672,9 @@ static int guiSettingsShowInterface(void)
     const char *fontSizeNames[] = {_l(_STR_SMALL), _l(_STR_DEFAULT), _l(_STR_LARGE), NULL};
     diaSetEnum(ui, UICFG_FONT_SIZE, fontSizeNames);
     diaSetInt(ui, UICFG_FONT_SIZE, gFontSize);
+    const char *glyphSetNames[] = {_l(_STR_THEME), _l(_STR_GLYPHS_BUILTIN), _l(_STR_GLYPHS_STANDARD), _l(_STR_GLYPHS_WHITE), NULL};
+    diaSetEnum(ui, UICFG_GLYPH_SET, glyphSetNames);
+    diaSetInt(ui, UICFG_GLYPH_SET, gGlyphSet);
     diaSetInt(ui, UICFG_XOFF, gXOff);
     diaSetInt(ui, UICFG_YOFF, gYOff);
     diaSetInt(ui, UICFG_OVERSCAN, gOverscan);
@@ -2715,6 +2724,7 @@ reshow_interface:
         diaGetInt(ui, UICFG_VMODE, &gVMode);
         diaGetInt(ui, UICFG_WIDESCREEN, &gWideScreen);
         diaGetInt(ui, UICFG_FONT_SIZE, &gFontSize);
+        diaGetInt(ui, UICFG_GLYPH_SET, &gGlyphSet);
         diaGetInt(ui, UICFG_XOFF, &gXOff);
         diaGetInt(ui, UICFG_YOFF, &gYOff);
         diaGetInt(ui, UICFG_OVERSCAN, &gOverscan);

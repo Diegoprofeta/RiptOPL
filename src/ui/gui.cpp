@@ -113,6 +113,7 @@ void Gui::unlock()
 void Gui::startFrame()
 {
     lock();
+    thmGlyphSetRefresh(); // a glyph set picked in Settings, swapped between frames on the GUI thread
     rmStartFrame();
     guiFrameId++;
 }
