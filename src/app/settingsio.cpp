@@ -1539,6 +1539,8 @@ void _loadConfig()
 
             settingsLoad(configOPL); // every plain key; the special cases below (recovery combo, clamps, migrations) follow
             gFontSize = fntValidFontSize(gFontSize);
+            if (gAutosort < AUTOSORT_OFF || gAutosort >= AUTOSORT_COUNT)
+                gAutosort = AUTOSORT_AZ; // older builds stored any non-zero as "on"
             configReadRA(configOPL);
 
 

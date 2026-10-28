@@ -68,7 +68,7 @@ HARNESS = r"""
 #define _STR_VIEW_PS1_ELF 14
 #define _STR_VIEW_APPS 15
 #define _STR_VIEW_MIXED 16
-#define _STR_VIEW_RECENT 17
+#define _STR_VIEW_RECENT 19
 #define _STR_VCD_ON 17
 #define _STR_VCD_OFF 18
 typedef struct { short mode; } item_list_t;
