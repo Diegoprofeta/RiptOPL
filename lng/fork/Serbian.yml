@@ -544,3 +544,5 @@ translations:
   HINT_OSD_TVASPECT: Oblik TV-a koji se predaje igri.
   HINT_OSD_VMODE: Video režim koji se predaje igri.
   DNAS_ID: DNAS ID
+  THEME_VIEW: "Приказ теме"
+  HINT_THEME_VIEW: "Како тема приказује ваше игре: List, Coverflow, PSBBN Flow или Grid. Држите L3 на главној страници за промену. Теме без тог приказа користе свој подразумевани приказ."

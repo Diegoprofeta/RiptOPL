@@ -633,3 +633,5 @@ translations:
   HINT_OSD_TVASPECT: Формат телевизора, передаваемый игре.
   HINT_OSD_VMODE: Видеорежим, передаваемый игре.
   DNAS_ID: ID DNAS
+  THEME_VIEW: "Вид темы"
+  HINT_THEME_VIEW: "Как тема показывает ваши игры: List, Coverflow, PSBBN Flow или Grid. Удерживайте L3 на главной странице, чтобы переключить. Темы без такого вида используют свой вид по умолчанию."

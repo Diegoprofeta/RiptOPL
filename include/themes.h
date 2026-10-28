@@ -224,6 +224,8 @@ typedef struct theme
 
     theme_element_t *coverflow;
     theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
+    theme_element_t *grid;      // first Grid element: Left/Right step a cover, Up/Down a row (grid.cpp)
+    int gridRows, gridColumns, gridSpacing;
     int coverflowCoverOffset;
 
     int gameCacheCount;

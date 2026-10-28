@@ -636,3 +636,5 @@ translations:
   HINT_OSD_TVASPECT: Formato da TV passado ao jogo.
   HINT_OSD_VMODE: Modo de vídeo passado ao jogo.
   DNAS_ID: ID DNAS
+  THEME_VIEW: "Vista do tema"
+  HINT_THEME_VIEW: "Como o tema mostra os seus jogos: List, Coverflow, PSBBN Flow ou Grid. Mantenha L3 premido na página principal para mudar. Os temas sem essa vista usam a vista predefinida."
