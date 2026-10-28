@@ -31,7 +31,7 @@ program = r'''
 enum { GUI_OP_APPEND_MENU = 1 };
 typedef int s32;
 typedef struct submenu_item {
-    int icon_id, text_id, id, isFolder, raBadged;
+    int icon_id, text_id, id, isFolder, lastPlayed, raBadged;
     char *text, *raText;
     int *cache_id, *cache_uid;
 } submenu_item_t;
@@ -46,7 +46,7 @@ typedef struct menu_item {
 struct gui_update_t {
     int type;
     struct { menu_item_t *menu; submenu_list_t **subMenu; } menu;
-    struct { int icon_id, id, text_id, isFolder, raBadged, selected, autoStart; char *text, *raText; } submenu;
+    struct { int icon_id, id, text_id, isFolder, lastPlayed, raBadged, selected, autoStart; char *text, *raText; } submenu;
 };
 static int live, failNext, appendFail, depth;
 static int gRememberLastPlayed, gAutoStartLastPlayed, KeyPressedOnce, DisableCron;

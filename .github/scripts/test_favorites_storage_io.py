@@ -49,6 +49,7 @@ enum {ETH_MODE=8,HDD_MODE=9,APP_MODE=10,FAV_MODE=12,MMCE_MODE=11,
       FAV_KIND_ISO=0,FAV_KIND_VCD=1,FAV_KIND_ELF=3};
 struct fav_raw_t {int mode,id,icon_id,text_id,kind; char text[FAV_TEXT_MAX];};
 #define LOG(...) ((void)0)
+#define FAV_FILE_NAME "favourites.bin"
 '''
 
 # These use the actual editing methods, while a failed/partial read is injected at
@@ -150,7 +151,7 @@ static int fakeSeek(int fd,int pos,int origin) {
 }
 static void *fakeMalloc(size_t n) {return (failAllocation || allocations++==failAllocationAt)?nullptr:malloc(n);}
 static void *fakeCalloc(size_t n,size_t s) {return (failAllocation || allocations++==failAllocationAt)?nullptr:calloc(n,s);}
-static void favGetFilePath(char *p,int) {strcpy(p,"mc0:OPL/favourites.bin");}
+static void favGetFilePath(char *p,int,const char *name=FAV_FILE_NAME) {strcpy(p,"mc0:OPL/");strcat(p,name);}
 static void resetFaults() {
  readLimit=writeLimit=1000000;failReadAt=writeErrorAt=writeZeroAt=-1;
  openError=closeError=opens=opened=closes=writes=0;failSeek=failAllocation=false;

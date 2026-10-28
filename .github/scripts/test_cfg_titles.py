@@ -78,7 +78,9 @@ menusys = (ROOT / "src/ui/menusys.cpp").read_text(encoding="utf-8")
 compare_at = menusys.index("static int submenuSortCompare(")
 compare = menusys[compare_at:menusys.index("\n}", compare_at) + 2]
 source += r'''
-struct submenu_list_t { struct {int isFolder, id; char *text; int text_id;} item; };
+struct submenu_list_t { struct {int isFolder, id; char *text; int text_id, lastPlayed;} item; };
+enum { AUTOSORT_OFF, AUTOSORT_AZ, AUTOSORT_LAST_PLAYED };
+static int gAutosort = AUTOSORT_AZ;
 static char *_l(int id) { (void)id; return NULL; }
 ''' + compare
 tests = r'''

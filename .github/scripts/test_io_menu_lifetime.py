@@ -46,12 +46,12 @@ static int SignalSema(int id) {
 }
 @QUEUE@
 enum { GUI_OP_APPEND_MENU = 1 };
-struct Row { int isFolder, raBadged; char *raText; };
+struct Row { int isFolder, lastPlayed, raBadged; char *raText; };
 struct Entry { Row item; };
 struct Menu { Entry *last, *submenu, *current, *pagestart; int remindLast; };
 struct Update {
     struct { Menu *menu; Entry **subMenu; } menu;
-    struct { int icon_id; char *text; int id, text_id, isFolder, raBadged, selected, autoStart; char *raText; } submenu;
+    struct { int icon_id; char *text; int id, text_id, isFolder, lastPlayed, raBadged, selected, autoStart; char *raText; } submenu;
 };
 static Entry oldEntry{}, newEntry{};
 static bool fail;
@@ -77,7 +77,7 @@ int main() {
     q.head_ = nullptr; assert(q.pendingCount() == 0 && !locked);
     Menu menu{&oldEntry, &oldEntry, &oldEntry, &oldEntry, 0};
     Entry *rows = &oldEntry;
-    Update item{{&menu, &rows}, {0, nullptr, 7, 0, 1, 1, 1, 1, nullptr}};
+    Update item{{&menu, &rows}, {0, nullptr, 7, 0, 1, 0, 1, 1, 1, nullptr}};
     item.submenu.raText = strdup("RA Game");
     fail = true; appendRow(&item); // OOM: the badge snapshot is released, not leaked
 #ifdef RETROACHIEVEMENTS

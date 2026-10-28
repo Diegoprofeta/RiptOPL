@@ -7,6 +7,7 @@ constexpr int FAV_MODE_UPDATE_DELAY = 240;
 constexpr int FAV_TEXT_MAX = 256;     // cap on a stored favourite's text length (incl. NUL)
 constexpr int FAV_MAX_ITEMS = 512;    // cap on records read from favourites.bin
 constexpr int FAV_MAGIC = 0x4641464F; // 'OFAV' (little-endian on the EE)
+constexpr int RECENT_MAX_ITEMS = 10;  // recents.bin keeps the last ten games launched
 #define FAV_VERSION 3                 // v3 widens v2's isVcd byte to a KIND (see FAV_KIND_*)
 
 // Defined in favsupport.c; consumed by opl.c/gui.c (config load/save/default).
@@ -78,7 +79,11 @@ public:
     // Single append pass over freshly-read raw records: resolve each against its source, filter
     // by the FAV page's L3 shelf, and append the survivors. Returns the new count. Never clears
     // or appends the submenu -- the caller's deferred driver does that from the count.
-    int ingest(const fav_raw_t *recs, int rawCount);
+    // recent = the Favourites Recent stop: every kind, file order kept, no source stars touched.
+    int ingest(const fav_raw_t *recs, int rawCount, bool recent = false);
+    // Resolve favourites only to light their stars on the source pages (the Recent stop lists
+    // recents.bin, but the stars still belong to favourites.bin).
+    void markStars(const fav_raw_t *recs, int rawCount);
     // Arm the APPS scan once per boot when a stored app favourite's APPS tab never loaded.
     void armAppsScan();
 
@@ -152,5 +157,13 @@ int favRemoveByIndex(int favIndex);
 
 // Cheap/idempotent: clears the FAV list + schedules its single deferred rebuild.
 void loadFavourites(void);
+
+// Recently played (recents.bin, beside favourites.bin; same record format, newest first).
+// recentRecord moves a launched game to the front; returns 1 when the file was written.
+int recentRecord(int mode, int id, int icon_id, int text_id, const char *text, int kind);
+// 1 for the last game played .. RECENT_MAX_ITEMS, 0 when the row is not recent. IO thread
+// (list rebuild); reads recents.bin once and caches it until recentInvalidate.
+int recentRankForRow(item_list_t *support, int id, const char *text);
+void recentInvalidate(void);
 
 #endif

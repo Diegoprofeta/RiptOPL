@@ -107,6 +107,15 @@ static int addFavouriteItem(int, int id, int, int, const char*, int) {
 static void sfxPlay(int) { ++sounds; }
 static void loadFavourites() {}
 static void ioPutRequest(int, void*) { ++reloads; }
+enum { LIB_VIEW_ALL = 3, LIB_VIEW_RECENT = 6 };
+static int favView = LIB_VIEW_ALL;
+static int libViewActive(int) { return favView; }
+struct fav_rec_t { int mode, id, icon_id, text_id, kind; const char *text; };
+struct FavStore {
+    fav_rec_t rec{2, 17, 0, 0, 0, "title"};
+    const fav_rec_t *entry(int id) { return id == 0 ? &rec : nullptr; }
+};
+static FavStore gFavSupport;
 ''' + function(menu, "void itemExecFav(") + r'''
 static void reset() { writes = sounds = reloads = 0; notices.clear(); }
 int main() {
@@ -126,6 +135,14 @@ int main() {
     assert(writes == 1 && sounds == 0 && reloads == 0 && notices.back() == _STR_FAV_REMOVE_FAILED);
     reset(); writeOK = true; itemExecFav(&menu);
     assert(writes == 1 && sounds == 1 && reloads == 1 && notices.back() == _STR_FAV_REMOVED);
+    // On the Recent stop R3 stars the game (nothing is removed); a failed write says so.
+    favView = LIB_VIEW_RECENT; reset(); writeOK = true; itemExecFav(&menu);
+    assert(writes == 1 && sounds == 1 && reloads == 1 && notices.back() == _STR_FAV_SAVED);
+    reset(); writeOK = false; itemExecFav(&menu);
+    assert(writes == 1 && sounds == 0 && reloads == 0 && notices.back() == _STR_FAV_SAVE_FAILED);
+    selected.item.id = 3; reset(); itemExecFav(&menu); selected.item.id = 0; // stale row: no-op
+    assert(writes == 0 && sounds == 0 && notices.empty());
+    favView = LIB_VIEW_ALL;
     // Every existing no-op guard must still suppress both storage and feedback.
     support.mode = 1; reset(); gFAVStartMode = false; itemExecFav(&menu); gFAVStartMode = true;
     menu.current = nullptr; itemExecFav(&menu); menu.current = &selected;

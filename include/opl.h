@@ -334,7 +334,13 @@ extern int gNetStartMode;    // START_MODE_* -- network start row (Off/Manual/Au
 extern int gNetProtocolPick;
 extern int gUdpfsAccessMode; // UDPFS Files(0)/IMG(1) preference, independent of UDPBD
 
-extern int gAutosort;
+extern int gAutosort; // AUTOSORT_*
+enum AUTOSORT_MODES {
+    AUTOSORT_OFF = 0,
+    AUTOSORT_AZ,          // by title (the old "Sort Games Alphabetically": on)
+    AUTOSORT_LAST_PLAYED, // recents.bin order first, then the rest by title
+    AUTOSORT_COUNT
+};
 extern int gAutoRefresh;
 extern int gEnableNotifications;
 #ifdef RETROACHIEVEMENTS

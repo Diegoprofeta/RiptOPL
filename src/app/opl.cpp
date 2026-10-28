@@ -767,6 +767,7 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                 gup->submenu.selected = 0;
                 gup->submenu.autoStart = 0;
                 gup->submenu.isFolder = isFolderRow;
+                gup->submenu.lastPlayed = (gAutosort == AUTOSORT_LAST_PLAYED && !isFolderRow) ? recentRankForRow(mdl->support, i, gup->submenu.text) : 0;
 
                 // Neither auto-select targets a folder row (no startup). The remembered cursor
                 // wins over last-played: it is where the user actually was. Only the persisted
@@ -794,7 +795,8 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
         libViewFinishPending(mdl->support->mode);
     cfgTitleRefresh(mdl->support, count);
 
-    if (gAutosort) {
+    // The Favourites Recent stop is already in play order; sorting it would undo the point.
+    if (gAutosort && !(mdl->support->mode == FAV_MODE && libViewActive(FAV_MODE) == LIB_VIEW_RECENT)) {
         gup = guiOpCreate(GUI_OP_SORT);
         if (gup) { // OOM: an unsorted list beats dereferencing NULL, same as the append loop above
             gup->menu.menu = &mdl->menuItem;
