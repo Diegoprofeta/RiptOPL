@@ -20,6 +20,9 @@
 
 #include FT_FREETYPE_H
 #include FT_MODULE_H
+#include FT_MULTIPLE_MASTERS_H // a variable face's weight
+#include FT_TRUETYPE_TABLES_H  // a face's own weight (OS/2)
+#include FT_OUTLINE_H          // a static face drawn heavier
 
 // FT_Init_FreeType and FT_Done_FreeType sit in ftinit.c beside the table of every module the library was
 // built with, so calling either links all of them (Type 1, CID, PCF, BDF, PFR, Windows FNT, SDF, SVG...).
@@ -214,6 +217,68 @@ void FontSystem::destroyCLUT()
     clut_.Clut = NULL;
 }
 
+// A face drawn at a weight (RIPPS2 build 114, akilluminati47). A variable face (a wght axis) takes it as designed,
+// within its range; a face asked to be heavier than it can be (a static face, or past a variable one's range) has its
+// outlines grown in code, about 1 px at 18 px for 300 weight units.
+static int fntFaceOwnWeight(FT_Face face)
+{
+    TT_OS2 *os2 = face != NULL ? (TT_OS2 *)FT_Get_Sfnt_Table(face, FT_SFNT_OS2) : NULL;
+    return os2 != NULL && os2->usWeightClass >= 100 && os2->usWeightClass <= 1000 ? os2->usWeightClass : 400;
+}
+
+static int fntFaceSetWeight(FT_Library library, FT_Face face, int weight) // the weight the face now draws at
+{
+    FT_MM_Var *mm = NULL;
+    FT_Fixed coords[8];
+    unsigned i, n;
+    int drawn = fntFaceOwnWeight(face);
+
+    if (face == NULL || !FT_HAS_MULTIPLE_MASTERS(face) || FT_Get_MM_Var(face, &mm) != 0)
+        return drawn;
+    n = mm->num_axis < 8 ? mm->num_axis : 8;
+    for (i = 0; i < n; i++) {
+        coords[i] = mm->axis[i].def;
+        if (mm->axis[i].tag == FT_MAKE_TAG('w', 'g', 'h', 't')) {
+            FT_Fixed w = weight > 0 ? (FT_Fixed)weight << 16 : mm->axis[i].def;
+            if (w < mm->axis[i].minimum)
+                w = mm->axis[i].minimum;
+            if (w > mm->axis[i].maximum)
+                w = mm->axis[i].maximum;
+            coords[i] = w;
+            drawn = (int)(w >> 16);
+        }
+    }
+    if (FT_Set_Var_Design_Coordinates(face, n, coords) != 0)
+        drawn = fntFaceOwnWeight(face);
+    FT_Done_MM_Var(library, mm);
+    return drawn;
+}
+
+// How far a glyph's outline grows, in 26.6 units at 18 px, to draw `weight` on a face that draws `drawn`
+static int fntEmboldenFor(int weight, int drawn)
+{
+    int e = weight > drawn ? (weight - drawn) * 64 / 300 : 0;
+    return e > 96 ? 96 : e;
+}
+
+// Load and render one glyph, grown by `embolden` (fntEmboldenFor) when it is above 0
+static int fntLoadGlyph(FT_Face face, uint32_t gid, int embolden)
+{
+    int error;
+
+    if (embolden <= 0)
+        return FT_Load_Char(face, gid, FT_LOAD_RENDER);
+    error = FT_Load_Char(face, gid, FT_LOAD_DEFAULT);
+    if (!error && face->glyph->format == FT_GLYPH_FORMAT_OUTLINE) {
+        FT_Pos s = (FT_Pos)embolden * (face->size != NULL ? face->size->metrics.y_ppem : 18) / 18;
+        FT_Outline_EmboldenXY(&face->glyph->outline, s, s / 2);
+        face->glyph->advance.x += s;
+    }
+    if (!error)
+        error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+    return error;
+}
+
 void FontSystem::initSlot(font_t *font)
 {
     font->face = NULL;
@@ -222,6 +287,7 @@ void FontSystem::initSlot(font_t *font)
     font->dataPtr = NULL;
     font->isValid = 0;
     font->fontSize = 0;
+    font->weight = font->embolden = 0;
 
     int aid = 0;
     for (; aid < ATLAS_MAX; ++aid)
@@ -255,6 +321,21 @@ void FontSystem::release(int id)
         deleteSlot(&fonts_[id]);
         unlock();
     }
+}
+
+// Draw a theme's font at a weight, 100 to 900 (0: the face's own). Its cached glyphs go, so the next frame redraws them.
+void FontSystem::setWeight(int id, int weight)
+{
+    if (id <= FNT_DEFAULT || id >= FNT_MAX_COUNT)
+        return;
+    lock();
+    font_t *font = &fonts_[id];
+    if (font->isValid && font->face != NULL && font->weight != weight) {
+        font->weight = weight;
+        font->embolden = fntEmboldenFor(weight, fntFaceSetWeight(library_, font->face, weight));
+        cacheFlush(font);
+    }
+    unlock();
 }
 
 // The slow half of a load, done WITHOUT the lock: read the font file (or point at the built-in
@@ -500,7 +581,7 @@ fnt_glyph_cache_entry_t *FontSystem::cacheGlyph(font_t *font, uint32_t gid)
         LOG("FNTSYS Face is NULL!\n");
     }
 
-    int error = FT_Load_Char(font->face, gid, FT_LOAD_RENDER);
+    int error = fntLoadGlyph(font->face, gid, font->embolden);
     if (error) {
         LOG("FNTSYS Error loading glyph - %d\n", error);
         return NULL;
@@ -1181,6 +1262,11 @@ int fntLoadDefault(char *path)
 void fntRelease(int id)
 {
     gFonts.release(id);
+}
+
+void fntSetWeight(int id, int weight)
+{
+    gFonts.setWeight(id, weight);
 }
 
 void fntUpdateAspectRatio()

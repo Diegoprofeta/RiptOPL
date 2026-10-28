@@ -42,6 +42,9 @@ int fntLoadFile(char *path, int fontSize);
  * @return 0 on success, negative value on error */
 int fntLoadFallback(char *path);
 
+/** Draws a theme font at a weight, 100 to 900 (0: the face's own): a variable face as designed, a static one grown */
+void fntSetWeight(int id, int weight);
+
 /** Reloads the default font */
 int fntLoadDefault(char *path);
 
