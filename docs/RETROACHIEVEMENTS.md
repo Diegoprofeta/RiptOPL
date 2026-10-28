@@ -390,7 +390,7 @@ PS2 save manager for a memory-card installation, then copy the other folders sep
 The same channel carries the IncebtIon-theme kit (`RIPTOPL-RetroAchievements-IncebtIon.zip`, with
 `RIPTOPL-RA-IncebtIon.ELF` and `APP_RIPTOPL-RA-IncebtIon.psu`; inside it the app is still
 `APP_RIPTOPL-RA`), and `RIPTOPL-RA-VARIANTS.zip` with the `pademu0` loader (pad emulation compiled
-out). The kit also carries **`xeRAbora.url`** (pointing directly to the paired
+out); `RIPTOPL-RA-VARIANTS-IncebtIon.zip` is the same loader with the IncebtIon theme. The kit also carries **`xeRAbora.url`** (pointing directly to the paired
 [v0.1.0-alpha.17 release](https://github.com/hacan359/xerabora/releases/tag/v0.1.0-alpha.17)),
 because the loader does nothing without the PC client.
 
