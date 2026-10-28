@@ -9,8 +9,7 @@ installation folder can still discover settings on another device.
 | Menu aspect ratio | 4:3; Widescreen off | Settings → Interface |
 | Menu video mode | Auto | Settings → Interface |
 | Theme | Built-in `<OPL>` | Settings → Interface → Theme |
-| Coverflow | Optional built-in `<Coverflow>` theme | Settings → Interface → Theme |
-| PSBBN Flow | Optional built-in `<PSBBN Flow>` theme | Settings → Interface → Theme |
+| Theme View | Default (List for `<OPL>`); Coverflow and PSBBN Flow are optional views | Settings → Interface → Theme View, or hold L3 |
 | Cover and disc artwork | On | Settings → Interface → Artwork Settings |
 | Per-game background art | Off in Korium and RetroAchievements (as the original's Korium); On in IncebtIon | Settings → Interface → Artwork Settings |
 | Notifications | On | Settings → Interface |
@@ -26,14 +25,14 @@ setting alone does not supply music. Storage discovery and saved configuration
 can affect the active presentation after initial defaults are applied.
 
 To use the widescreen/carousel presentation, select **Widescreen: On** and
-**Theme: `<Coverflow>`** under **Settings → Interface**, apply, and save.
+**Theme View: Coverflow** under **Settings → Interface** (theme `<OPL>`), apply, and save.
 Coverflow supports both 4:3 and 16:9; selecting it does not toggle widescreen.
 The carousel starts with three covers, Large center scale (45), 200 ms animation and
 side-cover dimming off. L1/R1 page moves animate only when selection changes,
 including wraps; flat list themes keep their existing page behavior.
 
-For the PSBBN Definitive Project Game Collection look, choose **Theme: `<PSBBN Flow>`** in the same
-picker, apply and save. It uses the colour picker's palette and its own fixed perspective layout and
+For the PSBBN Definitive Project Game Collection look, choose **Theme View: PSBBN Flow** on the same
+page, apply and save. It uses the colour picker's palette and its own fixed perspective layout and
 25-frame glide; the Coverflow count, scale, animation and dimming settings do not apply to it. See
 [PSBBN Flow](THEME_ENGINE.md#psbbn-flow) for artwork and authoring details.
 

@@ -29,6 +29,10 @@ const char *thmViewName(int view);
 // THM_VIEW_* for a name ("list", "coverflow", "psbbn", "grid"; case-insensitive), -1 if unknown.
 int thmViewFromName(const char *name);
 
+// The view behind a theme name saved before views existed: "<Coverflow>" and "<PSBBN Flow>" were
+// separate built-in themes and are now views of <OPL>. -1 for any other name.
+int thmViewFromLegacyTheme(const char *themeName);
+
 // Same presence rule as addGUIElem: a block is present when it has a _type or is switched off with
 // <name>_enabled=0. An absent block lets a fallback chain move on.
 int thmViewBlockPresent(config_set_t *themeConfig, const char *name);

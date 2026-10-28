@@ -1564,11 +1564,15 @@ void _loadConfig()
 
 
 
-            if (configGetStr(configOPL, CONFIG_OPL_THEME, &temp))
+            int legacyView = -1;
+            if (configGetStr(configOPL, CONFIG_OPL_THEME, &temp)) {
                 themeID = thmFindGuiID(temp);
+                legacyView = thmViewFromLegacyTheme(temp); // <Coverflow>/<PSBBN Flow> -> <OPL> + that view
+            }
 
-            // Before applyConfig loads the theme, so the saved view is the one that loads.
-            gThemeViewRequest = -1;
+            // Before applyConfig loads the theme, so the saved view is the one that loads. The next save
+            // writes <OPL> and theme_view=, which completes the migration of a legacy theme name.
+            gThemeViewRequest = legacyView;
             if (configGetStr(configOPL, CONFIG_OPL_THEME_VIEW, &temp))
                 gThemeViewRequest = thmViewFromName(temp);
 

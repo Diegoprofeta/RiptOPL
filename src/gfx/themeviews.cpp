@@ -27,6 +27,17 @@ int thmViewFromName(const char *name)
     return -1;
 }
 
+int thmViewFromLegacyTheme(const char *themeName)
+{
+    if (themeName == NULL)
+        return -1;
+    if (strcasecmp(themeName, "<Coverflow>") == 0)
+        return THM_VIEW_COVERFLOW;
+    if (strcasecmp(themeName, "<PSBBN Flow>") == 0)
+        return THM_VIEW_PSBBN;
+    return -1;
+}
+
 int thmViewBlockPresent(config_set_t *themeConfig, const char *name)
 {
     char key[CONFIG_KEY_NAME_LEN];

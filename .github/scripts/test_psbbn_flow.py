@@ -1,4 +1,7 @@
-"""Exercise PSBBN Flow geometry, row rendering, cover draws and the built-in theme catalog (original #977/#1023).
+"""Exercise PSBBN Flow geometry, row rendering, cover draws and the theme catalog (original #977/#1023).
+
+PSBBN Flow and Coverflow were separate built-in themes; they are views of <OPL> now (multi-view themes), so
+the catalog lists <OPL> and the disk themes only and a saved legacy name resolves to <OPL>.
 
 Compiles the real header, the real draw functions from src/gfx/psbbnflow.cpp, the animation trigger
 from src/gfx/coverflow.cpp and the ThemeCatalog methods from src/gfx/themes.cpp against stubs.
@@ -258,7 +261,7 @@ run('psbbn_covers', covers)
 
 header = (ROOT / 'include/themecatalog.h').read_text(encoding='utf-8')
 catalog_class = header[header.index('class ThemeCatalog'):header.index('\n};', header.index('class ThemeCatalog')) + 3]
-methods = '\n'.join([THEMES[THEMES.index('// Names of the built-in flow themes'):THEMES.index('void ThemeCatalog::rebuildNames()')]] + [
+methods = '\n'.join([
     function(THEMES, s) for s in ('void ThemeCatalog::rebuildNames(', 'int ThemeCatalog::addElements(',
                                   'void ThemeCatalog::reinit(', 'int ThemeCatalog::setGuiValue(',
                                   'int ThemeCatalog::findGuiID(', 'char *ThemeCatalog::filePath(',
@@ -285,7 +288,7 @@ static int thmLoad(const char *path);
 @CLASS@
 static ThemeCatalog gCatalog;
 static int thmLoad(const char *path) {
- loads++;loaded=path?3:gCatalog.loadingBuiltin();
+ loads++;loaded=path?3:0;
  return failLoad?-1:0;
 }
 typedef int (*entry_cb)(int, const char *, const char *, const char *, unsigned char);
@@ -305,28 +308,25 @@ int main(void) {
  c.addElements((char *)"none","/",0); // publishes the name list (and adds C at id 3)
  c.reinit("mass1:");
  const char **names=c.guiList();
- assert(!strcmp(names[3],"<Coverflow>") && !strcmp(names[4],"<PSBBN Flow>") && !names[5]);
- assert(c.findGuiID("<psbbn flow>")==4 && c.findGuiID("<coverflow>")==3 && c.findGuiID("b")==2);
- assert(c.setGuiValue(4,0) && loaded==2 && c.guiValue()==4);
- assert(c.loadingBuiltin()==ThemeCatalog::BUILTIN_NONE && !c.filePath(4));
- c.setGuiValue(4,0);assert(colors==1);
- failLoad=1;assert(!c.setGuiValue(1,0) && c.guiValue()==4);failLoad=0;
+ assert(!strcmp(names[0],"<OPL>") && !strcmp(names[1],"A") && !strcmp(names[2],"B") && !names[3]);
+ // The old built-in names are views of <OPL> now: they resolve to id 0.
+ assert(c.findGuiID("<psbbn flow>")==0 && c.findGuiID("<Coverflow>")==0 && c.findGuiID("b")==2);
+ assert(c.setGuiValue(2,0) && loaded==3 && c.guiValue()==2 && c.filePath(2));
+ failLoad=1;assert(!c.setGuiValue(1,0) && c.guiValue()==2);failLoad=0;
+ assert(c.setGuiValue(0,0) && loaded==0 && !c.filePath(0));
+ c.setGuiValue(0,0);assert(colors==1); // same id, no reload: re-applies the picker palette
  int oldLoads=loads;
- c.reinit("mass0:");assert(c.count()==1 && c.guiValue()==3 && loads==oldLoads);
- assert(!strcmp(c.guiList()[c.guiValue()],"<PSBBN Flow>"));
- c.reinit("mc0:");assert(c.count()==0 && c.guiValue()==2 && loads==oldLoads);
- // A disk theme appearing must not turn the live built-in selection into that disk theme.
- assert(c.addElements((char *)"mass1:","/",0)==1 && c.guiValue()==3 && loads==oldLoads);
- assert(!strcmp(c.guiList()[c.guiValue()],"<PSBBN Flow>"));
- c.reinit("mass1:");assert(c.guiValue()==2 && loads==oldLoads);
- assert(c.setGuiValue(1,0) && loaded==1 && !c.filePath(1));
+ c.reinit("mc0:");assert(c.count()==1 && c.guiValue()==0 && loads==oldLoads);
+ assert(c.setGuiValue(1,0) && loaded==3);
  oldLoads=loads;
- assert(c.addElements((char *)"mass1:","/",0)==1 && c.guiValue()==2 && loads==oldLoads);
- assert(!strcmp(c.guiList()[c.guiValue()],"<Coverflow>"));
+ // A disk theme appearing keeps the live selection.
+ assert(c.addElements((char *)"mass1:","/",0)==1 && c.guiValue()==1 && loads==oldLoads);
+ assert(!strcmp(c.guiList()[c.guiValue()],"A") && !strcmp(c.guiList()[2],"C") && !c.guiList()[3]);
+ // Removing another device re-finds the active theme by name; removing its own device drops to <OPL>.
  c.reinit("mass1:");assert(c.guiValue()==1 && loads==oldLoads);
- assert(!c.setGuiValue(99,0) && c.guiValue()==1);
- assert(c.setGuiValue(0,0) && loaded==0);
- puts("PSBBN: picker, persistence lookup, palette, failed-load rollback and disk-theme discovery/removal passed");
+ c.reinit("mass0:");assert(c.count()==0 && c.guiValue()==0 && loads==oldLoads+1 && loaded==0);
+ assert(!c.setGuiValue(99,0) && !c.setGuiValue(1,0) && c.guiValue()==0);
+ puts("Theme catalog: <OPL> + disk themes, legacy names, palette, failed-load rollback and discovery/removal passed");
 }
 '''
 # The test seeds the theme table the scanner would fill, so it reaches the private members.

@@ -15,7 +15,7 @@ decides how rows are drawn. Neither touches the other's configuration.
 
 ## How themes work before this change
 
-- `<Coverflow>` and `<PSBBN Flow>` are separate built-in themes, each with its own embedded cfg
+- `<Coverflow>` and `<PSBBN Flow>` were separate built-in themes, each with its own embedded cfg
   (`misc/theme_coverflow.cfg`, `misc/theme_psbbn_flow.cfg`). The List look is `misc/conf_theme_OPL.cfg`.
   Coverflow differs from List only in the presenter block (`Coverflow` instead of `ItemCover`); the menu
   icons, items list and the whole info page are identical.
@@ -122,8 +122,9 @@ This ships behind a setting until it has been checked against community themes i
    Host test of the resolution order. (Done.)
 3. Built-in `<OPL>` offers List, Coverflow and PSBBN Flow as views. Each view keeps its own embedded cfg
    instead of one merged cfg, because editions (Korium) replace some of those cfgs at build time; the
-   view picks the buffer. (Done.) Still open: hide the separate `<Coverflow>` / `<PSBBN Flow>` entries
-   and map saved names to `<OPL>` plus that view, once the user agrees.
+   view picks the buffer. The separate `<Coverflow>` / `<PSBBN Flow>` entries are gone from the theme
+   list; a saved name loads `<OPL>` with that view, and the next save writes `<OPL>` plus
+   `theme_view=`. (Done; agreed 2026-10-28.)
 4. **Theme View** setting (Interface page; Default, List, Coverflow, PSBBN Flow) saved as
    `theme_view=<name>` in the OPL config, and hold L3 (0.5 s) cycles the views the theme offers. A tap
    on L3 still advances the library-view ring; with a multi-view theme it acts on release. (Done.)

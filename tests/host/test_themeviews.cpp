@@ -32,6 +32,10 @@ int main()
     CHECK(thmViewFromName("psbbn") == THM_VIEW_PSBBN);
     CHECK(thmViewFromName("bogus") == -1);
     CHECK(thmViewFromName(NULL) == -1);
+    CHECK(thmViewFromLegacyTheme("<Coverflow>") == THM_VIEW_COVERFLOW);
+    CHECK(thmViewFromLegacyTheme("<psbbn flow>") == THM_VIEW_PSBBN);
+    CHECK(thmViewFromLegacyTheme("<OPL>") == -1);
+    CHECK(thmViewFromLegacyTheme(NULL) == -1);
 
     // ---- a theme without views: List, no prefix, base resolution exactly as before -------------------
     config_set_t *plain = parse("main0:\n\ttype=Background\nmain1:\n\ttype=ItemsList\nappsMain1:\n\ttype=ItemCover\n"
