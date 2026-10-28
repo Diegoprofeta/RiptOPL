@@ -281,6 +281,7 @@ extern int gVcdUsbBdmaMode;
 extern int gVcdHideGameId;    // display-only: hide a leading PS1 game-ID prefix from VCD lists
 extern int gVcdShowPpPops;    // enumeration-only: list strict PP.<ID>.POPS.<name> one-game HDD partitions
 extern int gVcdFirstDiscOnly; // hide discs 2+ of multi-disc PS1 sets
+int oplBootDirIsHostFs(void); // booted from host:/hostN: (PCSX2 or ps2client)
 extern char gBootDir[256];    // boot directory (cwd) OPL launched from; "" if undeterminable
 extern int gEnableBGArt;
 extern int gEnableSaveIcons; // 3D save icon theme element (SaveIcon)

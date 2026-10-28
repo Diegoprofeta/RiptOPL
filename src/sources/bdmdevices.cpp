@@ -456,7 +456,8 @@ int bdmEnsureTransportLoaded(int bdmType)
                 iUSBModLoaded = 1;
             return iUSBModLoaded;
         case BDM_TYPE_SDC:
-            if (!mx4sioModLoaded && bdmLoadOptionalModule("MX4SIO_BD", &mx4sio_bd_irx, size_mx4sio_bd_irx) >= 0)
+            // Not on a host: boot; see the MX4SIO gate in bdmLoadBlockDeviceModules.
+            if (!mx4sioModLoaded && !oplBootDirIsHostFs() && bdmLoadOptionalModule("MX4SIO_BD", &mx4sio_bd_irx, size_mx4sio_bd_irx) >= 0)
                 mx4sioModLoaded = 1;
             return mx4sioModLoaded;
         case BDM_TYPE_ILINK:
