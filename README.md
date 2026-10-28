@@ -66,8 +66,11 @@ by an explicit dispatch after verification; unpublished builds are available as
 Actions artifacts. See [release channels and packaging](ROLLING_RELEASE.md).
 
 Imported feature and hardware documentation describes production behavior and
-still needs parity validation on this C++/ps2build migration. The newer RA browser,
-client and ORBIT integration remain in the [parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md).
+still needs hardware validation on this C++/ps2build migration. The parity port with the legacy
+edition is merged, including the RA browser, client and ORBIT integration; see the
+[parity ledger](docs/UPSTREAM-PARITY-2026-10-12.md) and the
+[fork-gap status](docs/FORK-GAP-STATUS-2026-10-28.md), which also covers the RIPPS2 audit by
+akilluminati47 and what is still not tested on hardware.
 
 ## Quick Start
 

@@ -1,6 +1,19 @@
 # C++/ps2build migration: production parity ledger
 
-Current continuation tracker: [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20).
+The continuation tracker, [issue #20](https://github.com/NathanNeurotic/RiptOPL/issues/20), is closed.
+For the current state, including fixes merged since the port and the RIPPS2 audit, read
+[Fork-gap status: 2026-10-28](FORK-GAP-STATUS-2026-10-28.md).
+
+## Status at 2026-10-28
+
+The port is merged: [#77](https://github.com/NathanNeurotic/RiptOPL/pull/77) (merge `894dca36`,
+2026-10-27) reached parity with Open-PS2-Loader `38ea46a`, and the final sweep against `4cfde79c`
+found every merged change present except Korium items K1 to K3, which were ported inside #77
+(`7c21f5c0`). The October 27 and 28 fixes (#90, #94, #95, #96 here; #1074 to #1080 in the
+original) are in both repositories; Open-PS2-Loader `94e82f2b` is the current parity point. The
+RA browser, client mode, HTTPS lookup, ORBIT handoff, DVR and PC CARD CF rows below are ported,
+which supersedes the "Remaining gaps found by this audit" list in the `823411d` refresh. All of it
+is source and host tested only; none of it is tested on hardware.
 
 ## Native BDM read alignment (2026-10-19)
 
@@ -62,7 +75,7 @@ row is source/host-tested only; none is hardware-tested.
 | #1008, #1007, #992, #981, #1013, #1001, #989 | Already present before this refresh. |
 | #1047, #998, #1025 | Original-only documentation; nothing to port. |
 
-Remaining gaps found by this audit:
+Remaining gaps found by this audit (superseded: all ported by #77, see Status at 2026-10-28):
 - RA mode/host IP/experimental cards and PS1 watch keys in the RA badge.
 - Found by comparing the original's host tests with this branch's: the
   Caduceus achievement browser, Xerabora browser, RA client mode, verified peer,
