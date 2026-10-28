@@ -31,7 +31,7 @@ program = r'''
 enum { GUI_OP_APPEND_MENU = 1 };
 typedef int s32;
 typedef struct submenu_item {
-    int icon_id, text_id, id, isFolder, lastPlayed, raBadged;
+    int icon_id, text_id, id, isFolder, lastPlayed, raBadged, favourited;
     char *text, *raText;
     int *cache_id, *cache_uid;
 } submenu_item_t;
@@ -46,7 +46,7 @@ typedef struct menu_item {
 struct gui_update_t {
     int type;
     struct { menu_item_t *menu; submenu_list_t **subMenu; } menu;
-    struct { int icon_id, id, text_id, isFolder, lastPlayed, raBadged, selected, autoStart; char *text, *raText; } submenu;
+    struct { int icon_id, id, text_id, isFolder, lastPlayed, raBadged, favourited, selected, autoStart; char *text, *raText; } submenu;
 };
 static int live, failNext, appendFail, depth;
 static int gRememberLastPlayed, gAutoStartLastPlayed, KeyPressedOnce, DisableCron;
@@ -158,7 +158,7 @@ program = program.replace('@APPEND@', append)
 # The producer copies only the cosmetic label; the source name stays the row's identity.
 update = function(opl, 'static void updateMenuFromGameList(')
 assert 'gup->submenu.raText = badge != NULL ? strdup(badge) : NULL;' in update
-assert 'gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);' in update and '(badge != NULL ? badge' not in update
+assert 'gup->submenu.text = mdl->support->mode == FAV_MODE ? const_cast<char *>(favGetItemDisplay(i)) : gsOf(mdl->support)->name(mdl->support, i);' in update and '(badge != NULL ? badge' not in update
 # Toggling telemetry, badges or placement rebuilds the lists (badges are resolved when rows are built).
 net = function(settings, 'int guiShowNetConfig(')
 snap = net.index('int raBadgeState')

@@ -1636,22 +1636,48 @@ void drawMenuIcon(struct menu_list *menu, struct submenu_list *item, config_set_
         rmDrawPixmap(menuIconTex, elem->posX, elem->posY, elem->aligned, elem->width, elem->height, elem->scaled, gDefaultCol, 0);
 }
 
+int menuItemShown(const menu_item_t *item)
+{
+    if (item == NULL || !item->visible)
+        return 0;
+    if (!gAllGames)
+        return 1;
+    // A device still on Manual keeps its tab so it can be started; once started, its games are on
+    // the All Games page. A network share picker stays too: it lists shares, not games.
+    const item_list_t *support = static_cast<const item_list_t *>(item->userdata);
+    if (support == NULL || !support->enabled)
+        return 1;
+    if (support->mode >= BDM_MODE && support->mode <= BDM_MODE_LAST)
+        return 0;
+    switch (support->mode) {
+        case HDD_MODE:
+        case MMCE_MODE:
+        case UDPFS_MODE:
+        case HTTP_MODE:
+            return 0;
+        case ETH_MODE:
+            return gPCShareName[0] == '\0';
+        default:
+            return 1;
+    }
+}
+
 static int findMenuNext(struct menu_list *menu)
 {
     struct menu_list *next = menu->next;
-    while (next != NULL && next->item->visible == 0)
+    while (next != NULL && !menuItemShown(next->item))
         next = next->next;
 
-    return next == NULL ? 0 : next->item->visible;
+    return next != NULL;
 }
 
 static int findMenuPrev(struct menu_list *menu)
 {
     struct menu_list *prev = menu->prev;
-    while (prev != NULL && prev->item->visible == 0)
+    while (prev != NULL && !menuItemShown(prev->item))
         prev = prev->prev;
 
-    return prev == NULL ? 0 : prev->item->visible;
+    return prev != NULL;
 }
 
 void drawMenuText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)

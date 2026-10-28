@@ -25,7 +25,8 @@
 #include "include/ioman.h"
 #include "include/lang.h"
 #include "include/themes.h"
-#include "include/favsupport.h" // gFAVStartMode -- Favourites Start Mode row
+#include "include/favsupport.h"
+#include "include/gamesource.h" // gsOf -- the Favourites tab names itself (All Games) // gFAVStartMode -- Favourites Start Mode row
 #include "include/pad.h"
 #include "include/sound.h" // sfxGetPlayDiag/sfxGetDropDiag -- SFX RPC cost + silent-drop counters for the debug HUD
 #include "include/util.h"
@@ -366,6 +367,28 @@ static int guiDeviceConfigUpdater(int modified)
     return 0;
 }
 
+static void guiRefreshCfgTitles(void);
+
+// All Games switched on or off (Game Sources). The device pages now read both lists or go back to
+// their own view, the Favourites tab changes name and rows, and with it on the user lands there.
+static void guiApplyAllGamesChange(void)
+{
+    item_list_t *favList = favGetObject(0);
+    opl_io_module_t *fav = favList != NULL ? static_cast<opl_io_module_t *>(favList->owner) : NULL;
+
+    if (fav != NULL && fav->support != NULL) {
+        fav->menuItem.text_id = gsOf(fav->support)->textId(fav->support);
+        if (gAllGames) {
+            struct gui_update_t *sel = guiOpCreate(GUI_OP_SELECT_MENU);
+            if (sel != NULL) {
+                sel->menu.menu = &fav->menuItem;
+                guiDeferUpdate(sel);
+            }
+        }
+    }
+    guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
+}
+
 void guiShowDeviceConfig(void)
 {
     const char *deviceNames[] = {_l(_STR_BDM_GAMES), _l(_STR_MMCE), _l(_STR_HDD_GAMES), _l(_STR_NET_GAMES), _l(_STR_APPS), _l(_STR_FAV), NULL};
@@ -385,6 +408,7 @@ void guiShowDeviceConfig(void)
     diaSetInt(diaDeviceConfig, CFG_HDDMODE, gHDDStartMode);
     diaSetInt(diaDeviceConfig, CFG_APPMODE, gAPPStartMode);
     diaSetInt(diaDeviceConfig, CFG_FAVMODE, gFAVStartMode);
+    diaSetInt(diaDeviceConfig, CFG_ALLGAMES, gAllGames);
 
     // Block devices (inlined; interlocked with the APA HDD mode)
     diaSetInt(diaDeviceConfig, CFG_ENABLEUSB, gEnableUSB);
@@ -421,6 +445,8 @@ reshow_device:
         diaGetInt(diaDeviceConfig, CFG_APPMODE, &gAPPStartMode);
         diaGetInt(diaDeviceConfig, CFG_MMCEMODE, &gMMCEStartMode);
         diaGetInt(diaDeviceConfig, CFG_FAVMODE, &gFAVStartMode);
+        int previousAllGames = gAllGames;
+        diaGetInt(diaDeviceConfig, CFG_ALLGAMES, &gAllGames);
 
         diaGetInt(diaDeviceConfig, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(diaDeviceConfig, CFG_ENABLEILK, &gEnableILK);
@@ -442,6 +468,8 @@ reshow_device:
 
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
+        if (previousAllGames != gAllGames)
+            guiApplyAllGamesChange();
     }
 }
 
@@ -2480,6 +2508,7 @@ static int guiSettingsShowSources(void)
     diaSetInt(ui, CFG_HDDMODE, gHDDStartMode);
     diaSetInt(ui, CFG_APPMODE, gAPPStartMode);
     diaSetInt(ui, CFG_FAVMODE, gFAVStartMode);
+    diaSetInt(ui, CFG_ALLGAMES, gAllGames);
     diaSetInt(ui, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(ui, CFG_ENABLEILK, gEnableILK);
     diaSetInt(ui, CFG_ENABLEMX4SIO, gEnableMX4SIO);
@@ -2517,6 +2546,8 @@ reshow_sources:
         diaGetInt(ui, CFG_APPMODE, &gAPPStartMode);
         diaGetInt(ui, CFG_MMCEMODE, &gMMCEStartMode);
         diaGetInt(ui, CFG_FAVMODE, &gFAVStartMode);
+        int previousAllGames = gAllGames;
+        diaGetInt(ui, CFG_ALLGAMES, &gAllGames);
         diaGetInt(ui, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(ui, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(ui, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
@@ -2531,6 +2562,8 @@ reshow_sources:
         bdmForceDeviceRefresh();
         applyConfig(-1, -1, 0);
         menuReinitMainMenu();
+        if (previousAllGames != gAllGames)
+            guiApplyAllGamesChange();
     }
 
     gSettingsShell.endDialog();
@@ -2929,6 +2962,7 @@ void SettingsShell::readSourceState(SourceState *state)
     state->appStartMode = gAPPStartMode;
     state->mmceStartMode = gMMCEStartMode;
     state->favStartMode = gFAVStartMode;
+    state->allGames = gAllGames;
     state->enableUSB = gEnableUSB;
     state->enableILK = gEnableILK;
     state->enableMX4SIO = gEnableMX4SIO;
@@ -2974,6 +3008,8 @@ void SettingsShell::restoreSourceState()
     gAPPStartMode = sourceState_.appStartMode;
     gMMCEStartMode = sourceState_.mmceStartMode;
     gFAVStartMode = sourceState_.favStartMode;
+    int previousAllGames = gAllGames;
+    gAllGames = sourceState_.allGames;
     gEnableUSB = sourceState_.enableUSB;
     gEnableILK = sourceState_.enableILK;
     gEnableMX4SIO = sourceState_.enableMX4SIO;
@@ -2999,6 +3035,8 @@ void SettingsShell::restoreSourceState()
     bdmForceDeviceRefresh();
     applyConfig(-1, -1, 0);
     menuReinitMainMenu();
+    if (previousAllGames != gAllGames)
+        guiApplyAllGamesChange();
 }
 
 int SettingsShell::promptSave(void)

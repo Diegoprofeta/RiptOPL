@@ -236,7 +236,7 @@ typedef struct { item_list_t *support; } opl_io_module_t;
 
 static opl_io_module_t list_support[MODE_COUNT];
 static unsigned char gShouldAppsUpdate;
-static int gFAVStartMode = 1;
+static int gFAVStartMode = 1, gAllGames;
 static int needs, pendingView, appsQueued, favLoads, rebuilds;
 static int needsUpdate(item_list_t *l) { (void)l; return needs; }
 static void updateMenuFromGameList(opl_io_module_t *m) { (void)m; rebuilds++; pendingView = 0; }

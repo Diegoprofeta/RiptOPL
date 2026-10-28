@@ -22,6 +22,7 @@ struct config_set_t { int serial; };
 struct item_list_t { int delay; } first{1}, second{1};
 struct Row { struct { int id; } item; } row{{1}};
 struct Item { void *userdata; Row *current; int visible=1; } item{&first,&row};
+static int menuItemShown(const Item *i) { return i != nullptr && i->visible; }
 struct menu_list { Item *item; menu_list *next=nullptr, *prev=nullptr; };
 using Menu=menu_list;
 static Menu menu{&item};

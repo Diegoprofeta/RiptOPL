@@ -204,6 +204,9 @@ enum {
     APPS_DISPLAY_SPLIT      // Apps <-> PS1ELF via L3; [PS1] in the title selects PS1ELF
 };
 extern int gAppsDisplay;
+// All Games list (RIPPS2): the Favourites page lists every game of every started source, and the
+// device tabs whose games it holds step aside. Defined in favsupport.cpp; CONFIG_OPL_ALL_GAMES.
+extern int gAllGames;
 extern int gCfgTitlesInLists; // default-off presentation; identity always stays source-owned
 extern int gGameTypeLabels;   // optional [PS1]/[PS2] prefixes in game lists; default off
 // Ember's own settings, brought into the settings.txt files Ember reads when a game launches

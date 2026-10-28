@@ -113,6 +113,10 @@ void menuEnd();
 // True once the global menu list contains a registered device/mode tab; initSupport uses the FALSE
 // case to spot "user enabled the FIRST tab from the start menu" (#254).
 int menuHasRegisteredItems(void);
+// Whether a page's tab is shown: visible, and not a started device whose games the All Games list
+// holds. Navigation and the tab bar use this; `visible` itself keeps its device-present meaning.
+// Defined in src/gfx/themeelems.cpp so the tab bar can use it without reaching up a layer.
+int menuItemShown(const struct menu_item *item);
 void menuReinitMainMenu(void);
 struct _item_list_t;
 void menuInitGameMenu(struct _item_list_t *support);

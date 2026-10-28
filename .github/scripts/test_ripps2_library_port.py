@@ -136,12 +136,12 @@ ring = ring[:ring.index('} else if (mode == APP_MODE)')]
 stops = re.findall(r'\(cur == (LIB_VIEW_\w+)\) \? (LIB_VIEW_\w+)', ring)
 assert stops == [('LIB_VIEW_ISO', 'LIB_VIEW_PS1'), ('LIB_VIEW_PS1', 'LIB_VIEW_ELF'), ('LIB_VIEW_ELF', 'LIB_VIEW_ALL'),
                  ('LIB_VIEW_ALL', 'LIB_VIEW_RECENT')], stops
-assert re.search(r'if \(mode == FAV_MODE\)\n\s*return 5;', libview), 'Favourites ring must have five stops'
+assert re.search(r'if \(mode == FAV_MODE\)\n\s*return gAllGames \? 6 : 5;', libview), 'Favourites ring must have five stops'
 print('ok   Favourites L3: PS2 -> PS1 -> ELF -> All -> Recent')
 
 items = (root / 'src/ui/menuitems.cpp').read_text()
 record = function(items, 'static void itemRecordRecent(')
-assert 'if (!gFAVStartMode && gAutosort != AUTOSORT_LAST_PLAYED)\n        return;' in record
+assert 'if (!gFAVStartMode && !gAllGames && gAutosort != AUTOSORT_LAST_PLAYED)\n        return;' in record
 select = function(items, 'static void itemExecSelect(')
 assert select.index('itemRecordRecent(') == select.index('gsOf(support)->launch(') - len('itemRecordRecent(support, &curMenu->current->item);\n                ')
 opl = (root / 'src/app/opl.cpp').read_text()

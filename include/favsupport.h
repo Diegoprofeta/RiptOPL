@@ -12,6 +12,7 @@ constexpr int RECENT_MAX_ITEMS = 10;  // recents.bin keeps the last ten games la
 
 // Defined in favsupport.c; consumed by opl.c/gui.c (config load/save/default).
 extern int gFAVStartMode;
+// gAllGames (the All Games list) is declared in opl.h, since the library and menu code read it too.
 
 // Which shelf a favourite belongs on, and which core launches it. Stored in the byte OFAV v2 used
 // for isVcd, so the on-disk record layout is unchanged and only its meaning widens.
@@ -38,8 +39,10 @@ typedef struct
     int id;             // source item id (validated present in owner's submenu; unused for VCD)
     int icon_id;
     int text_id;
-    int kind;   // FAV_KIND_*: which shelf it sits on and which core launches it
-    char *text; // heap copy; owned by FavSupport (for a VCD favourite this is the .VCD basename / launch name)
+    int kind;      // FAV_KIND_*: which shelf it sits on and which core launches it
+    char *text;    // heap copy; owned by FavSupport (for a VCD favourite this is the .VCD basename / launch name)
+    char *display; // All Games: "name (source)" when two sources hold the title; NULL = text
+    int starred;   // All Games: the row is also a favourite
 } fav_rec_t;
 
 // Raw on-disk record (pre-validation).
@@ -86,6 +89,9 @@ public:
     void markStars(const fav_raw_t *recs, int rawCount);
     // Arm the APPS scan once per boot when a stored app favourite's APPS tab never loaded.
     void armAppsScan();
+    // All Games: rebuild the array from every started source's rows on the given shelf, starring
+    // the rows favs holds and tagging a title found on two sources with its source. Returns the count.
+    int gatherAllGames(int shelf, const fav_raw_t *favs, int favCount);
 
     // Store-backed queries. All index by FAV-list id and return -1 / NULL when the store is not
     // live or the id is out of range.
@@ -95,6 +101,9 @@ public:
     int itemSourceMode(int id) const;
     int itemKind(int id) const;
     int itemView(int id) const;
+    // The row text to draw (All Games tags duplicates with their source) and the row's star.
+    const char *itemDisplay(int id) const;
+    int itemStarred(int id) const;
     int artMode(const char *value);
     // Dynamic mode flags of the currently-selected FAV item (its source's live flags).
     unsigned char selectedItemFlags();
@@ -110,14 +119,18 @@ public:
     int addItem(int mode, int id, int icon_id, int text_id, const char *text, int kind);
     int removeByIdAndText(int mode, int id, const char *text, int kind);
     int removeByIndex(int favIndex);
+    // R3 on an All Games row: star or unstar it. Returns the new star, or -1 when not saved.
+    int toggleByIndex(int favIndex);
 
 private:
     bool validIndex(int id) const { return array_ != NULL && id >= 0 && id < count_; }
+    int gatherPass(fav_rec_t *out, int cap, int shelf);
 
     fav_rec_t *array_ = NULL;
     int count_ = 0;
     int forceUpdate_ = 1;
     int appsArmed_ = 0;
+    int artHint_ = 0; // artMode searches outward from its last match
 };
 
 extern FavSupport gFavSupport;
@@ -154,6 +167,16 @@ int removeFavouriteByIdAndText(int mode, int id, const char *text, int kind);
 
 // Remove the favourite at FAV-list index favIndex (R3 pressed on the Favourites tab).
 int favRemoveByIndex(int favIndex);
+
+// All Games: whether the Favourites page's current stop lists every source (not favourites.bin).
+int favListsAllGames(void);
+// The row text to draw: the name, or "name (source)" when two sources hold the same title.
+const char *favGetItemDisplay(int id);
+// 1 when an All Games row is also a favourite (its star).
+int favGetItemStarred(int id);
+// R3 on an All Games row: add or remove it as a favourite. Returns the new star, or -1 when the
+// favourites could not be saved.
+int favToggleByIndex(int favIndex);
 
 // Cheap/idempotent: clears the FAV list + schedules its single deferred rebuild.
 void loadFavourites(void);

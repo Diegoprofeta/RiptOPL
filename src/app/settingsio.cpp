@@ -1541,6 +1541,7 @@ void _loadConfig()
             gFontSize = fntValidFontSize(gFontSize);
             if (gAutosort < AUTOSORT_OFF || gAutosort >= AUTOSORT_COUNT)
                 gAutosort = AUTOSORT_AZ; // older builds stored any non-zero as "on"
+            gAllGames = gAllGames != 0;
             configReadRA(configOPL);
 
 
@@ -2407,7 +2408,7 @@ void applyConfig(int themeID, int langID, int skipDeviceRefresh)
         gDefaultDevice = MMCE_MODE;
     // Favourites is a valid startup page only while the FAV tab is enabled; otherwise a stale
     // choice would boot into a hidden tab with no way back to a visible one.
-    if (gDefaultDevice == FAV_MODE && !gFAVStartMode)
+    if (gDefaultDevice == FAV_MODE && !gFAVStartMode && !gAllGames)
         gDefaultDevice = MMCE_MODE;
     if (gDefaultDevice == MMCE_MODE && gMMCEStartMode == START_MODE_DISABLED)
         gDefaultDevice = APP_MODE;

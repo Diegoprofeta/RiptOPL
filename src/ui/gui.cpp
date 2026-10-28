@@ -219,6 +219,7 @@ void Gui::handleOp(struct gui_update_t *item)
             }
             result->item.isFolder = item->submenu.isFolder; // folder-browse row marker
             result->item.lastPlayed = item->submenu.lastPlayed;
+            result->item.favourited = item->submenu.favourited;
 #ifdef RETROACHIEVEMENTS
             result->item.raBadged = item->submenu.raBadged; // RA cover mark, resolved on the I/O thread
             result->item.raText = item->submenu.raText;     // the row owns the snapshot now

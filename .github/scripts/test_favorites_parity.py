@@ -84,6 +84,8 @@ struct item_list_t { int mode; };
 struct submenu_item_t { int id, icon_id, text_id; const char *text; bool isFolder, favourited; };
 struct row { submenu_item_t item; };
 struct menu_item { row *current; void *userdata; };
+static bool starState;
+static bool gFavStarred() { return starState; }
 static bool gFAVStartMode = true, writeOK, launchVcd = true, launchCue = true;
 static int depth, kind, sourceId = 17, writes, sounds, reloads;
 static std::vector<int> notices;
@@ -100,6 +102,9 @@ static int _l(int label) { return label; }
 static void guiShowToast(int label) { notices.push_back(label); }
 static int persist() { ++writes; return writeOK; }
 static int favRemoveByIndex(int) { return persist(); }
+static bool allGames;
+static int favListsAllGames() { return allGames; }
+static int favToggleByIndex(int) { return persist() ? !gFavStarred() : -1; }
 static int removeFavouriteByIdAndText(int, int id, const char*, int) { assert(id == 17); return persist(); }
 static int addFavouriteItem(int, int id, int, int, const char*, int) {
     assert(id == 17 && notices.back() == _STR_FAV_SAVING); return persist();
@@ -143,6 +148,14 @@ int main() {
     selected.item.id = 3; reset(); itemExecFav(&menu); selected.item.id = 0; // stale row: no-op
     assert(writes == 0 && sounds == 0 && notices.empty());
     favView = LIB_VIEW_ALL;
+    // All Games: R3 toggles the row's star in place, with no reload; a failed write keeps the star.
+    allGames = true; starState = false; reset(); writeOK = true; selected.item.favourited = false; itemExecFav(&menu);
+    assert(writes == 1 && sounds == 1 && reloads == 0 && selected.item.favourited && notices.back() == _STR_FAV_SAVED);
+    starState = true; reset(); writeOK = false; itemExecFav(&menu);
+    assert(writes == 1 && sounds == 0 && selected.item.favourited && notices.back() == _STR_FAV_REMOVE_FAILED);
+    reset(); writeOK = true; itemExecFav(&menu);
+    assert(sounds == 1 && reloads == 0 && !selected.item.favourited && notices.back() == _STR_FAV_REMOVED);
+    allGames = false; starState = false;
     // Every existing no-op guard must still suppress both storage and feedback.
     support.mode = 1; reset(); gFAVStartMode = false; itemExecFav(&menu); gFAVStartMode = true;
     menu.current = nullptr; itemExecFav(&menu); menu.current = &selected;

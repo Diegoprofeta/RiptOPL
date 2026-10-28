@@ -194,7 +194,7 @@ static struct menu_list *visiblePage(struct menu_list *page, int forward)
 {
     do
         page = forward ? page->next : page->prev;
-    while (page != NULL && !page->item->visible);
+    while (page != NULL && !menuItemShown(page->item));
     return page;
 }
 

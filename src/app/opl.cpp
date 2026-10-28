@@ -465,7 +465,7 @@ void initSupport(item_list_t *itemList, int mode, int force_reinit)
     else if (mode == APP_MODE)
         startMode = gAPPStartMode;
     else if (mode == FAV_MODE)
-        startMode = gFAVStartMode;
+        startMode = gAllGames ? START_MODE_AUTO : gFAVStartMode; // All Games lives on this page
     else if (mode == UDPFS_MODE)
         // UDPFS filesystem tab honours the network start row: Auto loads the udpfs IRX chain + mount at
         // boot, Manual defers it to tab-entry. Live only while its protocol is the selected one, so
@@ -754,15 +754,17 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                     // The source name stays the row's identity; the badge is copied now, before the next
                     // raBadgeRefresh frees the cache it lives in. NULL means plain name.
                     const char *badge = raBadgeText(mdl->support, i);
-                    gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);
+                    gup->submenu.text = mdl->support->mode == FAV_MODE ? const_cast<char *>(favGetItemDisplay(i)) : gsOf(mdl->support)->name(mdl->support, i);
                     gup->submenu.raText = badge != NULL ? strdup(badge) : NULL;
                     /* Resolve the cover mark HERE, on the I/O thread that owns the badge cache,
                        and carry the answer to the renderer as a plain int. */
                     gup->submenu.raBadged = (badge != NULL);
                 }
 #else
-                gup->submenu.text = gsOf(mdl->support)->name(mdl->support, i);
+                // Favourites/All Games rows draw their display text: a title on two sources names its source.
+                gup->submenu.text = mdl->support->mode == FAV_MODE ? const_cast<char *>(favGetItemDisplay(i)) : gsOf(mdl->support)->name(mdl->support, i);
 #endif
+                gup->submenu.favourited = mdl->support->mode == FAV_MODE ? favGetItemStarred(i) : 0;
                 gup->submenu.text_id = -1;
                 gup->submenu.selected = 0;
                 gup->submenu.autoStart = 0;
@@ -859,7 +861,7 @@ void menuDeferredUpdate(void *data)
         // against. Re-sync the FAV tab (cheap/idempotent; skipped when FAV is disabled).
         // An L3 flip still counts: favourites resolve against a device's PS1 or PS2 list
         // (favResolveStoredId), and a flip can fill one that was never scanned.
-        if (gFAVStartMode && mod->support->mode != FAV_MODE)
+        if ((gFAVStartMode || gAllGames) && mod->support->mode != FAV_MODE)
             loadFavourites();
     } else if (libViewPending(mod->support->mode)) {
         // A device can reject a scan before it consumes the view-dirty flag (for example, MMCE with
@@ -1588,6 +1590,9 @@ static void deferredInit(void)
             }
         }
     }
+    // All Games: the device pages step aside for the one list, so boot onto it.
+    if (gAllGames && list_support[FAV_MODE].support != NULL)
+        bootMode = FAV_MODE;
     if (list_support[bootMode].support == NULL) {
         if (list_support[MMCE_MODE].support != NULL)
             bootMode = MMCE_MODE;
