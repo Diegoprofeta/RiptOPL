@@ -716,24 +716,6 @@ static int bootHomeIsKnownMmce(void)
            (gBootDir[4] == '0' || gBootDir[4] == '1') && gBootDir[5] == ':';
 }
 
-// PCSX2 and ps2client expose the development host's filesystem as "host:" (ps2client also uses
-// "host0:"). NO support driver claims that prefix, so oplPath2Mode() returns -1 for it and every
-// boot-device fast path in OPL misses -- OPL literally cannot tell where it booted from and falls
-// back to exhaustive device discovery. It is nevertheless a real readable and writable filesystem,
-// so recognise it explicitly instead of treating an emulator boot as an unknown device.
-int oplBootDirIsHostFs(void)
-{
-    const char *p;
-
-    if (strncmp(gBootDir, "host", 4) != 0)
-        return 0;
-
-    p = gBootDir + 4;
-    if (*p == ':')
-        return 1;
-    return (*p >= '0' && *p <= '9' && p[1] == ':');
-}
-
 static int bootPathIsConcreteMass(const char *path)
 {
     const char *p;
