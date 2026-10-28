@@ -687,3 +687,6 @@ translations:
   HINT_OSD_TVASPECT: شكل التلفاز الذي يُمرَّر إلى اللعبة.
   HINT_OSD_VMODE: وضع الفيديو الذي يُمرَّر إلى اللعبة.
   DNAS_ID: معرّف DNAS
+  # Filled from RIPPS2 (Akilluminati47) where Open PS2 Loader had no translation yet
+  'YES': نعم
+  'NO': لا

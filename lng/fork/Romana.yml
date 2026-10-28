@@ -688,3 +688,6 @@ translations:
   HINT_OSD_TVASPECT: Forma televizorului dată jocului.
   HINT_OSD_VMODE: Modul video dat jocului.
   DNAS_ID: ID DNAS
+  # Filled from RIPPS2 (Akilluminati47) where Open PS2 Loader had no translation yet
+  'YES': Da
+  'NO': Nu
