@@ -2032,6 +2032,30 @@ void drawItemText(struct menu_list *menu, struct submenu_list *item, config_set_
     }
 }
 
+// One hint, its glyph and (labels) its label, as guiDrawIconAndText draws it; returns the x after it
+static int drawHintEntry(const menu_hint_item_t *hint, int labels, int font, int x, int y, u64 color)
+{
+    GSTEXTURE *iconTex;
+    if (labels)
+        return guiDrawIconAndText(hint->icon_id, hint->text_id, font, x, y, color);
+    iconTex = thmGetTexture(hint->icon_id);
+    if (iconTex == NULL || iconTex->Mem == NULL)
+        return x;
+    int w = (iconTex->Width * 20) / iconTex->Height;
+    rmDrawPixmap(iconTex, x, y + 10, ALIGN_VCENTER, w, 20, SCALING_RATIO, gDefaultCol, 0);
+    return x + rmWideScale(w);
+}
+
+// Its width, as guiAlignMenuHints measures it
+static int hintEntryWidth(const menu_hint_item_t *hint, int labels, int font)
+{
+    GSTEXTURE *iconTex = thmGetTexture(hint->icon_id);
+    int w = iconTex ? (iconTex->Width * 20) / iconTex->Height : 20;
+    if (!labels)
+        return rmWideScale(w);
+    return rmWideScale(w) + 2 + rmUnScaleX(fntCalcDimensions(font, _l(hint->text_id)));
+}
+
 void drawHintText(struct menu_list *menu, struct submenu_list *item, config_set_t *config, struct theme_element *elem)
 {
     if (thmElemSkipsDevice(elem, menu->item->icon_id))
@@ -2048,14 +2072,42 @@ void drawHintText(struct menu_list *menu, struct submenu_list *item, config_set_
 
     menu_hint_item_t *hint = menu->item->hints;
     if (hint) {
-        int x = elem->posX;
+        // The hints the theme keeps, in its hints_order (RIPPS2 build 90, akilluminati47): a stable sort, so the
+        // hints it does not name stay in the order the page added them, after the named ones
+        const menu_hint_item_t *row[16];
+        int n = 0, i, j, labels = gTheme->hintsLabels;
+        for (; hint != NULL && n < 16; hint = hint->next)
+            if (!(gTheme->hintsHide & (1 << thmHintToken(hint->icon_id))))
+                row[n++] = hint;
+        for (i = 1; i < n; i++) {
+            const menu_hint_item_t *k = row[i];
+            int r = thmHintRank(gTheme, thmHintToken(k->icon_id));
+            for (j = i; j > 0 && thmHintRank(gTheme, thmHintToken(row[j - 1]->icon_id)) > r; j--)
+                row[j] = row[j - 1];
+            row[j] = k;
+        }
 
-        if (elem->aligned)
-            x = guiAlignMenuHints(hint, elem->font, elem->width);
-
-        for (; hint; hint = hint->next) {
-            x = guiDrawIconAndText(hint->icon_id, hint->text_id, elem->font, x, elem->posY, elem->color);
-            x += elem->width;
+        if (gTheme->hintsColumn) {
+            // one hint a line from the element's x/y down; a column that would run off the bottom (the default hint
+            // element sits on the last line) ends on that line instead
+            int pitch = gTheme->hintsSpacing, x = elem->posX, y = elem->posY;
+            if (y + (n - 1) * pitch > gTheme->usedHeight - 20)
+                y = gTheme->usedHeight - 20 - (n - 1) * pitch;
+            if (y < 0)
+                y = 0;
+            for (i = 0; i < n; i++)
+                drawHintEntry(row[i], labels, elem->font, x, y + i * pitch, elem->color);
+        } else {
+            int x = elem->posX;
+            if (elem->aligned) { // centred, as guiAlignMenuHints places the whole list
+                int total = 0, screenWidth, screenHeight;
+                rmGetScreenExtents(&screenWidth, &screenHeight);
+                for (i = 0; i < n; i++)
+                    total += hintEntryWidth(row[i], labels, elem->font) + (i + 1 < n ? elem->width : 0);
+                x = (screenWidth - total) / 2;
+            }
+            for (i = 0; i < n; i++)
+                x = drawHintEntry(row[i], labels, elem->font, x, elem->posY, elem->color) + elem->width;
         }
     }
 

@@ -1133,6 +1133,75 @@ void thmGlyphSetRefresh(void)
         thmGlyphSetLoad(gTheme, thmGlyphSetFor(gTheme->glyphSetDef), 1);
 }
 
+// The hint bar's theme keys (RIPPS2 build 90, akilluminati47). A hint is named by what it does, or by its button.
+static const char *const hintKeys[THM_HINT_COUNT] = {"menu", "run", "info", "options", "refresh", "star", "view"};
+static const struct
+{
+    const char *name;
+    int token;
+} hintAliases[] = {{"start", THM_HINT_MENU}, {"select", THM_HINT_REFRESH}, {"r3", THM_HINT_STAR}, {"l3", THM_HINT_VIEW},
+                   {"cross", THM_HINT_RUN}, {"circle", THM_HINT_RUN}, {"square", THM_HINT_INFO}, {"triangle", THM_HINT_OPTIONS}};
+
+int thmHintToken(int iconId)
+{
+    switch (iconId) {
+        case START_ICON:
+            return THM_HINT_MENU;
+        case SQUARE_ICON:
+            return THM_HINT_INFO;
+        case TRIANGLE_ICON:
+            return THM_HINT_OPTIONS;
+        case SELECT_ICON:
+            return THM_HINT_REFRESH;
+        case R3_ICON:
+            return THM_HINT_STAR;
+        case L3_ICON:
+            return THM_HINT_VIEW;
+        default:
+            return THM_HINT_RUN; // the confirm button: Run, or Start Device
+    }
+}
+
+static int thmHintByName(const char *s, int len)
+{
+    int i;
+    for (i = 0; i < THM_HINT_COUNT; i++)
+        if ((int)strlen(hintKeys[i]) == len && !strncasecmp(s, hintKeys[i], len))
+            return i;
+    for (i = 0; i < (int)(sizeof(hintAliases) / sizeof(hintAliases[0])); i++)
+        if ((int)strlen(hintAliases[i].name) == len && !strncasecmp(s, hintAliases[i].name, len))
+            return hintAliases[i].token;
+    return -1;
+}
+
+int thmHintParse(const char *list, int *out, int max)
+{
+    int n = 0, seen = 0;
+    while (list != NULL && *list && n < max) {
+        while (*list == ',' || *list == ' ')
+            list++;
+        const char *end = list;
+        while (*end && *end != ',' && *end != ' ')
+            end++;
+        int t = thmHintByName(list, (int)(end - list));
+        if (t >= 0 && !(seen & (1 << t))) { // a name twice keeps its first place
+            seen |= 1 << t;
+            out[n++] = t;
+        }
+        list = end;
+    }
+    return n;
+}
+
+int thmHintRank(const theme_t *theme, int token)
+{
+    int i;
+    for (i = 0; theme != NULL && i < theme->hintsOrderCount; i++)
+        if (theme->hintsOrder[i] == token)
+            return i;
+    return THM_HINT_COUNT;
+}
+
 static int thmLoad(const char *themePath)
 {
     LOG("THEMES Load theme path=%s\n", themePath);
@@ -1462,6 +1531,29 @@ static int thmLoad(const char *themePath)
         snprintf(newT->glyphPath, sizeof(newT->glyphPath), "%s", themePath != NULL ? themePath : "");
         if (thmGlyphSetFor(newT->glyphSetDef) != GLYPH_SET_THEME)
             thmGlyphSetLoad(newT, thmGlyphSetFor(newT->glyphSetDef), 0); // never drawn yet: no VRAM to drop
+    }
+
+    // The hint bar (RIPPS2 build 90): hints_hide=star,view hints_order=run,info,menu hints_labels=0|1
+    // hints_layout=row|column hints_spacing=28 (12 to 96)
+    {
+        const char *v = NULL;
+        int hidden[THM_HINT_COUNT], n, k;
+        newT->hintsHide = 0;
+        newT->hintsLabels = 1;
+        newT->hintsColumn = 0;
+        newT->hintsSpacing = 28;
+        if (configGetStr(themeConfig, "hints_hide", &v) && v != NULL) {
+            n = thmHintParse(v, hidden, THM_HINT_COUNT);
+            for (k = 0; k < n; k++)
+                newT->hintsHide |= 1 << hidden[k];
+        }
+        newT->hintsOrderCount = configGetStr(themeConfig, "hints_order", &v) && v != NULL ? thmHintParse(v, newT->hintsOrder, THM_HINT_COUNT) : 0;
+        if (configGetStr(themeConfig, "hints_labels", &v) && v != NULL)
+            newT->hintsLabels = strcmp(v, "0") != 0;
+        if (configGetStr(themeConfig, "hints_layout", &v) && v != NULL)
+            newT->hintsColumn = !strcasecmp(v, "column");
+        if (configGetInt(themeConfig, "hints_spacing", &k) && k >= 12 && k <= 96)
+            newT->hintsSpacing = k;
     }
 
     // Embedded attribute glyphs (#Format/#Media/Aspect/Rating/Scan/Vmode values): BUILT-IN theme
