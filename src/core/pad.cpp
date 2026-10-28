@@ -359,6 +359,7 @@ int PadManager::readOne(struct pad_data_t *pad, int *pollClean)
     if ((pad->state == PAD_STATE_STABLE) || (pad->state == PAD_STATE_FINDCTP1)) {
         // pad is connected. Read pad button information.
         ret = padRead(pad->port, pad->slot, &pad->buttons); // port, slot, buttons
+        pad->readOk = ret != 0;
 
         if (ret != 0) {
             newpdata = 0xffff ^ pad->buttons.btns;
@@ -475,8 +476,8 @@ constexpr int RUMBLE_MAX_MS = 500;
 
 // Bounded delivery redundancy for actuator commands. See point 1 of the freepad note below for why
 // neither send-once nor re-send-forever is correct. Do not reduce either of these to zero.
-constexpr int RUMBLE_CMD_REPEATS = 3;  // extra deliveries after the immediate one, drained by read()
-constexpr int RUMBLE_OFF_SYNC_SENDS = 2;  // stop commands issued synchronously, for paths readPads never drains
+constexpr int RUMBLE_CMD_REPEATS = 3;    // extra deliveries after the immediate one, drained by read()
+constexpr int RUMBLE_OFF_SYNC_SENDS = 2; // stop commands issued synchronously, for paths readPads never drains
 
 
 /* THE TWO THINGS THAT MAKE THIS SILENT ON REAL HARDWARE, both properties of freepad.irx -- which is
@@ -1001,6 +1002,27 @@ void PadManager::restoreSettings(int *buffer)
         paddelay_[i] = buffer[i];
 }
 
+// The right stick of the first pad that reads in analog mode, -128..127 each way (0, 0 inside the dead zone, or when
+// no pad has a fresh analog sample). Dialogs slide a long page with it. From RIPPS2 builds 89 and 115 (akilluminati47):
+// a pad still being re-checked (FINDCTP1) sends analog data too, and a missed read's old sample would keep tilting.
+void PadManager::rightStick(int *x, int *y)
+{
+    int i;
+    *x = 0;
+    *y = 0;
+    for (i = 0; i < padCount_ && i < MAX_PADS; i++) {
+        struct pad_data_t *pad = &padData_[i];
+        if ((pad->state != PAD_STATE_STABLE && pad->state != PAD_STATE_FINDCTP1) || (pad->buttons.mode >> 4) != 0x07 || !pad->readOk)
+            continue;
+        int sh = (int)pad->buttons.rjoy_h - 128, sv = (int)pad->buttons.rjoy_v - 128;
+        if (sh * sh + sv * sv > 24 * 24) {
+            *x = sh;
+            *y = sv;
+        }
+        return;
+    }
+}
+
 // ---- pad.h API ------------------------------------------------------------------------------
 
 static PadManager gPads;
@@ -1008,6 +1030,11 @@ static PadManager gPads;
 void padGetFaultCounters(u32 *maxNotReady, u32 *maxReadyEmpty)
 {
     gPads.faultCounters(maxNotReady, maxReadyEmpty);
+}
+
+void padGetRightStick(int *x, int *y)
+{
+    gPads.rightStick(x, y);
 }
 
 void padGetActuatorDiag(int *act0, int *aligned0, int *act1, int *aligned1)

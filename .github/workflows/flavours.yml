@@ -42,6 +42,12 @@ jobs:
           python3 .github/scripts/test_mx4sio_host_boot.py
           python3 .github/scripts/test_neutrino_dvr_contract.py
           python3 .github/scripts/test_bdma_shipped_pairs.py
+      - name: Check the RIPPS2 port (backend, art, lists, game management, text, Drive Status, GUI)
+        run: |
+          for t in .github/scripts/test_ripps2_*.py; do
+            echo "== $t"
+            python3 "$t"
+          done
       - name: Check C++ Coverflow page navigation
         run: python3 .github/scripts/test_page_animation.py
       - name: Check RA-only Mode 6 snapshot handler and registration retries
