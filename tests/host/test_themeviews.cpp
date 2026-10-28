@@ -18,7 +18,7 @@ static config_set_t *parse(const char *text)
 static std::string slot(config_set_t *c, const char *prefix, const char *const *chain, int chainLen, int j)
 {
     char name[THM_VIEW_BLOCK_NAME_LEN];
-    return thmViewResolveSlot(c, prefix, chain, chainLen, j, name, sizeof(name)) ? std::string(name) : std::string("<none>");
+    return thmViewResolveSlot(c, prefix, 1, chain, chainLen, j, name, sizeof(name)) ? std::string(name) : std::string("<none>");
 }
 
 int main()
@@ -100,6 +100,20 @@ int main()
     int v = 0;
     CHECK(thmViewGetInt(mv, "coverflow", "use_default", &v) && v == 1);
     configFree(mv);
+
+    // ---- <view>.inherit=0: the view's blocks never fall back to the base ------------------------------
+    config_set_t *own = parse("main0:\n\ttype=Background\nmain1:\n\ttype=ItemsList\nmain2:\n\ttype=ItemCover\n"
+                              "psbbn.inherit=0\npsbbn.main0:\n\ttype=Background\npsbbn.main1:\n\ttype=PSBBNFlow\n");
+    thmViewScan(own, &info);
+    CHECK(info.ownMask == (1u << THM_VIEW_PSBBN));
+    CHECK(thmViewInheritsBase(&info, THM_VIEW_LIST) == 1);
+    CHECK(thmViewInheritsBase(&info, THM_VIEW_PSBBN) == 0);
+    char name[THM_VIEW_BLOCK_NAME_LEN];
+    CHECK(thmViewResolveSlot(own, "psbbn", 0, mainChain, 1, 1, name, sizeof(name)) && strcmp(name, "psbbn.main1") == 0);
+    CHECK(thmViewResolveSlot(own, "psbbn", 0, mainChain, 1, 2, name, sizeof(name)) == 0); // base main2 not inherited
+    CHECK(thmViewResolveSlot(own, "psbbn", 1, mainChain, 1, 2, name, sizeof(name)) && strcmp(name, "main2") == 0);
+    CHECK(thmViewResolveSlot(own, "", 0, mainChain, 1, 2, name, sizeof(name)) && strcmp(name, "main2") == 0); // no prefix = base
+    configFree(own);
 
     // ---- default_view naming a view the theme does not offer falls back to the native view -------------
     config_set_t *bad = parse("views=coverflow,list\ndefault_view=grid\nmain0:\n\ttype=Coverflow\n");

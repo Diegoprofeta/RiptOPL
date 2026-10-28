@@ -1,12 +1,13 @@
 // Multi-view theme resolution: which views a theme offers and which block each family slot uses in the
 // active view. See include/themeviews.h and docs/MULTI-VIEW-THEMES-PLAN.md. Design: KrahJohlito.
 
+#include "include/opl.h" // types, config.h and the full ConfigSet, in the order every other TU uses
+#include "include/configset.h"
+#include "include/themeviews.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
-
-#include "include/configset.h"
-#include "include/themeviews.h"
 
 static const char *const viewNames[THM_VIEW_COUNT] = {"list", "coverflow", "psbbn", "grid"};
 
@@ -92,6 +93,7 @@ void thmViewScan(config_set_t *themeConfig, thm_view_info_t *info)
 
     info->native = thmViewNative(themeConfig);
     info->blocksMask = 0;
+    info->ownMask = 0;
     if (themeConfig != NULL) {
         for (const config_value_t *it = themeConfig->entries(); it != NULL; it = it->next) {
             const char *dot = strchr(it->key, '.');
@@ -101,8 +103,11 @@ void thmViewScan(config_set_t *themeConfig, thm_view_info_t *info)
             memcpy(word, it->key, dot - it->key);
             word[dot - it->key] = '\0';
             int v = thmViewFromName(word);
-            if (v >= 0)
-                info->blocksMask |= 1u << v;
+            if (v < 0)
+                continue;
+            info->blocksMask |= 1u << v;
+            if (strcmp(dot + 1, "inherit") == 0 && strcmp(it->val, "0") == 0)
+                info->ownMask |= 1u << v;
         }
     }
 
@@ -149,7 +154,12 @@ const char *thmViewPrefix(const thm_view_info_t *info, int view)
     return viewNames[view];
 }
 
-int thmViewResolveSlot(config_set_t *themeConfig, const char *prefix, const char *const *chain, int chainLen, int j, char *out, size_t outSize)
+int thmViewInheritsBase(const thm_view_info_t *info, int view)
+{
+    return view < 0 || view >= THM_VIEW_COUNT || !(info->ownMask & (1u << view));
+}
+
+int thmViewResolveSlot(config_set_t *themeConfig, const char *prefix, int inheritBase, const char *const *chain, int chainLen, int j, char *out, size_t outSize)
 {
     int c;
 
@@ -158,6 +168,10 @@ int thmViewResolveSlot(config_set_t *themeConfig, const char *prefix, const char
             snprintf(out, outSize, "%s.%s%d", prefix, chain[c], j);
             if (thmViewBlockPresent(themeConfig, out))
                 return 1;
+        }
+        if (!inheritBase) {
+            out[0] = '\0';
+            return 0;
         }
     }
     for (c = 0; c < chainLen; c++) {

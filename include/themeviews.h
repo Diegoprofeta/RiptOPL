@@ -39,6 +39,7 @@ typedef struct
     int native;              // the view the base blocks draw (PSBBNFlow / Coverflow element, else List)
     unsigned int mask;       // views the user can pick: bit (1 << THM_VIEW_*)
     unsigned int blocksMask; // views the theme declares at least one "<view>." key for
+    unsigned int ownMask;    // views with <view>.inherit=0: their blocks do not fall back to the base
     int defaultView;         // default_view= if the theme offers it, else native
 } thm_view_info_t;
 
@@ -51,9 +52,15 @@ int thmViewChoose(const thm_view_info_t *info, int requested);
 // base), so themes without views pay no extra lookups.
 const char *thmViewPrefix(const thm_view_info_t *info, int view);
 
-// Block j of a family, resolved through its fallback chain: "<prefix>.<chain[0]><j>" ... then
-// "<chain[0]><j>" ... -- the first present block wins. Writes its name to out; 0 when none is present.
-int thmViewResolveSlot(config_set_t *themeConfig, const char *prefix, const char *const *chain, int chainLen, int j, char *out, size_t outSize);
+// 1 when the chosen view's blocks fall back to the base blocks (the default), 0 for <view>.inherit=0: a
+// view that brings its whole main/info layout (the built-in PSBBN Flow view does), so it needs no long
+// list of <view>.main<N>_enabled=0 lines to hide base blocks it does not use.
+int thmViewInheritsBase(const thm_view_info_t *info, int view);
+
+// Block j of a family, resolved through its fallback chain: "<prefix>.<chain[0]><j>" ... then, when
+// inheritBase is set, "<chain[0]><j>" ... -- the first present block wins. Writes its name to out; 0 when
+// none is present.
+int thmViewResolveSlot(config_set_t *themeConfig, const char *prefix, int inheritBase, const char *const *chain, int chainLen, int j, char *out, size_t outSize);
 
 // Theme-wide keys with a per-view override: "<prefix>.<key>" first, then "<key>".
 int thmViewGetInt(config_set_t *themeConfig, const char *prefix, const char *key, int *value);

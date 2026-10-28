@@ -40,6 +40,7 @@ int gThemeViewRequest = -1;
 
 // Parse-time only: the "<view>" block prefix of the view thmLoad is building, "" for the base blocks.
 static const char *thmParseViewPrefix = "";
+static int thmParseViewInherit = 1; // 0 for a <view>.inherit=0 view: no fallback to the base blocks
 
 static ThemeCatalog gCatalog;
 
@@ -788,7 +789,7 @@ static int thmFavKindDeclared(config_set_t *themeConfig, const char *prefix, int
     int j, claimsSlot;
 
     for (j = 0; j < count; j++) {
-        if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, &prefix, 1, j, name, sizeof(name)) && thmBlockPresent(themeConfig, name, &claimsSlot))
+        if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, thmParseViewInherit, &prefix, 1, j, name, sizeof(name)) && thmBlockPresent(themeConfig, name, &claimsSlot))
             return 1;
     }
     return 0;
@@ -810,7 +811,7 @@ static int thmSlotListKept(config_set_t *themeConfig, theme_elems_t *today, cons
             kept++;
     }
     for (k = 0; k < j; k++) {
-        if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, chain, chainLen, k, path, sizeof(path)) && thmBlockPresent(themeConfig, path, &claimsSlot))
+        if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, thmParseViewInherit, chain, chainLen, k, path, sizeof(path)) && thmBlockPresent(themeConfig, path, &claimsSlot))
             earlier += claimsSlot;
     }
     return earlier < kept;
@@ -826,11 +827,11 @@ static void addFavKindSlot(const char *themePath, config_set_t *themeConfig, the
     char path[64];
     int claimsSlot;
 
-    if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, &prefix, 1, j, path, sizeof(path))) {
+    if (thmViewResolveSlot(themeConfig, thmParseViewPrefix, thmParseViewInherit, &prefix, 1, j, path, sizeof(path))) {
         addGUIElem(themePath, themeConfig, theme, elems, NULL, path);
         return;
     }
-    if (!thmViewResolveSlot(themeConfig, thmParseViewPrefix, chain, chainLen, j, path, sizeof(path)))
+    if (!thmViewResolveSlot(themeConfig, thmParseViewPrefix, thmParseViewInherit, chain, chainLen, j, path, sizeof(path)))
         return;
     thmBlockPresent(themeConfig, path, &claimsSlot);
     if (claimsSlot && !thmSlotListKept(themeConfig, today, chain, chainLen, j))
@@ -848,7 +849,7 @@ static int addGUIElemSlot(const char *themePath, config_set_t *themeConfig, them
 {
     char path[THM_VIEW_BLOCK_NAME_LEN];
 
-    if (!thmViewResolveSlot(themeConfig, thmParseViewPrefix, chain, chainLen, j, path, sizeof(path)))
+    if (!thmViewResolveSlot(themeConfig, thmParseViewPrefix, thmParseViewInherit, chain, chainLen, j, path, sizeof(path)))
         return 0;
     addGUIElem(themePath, themeConfig, theme, elems, NULL, path);
     return 1;
@@ -1140,6 +1141,7 @@ static int thmLoad(const char *themePath)
     newT->viewMask = viewInfo.mask;
     const char *viewPrefix = thmViewPrefix(&viewInfo, newT->view);
     thmParseViewPrefix = viewPrefix;
+    thmParseViewInherit = thmViewInheritsBase(&viewInfo, newT->view);
     LOG("THEMES View %s (offered mask 0x%x, native %s, prefix '%s')\n", thmViewName(newT->view), newT->viewMask, thmViewName(viewInfo.native), viewPrefix);
 
     int intValue;
@@ -1273,6 +1275,7 @@ static int thmLoad(const char *themePath)
     }
     newT->parsingFavKindFamily = 0;
     thmParseViewPrefix = "";
+    thmParseViewInherit = 1;
 
     validateGUIElems(themePath, themeConfig, newT);
 
