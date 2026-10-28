@@ -208,6 +208,7 @@ typedef struct theme
     // offers as a (1 << THM_VIEW_*) mask.
     int view;
     unsigned int viewMask;
+    int defaultView; // the view thmLoad picks when the request is -1 or not offered
 
     theme_element_t *coverflow;
     theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
@@ -257,6 +258,11 @@ theme_element_t *thmFamilyItemsList(theme_elems_t *family, theme_element_t *fall
 // Indices are shifted in GUI, as we add the internal default theme at 0
 int thmSetGuiValue(int themeID, int reload);
 int thmGetGuiValue(void);
+// Ask for a view (THM_VIEW_*, -1 = the theme's default) and reload the active theme when that changes
+// what is shown. Returns 1 when the theme was reloaded. GUI thread, outside a frame.
+int thmSetView(int view);
+// Switch to the next view the active theme offers (hold L3). Returns 1 when the theme was reloaded.
+int thmCycleView(void);
 int thmFindGuiID(const char *theme);
 const char **thmGetGuiList(void);
 char *thmGetFilePath(int themeID);

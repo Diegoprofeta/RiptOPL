@@ -1118,12 +1118,23 @@ static int thmLoad(const char *themePath)
     }
 
     config_set_t *themeConfig = NULL;
+    // The built-in <OPL> theme offers its List, Coverflow and PSBBN Flow looks as views. Each view is its
+    // own embedded cfg (an edition such as Korium replaces some of them), so the view picks the buffer.
+    int builtinView = -1;
     if (!themePath) {
         // No theme specified. Prepare and load the default theme.
         themeConfig = configAlloc(0, NULL, NULL);
-        if (gCatalog.loadingBuiltin() == ThemeCatalog::BUILTIN_COVERFLOW)
+        ThemeCatalog::Builtin builtin = gCatalog.loadingBuiltin();
+        if (builtin == ThemeCatalog::BUILTIN_NONE) {
+            builtinView = (gThemeViewRequest == THM_VIEW_COVERFLOW || gThemeViewRequest == THM_VIEW_PSBBN) ? gThemeViewRequest : THM_VIEW_LIST;
+            if (builtinView == THM_VIEW_COVERFLOW)
+                builtin = ThemeCatalog::BUILTIN_COVERFLOW;
+            else if (builtinView == THM_VIEW_PSBBN)
+                builtin = ThemeCatalog::BUILTIN_PSBBN_FLOW;
+        }
+        if (builtin == ThemeCatalog::BUILTIN_COVERFLOW)
             configReadBuffer(themeConfig, &theme_coverflow_cfg, size_theme_coverflow_cfg);
-        else if (gCatalog.loadingBuiltin() == ThemeCatalog::BUILTIN_PSBBN_FLOW)
+        else if (builtin == ThemeCatalog::BUILTIN_PSBBN_FLOW)
             configReadBuffer(themeConfig, &theme_psbbn_flow_cfg, size_theme_psbbn_flow_cfg);
         else
             configReadBuffer(themeConfig, &conf_theme_OPL_cfg, size_conf_theme_OPL_cfg);
@@ -1139,6 +1150,12 @@ static int thmLoad(const char *themePath)
     thmViewScan(themeConfig, &viewInfo);
     newT->view = thmViewChoose(&viewInfo, gThemeViewRequest);
     newT->viewMask = viewInfo.mask;
+    newT->defaultView = viewInfo.defaultView;
+    if (builtinView >= 0) {
+        newT->view = builtinView;
+        newT->viewMask = (1u << THM_VIEW_LIST) | (1u << THM_VIEW_COVERFLOW) | (1u << THM_VIEW_PSBBN);
+        newT->defaultView = THM_VIEW_LIST;
+    }
     const char *viewPrefix = thmViewPrefix(&viewInfo, newT->view);
     thmParseViewPrefix = viewPrefix;
     thmParseViewInherit = thmViewInheritsBase(&viewInfo, newT->view);
@@ -1671,6 +1688,38 @@ const char *thmGetValue(void)
 int thmSetGuiValue(int themeID, int reload)
 {
     return gCatalog.setGuiValue(themeID, reload);
+}
+
+int thmSetView(int view)
+{
+    if (view < 0 || view >= THM_VIEW_COUNT)
+        view = -1;
+    int previous = gThemeViewRequest;
+    gThemeViewRequest = view;
+    if (gTheme == NULL)
+        return 0;
+
+    // The view the active theme would load for this request; nothing to do when it is already showing.
+    int target = (view >= 0 && (gTheme->viewMask & (1u << view))) ? view : gTheme->defaultView;
+    if (target == gTheme->view)
+        return 0;
+    if (!gCatalog.setGuiValue(gCatalog.guiValue(), 1)) {
+        gThemeViewRequest = previous; // abandoned load (#120): the old view is still on screen
+        return 0;
+    }
+    return 1;
+}
+
+int thmCycleView(void)
+{
+    if (gTheme == NULL)
+        return 0;
+    for (int step = 1; step < THM_VIEW_COUNT; step++) {
+        int v = (gTheme->view + step) % THM_VIEW_COUNT;
+        if (gTheme->viewMask & (1u << v))
+            return thmSetView(v);
+    }
+    return 0; // the theme offers a single view
 }
 
 int thmGetGuiValue(void)

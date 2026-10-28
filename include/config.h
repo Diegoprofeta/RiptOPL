@@ -92,6 +92,7 @@ enum CONFIG_INDEX {
 
 // OPL config keys
 #define CONFIG_OPL_THEME                      "theme"
+#define CONFIG_OPL_THEME_VIEW                 "theme_view" // list/coverflow/psbbn/grid; absent = the theme's default view
 #define CONFIG_OPL_LANGUAGE                   "language_text"
 #define CONFIG_OPL_SCROLLING                  "scrolling"
 #define CONFIG_OPL_BGCOLOR                    "bg_color"

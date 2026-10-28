@@ -15,6 +15,7 @@
 #include "include/renderman.h"
 #include "include/lang.h"
 #include "include/themes.h"
+#include "include/themeviews.h"
 #include "include/textures.h"
 #include "include/artindex.h"
 #include "include/pad.h"
@@ -1566,6 +1567,11 @@ void _loadConfig()
             if (configGetStr(configOPL, CONFIG_OPL_THEME, &temp))
                 themeID = thmFindGuiID(temp);
 
+            // Before applyConfig loads the theme, so the saved view is the one that loads.
+            gThemeViewRequest = -1;
+            if (configGetStr(configOPL, CONFIG_OPL_THEME_VIEW, &temp))
+                gThemeViewRequest = thmViewFromName(temp);
+
             if (configGetStr(configOPL, CONFIG_OPL_LANGUAGE, &temp))
                 langID = lngFindGuiID(temp);
 
@@ -1897,6 +1903,9 @@ void _loadConfig()
                          gNetworkProtocol == NET_PROTO_UDPBD));
 
     applyConfig(themeID, langID, 0);
+    // applyConfig reloads only a CHANGED theme; the default <OPL> theme loaded at boot still shows its
+    // default view. This reloads it once when the saved view differs.
+    thmSetView(gThemeViewRequest);
 
     lscret = result;
     lscstatus = 0;
@@ -2151,6 +2160,10 @@ static void _saveConfig()
         configSetStr(configOPL, CONFIG_OPL_RA_HOST_IP, temp);
 #endif
         configSetStr(configOPL, CONFIG_OPL_THEME, thmGetValue());
+        if (gThemeViewRequest >= 0)
+            configSetStr(configOPL, CONFIG_OPL_THEME_VIEW, thmViewName(gThemeViewRequest));
+        else
+            configRemoveKey(configOPL, CONFIG_OPL_THEME_VIEW);
         configSetStr(configOPL, CONFIG_OPL_LANGUAGE, lngGetValue());
         configSetInt(configOPL, CONFIG_OPL_MMCE_PACING_MIGR, 1);
         emberSaveSettings(configOPL);

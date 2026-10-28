@@ -95,8 +95,8 @@ load today. A side effect: app titles in conf_apps.cfg can now be up to 47 chara
 
 ## Switching
 
-- A **View** setting under Display settings is the source of truth, saved per theme in
-  `settings_riptopl.cfg`.
+- A **Theme View** setting on the Interface page is the source of truth, saved as `theme_view=` in the
+  OPL config. It is one choice for all themes: a theme that does not offer it shows its default view.
 - **Hold L3** (about half a second) cycles to the next declared view; a tap on L3 stays the
   library-view ring and R3 stays favourites. The hint bar names the view.
 - Phase 1 applies a view change by reloading the theme. It costs no extra EE RAM. Phase 2 keeps every
@@ -118,11 +118,15 @@ This ships behind a setting until it has been checked against community themes i
 
 1. Raise `CONFIG_KEY_NAME_LEN` to 48; host test. (Done.)
 2. View-aware block lookup in the theme loader: `views=`, `default_view=`, prefixed blocks, append and
-   disable, view-scoped globals. Active view chosen at load; switching reloads. Host test of the
-   resolution order.
-3. Merge the three built-in cfgs into one embedded cfg with `coverflow.` and `psbbn.` blocks. Map saved
-   `<Coverflow>` / `<PSBBN Flow>` theme names to `<OPL>` plus that view.
-4. View setting and hold-L3 cycling.
+   disable, view-scoped globals, `<view>.inherit=0`. Active view chosen at load; switching reloads.
+   Host test of the resolution order. (Done.)
+3. Built-in `<OPL>` offers List, Coverflow and PSBBN Flow as views. Each view keeps its own embedded cfg
+   instead of one merged cfg, because editions (Korium) replace some of those cfgs at build time; the
+   view picks the buffer. (Done.) Still open: hide the separate `<Coverflow>` / `<PSBBN Flow>` entries
+   and map saved names to `<OPL>` plus that view, once the user agrees.
+4. **Theme View** setting (Interface page; Default, List, Coverflow, PSBBN Flow) saved as
+   `theme_view=<name>` in the OPL config, and hold L3 (0.5 s) cycles the views the theme offers. A tap
+   on L3 still advances the library-view ring; with a multi-view theme it acts on release. (Done.)
 5. Auto-normalised views behind a setting.
 6. `Grid` element (2D navigation; at most about 16 covers visible, `COVER_CACHE_SLOTS` is 20).
 7. Phase 2 resident views, only if needed.
