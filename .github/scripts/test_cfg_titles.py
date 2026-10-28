@@ -280,7 +280,7 @@ assert gui.count("diaGetInt(diaUIConfig, UICFG_CFG_TITLES") + gui.count("diaGetI
 refresh = gui[gui.index("static void guiRefreshCfgTitles(void)\n{"):]
 refresh = refresh[:refresh.index("\n}\n")]
 assert "libViewMarkAllDirty();" in refresh and "oplQueueLibraryDeviceUpdates();" in refresh and "httpGetObject(0)" in refresh
-assert gui.count("guiRefreshCfgTitles();") == 4  # both CFG-title flips, the RA badge (#1039) flip, the All Games flip
+assert gui.count("guiRefreshCfgTitles();") == 7  # both CFG-title flips, the RA badge (#1039) flip, the All Games flip, 3 Show Hidden Games flips
 base = (ROOT / "lng/tmpl/_base.yml").read_text(encoding="utf-8")
 assert base.index("- label: CFG_TITLES") > base.index("- label: AUTO_VMC_TIMEOUT")
 print("PASS: CFG titles in game lists are opt-in, display-only and read once per rebuild")

@@ -1542,6 +1542,7 @@ void _loadConfig()
             if (gAutosort < AUTOSORT_OFF || gAutosort >= AUTOSORT_COUNT)
                 gAutosort = AUTOSORT_AZ; // older builds stored any non-zero as "on"
             gAllGames = gAllGames != 0;
+            gShowHidden = gShowHidden != 0;
             configReadRA(configOPL);
 
 

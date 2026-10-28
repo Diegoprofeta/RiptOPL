@@ -110,7 +110,8 @@ constexpr Setting kSettings[] = {
     intSetting(CONFIG_OPL_SMB_CACHE, &smbCacheSize, 16),
     intSetting(CONFIG_OPL_ENABLE_USB, &gEnableUSB, 0), // USB block device is opt-in, like the other BDM transports
     intSetting(CONFIG_OPL_FAV_MODE, &gFAVStartMode, START_MODE_DISABLED),
-    intSetting(CONFIG_OPL_ALL_GAMES, &gAllGames, 0), // All Games list (RIPPS2), off by default
+    intSetting(CONFIG_OPL_ALL_GAMES, &gAllGames, 0),     // All Games list (RIPPS2), off by default
+    intSetting(CONFIG_OPL_SHOW_HIDDEN, &gShowHidden, 0), // Show Hidden Games (RIPPS2 Hide Game), off by default
     // Visual GameID barcode ships OFF, matching fork commit cc2cdfed ("GameID defaults OFF"): the
     // HDMI auto-profile latch is only verifiable on real GameID hardware, so it stays opt-in.
     intSetting(CONFIG_OPL_APPLY_GAMEID, &gApplyGameID, 0),

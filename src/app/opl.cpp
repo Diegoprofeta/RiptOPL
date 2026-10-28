@@ -41,6 +41,7 @@
 #include "include/hddsupport.h"
 #include "include/appsupport.h"
 #include "include/favsupport.h"
+#include "include/gamemanage.h"   // Hide Game and Delete everything (RIPPS2)
 #include "include/folderbrowse.h" // folderDepth -- favourites suppression inside subfolders
 #include "include/mmcesupport.h"  // mmceLoadModules() -- MMCE boot branch of resolveBootDirToMass
 #include "include/tar.h"          // tarInvalidate -- re-arm the .tar probe on a settings apply
@@ -699,6 +700,7 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
     // read the new game list
     struct gui_update_t *gup = NULL;
     int count = gsOf(mdl->support)->update(mdl->support);
+    hiddenReload(mdl->support); // the device's hidden list, read with its games
 
 #ifdef RETROACHIEVEMENTS
     // RA badges: recompute on every list rebuild. This runs on the I/O thread (itemUpdate
@@ -738,6 +740,9 @@ static void updateMenuFromGameList(opl_io_module_t *mdl)
                 }
                 // Pass 0 emits folders, pass 1 emits games (single-pass mode emits every row).
                 if (passes == 2 && ((pass == 0) != (isFolderRow != 0)))
+                    continue;
+                // Hide Game: a hidden game leaves every list until Show Hidden Games lists it again.
+                if (!isFolderRow && !gShowHidden && hiddenRow(mdl->support, i))
                     continue;
 
                 gup = guiOpCreate(GUI_OP_APPEND_MENU);
@@ -1502,6 +1507,7 @@ static void init(void)
     thmInit();
     guiInit();
     ioInit();
+    hiddenInit();
     bdmSetAutoLaunch(0);
     menuInit();
 
@@ -1648,6 +1654,7 @@ void miniInit(int mode)
     configInit(gBootDir[0] ? gBootDir : NULL); // settings live in the boot dir (cwd)
 
     ioInit();
+    hiddenInit();
     bdmSetAutoLaunch(1);
     LOG_ENABLE();
 

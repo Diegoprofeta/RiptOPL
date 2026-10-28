@@ -409,6 +409,7 @@ void guiShowDeviceConfig(void)
     diaSetInt(diaDeviceConfig, CFG_APPMODE, gAPPStartMode);
     diaSetInt(diaDeviceConfig, CFG_FAVMODE, gFAVStartMode);
     diaSetInt(diaDeviceConfig, CFG_ALLGAMES, gAllGames);
+    diaSetInt(diaDeviceConfig, CFG_SHOWHIDDEN, gShowHidden);
 
     // Block devices (inlined; interlocked with the APA HDD mode)
     diaSetInt(diaDeviceConfig, CFG_ENABLEUSB, gEnableUSB);
@@ -445,8 +446,9 @@ reshow_device:
         diaGetInt(diaDeviceConfig, CFG_APPMODE, &gAPPStartMode);
         diaGetInt(diaDeviceConfig, CFG_MMCEMODE, &gMMCEStartMode);
         diaGetInt(diaDeviceConfig, CFG_FAVMODE, &gFAVStartMode);
-        int previousAllGames = gAllGames;
+        int previousAllGames = gAllGames, previousShowHidden = gShowHidden;
         diaGetInt(diaDeviceConfig, CFG_ALLGAMES, &gAllGames);
+        diaGetInt(diaDeviceConfig, CFG_SHOWHIDDEN, &gShowHidden);
 
         diaGetInt(diaDeviceConfig, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(diaDeviceConfig, CFG_ENABLEILK, &gEnableILK);
@@ -470,6 +472,8 @@ reshow_device:
         menuReinitMainMenu();
         if (previousAllGames != gAllGames)
             guiApplyAllGamesChange();
+        else if (previousShowHidden != gShowHidden)
+            guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
     }
 }
 
@@ -2509,6 +2513,7 @@ static int guiSettingsShowSources(void)
     diaSetInt(ui, CFG_APPMODE, gAPPStartMode);
     diaSetInt(ui, CFG_FAVMODE, gFAVStartMode);
     diaSetInt(ui, CFG_ALLGAMES, gAllGames);
+    diaSetInt(ui, CFG_SHOWHIDDEN, gShowHidden);
     diaSetInt(ui, CFG_ENABLEUSB, gEnableUSB);
     diaSetInt(ui, CFG_ENABLEILK, gEnableILK);
     diaSetInt(ui, CFG_ENABLEMX4SIO, gEnableMX4SIO);
@@ -2546,8 +2551,9 @@ reshow_sources:
         diaGetInt(ui, CFG_APPMODE, &gAPPStartMode);
         diaGetInt(ui, CFG_MMCEMODE, &gMMCEStartMode);
         diaGetInt(ui, CFG_FAVMODE, &gFAVStartMode);
-        int previousAllGames = gAllGames;
+        int previousAllGames = gAllGames, previousShowHidden = gShowHidden;
         diaGetInt(ui, CFG_ALLGAMES, &gAllGames);
+        diaGetInt(ui, CFG_SHOWHIDDEN, &gShowHidden);
         diaGetInt(ui, CFG_ENABLEUSB, &gEnableUSB);
         diaGetInt(ui, CFG_ENABLEILK, &gEnableILK);
         diaGetInt(ui, CFG_ENABLEMX4SIO, &gEnableMX4SIO);
@@ -2564,6 +2570,8 @@ reshow_sources:
         menuReinitMainMenu();
         if (previousAllGames != gAllGames)
             guiApplyAllGamesChange();
+        else if (previousShowHidden != gShowHidden)
+            guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
     }
 
     gSettingsShell.endDialog();
@@ -2963,6 +2971,7 @@ void SettingsShell::readSourceState(SourceState *state)
     state->mmceStartMode = gMMCEStartMode;
     state->favStartMode = gFAVStartMode;
     state->allGames = gAllGames;
+    state->showHidden = gShowHidden;
     state->enableUSB = gEnableUSB;
     state->enableILK = gEnableILK;
     state->enableMX4SIO = gEnableMX4SIO;
@@ -3008,8 +3017,9 @@ void SettingsShell::restoreSourceState()
     gAPPStartMode = sourceState_.appStartMode;
     gMMCEStartMode = sourceState_.mmceStartMode;
     gFAVStartMode = sourceState_.favStartMode;
-    int previousAllGames = gAllGames;
+    int previousAllGames = gAllGames, previousShowHidden = gShowHidden;
     gAllGames = sourceState_.allGames;
+    gShowHidden = sourceState_.showHidden;
     gEnableUSB = sourceState_.enableUSB;
     gEnableILK = sourceState_.enableILK;
     gEnableMX4SIO = sourceState_.enableMX4SIO;
@@ -3037,6 +3047,8 @@ void SettingsShell::restoreSourceState()
     menuReinitMainMenu();
     if (previousAllGames != gAllGames)
         guiApplyAllGamesChange();
+    else if (previousShowHidden != gShowHidden)
+        guiRefreshCfgTitles();
 }
 
 int SettingsShell::promptSave(void)

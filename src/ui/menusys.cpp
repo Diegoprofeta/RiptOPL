@@ -31,6 +31,7 @@
 #include "include/sound.h"
 #include "include/gamesource.h"
 #include "include/favsupport.h"   // gFAVStartMode -- the Favourites tab counts as "something to show"
+#include "include/gamemanage.h"   // Hide Game and Delete everything (RIPPS2)
 #include "include/folderbrowse.h" // menuFolderResetLeaving -- leave a device page at its folder root
 #include "include/vcdsupport.h"   // VCD launches never use Neutrino
 #include "include/libview.h"      // libViewActive / libListViewActive -- which list this page shows
@@ -74,6 +75,7 @@ enum GAME_MENU_IDs {
     GAME_REMOVE_CHANGES,
     GAME_RENAME_GAME,
     GAME_DELETE_GAME,
+    GAME_HIDE_GAME,
 #ifdef RETROACHIEVEMENTS
     // Appended last, and only in the RA flavour: menuRenderGameMenu's extra-spacing arithmetic keys
     // on these enum positions, so RA entries must not shift the existing ones.
@@ -88,6 +90,7 @@ enum APP_MENU_IDs {
     APP_DELETE,
     APP_GLOBAL_PS_SETTINGS,
     APP_EMBER_GAME_SETTINGS,
+    APP_HIDE_GAME,
 };
 
 // global menu variables
@@ -217,6 +220,168 @@ static void menuRenameGame(submenu_list_t **submenu)
         guiMsgBox("NULL Support object. Please report", 0, NULL);
 }
 
+// ---- Hide Game and Delete everything (RIPPS2) ----
+// gamemanage.cpp keeps the lists; the row walk and page rebuilds live here, beside the menus.
+
+// The real source a row's game is on, whether it is a PS1 game, and its name. 0 when the row has no
+// source that keeps a hidden list (apps, the network catalogue, a folder row). A Favourites/All Games
+// row resolves to its device.
+static int hiddenRowSource(item_list_t *support, int id, item_list_t **source, int *ps1, const char **name)
+{
+    item_list_t *src;
+    int p1;
+    const char *n;
+
+    if (support == NULL || support->source == NULL || id < 0)
+        return 0;
+    if (support->mode == FAV_MODE) {
+        const fav_rec_t *rec = gFavSupport.entry(id);
+        if (rec == NULL || rec->owner == NULL || rec->kind == FAV_KIND_ELF)
+            return 0;
+        src = rec->owner;
+        p1 = rec->kind == FAV_KIND_VCD || rec->kind == FAV_KIND_CUE;
+        n = rec->text;
+    } else {
+        if (support->mode == APP_MODE || support->mode == HTTP_MODE)
+            return 0;
+        GameSource *gs = gsOf(support);
+        if (folderModeSupported(support->mode) && gs->hasGame()) {
+            base_game_info_t *game = static_cast<base_game_info_t *>(gs->game(support, id));
+            if (game == NULL || game->format == GAME_FORMAT_FOLDER)
+                return 0;
+        }
+        int view = gs->hasRowView() ? gs->rowView(support, id) : libViewActive(support->mode);
+        if (view == LIB_VIEW_ELF || view == LIB_VIEW_PS1_ELF)
+            return 0;
+        src = support;
+        p1 = view == LIB_VIEW_PS1;
+        n = gs->name(support, id);
+    }
+    if (src->mode < 0 || src->mode >= MODE_COUNT || src->mode == HTTP_MODE || src->mode == APP_MODE || src->mode == FAV_MODE ||
+        n == NULL || n[0] == '\0')
+        return 0;
+    *source = src;
+    *ps1 = p1;
+    *name = n;
+    return 1;
+}
+
+int hiddenRow(item_list_t *support, int id)
+{
+    item_list_t *source;
+    int ps1;
+    const char *name;
+    return hiddenRowSource(support, id, &source, &ps1, &name) && hiddenHas(source, ps1, name);
+}
+
+// Rebuilds the pages a hidden game could be on: its device's page, then Favourites/All Games.
+static void hiddenRefresh(item_list_t *source)
+{
+    opl_io_module_t *mod = oplGetModule(source->mode);
+    if (mod != NULL && mod->support != NULL && mod->support->enabled) {
+        libViewMarkDirty(source->mode);
+        ioPutRequest(IO_MENU_UPDATE_DEFFERED, &mod->support->mode);
+    }
+    if (gFAVStartMode || gAllGames)
+        loadFavourites();
+}
+
+// The selected row's game, its source and whether it is hidden now. 0 when the row has no source
+// that keeps a hidden list.
+static int menuHiddenState(item_list_t **source, int *ps1, const char **name, int *hidden)
+{
+    item_list_t *support = selected_item != NULL ? static_cast<item_list_t *>(selected_item->item->userdata) : NULL;
+    if (!gEnableWrite || support == NULL || selected_item->item->current == NULL || selected_item->item->current->item.isFolder ||
+        !hiddenRowSource(support, selected_item->item->current->item.id, source, ps1, name))
+        return 0;
+    *hidden = hiddenHas(*source, *ps1, *name);
+    return 1;
+}
+
+static void menuHideGame(submenu_list_t **submenu)
+{
+    char name[HIDDEN_NAME_MAX], msg[512];
+    item_list_t *source;
+    const char *rowName;
+    int ps1, hidden;
+
+    if (!menuHiddenState(&source, &ps1, &rowName, &hidden))
+        return;
+    snprintf(name, sizeof(name), "%s", rowName); // the row goes when its page is rebuilt
+    if (!hidden) {
+        snprintf(msg, sizeof(msg), _l(_STR_HIDE_GAME_CONFIRM), name);
+        if (guiMsgBox(msg, 1, NULL) != 1)
+            return;
+    }
+    guiSwitchScreen(GUI_SCREEN_MAIN);
+    submenuDestroy(submenu);
+    int result = hiddenSet(source, ps1, name, !hidden);
+    if (result < 0) {
+        guiMsgBox(_l(_STR_HIDDEN_NO_LIST), 0, NULL);
+    } else if (result == 0) {
+        guiMsgBox(_l(_STR_HIDDEN_SAVE_FAILED), 0, NULL);
+    } else {
+        hiddenRefresh(source);
+        snprintf(msg, sizeof(msg), _l(hidden ? _STR_GAME_UNHIDDEN : _STR_GAME_HIDDEN), name);
+        guiShowToast(msg);
+    }
+}
+
+// Delete everything: two questions, then the game's parts and its CFG, art and cheats unless another
+// copy uses them. VMC saves stay. Returns 0 when the row is not a game this can delete, so the caller
+// keeps the plain delete.
+static int menuDeleteEverything(submenu_list_t **submenu, item_list_t *support)
+{
+    char name[HIDDEN_NAME_MAX], part0[256], sepStr[2], msg[700];
+    int id = selected_item->item->current->item.id;
+    gm_delete_plan_t *plan = static_cast<gm_delete_plan_t *>(malloc(sizeof(*plan)));
+
+    if (plan == NULL)
+        return 0;
+    if (!gmPlanDelete(support, id, plan)) {
+        free(plan);
+        return 0;
+    }
+    GameSource *gs = gsOf(support);
+    const char *rowName = gs->name(support, id);
+    snprintf(name, sizeof(name), "%s", rowName != NULL ? rowName : "");
+    sepStr[0] = support->mode == ETH_MODE ? '\\' : '/';
+    sepStr[1] = '\0';
+    sbCreatePath(static_cast<base_game_info_t *>(gs->game(support, id)), part0, gs->prefix(support), sepStr, 0);
+
+    snprintf(msg, sizeof(msg), _l(_STR_DELETE_GAME_PLAN), name, plan->parts, plan->cfg, plan->art, plan->cht);
+    if (plan->shared)
+        snprintf(msg + strlen(msg), sizeof(msg) - strlen(msg), " %s", _l(_STR_DELETE_GAME_SHARED));
+    if (guiMsgBox(msg, 1, NULL) != 1) {
+        free(plan);
+        return 1;
+    }
+    snprintf(msg, sizeof(msg), _l(_STR_DELETE_GAME_LAST_CHECK), name);
+    if (guiMsgBox(msg, 1, NULL) != 1) {
+        free(plan);
+        return 1;
+    }
+
+    guiSwitchScreen(GUI_SCREEN_MAIN);
+    submenuDestroy(submenu);
+    gs->deleteGame(support, id); // every part, and a UL game's ul.cfg made again
+    int fd = part0[0] != '\0' ? open(part0, O_RDONLY) : -1;
+    if (fd >= 0) {
+        close(fd);
+        snprintf(msg, sizeof(msg), _l(_STR_GAME_DELETE_FAILED), name);
+        guiMsgBox(msg, 0, NULL);
+    } else {
+        int failed = gmDeleteExtras(plan);
+        if (hiddenHas(support, 0, name) && hiddenSet(support, 0, name, 0) > 0) // its place on the hidden list goes with it
+            hiddenRefresh(support);
+        snprintf(msg, sizeof(msg), _l(failed ? _STR_GAME_DELETED_PARTLY : _STR_GAME_DELETED), name);
+        guiShowToast(msg);
+    }
+    free(plan);
+    ioPutRequest(IO_MENU_UPDATE_DEFFERED, &support->mode);
+    return 1;
+}
+
 static void menuDeleteGame(submenu_list_t **submenu)
 {
     if (!selected_item->item->current)
@@ -243,6 +408,8 @@ static void menuDeleteGame(submenu_list_t **submenu)
     if (support) {
         if (gsOf(support)->hasDelete()) {
             if (menuCheckParentalLock() == 0) {
+                if (support->mode != APP_MODE && menuDeleteEverything(submenu, support))
+                    return;
                 if (guiMsgBox(_l(_STR_DELETE_WARNING), 1, NULL)) {
                     guiSwitchScreen(GUI_SCREEN_MAIN);
                     submenuDestroy(submenu);
@@ -1008,6 +1175,11 @@ void menuInitGameMenu(item_list_t *support)
             submenuAppendItem(&gameMenu, -1, NULL, GAME_RENAME_GAME, _STR_RENAME);
         if (fav || (support != NULL && gsOf(support)->hasDelete()))
             submenuAppendItem(&gameMenu, -1, NULL, GAME_DELETE_GAME, _STR_DELETE);
+        item_list_t *hideSource;
+        const char *hideName;
+        int hidePs1, hidden;
+        if (menuHiddenState(&hideSource, &hidePs1, &hideName, &hidden))
+            submenuAppendItem(&gameMenu, -1, NULL, GAME_HIDE_GAME, hidden ? _STR_UNHIDE_GAME : _STR_HIDE_GAME);
     }
 #ifdef RETROACHIEVEMENTS
     submenuAppendItem(&gameMenu, -1, NULL, GAME_RA_CHECK, _STR_RA_CHECK_GAME);
@@ -1043,6 +1215,11 @@ void menuInitVcdMenu(int isEmber)
     if (isEmber)
         submenuAppendItem(&appMenu, -1, NULL, APP_EMBER_GAME_SETTINGS, _STR_EMBER_GAME_SETTINGS);
     submenuAppendItem(&appMenu, -1, NULL, APP_RENAME, _STR_RENAME);
+    item_list_t *hideSource;
+    const char *hideName;
+    int hidePs1, hidden;
+    if (menuHiddenState(&hideSource, &hidePs1, &hideName, &hidden))
+        submenuAppendItem(&appMenu, -1, NULL, APP_HIDE_GAME, hidden ? _STR_UNHIDE_GAME : _STR_HIDE_GAME);
 #ifdef RETROACHIEVEMENTS
     // POPStarter VCDs can be tracked (USB only, said on use); Ember launches carry no telemetry.
     if (!isEmber) {
@@ -2697,6 +2874,8 @@ void menuHandleInputGameMenu()
             menuRenameGame(&gameMenu);
         } else if (menuID == GAME_DELETE_GAME) {
             menuDeleteGame(&gameMenu);
+        } else if (menuID == GAME_HIDE_GAME) {
+            menuHideGame(&gameMenu);
         }
         // so the exit press wont propagate twice
         readPads();
@@ -2795,6 +2974,8 @@ void menuHandleInputAppMenu()
             guiShowPsEmulationSettings();
         } else if (menuID == APP_EMBER_GAME_SETTINGS) {
             guiShowEmberGameSettings();
+        } else if (menuID == APP_HIDE_GAME) {
+            menuHideGame(&appMenu);
 #ifdef RETROACHIEVEMENTS
         } else if (menuID == GAME_RA_CHECK) {
             menuCheckSelectedGameSupport();

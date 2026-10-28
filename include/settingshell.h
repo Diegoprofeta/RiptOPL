@@ -14,7 +14,7 @@ constexpr int SETTINGS_DIALOG_CAPACITY = 256;
 struct SourceState
 {
     int defaultDevice;
-    int bdmStartMode, hddStartMode, appStartMode, mmceStartMode, favStartMode, allGames;
+    int bdmStartMode, hddStartMode, appStartMode, mmceStartMode, favStartMode, allGames, showHidden;
     int enableUSB, enableILK, enableMX4SIO, enableBdmHDD;
     int networkProtocol, netStartMode, netProtocolPick;
     int ethStartMode, enableUDPBD, netBootProtocol;

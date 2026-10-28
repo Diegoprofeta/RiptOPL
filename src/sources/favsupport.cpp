@@ -33,6 +33,7 @@
 #include "include/ethsupport.h" // ETH ISO favourite resolution while the live source is in VCD view
 #include "include/bdmsupport.h" // bdmSupportIsUDPBD -- POPSTARTER favourites cannot bind to UDPBD
 #include "include/favsupport.h"
+#include "include/gamemanage.h" // Hide Game: hidden games are not gathered (RIPPS2)
 #include "include/gamesource.h"
 #include "include/folderbrowse.h" // folderModeSupported -- All Games skips folder rows
 
@@ -1586,6 +1587,9 @@ static const int kAllGamesModes[] = {HDD_MODE, BDM_MODE, BDM_MODE1, BDM_MODE2, B
 // Appends one row; out == NULL only counts it.
 static int favGatherAdd(fav_rec_t *out, int n, int cap, item_list_t *owner, int id, int kind, const char *name)
 {
+    // A hidden game is not gathered, so it cannot tag its other copies with a device name either.
+    if (kind != FAV_KIND_ELF && !gShowHidden && hiddenHas(owner, favKindView(kind) == LIB_VIEW_PS1, name))
+        return n;
     if (out == NULL)
         return n + 1;
     if (n >= cap)

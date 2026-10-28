@@ -207,6 +207,8 @@ extern int gAppsDisplay;
 // All Games list (RIPPS2): the Favourites page lists every game of every started source, and the
 // device tabs whose games it holds step aside. Defined in favsupport.cpp; CONFIG_OPL_ALL_GAMES.
 extern int gAllGames;
+// Show Hidden Games (RIPPS2 Hide Game): list hidden games anyway. Defined in gamemanage.cpp; CONFIG_OPL_SHOW_HIDDEN.
+extern int gShowHidden;
 extern int gCfgTitlesInLists; // default-off presentation; identity always stays source-owned
 extern int gGameTypeLabels;   // optional [PS1]/[PS2] prefixes in game lists; default off
 // Ember's own settings, brought into the settings.txt files Ember reads when a game launches

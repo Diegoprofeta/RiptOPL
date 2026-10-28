@@ -57,6 +57,7 @@ CHECK(smbCacheSize == (16));
 CHECK(gEnableUSB == (0));
 CHECK(gFAVStartMode == (START_MODE_DISABLED));
 CHECK(gAllGames == (0));
+CHECK(gShowHidden == (0));
 CHECK(gApplyGameID == (0));
 CHECK(gDefaultGameView == (GAME_VIEW_BOTH));
 CHECK(gAppsDisplay == (APPS_DISPLAY_MIXED));

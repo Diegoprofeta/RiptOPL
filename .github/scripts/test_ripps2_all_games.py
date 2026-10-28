@@ -46,6 +46,8 @@ struct item_list_t {
     int isoCount, ps1Count;
 };
 struct opl_io_module_t { item_list_t *support; };
+static int gShowHidden = 0;
+static int hiddenHas(item_list_t *, int, const char *) { return 0; } // Hide Game: nothing hidden here
 struct fav_rec_t { item_list_t *owner; int mode, id, icon_id, text_id, kind; char *text, *display; int starred; };
 struct fav_raw_t { int mode, id, icon_id, text_id, kind; char text[FAV_TEXT_MAX]; };
 
