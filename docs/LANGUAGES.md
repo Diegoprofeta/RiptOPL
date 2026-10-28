@@ -111,6 +111,22 @@ Only files named `lang_<Name>.lng` (any case) count. A name appears once in the 
 higher-priority copy wins, including one whose folder only becomes readable after the storage
 drivers mount. A matching `font_<Name>.ttf`/`.otf` beside the file is loaded with it.
 
+## Right-to-left and CJK text
+
+Ported from RIPPS2 build 104 by akilluminati47 (`src/gfx/textshape.cpp`). NOT TESTED on hardware.
+
+- **Arabic and Persian** letters are joined into their presentation forms (lam-alef as one
+  letter), and each line is laid out right to left. Latin words and numbers keep their own order,
+  and brackets are turned round. Centred Arabic stays centred, and zero-width marks draw nothing.
+  The forms table is RIPPS2's, generated from Unicode 16.0.0.
+- **CJK, Thai and Lao** lines may break between letters, but never before closing punctuation or
+  before a vowel that belongs to the letter in front of it.
+- The settings hint box and message boxes wrap with these rules, break an over-wide word anywhere,
+  and never cut a character in half.
+
+A translation needs no markup for any of this: write the text in logical order, as typed. The
+language still needs a font that has the glyphs.
+
 ## Translations that misread their arguments
 
 Every string in a loaded `.lng` is checked against its English string's printf conversions. A

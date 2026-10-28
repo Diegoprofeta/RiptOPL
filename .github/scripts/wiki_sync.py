@@ -81,6 +81,7 @@ SITE_GROUPS = {
         ("controls", "Controls", "Controls"),
         ("coverflow", "Coverflow", "Coverflow"),
         ("favourites", "Favorites", "Favorites"),
+        ("library", "Game-Library", "Game library: All Games, Recent, Hide and Delete"),
         ("themes", "Themes", "Theme engine"),
         ("languages", "Languages", "Languages"),
         ("unicode-titles", "Unicode-Game-Titles", "Japanese / Unicode game titles"),
@@ -132,6 +133,7 @@ DOCS = {
     "docs/BUILD-CONFIGURATIONS.md": ("Build-Configurations", "Editions and build configurations"),
     "docs/AUTOMATIC-VMC.md": ("Automatic-VMC", "Automatic VMC creation"),
     "docs/COMPRESSED-IMAGES.md": ("Compressed-Images", "Compressed PS2 images: ZSO, CSO and CHD"),
+    "docs/GAME-LIBRARY.md": ("Game-Library-Reference", "Game library reference"),
     "docs/FAVORITES-STORAGE.md": ("Favorites-Storage", "Favorites storage, staged saves and recovery"),
     "docs/CFG-TITLES.md": ("CFG-Titles", "CFG titles in game lists"),
     "docs/RA-RUNTIME-BUDGETS.md": ("RA-Runtime-Budgets", "RA watch-list and snapshot budgets"),
@@ -149,6 +151,7 @@ PAIRS = {
     "Settings": "docs/INTERFACE.md", "Releases": "ROLLING_RELEASE.md",
     "Project-Overview": "README.md", "Internal-HDD": "docs/APA-SAFETY.md",
     "Unicode-Game-Titles": "docs/UNICODE-GAME-TITLES.md",
+    "Game-Library": "docs/GAME-LIBRARY.md",
 }
 SITE_MAP = {name + ".html": page for group in SITE_GROUPS.values() for name, page, _ in group}
 

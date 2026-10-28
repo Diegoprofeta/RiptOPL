@@ -18,6 +18,10 @@ installation folder can still discover settings on another device.
 | Controller Vibration in Menus | Off | Settings → Controller Settings |
 | Remember last played | Off | Settings → General & System |
 | Automatic VMC creation | Off | Settings → Game Launching |
+| All Games List | Off | Settings → Game Sources |
+| Show Hidden Games | Off | Settings → Game Sources |
+| Sort Games | A to Z (an out-of-range saved value also reads as A to Z) | Settings → Interface |
+| Button Glyphs | Theme (the theme's own glyphs, or its `glyph_set` key) | Settings → Interface |
 | GameID barcode | PS1 half On, PS2 half Off (shown as *On (POPSTARTER only)*) | Settings → Interface |
 
 Background music still needs a playable configured/default track. An enabled
