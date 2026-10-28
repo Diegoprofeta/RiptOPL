@@ -19,6 +19,10 @@ public:
     // missing first-run config reaches defaults promptly. Contract: see bdmResolveBootDirBootstrap.
     int resolveBootstrap(char *bootDir, int bootDirSize, const char *elfName, int *ioBdmType);
 
+    // Public for the ELF-proof probe of an empty literal slot (bdmboot.cpp).
+    static int slotIdentity(int slot, int *outType) { return readLiteralMassIdentity(slot, outType); }
+    static int elfOnSlot(int slot, const char *tail, const char *elfName) { return bootElfPresent(slot, tail, elfName); }
+
 private:
     int resolveWithBudget(char *bootDir, int bootDirSize, const char *elfName, int *ioBdmType,
                           u32 initialBudgetMs, u32 ataInitialBudgetMs,
@@ -33,5 +37,7 @@ private:
 };
 
 extern BdmBoot gBdmBoot;
+
+int bdmPickBootElfSlot(int literalSlot, int slotCount, int (*elfAt)(int slot, void *ctx), void *ctx);
 
 #endif
