@@ -88,36 +88,7 @@ static void diaDrawHint(int text_id)
     // inserting '\n' between lines. Without this a long hint (e.g. the Neutrino args hint) rendered as
     // a single clipped, unreadable line that ran off the box -- the remaining #48 hint complaint.
     char wrapped[384];
-    int wlen = 0, lineW = 0, lines = 1;
-    int spaceW = rmUnScaleX(fntCalcDimensions(gTheme->fonts[0], " "));
-    const char *p = text;
-    while (*p) {
-        while (*p == ' ') // skip runs of spaces; we re-insert our own single separators
-            p++;
-        if (!*p)
-            break;
-        char word[96];
-        int k = 0;
-        while (*p && *p != ' ' && k < (int)sizeof(word) - 1)
-            word[k++] = *p++;
-        word[k] = '\0';
-        int wordW = rmUnScaleX(fntCalcDimensions(gTheme->fonts[0], word));
-
-        if (lineW > 0 && (lineW + spaceW + wordW) > innerW) { // word doesn't fit -> new line
-            if (wlen < (int)sizeof(wrapped) - 1)
-                wrapped[wlen++] = '\n';
-            lines++;
-            lineW = 0;
-        } else if (lineW > 0) { // same line -> re-insert the separating space
-            if (wlen < (int)sizeof(wrapped) - 1)
-                wrapped[wlen++] = ' ';
-            lineW += spaceW;
-        }
-        for (int i = 0; i < k && wlen < (int)sizeof(wrapped) - 1; i++)
-            wrapped[wlen++] = word[i];
-        lineW += wordW;
-    }
-    wrapped[wlen] = '\0';
+    int lines = fntWrapText(gTheme->fonts[0], text, innerW, wrapped, sizeof(wrapped));
 
     int boxH = lines * MENU_ITEM_HEIGHT + 10;
     int y = gTheme->usedHeight - 32 - boxH;
