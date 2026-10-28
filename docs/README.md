@@ -44,6 +44,8 @@ Use the references below for implementation details, exact limits and contributo
 
 [ps2build migration](PS2BUILD-MIGRATION.md), the [C++ conversion plan](CPP-CONVERSION-PLAN.md) and the
 [parity ledger](UPSTREAM-PARITY-2026-10-12.md) record how RiptOPL tracks Open-PS2-Loader.
+[Fork-gap status: 2026-10-28](FORK-GAP-STATUS-2026-10-28.md) is the current summary: parity with the
+legacy edition, fixes landed in both, the RIPPS2 audit and port plan, and the open hardware checks.
 
 Integration plans, dated audits and community-report handoffs are engineering history. Their old
 DONE/pending states, branches and package names describe that baseline; they are not current
