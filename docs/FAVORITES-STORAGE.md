@@ -57,3 +57,11 @@ The source fault tests run the actual reader, writer and editing methods under
 ASan/UBSan, including restart-style snapshots at truncate/write/close/cleanup
 boundaries and allocation failures. They establish host behavior; physical
 memory-card, BDM, MMCE, HDD and network filesystem acceptance remains separate.
+
+## Recent games (`recents.bin`)
+
+`recents.bin` sits beside `favourites.bin` and uses the same OFAV record format. It holds the last
+10 games launched, newest first, one row per game. A launch rewrites it only while the Favourites
+page or All Games is on, or Sort Games is **Last played**. An unreadable or unknown-version
+`recents.bin` is never replaced, as with `favourites.bin`. See [Game library](GAME-LIBRARY.md)
+for what reads it. NOT TESTED on hardware.

@@ -21,7 +21,7 @@ that every hit is history.
 | Website task guides and navigation | HTML on `gh-pages` |
 | External-tools catalogue in README, website Home and Releases | Templates in `.github/workflows/docs-sync.yml`; hand edits to generated catalogues are overwritten |
 | Website RetroAchievements body | `docs/RETROACHIEVEMENTS.md`, rendered by `site_sync.py --ra-md` |
-| Website ps2sdk notes, game formats, launch diagnostics and defaults bodies | `docs/PS2SDK-NOTES.md`, `docs/GAME-FORMATS.md`, `docs/LAUNCH-DIAGNOSTICS.md`, `docs/DEFAULTS.md`, rendered by `site_sync.py --md-page` |
+| Website ps2sdk notes, game formats, launch diagnostics, defaults and game library bodies | `docs/PS2SDK-NOTES.md`, `docs/GAME-FORMATS.md`, `docs/LAUNCH-DIAGNOSTICS.md`, `docs/DEFAULTS.md`, `docs/GAME-LIBRARY.md`, rendered by `site_sync.py --md-page` |
 | Website search | Page content, then regenerate `data/search-index.json`; curated entry titles/categories are preserved |
 | Wiki maps, homepage, aliases and conversion | `.github/scripts/wiki_sync.py`; generated pages are published to the separate wiki repository |
 | Language install and translation coverage | `docs/LANGUAGES.md`, `tools/audit_translations.py`; copy the user instructions to `gh-pages/languages.html` and regenerate the wiki |
@@ -47,7 +47,8 @@ python .github/scripts/site_sync.py --site ../site --ra-md docs/RETROACHIEVEMENT
     --md-page docs/PS2SDK-NOTES.md=ps2sdk-notes.html \
     --md-page docs/GAME-FORMATS.md=game-formats.html \
     --md-page docs/LAUNCH-DIAGNOSTICS.md=launch-diagnostics.html \
-    --md-page docs/DEFAULTS.md=defaults.html --check
+    --md-page docs/DEFAULTS.md=defaults.html \
+    --md-page docs/GAME-LIBRARY.md=library.html --check
 python .github/scripts/validate_site.py ../site
 python .github/scripts/test_site_sync.py
 python .github/scripts/test_wiki_sync.py
