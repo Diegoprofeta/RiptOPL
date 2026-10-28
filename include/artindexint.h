@@ -1,7 +1,7 @@
 #ifndef __ARTINDEXINT_H
 #define __ARTINDEXINT_H
 
-// ArtIndex (src/sources/artindex.cpp): the in-RAM listing of an art directory, so "this cover does
+// ArtIndex (src/gfx/artindex.cpp): the in-RAM listing of an art directory, so "this cover does
 // not exist" can be answered without asking the device. See artindex.h for the design rule (an
 // uncertain answer is always "go and look") and why the whole module exists. One instance,
 // gArtIndex; the artIndex* functions in artindex.h are thin forwarders to it.
@@ -14,6 +14,9 @@ public:
     void setOwnerThread(int threadId) { ownerThread_ = threadId; }
     // 1 = this file may exist, probe it normally; 0 = definitely NOT there, skip the open.
     int mayExist(const char *fullPath);
+    // A picture by its path WITHOUT extension, in any letter case, as .png, .jpg or .jpeg (a .png first).
+    // 1 = found, its real path (as the device lists it) in out; 0 = definitely none; -1 = don't know.
+    int findPicture(const char *stemPath, char *out, int outSize);
     // Drop every cached listing; safe from any thread (marks the slots unusable, frees nothing).
     void invalidate();
     // Debug HUD: directories currently held, probes answered "absent", sweeps that failed.
@@ -30,17 +33,32 @@ private:
     // library with five art types per game is 2000).
     static constexpr int kMaxEntries = 4096;
     static constexpr int kDirMax = 192;
+    // Bytes of picture names kept per directory (RIPPS2 build 115). Past it the slot keeps no names and
+    // findPicture answers "don't know"; the hash index is unaffected.
+    static constexpr int kNamesMax = 128 * 1024;
+
+    struct Pic
+    {
+        unsigned int hash; // hashName of the name WITHOUT its extension
+        int name;          // offset of the real name in Dir::names
+    };
 
     struct Dir
     {
         char dir[kDirMax];
         unsigned int *hashes; // sorted, `count` of them
         int count;
-        int valid; // 0 = this slot answers "don't know" for everything
+        Pic *pics; // the .png/.jpg/.jpeg entries, sorted by hash, `picCount` of them; NULL = names not kept
+        int picCount;
+        char *names; // the pictures' names as the device lists them (PFS minds letter case)
+        int valid;   // 0 = this slot answers "don't know" for everything
     };
 
     // FNV-1a over the UPPERCASED name (case folding is not cosmetic -- see the .cpp).
-    static unsigned int hashName(const char *s);
+    static unsigned int hashName(const char *s, size_t n = (size_t)-1);
+    static int pictureExt(const char *name);
+    static int picCmp(const void *a, const void *b);
+    static void release(Dir *slot);
     static int hashCmp(const void *a, const void *b);
     // Split a full path into its directory and its basename.
     static int splitPath(const char *fullPath, char *dirOut, int dirMax, const char **baseOut);
