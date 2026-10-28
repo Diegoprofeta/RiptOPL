@@ -1,6 +1,6 @@
 # Multi-view themes: plan
 
-Status: in progress on branch `claude/project-thread-skxuai`. Nothing here is hardware-tested.
+Status: steps 1 to 4 merged (#102), ported to Open-PS2-Loader (#1092). Nothing here is hardware-tested.
 Design idea: KrahJohlito (one theme cfg defines several views; views share elements and override only
 what they declare; a button or setting switches views).
 
@@ -79,7 +79,7 @@ base count and the view's own count.
 
 ### Declared views
 
-- `views=` lists the views the theme supports, in ring order. Absent: the theme supports only its
+- `views=` lists the views the theme supports (L3 cycles them in the fixed order list, coverflow, psbbn, grid). Absent: the theme supports only its
   native view (detected from its base blocks: `PSBBNFlow` = psbbn, `Coverflow` = coverflow, else list),
   plus any view it declares blocks for.
 - `default_view=` is the view used when the user has not chosen one. Absent: the native view.
@@ -131,7 +131,7 @@ This ships behind a setting until it has been checked against community themes i
 5. Auto-normalised views behind a setting.
 6. `Grid` element (2D navigation; at most about 16 covers visible, `COVER_CACHE_SLOTS` is 20).
 7. Phase 2 resident views, only if needed.
-8. Theme-maker docs: `THEME_ENGINE.md`, site and wiki.
+8. Theme-maker docs: `THEME_ENGINE.md` ("Views" section, done), site and wiki.
 9. Port to legacy Open-PS2-Loader (`src/themes.c` has the same structure).
 
 ## Testing
