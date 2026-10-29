@@ -1,11 +1,14 @@
 
 <p align="center"><a href="#"><img alt="RiptOPL" src="https://raw.githubusercontent.com/NathanNeurotic/RiptOPL/rebuild/main/docs/assets/riptopl.png" /></a></p>
 
+> **RiptOPL is developed in partnership and collaboration with the [RIPPS2 Project](https://github.com/akilluminati47/RIPPS2) by [Akilluminati47](https://github.com/akilluminati47).**
+
 > **Check out our daughter project: [RIPPS2](https://github.com/akilluminati47/RIPPS2) by Akilluminati47.** It is a PS2-inspired front end, the project is still alpha, but we recommend it as an alternative with features intended to be on par with RiptOPL.
 
 ## Community Contributors
 
 A heartfelt thank you to developers who have contributed pull requests directly to this fork. Anyone who opens a pull request against RiptOPL is featured here at the top of the README in recognition of their support for the project and solidarity with its maintainer:
+### [@akilluminati47](https://github.com/akilluminati47) (AK), RIPPS2 partner
 ### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
 ### [@dnunezx](https://github.com/dnunezx) (darkladark)
 
