@@ -24,6 +24,7 @@ import tempfile
 root = Path(__file__).resolve().parents[2]
 cpp = (root / 'src/app/opl.cpp').exists()
 OPL = root / ('src/app/opl.cpp' if cpp else 'src/opl.c')
+POS = root / ('src/core/settings.cpp' if cpp else 'src/opl.c')  # the screenPos* block (core layer in RiptOPL)
 LOAD = root / ('src/app/settingsio.cpp' if cpp else 'src/opl.c')
 GUI = root / ('src/ui/guisettings.cpp' if cpp else 'src/gui.c')
 BASE = root / ('lng/tmpl/_base.yml' if cpp else 'lng_tmpl/_base.yml')
@@ -35,12 +36,13 @@ def read(path):
 
 
 opl = read(OPL)
-start = opl.find('#define SCREEN_POS_MODES')
-reset = opl.find('void screenPosReset(void)')
+pos = read(POS)
+start = pos.find('#define SCREEN_POS_MODES')
+reset = pos.find('void screenPosReset(void)')
 if start < 0 or reset < 0:
-    print('%s: the screenPos* block is missing' % OPL.relative_to(root))
+    print('%s: the screenPos* block is missing' % POS.relative_to(root))
     sys.exit(1)
-block = opl[start:opl.index('\n}', reset) + 3]
+block = pos[start:pos.index('\n}', reset) + 3]
 
 HARNESS = r'''
 #include <assert.h>
