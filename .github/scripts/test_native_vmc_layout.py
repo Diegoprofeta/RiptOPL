@@ -36,7 +36,7 @@ typedef struct { u64 sector; u32 count; } bd_fragment_t;
 #define LOG(...) ((void)0)
 #define HDD_VMC_MAP_ENTRIES 11
 enum { _STR_ERR_VMC_CONTINUE, _STR_ERR_VMC_FRAGMENTED_CONTINUE,
-       _STR_ERR_VMC_LBA_RANGE_CONTINUE, _STR_ERR_VMC_LAYOUT_CONTINUE, _STR_ERR_VMC_PFS_LIMIT_CONTINUE };
+       _STR_ERR_VMC_LBA_RANGE_CONTINUE, _STR_ERR_VMC_LAYOUT_CONTINUE, _STR_ERR_VMC_PFS_LIMIT_CONTINUE, _STR_ERR_VMC_FRAGMENTS_CONTINUE, _STR_VMC_DEFRAGMENT_HINT };
 typedef struct { int page_size, block_size, card_size; } specs_t;
 typedef struct { int number, subpart, count; } pfs_blockinfo_t;
 typedef struct { int active, flags; specs_t specs; u64 start_sector; } bdm_vmc_infos_t;
@@ -84,6 +84,8 @@ static const char *_l(int id) {
     switch(id) {
         case _STR_ERR_VMC_CONTINUE: return "invalid %s slot %d";
         case _STR_ERR_VMC_FRAGMENTED_CONTINUE: return "fragmented %s slot %d";
+        case _STR_ERR_VMC_FRAGMENTS_CONTINUE: return "fragmented %s in %d fragments slot %d";
+        case _STR_VMC_DEFRAGMENT_HINT: return "Back up the VMC; never delete your only copy";
         case _STR_ERR_VMC_LBA_RANGE_CONTINUE: return "range %s slot %d";
         case _STR_ERR_VMC_LAYOUT_CONTINUE: return "unknown %s slot %d";
         case _STR_ERR_VMC_PFS_LIMIT_CONTINUE: return "maplimit %s slot %d";
@@ -91,7 +93,7 @@ static const char *_l(int id) {
     assert(0); return "";
 }
 static int guiMsgBox(const char *message, int type, void *dialog) {
-    assert(type==1 && dialog==NULL && prompts<4);
+    assert((type==0 || type==1) && dialog==NULL && prompts<4);
     snprintf(messages[prompts++],sizeof(messages[0]),"%s",message); return accept;
 }
 static int hddGetFileBlockInfo(const char *path, void *parts, pfs_blockinfo_t *blocks, int max) {
@@ -128,7 +130,7 @@ int main(void) {
     reset(); run_bdm(); assert(finished && prompts==0 && bdm_slot(0).active && !bdm_slot(1).active);
     assert(bdm_slot(0).start_sector==100 && opens[0]==1 && closes[0]==1);
     reset(); frags[0]=2; run_bdm(); assert(finished && prompts==1 && !bdm_slot(0).active && closes[0]==1);
-    assert(strstr(messages[0],"fragmented card0 slot 1"));
+    assert(strstr(messages[0],"fragmented card0 in 2 fragments slot 1"));
     for(int bad=-2;bad<=0;bad++) { reset(); frags[0]=bad; run_bdm(); assert(!bdm_slot(0).active && prompts==1 && strstr(messages[0],"unknown") && closes[0]==1); }
     reset(); write_lba[0]=0; run_bdm(); assert(!bdm_slot(0).active && strstr(messages[0],"unknown"));
     reset(); lba_result[0]=-1; run_bdm(); assert(!bdm_slot(0).active && strstr(messages[0],"unknown"));
@@ -141,10 +143,21 @@ int main(void) {
     reset(); sizes[0]=INT_MAX; run_bdm(); assert(!bdm_slot(0).active && strstr(messages[0],"range"));
     reset(); sizes[0]=0; run_bdm(); assert(!bdm_slot(0).active && opens[0]==0 && strstr(messages[0],"invalid"));
     reset(); open_result[0]=-1; run_bdm(); assert(!bdm_slot(0).active && closes[0]==0);
-    reset(); frags[0]=2; accept=0; run_bdm(); assert(!finished && prompts==1 && closes[0]==1);
+    reset(); frags[0]=2; accept=0; run_bdm(); assert(!finished && prompts==2 && closes[0]==1 && strstr(messages[1],"never delete your only copy"));
     reset(); frags[0]=2; strcpy(names[1],"card1"); run_bdm(); assert(prompts==1 && !bdm_slot(0).active && bdm_slot(1).active && closes[1]==1);
     names[0][0]=names[1][0]=0; run_bdm(); assert(!bdm_slot(0).active && !bdm_slot(1).active);
     reset(); frags[0]=2; gAutoLaunchBDMGame=&config; run_bdm(); assert(finished && prompts==0 && !bdm_slot(0).active);
+    reset(); frags[0]=5; lbas[0]=0x100000000ULL; accept=0; run_bdm();
+    assert(!finished && prompts==1 && strstr(messages[0],"range")); // range wins over fragmentation; no defrag hint
+    reset(); frags[0]=INT_MAX; run_bdm();
+    assert(finished && !bdm_slot(0).active && prompts==1 && strstr(messages[0],"2147483647 fragments slot 1"));
+    reset(); frags[0]=2; strcpy(names[1],"card1"); frags[1]=7; run_bdm();
+    assert(finished && prompts==2 && strstr(messages[0],"2 fragments slot 1") && strstr(messages[1],"7 fragments slot 2"));
+    assert(!bdm_slot(0).active && !bdm_slot(1).active);
+    reset(); strcpy(names[1],"card1"); frags[1]=3; run_bdm();
+    assert(finished && prompts==1 && strstr(messages[0],"card1 in 3 fragments slot 2") && bdm_slot(0).active && !bdm_slot(1).active);
+    reset(); sizes[0]=0; strcpy(names[1],"card1"); run_bdm();
+    assert(finished && prompts==1 && strstr(messages[0],"invalid") && bdm_slot(1).active);
     reset(); run_hdd(); assert(finished && hdd_slot(0).active && !hdd_slot(1).active && prompts==0);
     reset(); maps[0]=-ENOMEM; run_hdd(); assert(!hdd_slot(0).active && strstr(messages[0],"maplimit"));
     reset(); maps[0]=-EIO; run_hdd(); assert(!hdd_slot(0).active && strstr(messages[0],"unknown"));
@@ -174,6 +187,8 @@ labels = re.findall(r"^- label: (\w+)", (root / 'lng/tmpl/_base.yml').read_text(
 at = labels.index('ERR_VMC_LBA_RANGE_CONTINUE')
 assert labels[at:at + 4] == ['ERR_VMC_LBA_RANGE_CONTINUE', 'ERR_VMC_LAYOUT_CONTINUE', 'ERR_VMC_PFS_LIMIT_CONTINUE', 'VMC_PFS_LIMIT_ON_CREATE']
 assert labels.index('NEUTRINO_DVR_FILE_MISSING') < at
+
+assert labels[-2:] == ['ERR_VMC_FRAGMENTS_CONTINUE', 'VMC_DEFRAGMENT_HINT']
 
 with tempfile.TemporaryDirectory() as temp:
     path = Path(temp)
