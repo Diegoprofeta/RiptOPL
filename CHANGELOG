@@ -15,6 +15,7 @@
 * Stop parsing at the cheat-table capacity, preserving every accepted cheat's codes.
   Credit: belomaxorka / YAOPL 44a003bd5868539481baf3c09922660246ca96f5.
 * Fragmented native BDM VMC warnings show the existing fragment count and, on Cancel, backup/recovery guidance. Native refusal and physical-card fallback are unchanged. Credit belomaxorka/YAOPL c19eed08. Hardware validation pending.
+* RetroAchievements docs, release notes and the kit's xeRAbora.url now point at xeRAbora v1.0.1, the current stable client; alpha.17 or later works. A source review of alpha.17...v1.0.1 found no console protocol change. v1.0.1 is NOT TESTED on hardware with the RA build.
 
 ==== Version 0.9.3 ====
 CORE:
