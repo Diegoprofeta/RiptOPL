@@ -874,7 +874,9 @@ With special and sincere thanks to:
   **[wOPL](https://github.com/KrahJohlito/wOPL)**, where the modern OPL experience was
   invented. The Neutrino external-core loader, the Coverflow interface, and the Favorites
   tab — the features that define RiptOPL — were designed and pioneered by him, and everything
-  this fork does with them is a reimplementation of his work. We learned more reading his
+  this fork does with them is a reimplementation of his work. Multi-view themes (one theme
+  offering List, Coverflow, PSBBN Flow and Grid, switched with Theme View or a held L3) and
+  the Grid view are his idea and design too. We learned more reading his
   code than anywhere else, and RiptOPL is, above all, a tribute to it. Thank you.
 - **Wolf3s** — for contributions across the wOPL effort and the wider OPL scene, and for
   past work on an independent **uOPL** fork that kept
