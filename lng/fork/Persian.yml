@@ -869,3 +869,4 @@ translations:
   DNAS_ID: شناسه DNAS
   THEME_VIEW: "نمای پوسته"
   HINT_THEME_VIEW: "نحوه نمایش بازی‌ها در پوسته: List, Coverflow, PSBBN Flow یا Grid. برای تغییر، L3 را در صفحه اصلی نگه دارید. پوسته‌هایی که این نما را ندارند از نمای پیش‌فرض خود استفاده می‌کنند."
+  BOTH: هر دو

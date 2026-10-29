@@ -642,3 +642,4 @@ translations:
   DNAS_ID: ID DNAS
   THEME_VIEW: "Widok motywu"
   HINT_THEME_VIEW: "Jak motyw pokazuje twoje gry: List, Coverflow, PSBBN Flow lub Grid. Przytrzymaj L3 na stronie głównej, aby przełączyć. Motywy bez tego widoku używają swojego widoku domyślnego."
+  BOTH: Oba

@@ -656,3 +656,4 @@ translations:
   DNAS_ID: DNAS-ID
   THEME_VIEW: "Temavy"
   HINT_THEME_VIEW: "Hur temat visar dina spel: List, Coverflow, PSBBN Flow eller Grid. Håll in L3 på huvudsidan för att byta. Teman utan den vyn använder sin standardvy."
+  BOTH: Båda

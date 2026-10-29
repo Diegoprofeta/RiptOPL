@@ -638,3 +638,4 @@ translations:
   DNAS_ID: DNAS ID
   THEME_VIEW: "Изглед на темата"
   HINT_THEME_VIEW: "Как темата показва игрите ви: List, Coverflow, PSBBN Flow или Grid. Задръжте L3 на главната страница, за да превключите. Темите без този изглед използват изгледа си по подразбиране."
+  BOTH: И двата

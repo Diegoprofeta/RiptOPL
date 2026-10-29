@@ -637,3 +637,4 @@ translations:
   DNAS_ID: ID DNAS
   THEME_VIEW: "Vista del tema"
   HINT_THEME_VIEW: "Cómo muestra el tema tus juegos: List, Coverflow, PSBBN Flow o Grid. Mantén L3 en la página principal para cambiar. Los temas sin esa vista usan su vista predeterminada."
+  BOTH: Ambas
