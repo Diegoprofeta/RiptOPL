@@ -516,9 +516,9 @@ translations:
   HINT_PLASCOLOR: Kolor wmieszany w animowane tło.
   HINT_RESETCOLOR: Przywraca wbudowane kolory RiptOPL, a nie kolory motywu.
   HINT_WIDESCREEN: Rysuje menu dla telewizora 16:9.
-  HINT_XOFF: Przesuwa menu w lewo lub w prawo na ekranie.
-  HINT_YOFF: Przesuwa menu w górę lub w dół na ekranie.
-  HINT_MENU_OVERSCAN: Zmniejsza menu do środka, jeśli telewizor obcina jego krawędzie.
+  HINT_XOFF: "Przesuwa menu w lewo lub w prawo na ekranie. Zapamiętywane dla każdego trybu wideo."
+  HINT_YOFF: "Przesuwa menu w górę lub w dół na ekranie. Zapamiętywane dla każdego trybu wideo."
+  HINT_MENU_OVERSCAN: "Zmniejsza menu do środka, jeśli telewizor obcina jego krawędzie. Zapamiętywane dla każdego trybu wideo."
   HINT_APPLYGAMEID: Pokazuje kod kreskowy przy starcie gry, aby urządzenia Pixel FX, RetroGEM i PS2Digital przełączyły profile.
   HINT_ENWRITEOP: Pozwala zmieniać nazwy i usuwać gry oraz tworzyć VMC. Nigdy nie rusza tablicy partycji HDD.
   HINT_DEBUG: 'Pomoc dla twórców: kolorowe ekrany podczas startu gry i liczniki wczytywania grafik w menu.'
@@ -642,3 +642,5 @@ translations:
   DNAS_ID: ID DNAS
   THEME_VIEW: "Widok motywu"
   HINT_THEME_VIEW: "Jak motyw pokazuje twoje gry: List, Coverflow, PSBBN Flow lub Grid. Przytrzymaj L3 na stronie głównej, aby przełączyć. Motywy bez tego widoku używają swojego widoku domyślnego."
+  BOTH: Oba
+  NET_READ_ONLY_VMC: "Ten serwer UDPBD/UDPFS jest tylko do odczytu, więc nie można na nim użyć VMC. Gra zapisuje na prawdziwej karcie pamięci."

@@ -128,6 +128,8 @@ int bdmSupportIsUDPBD(const item_list_t *support); // 1 if this support is the U
 int bdmModeIsPCCF(int mode);                       // 1 if this BDM mode slot is the PC CARD CF device
 int bdmModeIsUSB(int mode);                        // 1 if this BDM mode slot is a USB mass-storage device
 int bdmModeIsUDPBD(int mode);                      // 1 if this BDM mode slot is the UDPBD block device
+int bdmModeIsReadOnly(int mode);                   // 1 if this BDM mode slot does not keep what is written (MODE_FLAG_READ_ONLY)
+int bdmIsReadOnlyPath(const char *path);           // 1 if a "massN:..." path is on such a device
 // Core of a UDPBD / UDPFS game (block device, or UDPFS Files): 1 = Neutrino (its default), 0 = the OPL
 // core (only its own <OPL> key).
 int bdmNetBlockCoreLoader(config_set_t *configSet);

@@ -424,9 +424,14 @@ int NeutrinoLauncher::tryLaunch(item_list_t *itemList, base_game_info_t *game, b
     configGetStrCopy(configSet, CONFIG_ITEM_NEUTRINO_ARGS, neutrinoExtraArgs, sizeof(neutrinoExtraArgs));
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_VIDEO, &neutrinoVideo);
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_GSMCOMP, &neutrinoGsmComp);
-    configGetInt(configSet, CONFIG_ITEM_NEUTRINO_BSDFS, &neutrinoBsdfs);     // #11: bdm legs (incl. udpbd/udpfsbd) are the block-backed consumers
-    sbBuildVmcNeutrinoArgs(configSet, pDeviceData->bdmPrefix, &neutrinoVmc); // Δ2-validated -mc args
-    sbCreatePath(game, partname, pDeviceData->bdmPrefix, "/", 0);            // -dvd target (multi-part was rejected above)
+    configGetInt(configSet, CONFIG_ITEM_NEUTRINO_BSDFS, &neutrinoBsdfs); // #11: bdm legs (incl. udpbd/udpfsbd) are the block-backed consumers
+    // A VMC on a read-only server would lose every save written to it: the game uses the real memory card.
+    // The setting stays in the config, which a copy of the game on a USB drive may share (YAOPL 7c375a09).
+    if (itemList != NULL && (itemList->flags & MODE_FLAG_READ_ONLY))
+        LOG("[NEUTRINO] VMC not used: the device is read-only\n");
+    else
+        sbBuildVmcNeutrinoArgs(configSet, pDeviceData->bdmPrefix, &neutrinoVmc); // Δ2-validated -mc args
+    sbCreatePath(game, partname, pDeviceData->bdmPrefix, "/", 0);                // -dvd target (multi-part was rejected above)
     snprintf(bdmCurrentDriver, sizeof(bdmCurrentDriver), "%s", pDeviceData->bdmDriver);
     // The bdm device number behind this mount (USBMASS_IOCTL_GET_DEVICE_NUMBER, the same value the
     // native leg binds) -- the <devNr> of a -bsdfs=bd "<driver><devNr>p0" tuple. Copied now: the
@@ -680,6 +685,12 @@ void BdmLauncher::launch(item_list_t *itemList, int id, config_set_t *configSet,
         vmc_fragments = 0;
         memset(&bdm_vmc_infos, 0, sizeof(bdm_vmc_infos_t));
         configGetVMC(configSet, vmc_name, sizeof(vmc_name), vmc_id);
+        // A read-only server would drop the saves written to the VMC: the game uses the real memory card, and
+        // the setting stays in the config (belomaxorka / YAOPL 7c375a09).
+        if (vmc_name[0] && itemList != NULL && (itemList->flags & MODE_FLAG_READ_ONLY)) {
+            LOG("BDMSUPPORT VMC %s not used: the device is read-only\n", vmc_name);
+            vmc_name[0] = '\0';
+        }
         if (vmc_name[0]) {
             have_error = NATIVE_VMC_INVALID;
             int vmcSizeInMb = sysCheckVMC(pDeviceData->bdmPrefix, "/", vmc_name, 0, &vmc_superblock);

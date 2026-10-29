@@ -1566,6 +1566,7 @@ void _loadConfig()
             } else {
                 configGetInt(configOPL, CONFIG_OPL_VMODE, &gVMode);
             }
+            screenPosLoad(configOPL); // this mode's own position, where one was saved (RIPPS2 build 124)
 
 
 
@@ -2164,6 +2165,7 @@ static void _saveConfig()
     if (lscstatus & CONFIG_OPL) {
         config_set_t *configOPL = configGetByType(CONFIG_OPL);
         settingsSave(configOPL);
+        screenPosSave(configOPL); // each video mode's position (RIPPS2 build 124)
 #ifdef RETROACHIEVEMENTS
         snprintf(temp, sizeof(temp), "%d.%d.%d.%d", gRAHostIp[0], gRAHostIp[1], gRAHostIp[2], gRAHostIp[3]);
         configSetStr(configOPL, CONFIG_OPL_RA_HOST_IP, temp);

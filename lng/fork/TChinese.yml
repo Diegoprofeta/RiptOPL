@@ -519,9 +519,9 @@ translations:
   HINT_PLASCOLOR: 混入動態背景的顏色。
   HINT_RESETCOLOR: 恢復 RiptOPL 的內建顏色，而不是主題的顏色。
   HINT_WIDESCREEN: 依 16:9 電視繪製選單。
-  HINT_XOFF: 在螢幕上左右移動選單。
-  HINT_YOFF: 在螢幕上上下移動選單。
-  HINT_MENU_OVERSCAN: 如果電視切掉邊緣，就把選單向內縮小。
+  HINT_XOFF: "在螢幕上左右移動選單。每種視訊模式各自儲存。"
+  HINT_YOFF: "在螢幕上上下移動選單。每種視訊模式各自儲存。"
+  HINT_MENU_OVERSCAN: "如果電視切掉邊緣，就把選單向內縮小。每種視訊模式各自儲存。"
   HINT_APPLYGAMEID: 遊戲啟動時顯示條碼，讓 Pixel FX、RetroGEM 與 PS2Digital 裝置切換設定檔。
   HINT_ENWRITEOP: 允許重新命名和刪除遊戲以及建立 VMC。從不改動硬碟分割表。
   HINT_DEBUG: 開發輔助：遊戲開機時顯示彩色畫面，並在選單中顯示圖片載入計數。
@@ -645,3 +645,5 @@ translations:
   DNAS_ID: DNAS ID
   THEME_VIEW: "主題檢視"
   HINT_THEME_VIEW: "主題顯示遊戲的方式：List, Coverflow, PSBBN Flow 或 Grid。在主頁面長按 L3 切換。沒有該檢視的主題會使用其預設檢視。"
+  BOTH: 兩者
+  NET_READ_ONLY_VMC: "此 UDPBD/UDPFS 伺服器為唯讀，因此無法在其上使用 VMC。遊戲會存檔到真正的記憶卡。"

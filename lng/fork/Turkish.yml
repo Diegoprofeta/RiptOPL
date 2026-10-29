@@ -514,9 +514,9 @@ translations:
   HINT_PLASCOLOR: Hareketli arka plana karışan renk.
   HINT_RESETCOLOR: Temanınkileri değil, RiptOPL'nin yerleşik renklerini geri getirir.
   HINT_WIDESCREEN: Menüyü 16:9 bir TV için çizer.
-  HINT_XOFF: Menüyü ekranda sola veya sağa kaydırır.
-  HINT_YOFF: Menüyü ekranda yukarı veya aşağı kaydırır.
-  HINT_MENU_OVERSCAN: TV kenarları kesiyorsa menüyü içe doğru küçültür.
+  HINT_XOFF: "Menüyü ekranda sola veya sağa kaydırır. Her video modu için ayrı saklanır."
+  HINT_YOFF: "Menüyü ekranda yukarı veya aşağı kaydırır. Her video modu için ayrı saklanır."
+  HINT_MENU_OVERSCAN: "TV kenarları kesiyorsa menüyü içe doğru küçültür. Her video modu için ayrı saklanır."
   HINT_APPLYGAMEID: Bir oyun başlarken bir barkod gösterir, böylece Pixel FX, RetroGEM ve PS2Digital cihazları profil değiştirir.
   HINT_ENWRITEOP: Oyunları yeniden adlandırmaya, silmeye ve VMC oluşturmaya izin verir. HDD bölüm tablosuna asla dokunmaz.
   HINT_DEBUG: 'Geliştirici yardımı: bir oyun açılırken renkli ekranlar ve menüde resim yükleme sayaçları.'
@@ -640,3 +640,5 @@ translations:
   DNAS_ID: DNAS Kimliği
   THEME_VIEW: "Tema görünümü"
   HINT_THEME_VIEW: "Temanın oyunlarınızı gösterme biçimi: List, Coverflow, PSBBN Flow veya Grid. Değiştirmek için ana sayfada L3'e basılı tutun. Bu görünümü olmayan temalar varsayılan görünümlerini kullanır."
+  BOTH: Her ikisi
+  NET_READ_ONLY_VMC: "Bu UDPBD/UDPFS sunucusu salt okunur, bu yüzden üzerinde VMC kullanılamaz. Oyun gerçek hafıza kartına kaydeder."

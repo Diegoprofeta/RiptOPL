@@ -28,7 +28,7 @@ for udpfs_leg in ("src/sources/udpfssupport.cpp", "src/sources/bdmlaunch.cpp"):
     assert "sbNeutrinoPrepareRA(" in (ROOT / udpfs_leg).read_text(encoding="utf-8"), udpfs_leg
 print("PASS: the support check hashes Neutrino, UDPFS and favourite games")
 
-vcd_menu = body(menusys, "void menuInitVcdMenu(int isEmber)")
+vcd_menu = body(menusys, "void menuInitVcdMenu(int isEmber, int readOnly)")
 ra = vcd_menu.index("#ifdef RETROACHIEVEMENTS")
 assert "if (!isEmber)" in vcd_menu[ra:] and "GAME_RA_CHECK" in vcd_menu[ra:] and "GAME_RA_ACHIEVEMENTS" in vcd_menu[ra:]
 app = body(menusys, "void menuHandleInputAppMenu()")
