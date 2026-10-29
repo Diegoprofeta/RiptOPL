@@ -853,7 +853,6 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
 static int udpfsMcemuSlots[2] = {-2, -2};
 
 // Close what the launch opened when it goes back to the menu (a launch that goes on keeps them open).
-
 static void udpfsCloseFiles(int isoFile, const int *vmcFiles)
 {
     int i;
