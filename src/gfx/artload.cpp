@@ -217,6 +217,85 @@ int ImageCache::slotKeyedOther(int i, const char *value) const
     return i >= 0 && i < count_ && strlen(value) < sizeof(content_[i].key) && strcmp(content_[i].key, value) != 0;
 }
 
+int ImageCache::holdsFallback(int i, int uid, const char *value) const
+{
+    if (i < 0 || i >= count_)
+        return 0;
+
+    const cache_entry_t *entry = &content_[i];
+    return entry->UID == uid && entry->nameFallback && strcmp(entry->key, value) == 0;
+}
+
+void ImageCache::markFallback(int i, int uid)
+{
+    if (i >= 0 && i < count_ && content_[i].UID == uid)
+        content_[i].nameFallback = 1;
+}
+
+GSTEXTURE *ImageCache::residentByValue(const char *value)
+{
+    int i;
+
+    if (strlen(value) >= sizeof(content_[0].key))
+        return NULL;
+
+    for (i = 0; i < count_; i++) {
+        cache_entry_t *entry = &content_[i];
+        if (entry->qr == NULL && entry->lastUsed != 0 && entry->texture.Mem != NULL && strcmp(entry->key, value) == 0) {
+            entry->lastUsed = guiFrameId; // still on screen: keep it away from the eviction scan
+            return &entry->texture;
+        }
+    }
+
+    return NULL;
+}
+
+int ImageCache::adoptFallback(const char *name, int *cacheId, int *uid, GSTEXTURE **tex)
+{
+    int i;
+
+    *tex = NULL;
+
+    // The row still owns a slot of its own (its id probe, say): that answer comes first.
+    if (*cacheId >= 0 && *cacheId < count_ && content_[*cacheId].UID == *uid)
+        return 0;
+    if (strlen(name) >= sizeof(content_[0].key))
+        return 0;
+
+    for (i = 0; i < count_; i++) {
+        cache_entry_t *entry = &content_[i];
+        if (!entry->nameFallback || entry->UID == 0 || strcmp(entry->key, name) != 0)
+            continue;
+
+        if (entry->qr == NULL && entry->lastUsed == 0) {
+            // The name is parked absent too. Only this generation's park answers for both values;
+            // the name claim that parked it was made right after the id's absence in that same one.
+            if (entry->failEpoch != gArtW.failEpoch)
+                return 0;
+            *cacheId = CACHE_ID_PS1_BOTH_ABSENT;
+            *uid = (int)gArtW.failEpoch;
+            return 1;
+        }
+
+        if (entry->qr == NULL && entry->texture.Mem == NULL)
+            return 0;
+
+        *cacheId = i;
+        *uid = entry->UID;
+        entry->lastUsed = guiFrameId;
+        if (entry->qr == NULL)
+            *tex = &entry->texture;
+        return 1;
+    }
+
+    return 0;
+}
+
+int cacheAbsenceIsCurrent(int uid)
+{
+    return (unsigned int)uid == gArtW.failEpoch;
+}
+
 // LOOKUP ONLY: hand back this item's texture if its slot is still live, and never claim a slot,
 // never queue a load, never touch the fail memo. For a caller that wants to keep DRAWING art it
 // already has while deliberately not asking for more -- without this, "don't request" also means
