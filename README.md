@@ -8,6 +8,9 @@
 A heartfelt thank you to developers who have contributed pull requests directly to this fork. Anyone who opens a pull request against RiptOPL is featured here at the top of the README in recognition of their support for the project and solidarity with its maintainer:
 ### [@akilluminati47](https://github.com/akilluminati47) (AK), RIPPS2 co-developer
 ### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
+- **[#702](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/702)–[#705](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/705)** (`RetroAchievements`): the real-hardware RA stabilization pass. Fixed the ee_core stack squeeze, the MMCE DEV9 path, cold-launch networking and RA settings placement.
+- **[#789](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/789)** (`Font lock`): holds the font lock across draw, measure and load, ending the boot-freeze race on real hardware.
+- **[#795](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/795)** (`MMCE music`): reopens the background-music file when its descriptor dies mid-stream.
 ### [@dnunezx](https://github.com/dnunezx) (darkladark)
 - **[#733](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/733)** (`Cover art flow`): **PSBBN Flow** — Contributed LUNA's Collection display and its perspective cover animation (`src/opluna_collection.c`) to the legacy Open-PS2-Loader edition. RiptOPL's built-in PSBBN Flow theme (`src/gfx/psbbnflow.cpp`) is his work, ported from that PR; the regular Coverflow is KrahJohlito's.
 
