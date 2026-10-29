@@ -11,7 +11,7 @@ A heartfelt thank you to developers who have contributed pull requests directly 
 ### [@akilluminati47](https://github.com/akilluminati47) (AK), RIPPS2 partner
 ### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
 ### [@dnunezx](https://github.com/dnunezx) (darkladark)
-- **[#733](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/733)** (`Cover art flow`): **PSBBN Flow** — Contributed LUNA's Collection display and its perspective cover animation (`src/opluna_collection.c`) to the legacy Open-PS2-Loader edition. RiptOPL's built-in PSBBN Flow theme takes its cover glide from that work (`src/gfx/psbbnflow.cpp`).
+- **[#733](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/733)** (`Cover art flow`): **PSBBN Flow** — Contributed LUNA's Collection display and its perspective cover animation (`src/opluna_collection.c`) to the legacy Open-PS2-Loader edition. RiptOPL's built-in PSBBN Flow theme (`src/gfx/psbbnflow.cpp`) is his work, ported from that PR; the regular Coverflow is KrahJohlito's.
 
 # RiptOPL
 
