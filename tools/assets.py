@@ -50,7 +50,8 @@ Rating_1 Rating_2 Rating_3 Rating_4 Rating_5 Scan_240p Scan_240p1 Scan_480i Scan
 Scan_480p1 Scan_480p2 Scan_480p3 Scan_480p4 Scan_480p5 Scan_576i Scan_576p Scan_720p
 Scan_1080i Scan_1080i2 Scan_1080p Vmode_multi Vmode_ntsc Vmode_pal logo
 logo0 logo1 logo2 logo3 case
-Index_0 Index_1 Index_2 Index_3 Index_4 fav fav_mark R3 L3 L1 R1 PS1 PS2 case_overlay psbbn_bg techwritescode""".split()
+Index_0 Index_1 Index_2 Index_3 Index_4 Index2_0 Index2_1 Index3_0 Index3_1 Index3_2
+Index4_0 Index4_1 Index4_2 Index4_3 fav fav_mark R3 L3 L1 R1 PS1 PS2 case_overlay psbbn_bg techwritescode""".split()
 # Button glyph sets (RIPPS2 build 90, akilluminati47): Standard and White, for Settings > Interface > Button Glyphs
 PNG_ASSETS += ["glyph_%s_%s" % (s, n) for s in ("standard", "white")
                for n in "cross circle square triangle start select L1 R1 L3 R3 left right".split()]
@@ -162,6 +163,9 @@ def embed():
     for a in pngs:
         name = {"incebtion": "background", "ip": "background_info"}.get(a, a) if theme_dir else a
         themed = theme_dir / f"gfx/{name}.png" if theme_dir else None
+        if themed and not themed.is_file() and name.startswith("Index") and "_" in name and name[5] != "_":
+            # Korium ships five-dot BdmIndex pictures only: dot <p> of <n> is its Index_<p>, never inceBtion's.
+            themed = theme_dir / f"gfx/Index_{name.split('_')[1]}.png"
         source = str(themed) if themed and themed.is_file() else f"gfx/{a}.png"
         bin2c(source, f"{a}_png", f"{a}_png")
     bin2c("third_party/fonts/PoeVeticaNew.ttf", "poeveticanew", "poeveticanew_raw")

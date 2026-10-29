@@ -1710,12 +1710,33 @@ void drawBDMIndex(struct menu_list *menu, struct submenu_list *item, config_set_
     if (itemList->mode >= ETH_MODE || menu->item->visible == 0)
         return;
 
+    // Count the visible mass-device pages in menu order, and the position of this one among them. The
+    // dots counted slots: USB in slot 0 and UDPBD in slot 1 showed five dots, devices in slots 0 and 2
+    // gave the first none, and one device in slot 2 still showed "3 of 5" (belomaxorka / YAOPL f84b227d).
+    struct menu_list *cur = menu;
+    while (cur->prev)
+        cur = cur->prev;
+
+    int count = 0, pos = 0;
+    for (; cur; cur = cur->next) {
+        if (cur->item->visible && ((item_list_t *)cur->item->userdata)->mode < ETH_MODE) {
+            if (cur == menu)
+                pos = count;
+            count++;
+        }
+    }
+
     // Only render if multiple mass devices are connected
-    if (itemList->mode == 0 && menu->next->item->visible == 0)
+    if (count < 2)
         return;
 
     char imgName[32];
-    snprintf(imgName, sizeof(imgName), "Index_%d", itemList->mode);
+    if (count < 5 && !gTheme->bdmIndexFixed)
+        snprintf(imgName, sizeof(imgName), "Index%d_%d", count, pos);
+    else if (count == 5 && !gTheme->bdmIndexFixed)
+        snprintf(imgName, sizeof(imgName), "Index_%d", pos);
+    else // a theme that keeps its own five dots, or more devices than five dots: by slot, as before
+        snprintf(imgName, sizeof(imgName), "Index_%d", itemList->mode);
 
     GSTEXTURE *indexTex = thmGetTexture(texLookupInternalTexId(&imgName[0]));
     if (indexTex && indexTex->Mem)
