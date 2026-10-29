@@ -188,7 +188,10 @@ at = labels.index('ERR_VMC_LBA_RANGE_CONTINUE')
 assert labels[at:at + 4] == ['ERR_VMC_LBA_RANGE_CONTINUE', 'ERR_VMC_LAYOUT_CONTINUE', 'ERR_VMC_PFS_LIMIT_CONTINUE', 'VMC_PFS_LIMIT_ON_CREATE']
 assert labels.index('NEUTRINO_DVR_FILE_MISSING') < at
 
-assert labels[-2:] == ['ERR_VMC_FRAGMENTS_CONTINUE', 'VMC_DEFRAGMENT_HINT']
+# Appended after the last pre-existing string, in this order, so earlier string IDs keep their values.
+# Later strings may follow them.
+fragments = labels.index('ERR_VMC_FRAGMENTS_CONTINUE')
+assert labels[fragments - 1:fragments + 2] == ['HINT_SHOW_HIDDEN_GAMES', 'ERR_VMC_FRAGMENTS_CONTINUE', 'VMC_DEFRAGMENT_HINT']
 
 with tempfile.TemporaryDirectory() as temp:
     path = Path(temp)
