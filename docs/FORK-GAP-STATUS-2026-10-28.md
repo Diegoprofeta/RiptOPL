@@ -1,5 +1,9 @@
 # Fork-gap status: 2026-10-28
 
+> Historical snapshot. The [October 29 ecosystem reconciliation](FORK-GAP-ECOSYSTEM-AUDIT-2026-10-29.md)
+> supersedes availability wording below and pins both current editions, release/development
+> source, dependency gitlinks and open implementation PRs.
+
 RiptOPL is the main line. The C codebase continues as the
 [legacy Open-PS2-Loader edition](https://github.com/NathanNeurotic/Open-PS2-Loader), which carries
 the same page in its `docs/`.
