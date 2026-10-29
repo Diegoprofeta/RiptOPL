@@ -140,7 +140,7 @@ FRONTEND_OBJS = pad.o xparam.o fntsys.o renderman.o menusys.o OSDHistory.o syste
 IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o usbhdfsd.o bdmevent.o \
 		bdm.o bdmfs_fatfs.o usbmass_bd.o iLinkman.o IEEE1394_bd.o mx4sio_bd.o \
 		ps2atad.o hdpro_atad.o poweroff.o ps2hdd.o xhdd.o genvmc.o lwnbdsvr.o \
-		ps2dev9.o smsutils.o ps2ip.o smap.o smap_udpbd.o udpfs_smap.o udpfs_ministack.o udpfs_bd.o udpfs_ioman.o isofs.o nbns-iop.o \
+		ps2dev9.o smsutils.o ps2ip.o smap.o smap_udpbd.o udpfs_smap.o udpfs_ministack.o udpfs_bd.o udpfs_ioman.o udpfs_fhi.o isofs.o nbns-iop.o \
 		sio2man.o padman.o mcman.o mcserv.o mmceman.o mmcedrv.o mmceigr.o \
 		httpclient-iop.o netman.o ps2ips.o \
 		bdm_mcemu.o mmce_mcemu.o hdd_mcemu.o smb_mcemu.o \
@@ -149,7 +149,7 @@ IOP_OBJS =	iomanx.o filexio.o ps2fs.o usbd.o usbhdfsd.o bdmevent.o \
 
 EECORE_OBJS = ee_core.o ioprp.o util.o \
 		udnl.o imgdrv.o eesync.o \
-		bdm_cdvdman.o bdm_ata_cdvdman.o bdm_udp_cdvdman.o IOPRP_img.o smb_cdvdman.o http_cdvdman.o \
+		bdm_cdvdman.o bdm_ata_cdvdman.o bdm_udp_cdvdman.o udpfs_cdvdman.o IOPRP_img.o smb_cdvdman.o http_cdvdman.o \
 		hdd_cdvdman.o mmce_cdvdman.o hdd_hdpro_cdvdman.o cdvdfsv.o \
 		ingame_smstcpip.o smap_ingame.o smbman.o smbinit.o
 
@@ -431,6 +431,7 @@ clean:	download_lwNBD
 	$(MAKE) -C modules/iopcore/cdvdman USE_BDM=1 clean
 	$(MAKE) -C modules/iopcore/cdvdman USE_BDM_ATA=1 clean
 	$(MAKE) -C modules/iopcore/cdvdman USE_BDM_UDP=1 clean
+	$(MAKE) -C modules/iopcore/cdvdman USE_UDPFS=1 clean
 	$(MAKE) -C modules/iopcore/cdvdman USE_MMCE=1 clean
 	$(MAKE) -C modules/iopcore/cdvdman USE_SMB=1 clean
 	$(MAKE) -C modules/iopcore/cdvdman USE_HTTP=1 clean
@@ -466,6 +467,7 @@ clean:	download_lwNBD
 	$(MAKE) -C modules/network/udpfs_ministack clean
 	$(MAKE) -C modules/network/udpfs_bd clean
 	$(MAKE) -C modules/network/udpfs_ioman clean
+	$(MAKE) -C modules/network/udpfs_fhi clean
 	echo " -smbinit"
 	$(MAKE) -C modules/network/smbinit clean
 	echo " -nbns"
@@ -627,6 +629,12 @@ modules/iopcore/cdvdman/bdm_udp_cdvdman.irx: modules/iopcore/cdvdman
 
 $(EE_ASM_DIR)bdm_udp_cdvdman.c: modules/iopcore/cdvdman/bdm_udp_cdvdman.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ bdm_udp_cdvdman_irx
+
+modules/iopcore/cdvdman/udpfs_cdvdman.irx: modules/iopcore/cdvdman
+	$(MAKE) $(CDVDMAN_PS2LOGO_FLAGS) $(CDVDMAN_DEBUG_FLAGS) USE_UDPFS=1 -C $< all
+
+$(EE_ASM_DIR)udpfs_cdvdman.c: modules/iopcore/cdvdman/udpfs_cdvdman.irx | $(EE_ASM_DIR)
+	$(BIN2C) $< $@ udpfs_cdvdman_irx
 
 modules/iopcore/cdvdman/mmce_cdvdman.irx: modules/iopcore/cdvdman
 	$(MAKE) $(CDVDMAN_PS2LOGO_FLAGS) $(CDVDMAN_DEBUG_FLAGS) $(CDVDMAN_RA_FLAGS) USE_MMCE=1 -C $< all
@@ -917,6 +925,12 @@ modules/network/udpfs_ioman/udpfs_ioman.irx: modules/network/udpfs_ioman
 	$(MAKE) -C $<
 
 $(EE_ASM_DIR)udpfs_ioman.c: modules/network/udpfs_ioman/udpfs_ioman.irx | $(EE_ASM_DIR)
+	$(BIN2C) $< $@ $(*F)_irx
+
+modules/network/udpfs_fhi/udpfs_fhi.irx: modules/network/udpfs_fhi
+	$(MAKE) -C $<
+
+$(EE_ASM_DIR)udpfs_fhi.c: modules/network/udpfs_fhi/udpfs_fhi.irx | $(EE_ASM_DIR)
 	$(BIN2C) $< $@ $(*F)_irx
 
 $(EE_ASM_DIR)smap.c: $(PS2SDK)/iop/irx/smap.irx | $(EE_ASM_DIR)

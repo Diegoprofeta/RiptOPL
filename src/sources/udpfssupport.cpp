@@ -34,9 +34,10 @@
 #include <errno.h>
 
 // udpfs is a network FILESYSTEM device: the iomanX device "udpfs:" is served by the udpfs_ioman IRX
-// chain (smap -> ministack(ip=) -> udpfs_ioman). Games are read straight off "udpfs:/" and boot through
-// the external Neutrino core (this device has no embedded OPL cdvdman backend), exactly like the "udp"
-// BDM transport in bdmsupport.c -- but here the mount is a filesystem, not a block device.
+// chain (smap -> ministack(ip=) -> udpfs_ioman). Games are read straight off "udpfs:/". They boot through
+// the external Neutrino core by default, like the "udp" BDM transport in bdmsupport.c; a game whose own
+// Loader Core is <OPL> boots the OPL core with udpfs_cdvdman, which reads the ISO in game through
+// udpfs_fhi by the server handle the menu kept open (udpfsLaunchOplCore).
 
 // Theme/server-wait session state. This cluster stays file-scope deliberately: test_udpfs_themes.py
 // extracts udpfsDiscoverThemes()/udpfsSetWaitingForServer() by exact signature and compiles them in a
@@ -841,6 +842,96 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
     sysLaunchEmber(emberElf, launchName);
 }
 
+// The OPL core for a UDPFS Files game. The ISO stays open on udpfs_ioman across the IOP reset (nothing in
+// the teardown closes it, and the reset itself sends the server nothing), and cdvdman gets the server's
+// handle for it. After the reset the EE core loads udpfs_smap, udpfs_ministack and udpfs_fhi; udpfs_fhi
+// re-discovers the server, which keeps a peer's open handles across a re-discovery (udpfsd
+// Connection.ResetPeer), and reads the disc by that handle. This is how Neutrino's own udpfs_fhi boots
+// these games. No memory card emulation on this path: there is no UDPFS mcemu.
+static void udpfsLaunchOplCore(item_list_t *itemList, base_game_info_t *game, config_set_t *configSet)
+{
+    int index, compatmask, result;
+    int EnablePS2Logo = 0;
+    char partname[256], filename[32];
+    struct cdvdman_settings_udpfs *settings;
+    u32 layer1_start;
+    void *irx = &udpfs_cdvdman_irx;
+    int irx_size = size_udpfs_cdvdman_irx;
+
+    compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
+    if (compatmask < 0) // patch zone not found: `index` is unset
+        return;
+    settings = (struct cdvdman_settings_udpfs *)((u8 *)irx + index);
+    sbEnsureIgrUsbDrivers(compatmask);
+
+    // One file: the scan lists no split (UL) games here. Its size bounds cdvdman's out-of-range reads
+    // (sbGetMediaLsnCount); an unknown size keeps the driver on the PVD.
+    sbCreatePath(game, partname, udpfsPrefix, "/", 0);
+    u64 isoBytes = 0;
+    int fd = open(partname, O_RDONLY, 0666);
+    if (fd >= 0) {
+        s64 bytes = lseek64(fd, 0, SEEK_END);
+        if (bytes > 0)
+            isoBytes = (u64)bytes;
+        close(fd);
+    }
+    if (gPS2Logo) {
+        fd = open(partname, O_RDONLY, 0666);
+        if (fd >= 0) {
+            EnablePS2Logo = CheckPS2Logo(fd, 0);
+            close(fd);
+        }
+    }
+
+    layer1_start = sbGetISO9660MaxLBA(partname);
+    settings->common.mediaLsnCount = sbGetMediaLsnCount(partname, isoBytes);
+    if (sbProbeISO9660(partname, game, layer1_start) != 0) {
+        layer1_start = 0;
+        LOG("DVD detected.\n");
+    } else {
+        layer1_start -= 16;
+        LOG("DVD-DL layer 1 @ sector 0x%lx.\n", layer1_start);
+    }
+    settings->common.layer1_start = layer1_start;
+    settings->common.zso_cache = bdmCacheSize; // the UDPFS IMG native leg's cache (bdmlaunch.cpp)
+
+    // No RetroAchievements here: udpfs_fhi owns the adapter in game (sysModeHasNoRATelemetry).
+    if ((result = sbLoadCheats(udpfsPrefix, game->startup, configSet)) < 0) {
+        // The helper does the sbUnprepare itself (include/supportbase.h).
+        if (!sbCheatsMissingContinue(&settings->common, result))
+            return;
+    }
+    sbLoadImage(udpfsPrefix, game->startup);
+
+    if (configGetStrCopy(configSet, CONFIG_ITEM_ALTSTARTUP, filename, sizeof(filename)) == 0)
+        strcpy(filename, game->startup);
+
+    // Opened last, so every way back to the menu above leaves no handle behind. Never closed: the
+    // server's handle is the game's disc until the console is reset.
+    int iso_file = fileXioOpen(partname, 0x1, 0666); // iomanX FIO_O_RDONLY (newlib O_RDONLY is 0)
+    int iso_handle = iso_file >= 0 ? fileXioIoctl2(iso_file, 0x80, NULL, 0, NULL, 0) : -1;
+    if (iso_handle < 0) {
+        LOG("UDPFSSUPPORT: cannot open %s for the OPL core (fd %d, handle %d)\n", partname, iso_file, iso_handle);
+        if (iso_file >= 0)
+            fileXioClose(iso_file);
+        host::ui().warning(_l(_STR_ERR_FILE_INVALID), 8);
+        sbUnprepare(&settings->common);
+        return;
+    }
+    settings->iso_handle = iso_handle;
+
+    // MMCE cross-device game-id (#261), before deinit frees `game`.
+    mmceSendGameID(game->startup, NULL, 0);
+
+    // UdpfsSource::cleanUp leaves the udpfs_ioman chain (and with it the open ISO) alone.
+    host::app().deinit(NO_EXCEPTION, itemList->mode); // CAREFUL: frees the game lists, and with them `game`
+
+    // udpfs_fhi owns the network adapter in game: the game's own DEV9 and SMAP are faked, as for UDPBD.
+    settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9;
+    settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_SMAP;
+    sysLaunchLoaderElf(filename, "UDPFS_MODE", irx_size, static_cast<void **>(irx), 0, NULL, EnablePS2Logo, compatmask);
+}
+
 void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
 {
     int compatmask = 0, index;
@@ -867,25 +958,48 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
         return;
     }
 
-    // The udpfs device has NO embedded OPL cdvdman backend -- games boot ONLY via the external Neutrino
-    // core. Resolve the neutrino.elf below (while `game`/`configSet` are still valid -- deinit frees them),
-    // and reject formats Neutrino cannot run (UL-split / .zso), mirroring bdmsupport's udp Neutrino path.
-    // NB: VMC emulation is emitted as discrete -mcN Neutrino args (sbBuildVmcNeutrinoArgs below), not via
-    // an OPL mcemu IRX, so no smb/bdm-style mcemu patch loop is needed here.
+    // Neutrino by default; the OPL core when the game's own Loader Core is <OPL> (bdmNetBlockCoreLoader),
+    // or when Neutrino cannot run it (no neutrino.elf, a .zso image), as on the udp BDM device and MMCE.
+    // NB: Neutrino's VMC emulation is emitted as discrete -mcN args (sbBuildVmcNeutrinoArgs below); the
+    // OPL core leg has none.
 
     if (gRememberLastPlayed) {
         configSetStr(configGetByType(CONFIG_LAST), "last_played", game->startup);
         host::app().saveConfig(CONFIG_LAST, 0);
     }
 
-    // sbPrepare resolves the per-game compat mask (and per-game pad-emu etc.). The udpfs launch does not
+    // The scan lists no USBExtreme (UL) split games; neither core reads split parts from this device.
+    if (game->format == GAME_FORMAT_USBLD) {
+        host::ui().warning(_l(_STR_ERR_FILE_INVALID), 6);
+        return;
+    }
+    // Resolved while `game`/`configSet` are still valid -- deinit frees them.
+    const char *neutrinoPath = NULL;
+    int coreLoader = bdmNetBlockCoreLoader(configSet);
+    if (coreLoader) {
+        neutrinoPath = sbResolveNeutrinoPath(udpfsPrefix);
+        if (!strcasecmp(game->extension, ".zso")) {
+            // game->extension is stored verbatim, so ".ZSO" must reject here too.
+            host::ui().warning(_l(_STR_NEUTRINO_BAD_FORMAT), 6);
+            coreLoader = 0;
+        } else if (neutrinoPath == NULL) {
+            host::ui().warning(_l(_STR_NEUTRINO_NOT_FOUND), 6);
+            coreLoader = 0;
+        }
+    }
+    if (!coreLoader) {
+        udpfsLaunchOplCore(itemList, game, configSet);
+        return;
+    }
+
+    // sbPrepare resolves the per-game compat mask (and per-game pad-emu etc.). The Neutrino leg does not
     // patch an OPL cdvdman IRX, but sbPrepare still needs a valid buffer to locate the patch zone; reuse
     // the smb cdvdman image as a scratch target (its patched fields are never launched here -- only the
-    // returned compatmask is used). A follow-up stage finalizes the exact backend wiring.
+    // returned compatmask is used).
     compatmask = sbPrepare(game, configSet, size_smb_cdvdman_irx, smb_cdvdman_irx, &index);
     if (compatmask < 0)
         return;
-    compatmask = sbGetCompatModes(configSet, 1); // UDPFS only launches Neutrino, and a title default can differ per core
+    compatmask = sbGetCompatModes(configSet, 1); // this leg launches Neutrino, and a title default can differ per core
 
     if ((result = sbLoadCheats(udpfsPrefix, game->startup, configSet)) < 0) {
         // #265: let the user back out instead of sitting through the whole load. The helper does
@@ -915,8 +1029,7 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     if (configGetStrCopy(configSet, CONFIG_ITEM_ALTSTARTUP, filename, sizeof(filename)) == 0)
         strcpy(filename, game->startup);
 
-    // Per-game Neutrino ELF + flags, resolved BEFORE deinit frees configSet's owner.
-    const char *neutrinoPath = NULL;
+    // Per-game Neutrino flags, resolved BEFORE deinit frees configSet's owner (neutrino.elf was above).
     char neutrinoExtraArgs[256] = "";
     int neutrinoVideo = gNeutrinoVideoDefault, neutrinoGsmComp = gNeutrinoGsmCompDefault; // absent per-game keys = follow the globals
     neutrino_vmc_args_t neutrinoVmc = {0};
@@ -924,19 +1037,6 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     configGetStrCopy(configSet, CONFIG_ITEM_NEUTRINO_ARGS, neutrinoExtraArgs, sizeof(neutrinoExtraArgs));
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_VIDEO, &neutrinoVideo);
     configGetInt(configSet, CONFIG_ITEM_NEUTRINO_GSMCOMP, &neutrinoGsmComp);
-    neutrinoPath = sbResolveNeutrinoPath(udpfsPrefix);
-
-    // Format / neutrino availability check: on failure show the network-specific message (the OPL-core
-    // fallback the generic _STR_NEUTRINO_* warnings promise does not exist for a network filesystem) and
-    // abort cleanly while the GUI is still up (no deinit into a no-op launch = black screen).
-    if (game->format == GAME_FORMAT_USBLD || !strcasecmp(game->extension, ".zso")) {
-        host::ui().warning(_l(_STR_NET_NEEDS_NEUTRINO), 6);
-        return;
-    }
-    if (neutrinoPath == NULL) {
-        host::ui().warning(_l(_STR_NET_NEEDS_NEUTRINO), 6);
-        return;
-    }
 
     // VMC -> neutrino (#47): resolve any per-game VMC into discrete -mc0/-mc1 argv entries before deinit.
     sbBuildVmcNeutrinoArgs(configSet, udpfsPrefix, &neutrinoVmc);

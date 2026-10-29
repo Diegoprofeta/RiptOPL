@@ -218,6 +218,17 @@ targets:
     imports_lst: modules/network/udpfs_ioman/src/imports.lst
     exports_tab: modules/network/udpfs_ioman/src/exports.tab
 
+  # OPL-core UDPFS Files games: reads the ISO the menu kept open, by its server handle, after the reset.
+  - name: udpfs_fhi
+    type: iop
+    sources: [modules/network/udpfs_fhi/src/main.c, modules/network/udpfs_fhi/src/udprdma.c, modules/network/udpfs_fhi/src/udpfs_core.c, modules/network/udpfs_fhi/src/udpfs_fhi.c]
+    include_dirs: [modules/network/udpfs_fhi/src, modules/network/udpfs_fhi/include, modules/network/udpfs_smap/include, modules/network/udpfs_ministack/include]
+    headers: *iop_headers
+    defines: [FEATURE_UDPFS_FHI, UDPRDMA_MAX_SOCKETS=1]
+    cflags: [-mno-check-zero-division]
+    imports_lst: modules/network/udpfs_fhi/src/imports.lst
+    exports_tab: modules/network/udpfs_fhi/src/exports.tab
+
   # FORK-VENDORED atad (retryable sceAtaInit). Embedded as ps2atad_irx.
   - name: ata_bd
     type: iop
@@ -407,6 +418,16 @@ targets:
     imports_lst: modules/iopcore/cdvdman/imports.lst
     exports_tab: modules/iopcore/cdvdman/exports.tab
 
+  # OPL-core UDPFS Files games: udpfs_fhi imports dev9 from this cdvdman, which also fakes the game's SMAP.
+  - name: udpfs_cdvdman
+    type: iop
+    sources: [modules/iopcore/cdvdman/cdvdman.c, modules/iopcore/cdvdman/ioops.c, modules/iopcore/cdvdman/ncmd.c, modules/iopcore/cdvdman/scmd.c, modules/iopcore/cdvdman/searchfile.c, modules/iopcore/cdvdman/streaming.c, modules/iopcore/cdvdman/ioplib_util.c, modules/iopcore/cdvdman/smsutils.S, modules/iopcore/cdvdman/device-udpfs.c, modules/iopcore/cdvdman/dev9.c, modules/isofs/zso.c, modules/isofs/lz4.c]
+    include_dirs: [modules/iopcore/cdvdman/, modules/iopcore/common]
+    headers: *iop_headers
+    defines: [UDPFS_DRIVER, __USE_DEV9]
+    imports_lst: modules/iopcore/cdvdman/imports.lst
+    exports_tab: modules/iopcore/cdvdman/exports.tab
+
   - name: mmce_cdvdman
     type: iop
     sources: [modules/iopcore/cdvdman/cdvdman.c, modules/iopcore/cdvdman/ioops.c, modules/iopcore/cdvdman/ncmd.c, modules/iopcore/cdvdman/scmd.c, modules/iopcore/cdvdman/searchfile.c, modules/iopcore/cdvdman/streaming.c, modules/iopcore/cdvdman/ioplib_util.c, modules/iopcore/cdvdman/smsutils.S, modules/iopcore/cdvdman/device-mmce.c, modules/isofs/zso.c, modules/isofs/lz4.c]
@@ -526,5 +547,5 @@ targets:
     ldflags: [-fdata-sections, -ffunction-sections, "-Wl,--gc-sections", "-Wl,-Map,opl.map", -lpadx]
     libs: [gskit, dmakit, poweroff, filexio, patches, png, jpeg, z, mc, freetype, vux, cdvd, netman, ps2ips, audsrv-compat, vorbisfile, vorbis, ogg, pad, elf-loader-nocolour, ds34usb_ee, ds34bt_ee]
     pack: true
-    embed_irx: [isofs, bdmevent, genvmc, nbns, httpclient, imgdrv, resetspu, apemodpatch, cleareffects, f2techioppatch, iremsndpatch, cdvdfsv, smbinit, SMSUTILS:smsutils, SMSTCPIP:ingame_smstcpip, smap_ingame, xhdd, smap_udpbd, udpfs_smap, udpfs_ministack, udpfs_bd, udpfs_ioman, lwnbdsvr, ps2ips_fork:ps2ips, bdm_drv:bdm, usbd_mini_fork:usbd, ata_bd:ps2atad, ps2hdd_osd:ps2hdd, hdd_cdvdman, hdd_hdpro_cdvdman, smb_cdvdman, http_cdvdman, bdm_cdvdman, bdm_ata_cdvdman, bdm_udp_cdvdman, pccf_cdvdman, mmce_cdvdman, hdd_mcemu, smb_mcemu, bdm_mcemu, mmce_mcemu, usb_pademu, bt_pademu, ds34usb, ds34bt, pvrdrv:dvrdrv, dvrfile, eecore, elfldr, smbman_ra:smbman, usbhdfsd, libsd, audio:audsrv, bdmfs_fatfs_fork:bdmfs_fatfs, iLinkman_fork:iLinkman, IEEE1394_bd_mini_fork:IEEE1394_bd, usbmass_bd_mini:usbmass_bd, mx4sio_bd_mini:mx4sio_bd, pccf_bd, pccf_game, hdpro_atad, poweroff, dev9:ps2dev9, ps2ip-nm:ps2ip, smap, netman, iomanx, filexio, sio2man, padman, mcman, mcserv, mmceman_fork:mmceman, mmcedrv, mmceigr, fs-osd:ps2fs, eesync-nano:eesync, udnl]
+    embed_irx: [isofs, bdmevent, genvmc, nbns, httpclient, imgdrv, resetspu, apemodpatch, cleareffects, f2techioppatch, iremsndpatch, cdvdfsv, smbinit, SMSUTILS:smsutils, SMSTCPIP:ingame_smstcpip, smap_ingame, xhdd, smap_udpbd, udpfs_smap, udpfs_ministack, udpfs_bd, udpfs_ioman, udpfs_fhi, lwnbdsvr, ps2ips_fork:ps2ips, bdm_drv:bdm, usbd_mini_fork:usbd, ata_bd:ps2atad, ps2hdd_osd:ps2hdd, hdd_cdvdman, hdd_hdpro_cdvdman, smb_cdvdman, http_cdvdman, bdm_cdvdman, bdm_ata_cdvdman, bdm_udp_cdvdman, udpfs_cdvdman, pccf_cdvdman, mmce_cdvdman, hdd_mcemu, smb_mcemu, bdm_mcemu, mmce_mcemu, usb_pademu, bt_pademu, ds34usb, ds34bt, pvrdrv:dvrdrv, dvrfile, eecore, elfldr, smbman_ra:smbman, usbhdfsd, libsd, audio:audsrv, bdmfs_fatfs_fork:bdmfs_fatfs, iLinkman_fork:iLinkman, IEEE1394_bd_mini_fork:IEEE1394_bd, usbmass_bd_mini:usbmass_bd, mx4sio_bd_mini:mx4sio_bd, pccf_bd, pccf_game, hdpro_atad, poweroff, dev9:ps2dev9, ps2ip-nm:ps2ip, smap, netman, iomanx, filexio, sio2man, padman, mcman, mcserv, mmceman_fork:mmceman, mmcedrv, mmceigr, fs-osd:ps2fs, eesync-nano:eesync, udnl]
 
