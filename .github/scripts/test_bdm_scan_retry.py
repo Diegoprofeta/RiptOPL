@@ -82,7 +82,10 @@ typedef struct
     int mode;
     void *priv;
     void *owner;
+    unsigned char flags;
 } item_list_t;
+#define MODE_FLAG_READ_ONLY 0x08
+static int sbListCacheReadOnly;
 
 typedef struct
 {

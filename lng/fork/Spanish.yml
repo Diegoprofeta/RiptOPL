@@ -637,3 +637,4 @@ translations:
   DNAS_ID: ID DNAS
   THEME_VIEW: "Vista del tema"
   HINT_THEME_VIEW: "Cómo muestra el tema tus juegos: List, Coverflow, PSBBN Flow o Grid. Mantén L3 en la página principal para cambiar. Los temas sin esa vista usan su vista predeterminada."
+  NET_READ_ONLY_VMC: "Este servidor UDPBD/UDPFS es de solo lectura, así que no se puede usar una VMC en él. El juego guarda en la memory card real."
