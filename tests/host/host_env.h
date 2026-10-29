@@ -29,7 +29,7 @@ unsigned char save_icn[1];
 unsigned int size_save_icn = 0;
 int probed_fd = -1;
 u32 probed_lba = 0;
-void ziso_init(ZISO_header *, u32) {}
+int ziso_init(ZISO_header *, u32) { return 0; }
 int ziso_read_sector(u8 *, u32, unsigned int) { return 0; }
 // util.cpp reaches the GUI through host::ui(); the tests give it a recording no-op.
 #include "include/host.h"
