@@ -130,6 +130,17 @@ enum INTERNAL_TEXTURE {
     PLAYERS_4,
 #endif
     TECHWRITESCODE_LOGO, // boot-splash credit mark, embedded techwritescode_png
+    // BdmIndex dots for 2-4 visible mass devices (dot <p> of <n>); five use INDEX_0..INDEX_4.
+    // Appended, not placed after INDEX_4: texture ids are positional.
+    INDEX2_0,
+    INDEX2_1,
+    INDEX3_0,
+    INDEX3_1,
+    INDEX3_2,
+    INDEX4_0,
+    INDEX4_1,
+    INDEX4_2,
+    INDEX4_3,
 #ifdef RETROACHIEVEMENTS
     // RA mark over a tracked game's cover (theme override "ra_mark"). Appended last:
     // texId is positional.

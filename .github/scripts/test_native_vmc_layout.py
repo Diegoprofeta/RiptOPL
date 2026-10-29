@@ -35,6 +35,9 @@ typedef struct { u64 sector; u32 count; } bd_fragment_t;
 #define USBMASS_IOCTL_GET_FRAGLIST 2
 #define LOG(...) ((void)0)
 #define HDD_VMC_MAP_ENTRIES 11
+#define MODE_FLAG_READ_ONLY 0x08
+typedef struct { unsigned char flags; } item_list_t;
+static item_list_t bdmList;
 enum { _STR_ERR_VMC_CONTINUE, _STR_ERR_VMC_FRAGMENTED_CONTINUE,
        _STR_ERR_VMC_LBA_RANGE_CONTINUE, _STR_ERR_VMC_LAYOUT_CONTINUE, _STR_ERR_VMC_PFS_LIMIT_CONTINUE, _STR_ERR_VMC_FRAGMENTS_CONTINUE, _STR_VMC_DEFRAGMENT_HINT };
 typedef struct { int page_size, block_size, card_size; } specs_t;
@@ -106,6 +109,7 @@ static void run_bdm(void) {
     int fd, iop_fd;
     device_t *pDeviceData=&device;
     config_set_t *configSet=&config;
+    item_list_t *itemList=&bdmList;
     @BDM_SLOTS@
     (void)size_mcemu_irx; finished=1;
 }
@@ -129,6 +133,8 @@ static void reset(void) {
 int main(void) {
     reset(); run_bdm(); assert(finished && prompts==0 && bdm_slot(0).active && !bdm_slot(1).active);
     assert(bdm_slot(0).start_sector==100 && opens[0]==1 && closes[0]==1);
+    reset(); bdmList.flags=MODE_FLAG_READ_ONLY; run_bdm(); bdmList.flags=0;
+    assert(finished && prompts==0 && opens[0]==0 && !bdm_slot(0).active); /* read-only server: no VMC, no question */
     reset(); frags[0]=2; run_bdm(); assert(finished && prompts==1 && !bdm_slot(0).active && closes[0]==1);
     assert(strstr(messages[0],"fragmented card0 in 2 fragments slot 1"));
     for(int bad=-2;bad<=0;bad++) { reset(); frags[0]=bad; run_bdm(); assert(!bdm_slot(0).active && prompts==1 && strstr(messages[0],"unknown") && closes[0]==1); }

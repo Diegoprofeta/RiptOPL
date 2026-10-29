@@ -56,6 +56,7 @@ public:
     // Used by the free callbacks/forwarders in appsupport.cpp (appScanCallback, appGetArtMode).
     void appSetResolvedStartup(app_info_t *app);
     app_info_t *appLookupByStartup(const char *startup);
+    int isReadOnly(item_list_t *itemList, int id); // appIsReadOnly
 
 private:
     int appVisibleToMaster(item_list_t *itemList, int id);
