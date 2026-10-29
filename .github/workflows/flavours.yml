@@ -170,6 +170,7 @@ jobs:
         run: |
           python3 .github/scripts/test_ra_disc.py
           python3 .github/scripts/test_disc_key_semaphore.py
+          python3 .github/scripts/test_history_filename_bounds.py
       - name: Check RA snapshot scheduling and transmission retries
         run: python3 .github/scripts/test_ra_sender.py
 
