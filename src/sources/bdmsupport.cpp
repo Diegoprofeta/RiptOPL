@@ -1996,8 +1996,8 @@ config_set_t *BdmSource::config(item_list_t *itemList, int id)
             char dir[256];
             snprintf(dir, sizeof(dir), "%s", cfgDir);
             dir[strlen(dir) - 1] = '\0';
-            mkdir(dir, 0777);
-            snprintf(madeCfgDir, sizeof(madeCfgDir), "%s", cfgDir);
+            if (mkdir(dir, 0777) == 0) // a failure is tried again on the next selection
+                snprintf(madeCfgDir, sizeof(madeCfgDir), "%s", cfgDir);
         }
         useCfgDir = 1;
     }
