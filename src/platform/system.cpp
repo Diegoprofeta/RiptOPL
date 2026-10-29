@@ -4,6 +4,8 @@
   Review OpenUsbLd README & LICENSE files for further details.
 */
 
+#include "disc_key.h"
+
 #ifdef __DECI2_DEBUG
 #include <iopcontrol_special.h>
 #endif
@@ -486,7 +488,7 @@ int sysGetDiscID(char *hexDiscID)
     sceCdSync(0);
 
     LOG("SYSTEM Disc read key\n");
-    if (sceCdReadKey(0, 0, 0x4b, key) == 0) {
+    if (sysReadDiscKey(0, 0, 0x4b, key) == 0) {
         LOG("SYSTEM Cannot read CD/DVD key.\n");
         sceCdStop();
         sceCdSync(0);
