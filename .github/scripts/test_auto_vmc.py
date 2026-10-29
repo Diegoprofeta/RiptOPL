@@ -72,6 +72,8 @@ static int libListRowView(item_list_t*,int) {return rowView;}
 [[maybe_unused]] static int bdmSupportIsUDPBD(const item_list_t*) {return udpbd;}
 [[maybe_unused]] static int bdmModeIsUDPBD(int) {return udpbd;}
 [[maybe_unused]] static int bdmModeIsPCCF(int) {return 0;}
+static int readOnlyMode;
+static int bdmModeIsReadOnly(int m) {return m==readOnlyMode;}
 static int guiIsActive() {return active;}
 static void configGetInt(config_set_t *c,int,int *out) {*out=c->loader;}
 [[maybe_unused]] static int bdmNetBlockCoreLoader(config_set_t *c) {return c->loader==0?0:1;}
@@ -113,12 +115,13 @@ static void reset() {
     gAutoCreateVmc=1;gDefaultCoreLoader=0;rowView=kind=0;probe=submitted=-1;
     probes=creates=polls=aborts=writes=dialogs=contiguity=completionError=0;contiguous= -1;
     completeAt=2;cancelAt=-1;chain=1;active=ownerPresent=cap=saveOk=assignOk=true;
-    statusFails=jobStarted=initialBusy=initialFailure=udpbd=false;title="SLUS_123.45";owner={};
+    statusFails=jobStarted=initialBusy=initialFailure=udpbd=false;readOnlyMode=-1;title="SLUS_123.45";owner={};
     completedSize=8;rowCount=3;mutation=0;
 }
 static void noCard(config_set_t &c) {assert(!c.assigned[0] && !creates && !writes);}
 int main() {
     item_list_t list;config_set_t cfg;
+    reset();cfg={};readOnlyMode=list.mode;assert(guiGameAutoCreateVmc(&list,1,&cfg)==1);noCard(cfg);assert(!probes); // a read-only server launches without a VMC
     reset(); assert(guiGameAutoCreateVmc(&list,1,&cfg)==1);
     assert(creates==1 && polls==2 && probes==2 && writes==1 && !strcmp(cfg.assigned,"GROUP_0") && contiguity==1);
     assert(contiguous==1); // a native card needs one reserved extent (original #994)
@@ -153,6 +156,8 @@ int main() {
         if(scenario==9)title=nullptr;
         assert(guiGameAutoCreateVmc(&list,1,&cfg));assert(!creates && !writes);
     }
+    reset();cfg={};list.mode=FAV_MODE;owner.mode=5;readOnlyMode=5; // a favourite whose own server is read-only
+    assert(guiGameAutoCreateVmc(&list,1,&cfg)==1);noCard(cfg);assert(!probes);
     reset();cfg={};list.mode=FAV_MODE;owner.mode=HTTP_MODE;
     assert(guiGameAutoCreateVmc(&list,1,&cfg));noCard(cfg);
     reset();cfg={};list.mode=FAV_MODE;kind=3;

@@ -1989,7 +1989,16 @@ config_set_t *BdmSource::config(item_list_t *itemList, int id)
     int useCfgDir = 0;
     if ((itemList->flags & MODE_FLAG_READ_ONLY) && home != NULL && home[0] != '\0' && !bdmIsReadOnlyPath(home)) {
         size_t len = strlen(home);
+        static char madeCfgDir[256];
         snprintf(cfgDir, sizeof(cfgDir), "%s%sCFG/", home, (home[len - 1] == '/' || home[len - 1] == ':') ? "" : "/");
+        // A memory card home has no CFG folder, and saving the settings does not create one. Once per folder.
+        if (strcmp(madeCfgDir, cfgDir) != 0) {
+            char dir[256];
+            snprintf(dir, sizeof(dir), "%s", cfgDir);
+            dir[strlen(dir) - 1] = '\0';
+            if (mkdir(dir, 0777) == 0) // a failure is tried again on the next selection
+                snprintf(madeCfgDir, sizeof(madeCfgDir), "%s", cfgDir);
+        }
         useCfgDir = 1;
     }
     config = sbPopulateConfigIn(game, pDeviceData->bdmPrefix, "/", useCfgDir ? cfgDir : NULL);

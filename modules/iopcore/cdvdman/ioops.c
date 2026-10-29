@@ -427,6 +427,12 @@ static int cdrom_dread(iop_file_t *f, iox_dirent_t *dirent)
             tocEntryPointer = (struct dirTocEntry *)&cdvdman_fs_buf[fh->position];
             if (tocEntryPointer->length == 0)
                 break;
+            // A record must hold its name and end inside the sector, or the name read below takes stale bytes.
+            if (tocEntryPointer->length < 33 + tocEntryPointer->filenameLength || fh->position + tocEntryPointer->length > 2048) {
+                tocEntryPointer = NULL;
+                r = 0;
+                break;
+            }
 
             fh->position += tocEntryPointer->length;
             r = 1;
@@ -443,7 +449,11 @@ static int cdrom_dread(iop_file_t *f, iox_dirent_t *dirent)
             dirent->name[tocEntryPointer->filenameLength] = '\0';
         }
 
-        DPRINTF("cdrom_dread r=%d mode=%04x name=%s\n", r, (int)mode, dirent->name);
+        // No entry (r == 0) leaves the caller's name untouched, so it is printed only for an entry.
+        if (r > 0)
+            DPRINTF("cdrom_dread r=%d mode=%04x name=%s\n", r, (int)mode, dirent->name);
+        else
+            DPRINTF("cdrom_dread r=%d\n", r);
     } else
         DPRINTF("cdrom_dread r=%d\n", r);
 
