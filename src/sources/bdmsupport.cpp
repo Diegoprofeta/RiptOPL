@@ -834,6 +834,26 @@ int bdmModeIsUDPBD(int mode)
     return ((bdm_device_data_t *)bdmDeviceList[mode - BDM_MODE].priv)->bdmDeviceType == BDM_TYPE_UDPBD;
 }
 
+// A UDPBD/UDPFS IMG server found read-only when it connected (bdmCheckWritable). Nothing is written to it.
+int bdmModeIsReadOnly(int mode)
+{
+    if (mode < BDM_MODE || mode > BDM_MODE_LAST)
+        return 0;
+    return (bdmDeviceList[mode - BDM_MODE].flags & MODE_FLAG_READ_ONLY) != 0;
+}
+
+// Whether a "massN:..." path is on such a device (an app's folder or ELF).
+int bdmIsReadOnlyPath(const char *path)
+{
+    if (path == NULL || strncmp(path, "mass", 4) != 0 || path[4] < '0' || path[4] > '9')
+        return 0;
+    int unit = 0;
+    const char *p = path + 4;
+    while (*p >= '0' && *p <= '9')
+        unit = unit * 10 + (*p++ - '0');
+    return *p == ':' && bdmModeIsReadOnly(BDM_MODE + unit);
+}
+
 // Registered with SifAddCmdHandler for BDMEVENT_EE_EVENT_CMD; forwards to the instance.
 static void bdmEventHandler(void *packet, void *opt)
 {
@@ -1744,8 +1764,10 @@ int BdmSource::needsUpdate(item_list_t *itemList)
         sfxPlay(SFX_BD_CONNECT);
 
     // Belt-and-suspenders: never create the library tree at an empty prefix (= the CWD/boot folder).
+    // A read-only server would acknowledge the folders and drop them.
     if (!pDeviceData->FoldersCreated && pDeviceData->bdmPrefix[0] != '\0') {
-        sbCreateFolders(pDeviceData->bdmPrefix, 1);
+        if (!(itemList->flags & MODE_FLAG_READ_ONLY))
+            sbCreateFolders(pDeviceData->bdmPrefix, 1);
         pDeviceData->FoldersCreated = 1;
     }
 
@@ -1820,7 +1842,9 @@ int BdmSource::update(item_list_t *itemList)
     }
     if (view == LIB_VIEW_ISO || view == LIB_VIEW_MIXED) {
         const char *sub = folderGetSub(itemList->mode);
+        sbListCacheReadOnly = (itemList->flags & MODE_FLAG_READ_ONLY) != 0;
         sbReadList(&pDeviceData->bdmGames, pDeviceData->bdmPrefix, sub, &pDeviceData->bdmULSizePrev, &pDeviceData->bdmGameCount);
+        sbListCacheReadOnly = 0;
         // Still -2 after a root scan = neither CD nor DVD would open and there is no ul.cfg. Say where
         // it looked rather than leave a silently empty page. Only a connect, SELECT, L3 or
         // delete/rename pass scans, so this cannot repeat on its own.
@@ -1958,7 +1982,17 @@ config_set_t *BdmSource::config(item_list_t *itemList, int id)
     // Active view's array (#120 split) -- a VCD's per-game CFG keys off its own entry, and a stale
     // id resolves to the empty entry instead of indexing outside either backing array.
     base_game_info_t *game = bdmActiveGame(itemList, id);
-    config = sbPopulateConfig(game, pDeviceData->bdmPrefix, "/");
+    // The settings of a game on a read-only server are kept in a CFG folder next to OPL's own settings, as HTTP
+    // games' are (belomaxorka / YAOPL 7781959c), unless those are on a read-only server too.
+    char cfgDir[256];
+    const char *home = configGetHomePath();
+    int useCfgDir = 0;
+    if ((itemList->flags & MODE_FLAG_READ_ONLY) && home != NULL && home[0] != '\0' && !bdmIsReadOnlyPath(home)) {
+        size_t len = strlen(home);
+        snprintf(cfgDir, sizeof(cfgDir), "%s%sCFG/", home, (home[len - 1] == '/' || home[len - 1] == ':') ? "" : "/");
+        useCfgDir = 1;
+    }
+    config = sbPopulateConfigIn(game, pDeviceData->bdmPrefix, "/", useCfgDir ? cfgDir : NULL);
     ps1Size(itemList, game, config);
     bdmLogIdentityDiagnosticLive("config-create", itemList, config);
     return config;
@@ -2231,6 +2265,10 @@ int bdmFindPartition(char *target, const char *name, int write)
      * (char[32]) and target buffers are 64 bytes, so the device-prefix writes
      * cannot overflow. */
     for (i = 0; i < MAX_BDM_DEVICES; i++) {
+        // A read-only server passes the write probe, but what is saved there is lost (belomaxorka / YAOPL c92f681d).
+        if (write && (bdmDeviceList[i].flags & MODE_FLAG_READ_ONLY))
+            continue;
+
         if (gBDMPrefix[0] != '\0')
             snprintf(path, sizeof(path), "mass%d:/%s/%s", i, gBDMPrefix, name);
         else
