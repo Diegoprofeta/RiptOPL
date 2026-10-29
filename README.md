@@ -3,12 +3,10 @@
 
 > **RiptOPL is developed in partnership and collaboration with the [RIPPS2 Project](https://github.com/akilluminati47/RIPPS2) by [Akilluminati47](https://github.com/akilluminati47).**
 
-> **Check out our daughter project: [RIPPS2](https://github.com/akilluminati47/RIPPS2) by Akilluminati47.** It is a PS2-inspired front end, the project is still alpha, but we recommend it as an alternative with features intended to be on par with RiptOPL.
-
 ## Community Contributors
 
 A heartfelt thank you to developers who have contributed pull requests directly to this fork. Anyone who opens a pull request against RiptOPL is featured here at the top of the README in recognition of their support for the project and solidarity with its maintainer:
-### [@akilluminati47](https://github.com/akilluminati47) (AK), RIPPS2 partner
+### [@akilluminati47](https://github.com/akilluminati47) (AK), RIPPS2 co-developer
 ### [@oMrRexD](https://github.com/oMrRexD) (MrRexD)
 ### [@dnunezx](https://github.com/dnunezx) (darkladark)
 - **[#733](https://github.com/NathanNeurotic/Open-PS2-Loader/pull/733)** (`Cover art flow`): **PSBBN Flow** — Contributed LUNA's Collection display and its perspective cover animation (`src/opluna_collection.c`) to the legacy Open-PS2-Loader edition. RiptOPL's built-in PSBBN Flow theme (`src/gfx/psbbnflow.cpp`) is his work, ported from that PR; the regular Coverflow is KrahJohlito's.
@@ -826,7 +824,7 @@ RiptOPL is intended to work with these maintained companion tools:
 - **[udpfs-server](https://github.com/YouKnow-sys/udpfs-server)** by **[YouKnow-sys](https://github.com/YouKnow-sys)** — the same idea **from a phone**: an Android app that shares folders and disk images to the PS2 over **UDPFS**, found by broadcast so there is no server address to type in on the console. Works over a router or a direct cable. Built on **[udpfsd](https://github.com/pcm720/udpfsd)** by **[pcm720](https://github.com/pcm720)**; MIT licensed. An `android-udpfs-server.url` shortcut ships in installable packages.
 - **[OrbitPS2 Manager](https://github.com/Luden02/OrbitPS2-Manager)** by **[Luden](https://github.com/Luden02)** — cross-platform PC library manager for importing discs, artwork/screenshots, ZSO compression, per-game settings and VMC management.
 - **[LUNA](https://github.com/dnunezx/LUNA)** by **[darkladark](https://github.com/dnunezx)** — *Lightweight Unified Neutrino Access*, a visual PS2 loader built on NHDDL and Neutrino, and our **#1 recommended alternative** if RiptOPL is more loader than you need. darkladark also contributes to RiptOPL: the PSBBN Flow theme adapts LUNA's Collection display (#733), keeping the normal R3 favorite action.
-- **[RIPPS2](https://github.com/akilluminati47/RIPPS2)** by **Akilluminati47** — our daughter project: a PS2-inspired front end with a **web-theme beta** at **[akilluminati47.github.io/RIPPS2](https://akilluminati47.github.io/RIPPS2/)**. It now offers a downloadable PS2 ELF; consult its own releases and compatibility notes for current builds.
+- **[RIPPS2](https://github.com/akilluminati47/RIPPS2)** by **Akilluminati47** — a PS2-inspired front end developed in collaboration with RiptOPL, with a **web-theme beta** at **[akilluminati47.github.io/RIPPS2](https://akilluminati47.github.io/RIPPS2/)**. It now offers a downloadable PS2 ELF; consult its own releases and compatibility notes for current builds.
 - **[OPL PS1 AIO Converter GUI](https://github.com/shaanhomebrew-cloud/OPL-PS1-AIO-Converter-GUI)** by **[shaan](https://github.com/shaanhomebrew-cloud)** — Windows all-in-one PS1/POPStarter preparation tool for converting BIN/CUE backups to VCDs and installing them to USB, MX4SIO, MMCE, iLink, exFAT HDD, SMB and APA internal HDD.
 - **[xeRAbora](https://github.com/hacan359/xerabora)** by **[hacan359](https://github.com/hacan359)** — the PC client for **RetroAchievements** on real PS2 hardware. Required client: **[v1.0.1](https://github.com/hacan359/xerabora/releases/tag/v1.0.1)** (alpha.17 or later). RiptOPL's RA build is paired with and requires **xeRAbora v1.0.1** (alpha.17 or later) and its snapshot-only Mode 6 behavior. xeRAbora runs rcheevos, talks to the RetroAchievements servers and unlocks the achievements. It also builds the per-game watch list the console needs. Shipped as a shortcut inside `RIPTOPL-RetroAchievements.zip`; MIT licensed. RiptOPL’s RA stabilization on real hardware was driven by **[oMrRexD](https://github.com/oMrRexD)**, whose PRs #702–#705 fixed the ee_core stack squeeze, MMCE DEV9 path, cold-launch networking and settings placement.
 - **[OPL HTTP PC server](https://github.com/Docmine17/Open-PS2-Loader-HTTP)** by **[Docmine17](https://github.com/Docmine17)** — the PC side of RiptOPL’s **HTTP** protocol: a small static HTTP server with byte-range support that serves your `games.csv` catalog and streams the ISOs themselves. RiptOPL works with it **unmodified** — no new API, no catalog conversion, no changed folder layout — with host conformance checks against the upstream server. PS2 hardware validation is still pending.
@@ -874,7 +872,9 @@ With special and sincere thanks to:
   **[wOPL](https://github.com/KrahJohlito/wOPL)**, where the modern OPL experience was
   invented. The Neutrino external-core loader, the Coverflow interface, and the Favorites
   tab — the features that define RiptOPL — were designed and pioneered by him, and everything
-  this fork does with them is a reimplementation of his work. We learned more reading his
+  this fork does with them is a reimplementation of his work. Multi-view themes (one theme
+  offering List, Coverflow, PSBBN Flow and Grid, switched with Theme View or a held L3) and
+  the Grid view are his idea and design too. We learned more reading his
   code than anywhere else, and RiptOPL is, above all, a tribute to it. Thank you.
 - **Wolf3s** — for contributions across the wOPL effort and the wider OPL scene, and for
   past work on an independent **uOPL** fork that kept
