@@ -717,6 +717,7 @@ void guiShowUIConfig(void)
 reshow_ui:
     previousTheme = thmGetGuiValue();
     previousVMode = gVMode;
+    int openX = gXOff, openY = gYOff, openOver = gOverscan; // the position kept for each video mode
     // Snapshot the theme name list into a dialog-owned copy: diaSetEnum stores raw pointers, and
     // BOTH the outer array (thmRebuildGuiNames free+realloc) AND the theme name strings (thmReinit
     // frees them on device removal) are rebuilt on the IO worker when a deferred device update lands. Dialog frames render OUTSIDE guiStartFrame's
@@ -792,6 +793,7 @@ reshow_ui:
         int appsViewChanged = guiReadAppsViewPicker(diaUIConfig);
         int themeViewRequest = guiReadThemeViewPicker(diaUIConfig);
         diaGetInt(diaUIConfig, UICFG_VMODE, &gVMode);
+        screenPosModeChanged(previousVMode, openX, openY, openOver); // before applyConfig shows the mode
         diaGetInt(diaUIConfig, UICFG_FONT_SIZE, &gFontSize);
         diaGetInt(diaUIConfig, UICFG_GLYPH_SET, &gGlyphSet);
 
@@ -820,6 +822,9 @@ reshow_ui:
 
         if (previousVMode != gVMode && guiConfirmVideoMode() == 0) {
             gVMode = previousVMode;
+            gXOff = openX; // and its position with it
+            gYOff = openY;
+            gOverscan = openOver;
             applyConfig(-1, -1, 1);
         }
     }
@@ -2686,6 +2691,7 @@ static int guiSettingsShowInterface(void)
     guiResetNotifications();
     previousTheme = thmGetGuiValue();
     previousVMode = gVMode;
+    int openX = gXOff, openY = gYOff, openOver = gOverscan; // the position kept for each video mode
 
     guiLock();
     themeNamesSnap = guiCopyNameList((const char **)thmGetGuiList());
@@ -2768,6 +2774,7 @@ reshow_interface:
         diaGetInt(ui, UICFG_XOFF, &gXOff);
         diaGetInt(ui, UICFG_YOFF, &gYOff);
         diaGetInt(ui, UICFG_OVERSCAN, &gOverscan);
+        screenPosModeChanged(previousVMode, openX, openY, openOver); // before applyConfig shows the mode
         {
             int gameIDMode;
             diaGetInt(ui, CFG_APPLYGAMEID, &gameIDMode);
@@ -2794,6 +2801,9 @@ reshow_interface:
 
         if (previousVMode != gVMode && guiConfirmVideoMode() == 0) {
             gVMode = previousVMode;
+            gXOff = openX; // and its position with it
+            gYOff = openY;
+            gOverscan = openOver;
             applyConfig(-1, -1, 1);
         }
     }

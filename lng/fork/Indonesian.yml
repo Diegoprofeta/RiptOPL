@@ -534,9 +534,9 @@ translations:
   HINT_PLASCOLOR: Warna yang dicampur ke latar animasi.
   HINT_RESETCOLOR: Mengembalikan warna bawaan RiptOPL, bukan warna tema.
   HINT_WIDESCREEN: Menggambar menu untuk TV 16:9.
-  HINT_XOFF: Menggeser menu ke kiri atau kanan di layar.
-  HINT_YOFF: Menggeser menu ke atas atau bawah di layar.
-  HINT_MENU_OVERSCAN: Mengecilkan menu ke dalam jika TV memotong tepinya.
+  HINT_XOFF: "Menggeser menu ke kiri atau kanan di layar. Disimpan untuk setiap mode video."
+  HINT_YOFF: "Menggeser menu ke atas atau bawah di layar. Disimpan untuk setiap mode video."
+  HINT_MENU_OVERSCAN: "Mengecilkan menu ke dalam jika TV memotong tepinya. Disimpan untuk setiap mode video."
   HINT_APPLYGAMEID: Menampilkan barcode saat game dimulai, supaya perangkat Pixel FX, RetroGEM, dan PS2Digital berganti profil.
   HINT_ENWRITEOP: Mengizinkan mengganti nama dan menghapus game serta membuat VMC. Tidak pernah menyentuh tabel partisi HDD.
   HINT_DEBUG: 'Bantuan pengembang: layar berwarna saat game boot, dan penghitung pemuatan gambar di menu.'
