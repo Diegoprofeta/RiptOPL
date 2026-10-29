@@ -1510,8 +1510,18 @@ static int thmLoad(const char *themePath)
     newT->loadingIconCount = i;
 
     // Customizable icons
-    for (i = BDM_ICON; i <= START_ICON; i++)
-        thmLoadResource(&newT->textures[i], i, themePath, GS_PSM_CT32, newT->useDefault);
+    int customIndex = 0, customIndexCount = 0;
+    for (i = BDM_ICON; i <= START_ICON; i++) {
+        if (thmLoadResource(&newT->textures[i], i, themePath, GS_PSM_CT32, newT->useDefault) >= 0 && i == INDEX_0)
+            customIndex = 1;
+    }
+    for (i = INDEX2_0; i <= INDEX4_3; i++) {
+        if (thmLoadResource(&newT->textures[i], i, themePath, GS_PSM_CT32, newT->useDefault) >= 0)
+            customIndexCount = 1;
+    }
+    // A theme with its own five-dot BdmIndex pictures but none for fewer devices keeps its five dots by
+    // slot, so its style is not mixed with the built-in dots (belomaxorka / YAOPL f84b227d).
+    newT->bdmIndexFixed = customIndex && !customIndexCount;
 
     // UDPFS_ICON is appended at the very END of the enum (after CASE_OVERLAY2) so that saved
     // favourite icon_ids stay ABI-stable -- which puts it OUTSIDE the BDM_ICON..START_ICON device
