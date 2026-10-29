@@ -379,11 +379,13 @@ int bdmUpdateDeviceData(item_list_t *itemList)
         // position remembered for its type before the first scan reads it.
         host::library().bdmAttach(itemList->mode, pDeviceData->bdmDeviceType);
 
-        // A network server may keep nothing that is written: find out once, before the first scan writes.
+        // A network server may keep nothing that is written: find out once, before the first scan writes. Decided
+        // afresh on every first sight, so a slot keeps no verdict from a device that held it before.
         if (pDeviceData->bdmDeviceType == BDM_TYPE_UDPBD && !bdmCheckWritable(itemList->mode)) {
             LOG("Mass device: %d is read-only\n", itemList->mode);
             itemList->flags |= MODE_FLAG_READ_ONLY;
-        }
+        } else
+            itemList->flags &= ~MODE_FLAG_READ_ONLY;
 
         // Make the menu item visible.
         if (itemList->owner != NULL) {

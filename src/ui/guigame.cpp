@@ -606,7 +606,9 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
         backing = gFavSupport.ownerView(id, &ownerView);
     } else if (support->mode == APP_MODE || libListRowView(support, id) == LIB_VIEW_PS1)
         return 1;
-    if (backing == NULL || !backing->enabled || !gsOf(backing)->hasCheckVmc() || backing->mode == HTTP_MODE || bdmModeIsPCCF(backing->mode))
+    // A read-only server launches without a VMC, so there is nothing to create.
+    if (backing == NULL || !backing->enabled || !gsOf(backing)->hasCheckVmc() || backing->mode == HTTP_MODE || bdmModeIsPCCF(backing->mode) ||
+        bdmModeIsReadOnly(backing->mode))
         return 1;
     int loader = gDefaultCoreLoader;
     configGetInt(configSet, CONFIG_ITEM_CORE_LOADER, &loader);
