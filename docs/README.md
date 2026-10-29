@@ -5,6 +5,8 @@ and [your first game](https://nathanneurotic.github.io/RiptOPL/getting-started.h
 The [website](https://nathanneurotic.github.io/RiptOPL/) provides searchable task guides.
 Use the references below for implementation details, exact limits and contributor workflows.
 
+- [October 29 ecosystem fork-gap reconciliation](FORK-GAP-ECOSYSTEM-AUDIT-2026-10-29.md) — current refs/releases, merged and pending work, and every stable record.
+
 ## Installation and troubleshooting
 
 | Task | Reference |
