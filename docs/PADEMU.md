@@ -12,8 +12,8 @@ PADEMU is the work of **belek666**.
 
 **PADEMU is an OPL-core feature.** It is not available under Neutrino — opening the PADEMU screen for
 a title whose Loader Core is Neutrino shows *"This setting is not used with the Neutrino core."* If
-you need PADEMU for a game, that game has to launch on the OPL core. UDPFS Files games always use
-Neutrino; UDPBD and UDPFS IMG games use Neutrino on **Default**, so set their Loader Core to `<OPL>`.
+you need PADEMU for a game, that game has to launch on the OPL core. UDPFS (Files and IMG) and
+UDPBD games use Neutrino on **Default**, so set their Loader Core to `<OPL>`.
 
 PADEMU is compiled in by default (`PADEMU ?= 1`), so stock builds have it.
 
