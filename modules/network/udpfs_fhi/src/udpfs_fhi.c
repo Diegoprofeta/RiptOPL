@@ -53,6 +53,26 @@ int udpfs_fhi_read(int32_t handle, void *buffer, uint32_t sector, uint32_t count
     return ret;
 }
 
+/* [6] Write count 512-byte sectors of handle from sector (a VMC opened read-write). Returns count, or a
+ * negative errno. udpfsd refuses it on a handle opened read-only or on a read-only share. */
+int udpfs_fhi_write(int32_t handle, const void *buffer, uint32_t sector, uint32_t count)
+{
+    int ret;
+
+    if (handle < 0)
+        return -EBADF;
+    if (count == 0)
+        return 0;
+
+    WaitSema(g_sema);
+    ret = udpfs_core_is_connected() ? udpfs_core_bwrite(handle, (uint64_t)sector, buffer, count, 512) : -EIO;
+    SignalSema(g_sema);
+
+    if (ret < 0)
+        M_DEBUG("udpfs_fhi: write handle=%d sector=%u count=%u failed: %d\n", (int)handle, (unsigned int)sector, (unsigned int)count, ret);
+    return ret;
+}
+
 /* Socket-once: udpfs_core_init binds the UDPRDMA socket on its first call and only re-discovers after
  * that, because the ministack has no udp_unbind. Never exit and re-init the core here. */
 static void udpfs_fhi_try_connect(void)

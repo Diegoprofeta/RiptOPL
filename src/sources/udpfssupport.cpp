@@ -25,6 +25,7 @@
 #include "include/ethsupport.h"  // ethGetModulesLoaded() for the UDPFS<->SMB NIC interlock
 #include "include/bdmsupport.h"  // bdmIsUDPBDLoaded() for the UDPFS<->UDPBD NIC interlock
 #include "include/mmcesupport.h" // mmceSendGameID() cross-device game-id (#261)
+#include "include/nativevmc.h"   // nativeVmcSlotWord: udpfs_mcemu VMC slots
 #include "modules/iopcore/common/cdvd_config.h"
 
 #include "include/ps2sdkapi_compat.h"
@@ -847,7 +848,23 @@ void UdpfsSource::launchCue(item_list_t *itemList, const char *cueName, config_s
 // handle for it. After the reset the EE core loads udpfs_smap, udpfs_ministack and udpfs_fhi; udpfs_fhi
 // re-discovers the server, which keeps a peer's open handles across a re-discovery (udpfsd
 // Connection.ResetPeer), and reads the disc by that handle. This is how Neutrino's own udpfs_fhi boots
-// these games. No memory card emulation on this path: there is no UDPFS mcemu.
+// these games. A game's VMCs are kept open read-write the same way, and udpfs_mcemu reads and writes
+// their pages through udpfs_fhi, so saves land on the server.
+static int udpfsMcemuSlots[2] = {-2, -2};
+
+// Close what the launch opened when it goes back to the menu (a launch that goes on keeps them open).
+
+static void udpfsCloseFiles(int isoFile, const int *vmcFiles)
+{
+    int i;
+
+    for (i = 0; i < 2; i++)
+        if (vmcFiles[i] >= 0)
+            fileXioClose(vmcFiles[i]);
+    if (isoFile >= 0)
+        fileXioClose(isoFile);
+}
+
 static void udpfsLaunchOplCore(item_list_t *itemList, base_game_info_t *game, config_set_t *configSet)
 {
     int index, compatmask, result;
@@ -857,6 +874,31 @@ static void udpfsLaunchOplCore(item_list_t *itemList, base_game_info_t *game, co
     u32 layer1_start;
     void *irx = &udpfs_cdvdman_irx;
     int irx_size = size_udpfs_cdvdman_irx;
+    char vmc_name[2][32];
+    int vmc_id, size_mcemu_irx = 0, vmcMask = 0;
+    int vmc_files[2] = {-1, -1};
+    udpfs_vmc_infos_t vmc_infos[2];
+    vmc_superblock_t vmc_superblock;
+
+    // VMCs first, before any state is prepared: a card that is missing or bad may still be declined.
+    memset(vmc_infos, 0, sizeof(vmc_infos));
+    for (vmc_id = 0; vmc_id < 2; vmc_id++) {
+        configGetVMC(configSet, vmc_name[vmc_id], sizeof(vmc_name[vmc_id]), vmc_id);
+        if (!vmc_name[vmc_id][0])
+            continue;
+        if (sysCheckVMC(udpfsPrefix, "/", vmc_name[vmc_id], 0, &vmc_superblock) > 0) {
+            vmc_infos[vmc_id].flags = (vmc_superblock.mc_flag & 0xFF) | 0x100;
+            vmc_infos[vmc_id].specs.page_size = vmc_superblock.page_size;
+            vmc_infos[vmc_id].specs.block_size = vmc_superblock.pages_per_block;
+            vmc_infos[vmc_id].specs.card_size = vmc_superblock.pages_per_cluster * vmc_superblock.clusters_per_card;
+            vmc_infos[vmc_id].active = 1;
+        } else {
+            char error[256];
+            snprintf(error, sizeof(error), _l(_STR_ERR_VMC_CONTINUE), vmc_name[vmc_id], (vmc_id + 1));
+            if (!host::ui().msgBox(error, 1, NULL))
+                return;
+        }
+    }
 
     compatmask = sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index);
     if (compatmask < 0) // patch zone not found: `index` is unset
@@ -912,16 +954,50 @@ static void udpfsLaunchOplCore(item_list_t *itemList, base_game_info_t *game, co
     int iso_handle = iso_file >= 0 ? fileXioIoctl2(iso_file, 0x80, NULL, 0, NULL, 0) : -1;
     if (iso_handle < 0) {
         LOG("UDPFSSUPPORT: cannot open %s for the OPL core (fd %d, handle %d)\n", partname, iso_file, iso_handle);
-        if (iso_file >= 0)
-            fileXioClose(iso_file);
+        udpfsCloseFiles(iso_file, vmc_files);
         host::ui().warning(_l(_STR_ERR_FILE_INVALID), 8);
         sbUnprepare(&settings->common);
         return;
     }
     settings->iso_handle = iso_handle;
 
-    // MMCE cross-device game-id (#261), before deinit frees `game`.
-    mmceSendGameID(game->startup, NULL, 0);
+    // Each VMC is opened read-write (iomanX FIO_O_RDWR) and kept open the same way, so udpfs_mcemu can
+    // write saves to it in game. udpfsd refuses a write open on a read-only share or a file already
+    // open elsewhere: that card is then offered to be skipped, as a bad card is above.
+    for (vmc_id = 0; vmc_id < 2; vmc_id++) {
+        if (vmc_infos[vmc_id].active) {
+            char vmc_path[256];
+            snprintf(vmc_path, sizeof(vmc_path), "%sVMC/%s.bin", udpfsPrefix, vmc_name[vmc_id]);
+            vmc_files[vmc_id] = fileXioOpen(vmc_path, 0x3, 0666);
+            vmc_infos[vmc_id].fd = vmc_files[vmc_id] >= 0 ? fileXioIoctl2(vmc_files[vmc_id], 0x80, NULL, 0, NULL, 0) : -1;
+            if (vmc_infos[vmc_id].fd < 0) {
+                char error[256];
+                LOG("UDPFSSUPPORT: cannot open %s read-write (fd %d, handle %d)\n", vmc_path, vmc_files[vmc_id], vmc_infos[vmc_id].fd);
+                if (vmc_files[vmc_id] >= 0)
+                    fileXioClose(vmc_files[vmc_id]);
+                vmc_files[vmc_id] = -1;
+                memset(&vmc_infos[vmc_id], 0, sizeof(vmc_infos[vmc_id]));
+                snprintf(error, sizeof(error), _l(_STR_ERR_VMC_CONTINUE), vmc_name[vmc_id], (vmc_id + 1));
+                if (!host::ui().msgBox(error, 1, NULL)) {
+                    udpfsCloseFiles(iso_file, vmc_files);
+                    sbUnprepare(&settings->common);
+                    return;
+                }
+            } else
+                vmcMask |= 1 << vmc_id;
+        }
+
+        // This write covers the slot's marker, so its position is found once and reused with a full-payload bound.
+        int slotWord = nativeVmcSlotWord(&udpfs_mcemu_irx, size_udpfs_mcemu_irx, vmc_id, udpfsMcemuSlots, sizeof(udpfs_vmc_infos_t));
+        if (slotWord >= 0) {
+            if (vmc_infos[vmc_id].active)
+                size_mcemu_irx = size_udpfs_mcemu_irx;
+            memcpy(&((u32 *)&udpfs_mcemu_irx)[slotWord], &vmc_infos[vmc_id], sizeof(udpfs_vmc_infos_t));
+        }
+    }
+
+    // MMCE cross-device game-id (#261), before deinit frees `game`; slots with a VMC keep their card.
+    mmceSendGameID(game->startup, NULL, vmcMask);
 
     // UdpfsSource::cleanUp leaves the udpfs_ioman chain (and with it the open ISO) alone.
     host::app().deinit(NO_EXCEPTION, itemList->mode); // CAREFUL: frees the game lists, and with them `game`
@@ -929,7 +1005,7 @@ static void udpfsLaunchOplCore(item_list_t *itemList, base_game_info_t *game, co
     // udpfs_fhi owns the network adapter in game: the game's own DEV9 and SMAP are faked, as for UDPBD.
     settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9;
     settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_SMAP;
-    sysLaunchLoaderElf(filename, "UDPFS_MODE", irx_size, static_cast<void **>(irx), 0, NULL, EnablePS2Logo, compatmask);
+    sysLaunchLoaderElf(filename, "UDPFS_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, udpfs_mcemu_irx, EnablePS2Logo, compatmask);
 }
 
 void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
@@ -961,7 +1037,7 @@ void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)
     // Neutrino by default; the OPL core when the game's own Loader Core is <OPL> (bdmNetBlockCoreLoader),
     // or when Neutrino cannot run it (no neutrino.elf, a .zso image), as on the udp BDM device and MMCE.
     // NB: Neutrino's VMC emulation is emitted as discrete -mcN args (sbBuildVmcNeutrinoArgs below); the
-    // OPL core leg has none.
+    // OPL core leg uses udpfs_mcemu (udpfsLaunchOplCore).
 
     if (gRememberLastPlayed) {
         configSetStr(configGetByType(CONFIG_LAST), "last_played", game->startup);

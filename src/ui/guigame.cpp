@@ -620,10 +620,6 @@ int guiGameAutoCreateVmc(item_list_t *support, int id, config_set_t *configSet)
         loader = 0;
     if (backing->mode == HDD_MODE && loader == 1)
         return 1;
-    // UDPFS Files on the OPL core has no memory card emulation (no UDPFS mcemu): a card made here
-    // would never be used.
-    if (backing->mode == UDPFS_MODE && loader == 0)
-        return 1;
     char assigned[32] = {}, vmc[32], progress[96];
     int disabled = 0;
     configGetVMC(configSet, assigned, sizeof(assigned), 0);

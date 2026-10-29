@@ -1,5 +1,5 @@
 // cdvdman (UDPFS_DRIVER) finds this table by its library name with getModInfo and calls by index:
-// [4] read, [5] connected. Keep the order; device-udpfs.c reads exports[4] and [5].
+// [4] read, [5] connected, [6] write. Keep the order; device-udpfs.c reads exports[4] to [6].
 DECLARE_EXPORT_TABLE(udpfsfhi, 1, 1)
 	DECLARE_EXPORT(_start)
 	DECLARE_EXPORT(_retonly)
@@ -7,6 +7,7 @@ DECLARE_EXPORT_TABLE(udpfsfhi, 1, 1)
 	DECLARE_EXPORT(_retonly)
 	DECLARE_EXPORT(udpfs_fhi_read)
 	DECLARE_EXPORT(udpfs_fhi_connected)
+	DECLARE_EXPORT(udpfs_fhi_write)
 END_EXPORT_TABLE
 
 void _retonly() {}

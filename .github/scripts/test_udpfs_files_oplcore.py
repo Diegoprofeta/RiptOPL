@@ -2,8 +2,10 @@
 
 The menu opens the ISO on udpfs_ioman, keeps it open across the IOP reset and hands cdvdman the server's
 handle for it (ioctl2 0x80). After the reset the EE core loads udpfs_smap, udpfs_ministack and udpfs_fhi,
-and udpfs_cdvdman reads the disc through udpfs_fhi's "udpfsfhi" exports. This checks that wiring in the
-sources and runs the real in-game reader (device-udpfs.c) against a stub udpfs_fhi.
+and udpfs_cdvdman reads the disc through udpfs_fhi's "udpfsfhi" exports. A game's VMCs are opened
+read-write and kept open the same way; udpfs_mcemu moves their pages through udpfs_cdvdman's
+udpfs_vmc_read/udpfs_vmc_write. This checks that wiring in the sources and runs the real in-game reader
+and VMC exports (device-udpfs.c) against a stub udpfs_fhi.
 """
 from pathlib import Path
 import re
@@ -51,6 +53,13 @@ fhi = read('modules/network/udpfs_fhi/src/udpfs_fhi.c')
 fhi_exports = read('modules/network/udpfs_fhi/src/exports.tab')
 fhi_main = read('modules/network/udpfs_fhi/src/main.c')
 root_make = read('Makefile')
+cdvd_exports = read('modules/iopcore/cdvdman/exports.tab')
+mcemu_h = read('modules/mcemu/mcemu.h')
+mcemu_utils = read('modules/mcemu/mcemu_utils.h')
+mcemu_imports = read('modules/mcemu/imports.lst')
+mcemu_make = read('modules/mcemu/Makefile')
+mcemu_dev = read('modules/mcemu/device-udpfs.c')
+udpfs_h = read('include/udpfssupport.h')
 
 # 1. The launch: Neutrino by default, the OPL core from the game's own <OPL> key or when Neutrino cannot run it.
 launch = function(udpfs, 'void UdpfsSource::launch(item_list_t *itemList, int id, config_set_t *configSet)', 'udpfssupport.cpp')
@@ -76,32 +85,44 @@ order = ['sbPrepare(game, configSet, irx_size, static_cast<void **>(irx), &index
          'int iso_file = fileXioOpen(partname, 0x1, 0666);',
          'fileXioIoctl2(iso_file, 0x80, NULL, 0, NULL, 0)',
          'settings->iso_handle = iso_handle;',
-         'mmceSendGameID(game->startup, NULL, 0);',
+         'vmc_files[vmc_id] = fileXioOpen(vmc_path, 0x3, 0666);',
+         'nativeVmcSlotWord(&udpfs_mcemu_irx, size_udpfs_mcemu_irx, vmc_id, udpfsMcemuSlots, sizeof(udpfs_vmc_infos_t))',
+         'mmceSendGameID(game->startup, NULL, vmcMask);',
          'host::app().deinit(NO_EXCEPTION, itemList->mode);',
          'settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_DEV9;',
          'settings->common.fakemodule_flags |= FAKE_MODULE_FLAG_SMAP;',
-         'sysLaunchLoaderElf(filename, "UDPFS_MODE", irx_size, static_cast<void **>(irx), 0, NULL, EnablePS2Logo, compatmask);']
+         'sysLaunchLoaderElf(filename, "UDPFS_MODE", irx_size, static_cast<void **>(irx), size_mcemu_irx, udpfs_mcemu_irx, EnablePS2Logo, compatmask);']
 at = [leg.find(s) for s in order]
 check(all(a >= 0 for a in at) and at == sorted(at),
-      'udpfsLaunchOplCore: prepare, size, layer 1, cheats, open the ISO last, keep its handle, tear down, launch UDPFS_MODE '
+      'udpfsLaunchOplCore: prepare, size, layer 1, cheats, open the ISO and the VMCs last, keep their handles, tear down, launch UDPFS_MODE '
       '(missing or out of order: %r)' % [s for s, a in zip(order, at) if a < 0])
 check('void *irx = &udpfs_cdvdman_irx;' in leg and 'int irx_size = size_udpfs_cdvdman_irx;' in leg,
       'udpfsLaunchOplCore: boots udpfs_cdvdman')
 bail = leg[leg.find('if (iso_handle < 0) {'):]
 bail = bail[:bail.find('settings->iso_handle')]
-check('fileXioClose(iso_file);' in bail and 'sbUnprepare(&settings->common);' in bail and 'return;' in bail,
+check('udpfsCloseFiles(iso_file, vmc_files);' in bail and 'sbUnprepare(&settings->common);' in bail and 'return;' in bail,
       'udpfsLaunchOplCore: an ISO that cannot be opened closes it, restores the patch zone and stays in the menu')
-check('fileXioClose' not in leg[leg.find('settings->iso_handle = iso_handle;'):],
-      'udpfsLaunchOplCore: the ISO stays open across the reset')
+after = leg[leg.find('settings->iso_handle = iso_handle;'):]
+vmc_bail = after[after.find('if (vmc_infos[vmc_id].fd < 0) {'):after.find('vmcMask |= 1 << vmc_id;')]
+check('fileXioClose(vmc_files[vmc_id]);' in vmc_bail and '_STR_ERR_VMC_CONTINUE' in vmc_bail and
+      'udpfsCloseFiles(iso_file, vmc_files);\n                    sbUnprepare(&settings->common);\n                    return;' in vmc_bail,
+      'udpfsLaunchOplCore: a VMC the server will not open read-write may be skipped; declining closes everything and stays in the menu')
+check(after.count('fileXioClose') == 1 and after.count('udpfsCloseFiles(') == 1,
+      'udpfsLaunchOplCore: the ISO and the VMCs stay open across the reset')
+pre = leg[:leg.find('compatmask = sbPrepare(')]
+check('sysCheckVMC(udpfsPrefix, "/", vmc_name[vmc_id], 0, &vmc_superblock) > 0' in pre and '_STR_ERR_VMC_CONTINUE' in pre,
+      'udpfsLaunchOplCore: VMCs are checked before anything is prepared')
+check('static int udpfsMcemuSlots[2] = {-2, -2};' in udpfs and 'if (vmc_infos[vmc_id].active)\n                size_mcemu_irx = size_udpfs_mcemu_irx;' in leg,
+      'udpfsLaunchOplCore: mcemu goes only with an active card, slots found once')
 cleanup = function(udpfs, 'void UdpfsSource::cleanUp(', 'udpfssupport.cpp')
 check('udpfsIomanModLoaded = 0' not in cleanup and 'fileXioUmount' not in cleanup,
       'UdpfsSource::cleanUp leaves the udpfs_ioman chain (and the open ISO) alone')
 
-# 2. The menu side resolves the same core everywhere, and never makes a VMC the OPL core leg cannot use.
+# 2. The menu side resolves the same core everywhere; both cores use the game's VMCs.
 check('if (backing->mode == UDPFS_MODE || bdmSupportIsUDPBD(backing) || bdmModeIsUDPBD(backing->mode))\n        loader = bdmNetBlockCoreLoader(configSet);' in guigame,
       'guiGameAutoCreateVmc: UDPFS Files takes its core from the picker')
-check('if (backing->mode == UDPFS_MODE && loader == 0)\n        return 1;' in guigame,
-      'guiGameAutoCreateVmc: no automatic VMC for a UDPFS Files game on the OPL core')
+check('backing->mode == UDPFS_MODE && loader == 0' not in guigame,
+      'guiGameAutoCreateVmc: a UDPFS Files game on the OPL core gets its automatic VMC too (udpfs_mcemu)')
 check('coreDefaultNeutrino = sourceMode == UDPFS_MODE ||' in guigame, 'compat dialog: UDPFS Files "Default" means Neutrino')
 check('} else if (sourceMode == UDPFS_MODE) {' not in guigame, 'compat dialog: the UDPFS Files Loader row is no longer locked')
 check('if (sourceMode == UDPFS_MODE || bdmModeIsUDPBD(sourceMode))\n                return bdmNetBlockCoreLoader(itemConfig);' in menusys,
@@ -156,10 +177,39 @@ check('udpfs_fhi.o' in root_make and 'udpfs_cdvdman.o' in root_make and 'USE_UDP
 
 # The export indices device-udpfs.c reads are the ones the module declares.
 exports = re.findall(r'DECLARE_EXPORT\((\w+)\)', fhi_exports)
-check('DECLARE_EXPORT_TABLE(udpfsfhi, 1, 1)' in fhi_exports and exports[4:6] == ['udpfs_fhi_read', 'udpfs_fhi_connected'],
-      'udpfs_fhi exports.tab: library "udpfsfhi", [4] read, [5] connected')
+check('DECLARE_EXPORT_TABLE(udpfsfhi, 1, 1)' in fhi_exports and exports[4:7] == ['udpfs_fhi_read', 'udpfs_fhi_connected', 'udpfs_fhi_write'],
+      'udpfs_fhi exports.tab: library "udpfsfhi", [4] read, [5] connected, [6] write')
 check('getModInfo("udpfsfhi", &info)' in device and 'fp_udpfs_fhi_read = (void *)info.exports[4];' in device and
-      'fp_udpfs_fhi_connected = (void *)info.exports[5];' in device, 'device-udpfs.c: binds [4] and [5] of "udpfsfhi"')
+      'fp_udpfs_fhi_connected = (void *)info.exports[5];' in device and 'fp_udpfs_fhi_write = (void *)info.exports[6];' in device,
+      'device-udpfs.c: binds [4] to [6] of "udpfsfhi"')
+write_fn = function(fhi, 'int udpfs_fhi_write(', 'udpfs_fhi.c')
+check('WaitSema(g_sema);' in write_fn and 'udpfs_core_bwrite(handle, (uint64_t)sector, buffer, count, 512)' in write_fn,
+      'udpfs_fhi_write: locked 512-byte BWRITE of the caller\'s handle')
+
+# The VMC path: cdvdman exports the page calls at the oplutils ordinals udpfs_mcemu imports.
+oplutils = cdvd_exports[cdvd_exports.find('DECLARE_EXPORT_TABLE(oplutils, 1, 2)'):]
+oplutils = oplutils[:oplutils.find('END_EXPORT_TABLE')]
+check('#ifdef UDPFS_DRIVER\n\tDECLARE_EXPORT(udpfs_vmc_read)' in oplutils and 'DECLARE_EXPORT(udpfs_vmc_write)' in oplutils,
+      'cdvdman exports.tab: oplutils [6] udpfs_vmc_read, [7] udpfs_vmc_write under UDPFS_DRIVER')
+check('#define I_udpfs_vmc_read DECLARE_IMPORT(6, udpfs_vmc_read)' in mcemu_utils and
+      '#define I_udpfs_vmc_write DECLARE_IMPORT(7, udpfs_vmc_write)' in mcemu_utils and
+      '#ifdef UDPFS_DRIVER\nI_udpfs_vmc_read\nI_udpfs_vmc_write\n#endif' in mcemu_imports,
+      'mcemu: imports udpfs_vmc_read/write at the ordinals cdvdman exports')
+check('#if defined(MMCE_DRIVER) || defined(UDPFS_DRIVER)\n    int fd;' in mcemu_h, 'mcemu.h: the UDPFS card carries the server handle as fd')
+check(re.search(r'typedef struct\n\{\n\s*int active;[^\n]*\n\s*int fd;[^\n]*\n\s*int flags;[^\n]*\n\s*vmc_spec_t specs;[^\n]*\n\} udpfs_vmc_infos_t;', udpfs_h) is not None,
+      'udpfssupport.h: udpfs_vmc_infos_t matches McImageSpec with UDPFS_DRIVER (active, fd, flags, spec)')
+check('udpfs_vmc_write(vmc_fd, offset, vmcSpec[mc_num].cspec.PageSize, buf)' in mcemu_dev and
+      'udpfs_vmc_read(vmc_fd, offset, vmcSpec[mc_num].cspec.PageSize, buf)' in mcemu_dev, 'mcemu device-udpfs.c: pages go through the UDPFS imports')
+variant = mcemu_make[mcemu_make.find('ifeq ($(USE_UDPFS),1)'):]
+variant = variant[:variant.find('endif')]
+check('IOP_BIN  = udpfs_mcemu.irx' in variant and '-DUDPFS_DRIVER' in variant and 'device-udpfs.o' in variant,
+      'mcemu Makefile: USE_UDPFS builds udpfs_mcemu')
+target = ps2yaml[ps2yaml.find('  - name: udpfs_mcemu\n'):]
+target = target[:target.find('\n\n')]
+check('defines: [UDPFS_DRIVER, PADEMU]' in target and 'modules/mcemu/device-udpfs.c' in target and
+      'mmce_mcemu, udpfs_mcemu,' in ps2yaml, 'ps2.yaml: udpfs_mcemu is built and embedded')
+check('IMPORT_BIN2C(udpfs_mcemu_irx);' in extern_irx and 'udpfs_mcemu.o' in root_make and 'USE_UDPFS=1 -C $< all' in root_make,
+      'udpfs_mcemu: declared, and made by the legacy build')
 check(fhi_main.find('udpfs_fhi_init() < 0') < fhi_main.find('RegisterLibraryEntries(&_exp_udpfsfhi)') < fhi_main.find('udpfs_fhi_start();'),
       'udpfs_fhi main.c: create, register, then connect')
 read_fn = function(fhi, 'int udpfs_fhi_read(', 'udpfs_fhi.c')
@@ -188,6 +238,8 @@ int CreateSema(iop_sema_t *s);
 int WaitSema(int s);
 int SignalSema(int s);
 int DelayThread(int us);
+void cdvdman_vmc_io_begin(int is_write);
+void cdvdman_vmc_io_end(void);
 '''
 STUB_IOPLIB = r'''
 #pragma once
@@ -199,6 +251,8 @@ STUB_DEVICE = r'''
 void DeviceInit(void); void DeviceDeinit(void); int DeviceReady(void); void DeviceFSInit(void);
 void DeviceLock(void); void DeviceUnmount(void); void DeviceStop(void);
 int DeviceReadSectors(u64 lsn, void *buffer, unsigned int sectors);
+int udpfs_vmc_read(int handle, unsigned int offset, unsigned int size, unsigned char *buffer);
+int udpfs_vmc_write(int handle, unsigned int offset, unsigned int size, const unsigned char *buffer);
 '''
 HARNESS = r'''
 #include <assert.h>
@@ -209,6 +263,9 @@ struct cdvdman_settings_udpfs cdvdman_settings;
 static int resident = 1, connected = 1, connect_after = -1, delays, held, calls, fail_next;
 static unsigned char disc[64 * 2048];
 static unsigned last_sector, last_count; static int last_handle;
+static unsigned char vmc[16 * 512]; static int read_only, vmc_busy, vmc_writes;
+void cdvdman_vmc_io_begin(int is_write) { assert(!vmc_busy); vmc_busy = 1; vmc_writes += is_write; }
+void cdvdman_vmc_io_end(void) { assert(vmc_busy && !held); vmc_busy = 0; }
 int CreateSema(iop_sema_t *s) { (void)s; return 1; }
 int WaitSema(int s) { (void)s; assert(!held); held = 1; return 0; }
 int SignalSema(int s) { (void)s; assert(held); held = 0; return 0; }
@@ -219,11 +276,22 @@ static int fhi_read(int handle, void *buffer, u32 sector, u32 count)
     assert(((unsigned long)buffer & 3) == 0);           /* the network path writes words */
     if (!connected) return -5;
     if (fail_next > 0) { fail_next--; connected = 0; return -5; }  /* a dropped session */
-    memcpy(buffer, disc + sector * 512, count * 512);
+    if (handle == 7) memcpy(buffer, vmc + sector * 512, count * 512);
+    else memcpy(buffer, disc + sector * 512, count * 512);
     return (int)count;
 }
 static int fhi_connected(void) { return connected; }
-static void *table[6] = {0, 0, 0, 0, (void *)fhi_read, (void *)fhi_connected};
+static int fhi_write(int handle, const void *buffer, u32 sector, u32 count)
+{
+    calls++; last_handle = handle; last_sector = sector; last_count = count;
+    assert(((unsigned long)buffer & 3) == 0);
+    if (!connected) return -5;
+    if (fail_next > 0) { fail_next--; connected = 0; return -5; }
+    if (read_only) return -13;                                     /* udpfsd: EACCES */
+    memcpy(vmc + sector * 512, buffer, count * 512);
+    return (int)count;
+}
+static void *table[7] = {0, 0, 0, 0, (void *)fhi_read, (void *)fhi_connected, (void *)fhi_write};
 int getModInfo(char *modname, modinfo_t *info)
 {
     assert(memcmp(modname, "udpfsfhi", 8) == 0);
@@ -264,6 +332,31 @@ int main(void)
     calls = 0; delays = 0; fail_next = 1; connect_after = -1;
     assert(DeviceReadSectors(1, out, 1) == SCECdErREAD);
     assert(calls == 1 && delays == 300 && !held);
+
+    /* VMC pages: a write lands at its sector of the VMC's own handle and reads back. */
+    static unsigned char page[513] __attribute__((aligned(64))), back[512] __attribute__((aligned(64)));
+    connected = 1; calls = 0;
+    for (int i = 0; i < 512; i++) page[i] = (unsigned char)(i ^ 0x5A);
+    assert(udpfs_vmc_write(7, 3 * 512, 512, page) == 1 && last_handle == 7 && last_sector == 3 && last_count == 1);
+    assert(!memcmp(vmc + 3 * 512, page, 512) && vmc_writes == 1);
+    assert(udpfs_vmc_read(7, 3 * 512, 512, back) == 1 && !memcmp(back, page, 512));
+    /* mcemu's page buffer need not be word aligned: it is bounced, both ways. */
+    memmove(page + 1, page, 512);
+    assert(udpfs_vmc_write(7, 5 * 512, 512, page + 1) == 1 && !memcmp(vmc + 5 * 512, page + 1, 512));
+    assert(udpfs_vmc_read(7, 5 * 512, 512, page + 1) == 1 && !memcmp(page + 1, vmc + 5 * 512, 512));
+    /* A partial page is refused without touching the server. */
+    calls = 0;
+    assert(udpfs_vmc_write(7, 100, 512, back) == 0 && udpfs_vmc_read(7, 0, 16, back) == 0 && calls == 0);
+    /* A dropped session during a save is waited for and the page written on the kept handle. */
+    delays = 0; fail_next = 1; connect_after = 3;
+    assert(udpfs_vmc_write(7, 2 * 512, 512, back) == 1 && delays == 3 && !memcmp(vmc + 2 * 512, back, 512));
+    /* A read-only share fails the save (mcemu reports it) after its retries, and never hangs. */
+    read_only = 1; calls = 0; delays = 0; connect_after = -1;
+    assert(udpfs_vmc_write(7, 4 * 512, 512, back) == 0 && calls == 3 && delays == 0 && !held && !vmc_busy);
+    /* No server since boot: fail fast. */
+    read_only = 0; connected = 0; calls = 0; resident = 1; delays = 0; DeviceFSInit();
+    calls = 0; delays = 0;
+    assert(udpfs_vmc_read(7, 0, 512, back) == 0 && calls == 0 && delays == 0);
     return 0;
 }
 '''

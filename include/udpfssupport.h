@@ -5,6 +5,17 @@
 #include "include/iosupport.h"
 #include "include/supportbase.h" // base_game_info_t
 
+#include "include/mcemu.h"
+// A VMC for udpfs_mcemu on the OPL core (modules/mcemu/mcemu.h McImageSpec with UDPFS_DRIVER): fd is
+// the server's handle for the .bin, opened read-write by the menu and kept open across the IOP reset.
+typedef struct
+{
+    int active;       /* Activation flag */
+    int fd;           /* Server handle of the VMC file */
+    int flags;        /* Card flag */
+    vmc_spec_t specs; /* Card specifications */
+} udpfs_vmc_infos_t;
+
 // GUI thread: show a one-shot notice queued by the background UDPFS scan.
 void udpfsShowPendingNotice(void);
 
