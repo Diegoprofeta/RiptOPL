@@ -2733,8 +2733,8 @@ static int gameMenuCoreIsNeutrino(void)
     // the wrong "not available under Neutrino" message. SMB is the same shape: ethsupport has no
     // Neutrino launch leg, the effective core is always <OPL>, so its panels ARE live and must not
     // be blocked under a Neutrino global default.
-    // HTTP and CF are native-only too; UDPFS Files is Neutrino-only whatever $CoreLoader says, and the
-    // UDP block device (UDPBD, UDPFS IMG) is Neutrino unless its own key says <OPL>.
+    // HTTP and CF are native-only too; UDPFS (Files and IMG) and UDPBD are Neutrino unless the game's own
+    // key says <OPL>.
     // Favorites follow the device that owns the row.
     if (selected_item != NULL && selected_item->item != NULL) {
         item_list_t *support = (item_list_t *)selected_item->item->userdata;
@@ -2742,9 +2742,7 @@ static int gameMenuCoreIsNeutrino(void)
             int sourceMode = menuConfigSourceMode(support);
             if (menuSelectedRowView(support) == LIB_VIEW_PS1 || sourceMode == ETH_MODE || sourceMode == HTTP_MODE || bdmModeIsPCCF(sourceMode))
                 return 0;
-            if (sourceMode == UDPFS_MODE)
-                return 1; // UDPFS Files: no OPL core backend
-            if (bdmModeIsUDPBD(sourceMode))
+            if (sourceMode == UDPFS_MODE || bdmModeIsUDPBD(sourceMode))
                 return bdmNetBlockCoreLoader(itemConfig);
         }
     }
