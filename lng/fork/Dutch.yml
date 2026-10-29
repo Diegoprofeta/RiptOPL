@@ -573,9 +573,9 @@ translations:
   HINT_PLASCOLOR: Kleur die in de bewegende achtergrond wordt gemengd.
   HINT_RESETCOLOR: Zet de ingebouwde kleuren van RiptOPL terug, niet die van het thema.
   HINT_WIDESCREEN: Tekent het menu voor een 16:9-tv.
-  HINT_XOFF: Verschuift het menu naar links of rechts op het scherm.
-  HINT_YOFF: Verschuift het menu omhoog of omlaag op het scherm.
-  HINT_MENU_OVERSCAN: Krimpt het menu naar binnen als de tv de randen afsnijdt.
+  HINT_XOFF: "Verschuift het menu naar links of rechts op het scherm. Bewaard per videomodus."
+  HINT_YOFF: "Verschuift het menu omhoog of omlaag op het scherm. Bewaard per videomodus."
+  HINT_MENU_OVERSCAN: "Krimpt het menu naar binnen als de tv de randen afsnijdt. Bewaard per videomodus."
   HINT_APPLYGAMEID: Toont een barcode als een game start, zodat Pixel FX-, RetroGEM- en PS2Digital-apparaten van profiel wisselen.
   HINT_ENWRITEOP: Staat toe games te hernoemen en te verwijderen en VMC's te maken. Raakt de partitietabel van de HDD nooit aan.
   HINT_DEBUG: 'Hulp voor ontwikkelaars: gekleurde schermen terwijl een game opstart, en tellers voor het laden van afbeeldingen in het menu.'

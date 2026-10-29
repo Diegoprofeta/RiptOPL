@@ -509,9 +509,9 @@ translations:
   HINT_PLASCOLOR: 움직이는 배경에 섞는 색.
   HINT_RESETCOLOR: 테마의 색이 아닌 RiptOPL의 내장 색으로 되돌립니다.
   HINT_WIDESCREEN: 16:9 TV에 맞게 메뉴를 그립니다.
-  HINT_XOFF: 화면에서 메뉴를 왼쪽이나 오른쪽으로 옮깁니다.
-  HINT_YOFF: 화면에서 메뉴를 위나 아래로 옮깁니다.
-  HINT_MENU_OVERSCAN: TV가 가장자리를 자르면 메뉴를 안쪽으로 줄입니다.
+  HINT_XOFF: "화면에서 메뉴를 왼쪽이나 오른쪽으로 옮깁니다. 비디오 모드마다 따로 저장됩니다."
+  HINT_YOFF: "화면에서 메뉴를 위나 아래로 옮깁니다. 비디오 모드마다 따로 저장됩니다."
+  HINT_MENU_OVERSCAN: "TV가 가장자리를 자르면 메뉴를 안쪽으로 줄입니다. 비디오 모드마다 따로 저장됩니다."
   HINT_APPLYGAMEID: 게임이 시작될 때 바코드를 보여 주어 Pixel FX, RetroGEM, PS2Digital 기기가 프로필을 바꾸게 합니다.
   HINT_ENWRITEOP: 게임 이름 바꾸기와 삭제, VMC 만들기를 허용합니다. HDD 파티션 테이블은 절대 건드리지 않습니다.
   HINT_DEBUG: '개발자 도구: 게임이 부팅하는 동안 색 화면을 보여 주고, 메뉴에 아트 불러오기 카운터를 표시합니다.'

@@ -1377,6 +1377,7 @@ void setDefaultColors(void)
 static void setDefaults(void)
 {
     settingsApplyDefaults(); // plain settings: key, variable and default live in src/settings.cpp
+    screenPosReset();
 #ifdef RETROACHIEVEMENTS
     memset(gRAHostIp, 0, sizeof(gRAHostIp));
 #endif
