@@ -640,3 +640,4 @@ translations:
   DNAS_ID: DNAS Kimliği
   THEME_VIEW: "Tema görünümü"
   HINT_THEME_VIEW: "Temanın oyunlarınızı gösterme biçimi: List, Coverflow, PSBBN Flow veya Grid. Değiştirmek için ana sayfada L3'e basılı tutun. Bu görünümü olmayan temalar varsayılan görünümlerini kullanır."
+  BOTH: Her ikisi

@@ -635,3 +635,4 @@ translations:
   DNAS_ID: DNAS ID
   THEME_VIEW: "테마 보기"
   HINT_THEME_VIEW: "테마가 게임을 보여 주는 방식: List, Coverflow, PSBBN Flow 또는 Grid. 메인 페이지에서 L3를 길게 눌러 전환합니다. 해당 보기가 없는 테마는 기본 보기를 사용합니다."
+  BOTH: 둘 다
