@@ -234,6 +234,14 @@ typedef struct theme
     theme_element_t *psbbnFlow; // first PSBBNFlow element (also sets coverflow: same navigation)
     theme_element_t *grid;      // first Grid element: Left/Right step a cover, Up/Down a row (grid.cpp)
     int gridRows, gridColumns, gridSpacing;
+    int gridCounter;           // the "12/40" position under the grid (<block>_counter, default on)
+    int gridTitle, gridTitleY; // the selected title under the grid at gridTitleY (<block>_title, default off)
+    int gridTitleFont;         // ... in this font handle (<block>_title_font)
+    int gridDevices;           // the device sidebar on the grid's left (<block>_devices, default on)
+    int gridVignette;          // the other covers' vignette: 0 off, 1 weak, 2 full (<block>_vignette, default 1)
+    int gridCoverless;         // a cover with no art: 0 the default art, 1 its name, 2 its serial (<block>_coverless)
+    int gridFlip;              // the right stick turns the selected case to its back cover (<block>_flip, default on)
+    int gridCellW, gridCellH;  // Grid Layout's cell, 0 for the element's own size
     int coverflowCoverOffset;
 
     int gameCacheCount;
@@ -284,6 +292,9 @@ extern theme_t *gTheme;
 extern int gThemeViewRequest;
 
 extern int gCoverflowCount, gCoverflowCenterScale, gCoverflowAnimSpeed, gCoverflowDimCovers;
+extern int gGridSidebarOpen;           // the Grid's device sidebar has the pad (menusys sets it, grid.cpp draws it open)
+void gridForgetItem(const void *item); // a list item is freed: drop its case-flip state (grid.cpp)
+extern int gGridLayout;                // Grid Layout: 0 the theme's, 1..GRID_LAYOUTS RIPPS2's presets (grid.h)
 void thmTriggerCoverflowAnim(int dir);
 
 void thmInit(void);

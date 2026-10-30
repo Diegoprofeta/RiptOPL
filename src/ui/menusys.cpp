@@ -5,7 +5,7 @@
 */
 
 #include "include/sema_lock.h"
-#include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
+#include "include/diaglog.h"     // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/drivestatus.h" // Drive Status (RIPPS2 build 114)
 #include "include/opl.h"
 #include "include/cfgtitle.h"
@@ -34,7 +34,7 @@
 #include "include/gamesource.h"
 #include "include/favsupport.h"   // gFAVStartMode -- the Favourites tab counts as "something to show"
 #include "include/gamemanage.h"   // Hide Game and Delete everything (RIPPS2)
-#include "include/grid.h"         // gridRowStep -- Up/Down in the Grid view
+#include "include/grid.h"         // gridRowStep, gridPageStep, gridAtRowStart -- the Grid view's keys
 #include "include/folderbrowse.h" // menuFolderResetLeaving -- leave a device page at its folder root
 #include "include/vcdsupport.h"   // VCD launches never use Neutrino
 #include "include/libview.h"      // libViewActive / libListViewActive -- which list this page shows
@@ -1568,6 +1568,7 @@ submenu_list_t *submenuAppendItem(submenu_list_t **submenu, int icon_id, char *t
 
 static void submenuDestroyItem(submenu_list_t *submenu)
 {
+    gridForgetItem(submenu);
 #ifdef RETROACHIEVEMENTS
     free(submenu->item.raText);
 #endif
@@ -2433,8 +2434,9 @@ void menuRenderMain(void)
 // Coverflow rotates the nav axis on the MAIN screen only: Left/Right step through the
 // carousel (a vertical list move) while Up/Down switch device menus. Non-coverflow themes
 // behave exactly as before. The info screen is intentionally NOT rotated (menuHandleInputInfo).
-// The Grid view moves the same way, except that Up/Down step one row of covers and leave for the
-// previous/next device menu only from the top/bottom row.
+// The Grid view: Left/Right step one cover, Up/Down one row of covers. With the device sidebar (the
+// default) the cursor stops at the top and bottom rows and Left from the first column opens the sidebar;
+// a theme without it (<block>_devices=0) leaves for the previous/next device menu from the top/bottom row.
 static void menuGridRow(int dir)
 {
     submenu_list_t *cur = selected_item->item->current, *walk;
@@ -2446,6 +2448,8 @@ static void menuGridRow(int dir)
     }
     int target = cur != NULL ? gridRowStep(count, index, gTheme->gridColumns, dir) : -1;
     if (target < 0) {
+        if (gTheme->gridDevices)
+            return; // the top and bottom rows are the list's ends; devices change in the sidebar (RIPPS2 build 115)
         if (dir < 0)
             menuPrevH();
         else
@@ -2470,8 +2474,84 @@ static int menuPageIsGrid(void)
     return menuGetMainElems((item_list_t *)selected_item->item->userdata)->hasGrid;
 }
 
+// L1/R1 on a Grid page turn a whole page of covers, the cursor keeping its place on the page (RIPPS2 build
+// 98, akilluminati47). Through the list's own paging they moved one cover: the grid's items list is one row
+// high. Past either end they wrap, as L1/R1 do in the list.
+static void menuGridPage(int dir)
+{
+    submenu_list_t *cur = selected_item->item->current, *walk;
+    int count = 0, index = 0;
+    for (walk = selected_item->item->submenu; walk != NULL; walk = walk->next) {
+        if (walk == cur)
+            index = count;
+        count++;
+    }
+    int target = cur != NULL ? gridPageStep(count, index, gTheme->gridRows, gTheme->gridColumns, dir) : -1;
+    if (target < 0) {
+        if (count > 1) {
+            if (dir < 0)
+                menuLastPage();
+            else
+                menuFirstPage();
+        }
+        return;
+    }
+    for (walk = selected_item->item->submenu; target > 0 && walk != NULL; target--)
+        walk = walk->next;
+    if (walk == NULL)
+        return;
+    selected_item->item->current = walk;
+    selected_item->item->pagestart = walk; // the grid's items list shows the selected title
+    sfxPlay(SFX_CURSOR);
+}
+
+// The Grid's device sidebar (RIPPS2 build 113's category sidebar, akilluminati47): while it has the pad,
+// Up/Down switch device page and the grid shows that device at once; Right, Cross or Circle go back to the
+// covers. Drawn by grid.cpp.
+int menuGridSidebarFocused(void)
+{
+    return gGridSidebarOpen && gTheme != NULL && gTheme->gridDevices && menuPageIsGrid();
+}
+
+static int menuGridAtRowStart(void)
+{
+    submenu_list_t *cur = selected_item->item->current, *walk;
+    int count = 0, index = 0;
+    for (walk = selected_item->item->submenu; walk != NULL; walk = walk->next) {
+        if (walk == cur)
+            index = count;
+        count++;
+    }
+    return gridAtRowStart(count, index, gTheme->gridColumns);
+}
+
+static void menuGridSidebarInput(void)
+{
+    if (getKey(KEY_UP)) {
+        menuPrevH();
+    } else if (getKey(KEY_DOWN)) {
+        menuNextH();
+    } else if (getKeyOn(KEY_RIGHT) || getKeyOn(KEY_CROSS) || getKeyOn(KEY_CIRCLE)) {
+        gGridSidebarOpen = 0;
+        sfxPlay(SFX_CURSOR);
+    } else if (getKeyOn(KEY_START)) {
+        gGridSidebarOpen = 0;
+        menuInitMainMenu();
+        guiSwitchScreen(GUI_SCREEN_MENU);
+    }
+    if (!menuPageIsGrid())
+        gGridSidebarOpen = 0; // a device page another view draws has no sidebar
+}
+
 static void menuNavigateLeft()
 {
+    if (menuPageIsGrid() && gTheme->gridDevices && menuGridAtRowStart()) {
+        if (getKeyOn(KEY_LEFT)) { // a fresh press, so a held Left stops at the first column
+            gGridSidebarOpen = 1;
+            sfxPlay(SFX_CURSOR);
+        }
+        return;
+    }
     if (gTheme->coverflow || menuPageIsGrid())
         menuPrevV();
     else
@@ -2552,6 +2632,15 @@ void menuHandleInputMain()
     item_list_t *support = selected_item != NULL && selected_item->item != NULL ? static_cast<item_list_t *>(selected_item->item->userdata) : NULL;
     int viewPending = support != NULL && libViewPending(support->mode);
 
+    if (menuGridSidebarFocused()) {
+        // R3 still marks the selected game (read before the sidebar can move to another device this frame)
+        if (getKeyOn(KEY_R3) && !viewPending && selected_item->item->fav)
+            selected_item->item->fav(selected_item->item);
+        menuGridSidebarInput();
+        return;
+    }
+    gGridSidebarOpen = 0;
+
     if (getKey(KEY_LEFT)) {
         menuNavigateLeft();
     } else if (getKey(KEY_RIGHT)) {
@@ -2580,9 +2669,15 @@ void menuHandleInputMain()
         if (!viewPending)
             selected_item->item->refresh(selected_item->item);
     } else if (getKey(KEY_L1)) {
-        menuPrevPage();
+        if (menuPageIsGrid())
+            menuGridPage(-1);
+        else
+            menuPrevPage();
     } else if (getKey(KEY_R1)) {
-        menuNextPage();
+        if (menuPageIsGrid())
+            menuGridPage(1);
+        else
+            menuNextPage();
     } else if (getKeyOn(KEY_L2)) { // home
         menuFirstPage();
     } else if (getKeyOn(KEY_R2)) { // end
