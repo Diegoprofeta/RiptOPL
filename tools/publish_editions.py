@@ -41,6 +41,7 @@ BUNDLE_README = ("RiptOPL {title} configuration builds. Each folder holds one {e
 # GitHub's release API intermittently answers 5xx. Calls are retried unless retry=False: a create that
 # failed part-way has already made the release, so repeating it can only fail.
 RETRY_DELAYS = (5, 15)
+REPUBLISH_DELAY = 60
 
 
 def gh(*args, retry=True):
@@ -323,6 +324,39 @@ def remove_stale_archives(repo, tag, published):
                 print(f"could not remove the previous build's {tag}/{name}", file=sys.stderr)
 
 
+def refresh_release_date(repo, tag, flags):
+    """GitHub shows a release's publishedAt as its date, and only a draft -> published transition sets
+    it: new notes, new assets and a moved tag all leave a rolling channel reading "2 weeks ago".
+    Recreating the release would reset its download counts, so it goes to draft and straight back,
+    keeping its id, tag, title, assets and download links. The channel is hidden for the moment
+    between the two calls, so the republish runs even if the first call fails, and a channel still
+    a draft afterwards fails the run rather than leaving users without a download page."""
+    before = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "publishedAt"))["publishedAt"]
+    try:
+        gh("release", "edit", tag, "--repo", repo, "--draft=true")
+    except subprocess.CalledProcessError as error:
+        # Only the date is lost; still republish, check the state and go on to the other channels.
+        print(f"{tag}: could not switch to draft ({error}); checking it is still published", file=sys.stderr)
+    # A draft cannot hold the Latest marker, so the flags are asserted again. A hidden release is worse
+    # than a stale date, so the republish gets one more try after GitHub has had a minute to recover.
+    for delay in (REPUBLISH_DELAY, None):
+        try:
+            gh("release", "edit", tag, "--repo", repo, "--draft=false", *flags)
+            break
+        except subprocess.CalledProcessError:
+            if delay is None:
+                raise
+            print(f"{tag}: republish failed; retrying in {delay}s", file=sys.stderr)
+            time.sleep(delay)
+    state = json.loads(gh("release", "view", tag, "--repo", repo, "--json", "isDraft,publishedAt"))
+    if state["isDraft"]:
+        raise RuntimeError(f"{tag} is still a draft after its date refresh; it is hidden from users")
+    if state["publishedAt"] == before:
+        print(f"{tag}: GitHub kept the release date {before}", file=sys.stderr)
+    else:
+        print(f"{tag}: release date refreshed {before} -> {state['publishedAt']}")
+
+
 def latest_release_arg(edition):
     """Only IncebtIon is presented as GitHub's Latest release."""
     return "--latest=" + ("true" if edition == "incebtion" else "false")
@@ -359,8 +393,11 @@ def main():
             assets = [str(p) for p in sorted(path.iterdir()) if p.is_file()]
             upload_verified(repo, tag, sha, options["title"], notes_path, assets, exists)
             update_tag(repo, tag, sha)
+            flags = ("--prerelease=false", latest_release_arg(edition))
             gh("release", "edit", tag, "--repo", repo, "--title", options["title"], "--notes-file", str(notes_path),
-               "--draft=false", "--prerelease=false", latest_release_arg(edition))
+               "--draft=false", *flags)
+            if exists:  # a first publication is already dated now
+                refresh_release_date(repo, tag, flags)
             reference = json.loads(gh("api", f"repos/{repo}/git/ref/tags/{tag}"))
             if reference["object"]["sha"] != sha:
                 raise ValueError(f"release tag drifted: {tag}")
