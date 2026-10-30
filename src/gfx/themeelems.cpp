@@ -1607,6 +1607,11 @@ void drawMenuIcon(struct menu_list *menu, struct submenu_list *item, config_set_
 {
     if (thmElemSkipsDevice(elem, menu->item->icon_id))
         return; // devices= filter: not this page's element
+    // The All Games page is every device at once: the Favourites star (or any one device's icon)
+    // would say it is one of them, so it draws no page icon.
+    const item_list_t *support = static_cast<const item_list_t *>(menu->item->userdata);
+    if (gAllGames && support != NULL && support->mode == FAV_MODE)
+        return;
     GSTEXTURE *menuIconTex = thmGetTexture(menu->item->icon_id);
     if (menuIconTex && menuIconTex->Mem)
         rmDrawPixmap(menuIconTex, elem->posX, elem->posY, elem->aligned, elem->width, elem->height, elem->scaled, gDefaultCol, 0);
