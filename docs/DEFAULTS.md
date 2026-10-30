@@ -9,7 +9,8 @@ installation folder can still discover settings on another device.
 | Menu aspect ratio | 4:3; Widescreen off | Settings → Interface |
 | Menu video mode | Auto | Settings → Interface |
 | Theme | Built-in `<OPL>` | Settings → Interface → Theme |
-| Theme View | Default (List for `<OPL>`); Coverflow, PSBBN Flow and Grid are optional views | Settings → Interface → Theme View, or hold L3 |
+| Theme View | Default (List for `<OPL>`); Coverflow (3), Coverflow (5), PSBBN Flow and Grid are optional views | Settings → Interface → Theme View, or hold L3 |
+| Library | Pages (All Games List off) | Settings → Interface → Library, or Game Sources → All Games List |
 | Cover and disc artwork | On | Settings → Interface → Artwork Settings |
 | Per-game background art | Off in Korium and RetroAchievements (as the original's Korium); On in IncebtIon | Settings → Interface → Artwork Settings |
 | Notifications | On | Settings → Interface |
@@ -29,7 +30,7 @@ setting alone does not supply music. Storage discovery and saved configuration
 can affect the active presentation after initial defaults are applied.
 
 To use the widescreen/carousel presentation, select **Widescreen: On** and
-**Theme View: Coverflow** under **Settings → Interface** (theme `<OPL>`), apply, and save.
+**Theme View: Coverflow (3)** or **Coverflow (5)** under **Settings → Interface** (theme `<OPL>`), apply, and save.
 Coverflow supports both 4:3 and 16:9; selecting it does not toggle widescreen.
 The 720p and 1080i video modes are always drawn as 16:9, whatever the Widescreen setting.
 The carousel starts with three covers, Large center scale (45), 200 ms animation and
