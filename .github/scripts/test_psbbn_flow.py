@@ -350,3 +350,51 @@ png = (ROOT / 'gfx/psbbn_bg.png').read_bytes()
 assert png[:8] == b'\x89PNG\r\n\x1a\n' and png[24] == 8, 'psbbn_bg.png must be an 8-bit PNG'
 assert struct.unpack('>II', png[16:24]) == (160, 120)
 print('PSBBN: built-in config, embedded nebula asset and theme wiring passed')
+
+# Hold L3 through the real thmCycleView: Coverflow (3) and (5) are one theme view, so moving between them
+# changes only gCoverflowCount; a view change loads the theme, and an abandoned load keeps the old count.
+views_src = (ROOT / 'src/gfx/themeviews.cpp').read_text(encoding='utf-8')
+picks = views_src[views_src.index('static const signed char pickViews'):]
+picks = picks[:picks.index('const char *thmViewPrefix(')]
+cycle = r'''
+#include <assert.h>
+#include <stdio.h>
+#include <stdint.h>
+typedef uint8_t u8; typedef uint16_t u16; typedef uint32_t u32; typedef uint64_t u64; typedef int32_t s32;
+#include "include/themeviews.h"
+struct theme_t { unsigned int viewMask; int view; };
+static theme_t theme;
+static theme_t *gTheme = &theme;
+static int gCoverflowCount = 3;
+static int loads, failLoad, loadedCovers;
+static int thmSetView(int v) {
+ loads++;
+ if (failLoad) return 0;
+ loadedCovers = gCoverflowCount;
+ gTheme->view = v;
+ return 1;
+}
+@PICKS@
+@CYCLE@
+int main(void) {
+ // A theme that offers only Coverflow still toggles 3 and 5, with no reload.
+ theme.viewMask = 1u << THM_VIEW_COVERFLOW; theme.view = THM_VIEW_COVERFLOW; gCoverflowCount = 3;
+ assert(thmCycleView() == 1 && gCoverflowCount == 5 && loads == 0);
+ assert(thmCycleView() == 1 && gCoverflowCount == 3 && loads == 0);
+ // A single-view theme without Coverflow has nothing to cycle.
+ theme.viewMask = 1u << THM_VIEW_LIST; theme.view = THM_VIEW_LIST;
+ assert(thmCycleView() == 0 && loads == 0);
+ // Every view: List -> CF3 (load) -> CF5 (no load) -> PSBBN (load) -> Grid (load) -> List (load).
+ theme.viewMask = 0xFu; theme.view = THM_VIEW_LIST; gCoverflowCount = 5;
+ assert(thmCycleView() == 1 && theme.view == THM_VIEW_COVERFLOW && gCoverflowCount == 3 && loads == 1 && loadedCovers == 3);
+ assert(thmCycleView() == 1 && theme.view == THM_VIEW_COVERFLOW && gCoverflowCount == 5 && loads == 1);
+ assert(thmCycleView() == 1 && theme.view == THM_VIEW_PSBBN && loads == 2);
+ assert(thmCycleView() == 1 && theme.view == THM_VIEW_GRID && loads == 3);
+ assert(thmCycleView() == 1 && theme.view == THM_VIEW_LIST && loads == 4);
+ // An abandoned load keeps the old view and its count.
+ theme.viewMask = (1u << THM_VIEW_LIST) | (1u << THM_VIEW_COVERFLOW); theme.view = THM_VIEW_LIST; gCoverflowCount = 5; failLoad = 1;
+ assert(thmCycleView() == 0 && theme.view == THM_VIEW_LIST && gCoverflowCount == 5 && loads == 5);
+ puts("L3 cycle: Coverflow (3)/(5) toggle without a reload, view changes load, a failed load keeps the count");
+}
+'''
+run('psbbn_cycle', cycle.replace('@PICKS@', picks).replace('@CYCLE@', function(THEMES, 'int thmCycleView(void)')))

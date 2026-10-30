@@ -266,5 +266,52 @@ int main()
         configFree(tmpl);
     }
 
+    // Coverflow (3) and Coverflow (5): one theme view, two picks.
+    {
+        int covers = 3;
+        CHECK(thmViewPickFor(-1, 5) == THM_VIEW_PICK_DEFAULT);
+        CHECK(thmViewPickFor(THM_VIEW_LIST, 5) == THM_VIEW_PICK_LIST);
+        CHECK(thmViewPickFor(THM_VIEW_COVERFLOW, 3) == THM_VIEW_PICK_COVERFLOW3);
+        CHECK(thmViewPickFor(THM_VIEW_COVERFLOW, 5) == THM_VIEW_PICK_COVERFLOW5);
+        CHECK(thmViewPickFor(THM_VIEW_COVERFLOW, 7) == THM_VIEW_PICK_COVERFLOW3); // hand-edited count
+        CHECK(thmViewPickFor(THM_VIEW_GRID, 3) == THM_VIEW_PICK_GRID);
+        CHECK(thmViewPickRequest(THM_VIEW_PICK_COVERFLOW5, &covers) == THM_VIEW_COVERFLOW && covers == 5);
+        CHECK(thmViewPickRequest(THM_VIEW_PICK_PSBBN, &covers) == THM_VIEW_PSBBN && covers == 5); // kept
+        CHECK(thmViewPickRequest(THM_VIEW_PICK_COVERFLOW3, &covers) == THM_VIEW_COVERFLOW && covers == 3);
+        CHECK(thmViewPickRequest(THM_VIEW_PICK_DEFAULT, &covers) == -1 && covers == 3);
+        CHECK(thmViewPickRequest(99, &covers) == -1);
+        // Every pick round-trips.
+        for (int p = THM_VIEW_PICK_LIST; p < THM_VIEW_PICK_COUNT; p++) {
+            int c = 3;
+            int r = thmViewPickRequest(p, &c);
+            CHECK(thmViewPickFor(r, c) == p);
+        }
+
+        // Hold L3 walks List, Coverflow (3), Coverflow (5), PSBBN Flow, Grid, List.
+        unsigned int all = (1u << THM_VIEW_COUNT) - 1;
+        int view = THM_VIEW_LIST;
+        covers = 5;
+        view = thmViewCycleNext(all, view, &covers);
+        CHECK(view == THM_VIEW_COVERFLOW && covers == 3);
+        view = thmViewCycleNext(all, view, &covers);
+        CHECK(view == THM_VIEW_COVERFLOW && covers == 5);
+        view = thmViewCycleNext(all, view, &covers);
+        CHECK(view == THM_VIEW_PSBBN && covers == 5);
+        view = thmViewCycleNext(all, view, &covers);
+        CHECK(view == THM_VIEW_GRID);
+        view = thmViewCycleNext(all, view, &covers);
+        CHECK(view == THM_VIEW_LIST);
+
+        // A Coverflow-only theme still toggles 3 and 5; a List-only theme has nothing to cycle.
+        unsigned int cf = 1u << THM_VIEW_COVERFLOW;
+        covers = 3;
+        CHECK(thmViewCycleNext(cf, THM_VIEW_COVERFLOW, &covers) == THM_VIEW_COVERFLOW && covers == 5);
+        CHECK(thmViewCycleNext(cf, THM_VIEW_COVERFLOW, &covers) == THM_VIEW_COVERFLOW && covers == 3);
+        covers = 5;
+        CHECK(thmViewCycleNext(1u << THM_VIEW_LIST, THM_VIEW_LIST, &covers) == THM_VIEW_LIST && covers == 5);
+        // List + PSBBN skips both Coverflow picks.
+        CHECK(thmViewCycleNext((1u << THM_VIEW_LIST) | (1u << THM_VIEW_PSBBN), THM_VIEW_LIST, &covers) == THM_VIEW_PSBBN);
+    }
+
     TEST_DONE("themeviews");
 }

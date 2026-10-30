@@ -155,8 +155,9 @@ This section is a fast feature map to improve discoverability of core OPL capabi
 This build layers several features on top of upstream OPL:
 
 - **Coverflow view (built-in, optional):** a centered cover-art carousel for
-  the game/app list, with an alpha-faded reflection, animated scrolling, a configurable
-  cover count, and aspect-correct covers in both 4:3 and widescreen. Tune it live under
+  the game/app list, with an alpha-faded reflection, animated scrolling, 3 or 5 covers
+  (the **Coverflow (3)** and **Coverflow (5)** Theme Views), and aspect-correct covers in both 4:3
+  and widescreen. Tune it live under
   **Coverflow Settings** (shown while the Coverflow view is active). Authoring details
   and every theme value live in the **[Theme Engine reference](docs/THEME_ENGINE.md)**.
 - **PSBBN Flow view (built-in, optional):** the PSBBN Definitive Project Game Collection look: a
