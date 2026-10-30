@@ -381,3 +381,12 @@ assert 'startMode = gAllGames ? START_MODE_AUTO : gFAVStartMode;' in opl
 assert 'if (gAllGames && list_support[FAV_MODE].support != NULL)\n        bootMode = FAV_MODE;' in opl
 assert '(gFAVStartMode || gAllGames) && mod->support->mode != FAV_MODE' in opl, 'source changes must rebuild the list'
 print('ok   the page starts with the setting, boots first, and follows every source refresh')
+
+bdm = (root / 'src/sources/bdmsupport.cpp').read_text()
+hide = bdm[bdm.index('if (bdmTransportEnabled(pDeviceData->bdmDeviceType) == 0) {\n            pOwner->menuItem.visible = 0;'):]
+hide = hide[:hide.index('\n        }\n')]
+assert 'if (gAllGames)\n                loadFavourites();' in hide, 'a page hidden for a switched-off transport must leave All Games'
+devices = (root / 'src/sources/bdmdevices.cpp').read_text()
+assert 'if (gAllGames && bdmTransportEnabled(pDeviceData->bdmDeviceType) != 0)\n            loadFavourites();' in devices, \
+    'a reappearing slot rejoins All Games, unless its transport is Off'
+print('ok   a BDM page hidden for a switched-off transport, or shown again, rebuilds All Games')
