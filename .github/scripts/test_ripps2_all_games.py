@@ -47,7 +47,7 @@ struct item_list_t {
     base_game_info_t iso[8], ps1[8];
     int isoCount, ps1Count;
 };
-struct opl_io_module_t { item_list_t *support; };
+struct opl_io_module_t { item_list_t *support; struct { int visible; } menuItem; };
 static int gShowHidden = 0;
 // Hide Game: "Hidden" everywhere, and the SMB copy of "Rez"
 static int hiddenHas(item_list_t *owner, int, const char *name)
@@ -73,7 +73,8 @@ static int gAPPStartMode = 1, armed, adds, removes, saveOk = 1;
 static char gPCShareName[32] = "games";
 static item_list_t *modules[MODE_COUNT];
 static opl_io_module_t mods[MODE_COUNT];
-static opl_io_module_t *oplGetModule(int m) { mods[m].support = modules[m]; return &mods[m]; }
+static int gone[MODE_COUNT]; /* the page is hidden: device removed or its start mode switched Off */
+static opl_io_module_t *oplGetModule(int m) { mods[m].support = modules[m]; mods[m].menuItem.visible = !gone[m]; return &mods[m]; }
 static int folderModeSupported(int mode) { return mode != HTTP_MODE; }
 static int cueIsCueEntry(const base_game_info_t *g) { return g->cue; }
 static const char *labels[] = {"USB Games", "HDD Games", "Apps", "SMB Games"};
@@ -201,6 +202,10 @@ int main(void)
     apps.enabled = 0;
     assert(store.gatherAllGames(LIB_VIEW_ALL, NULL, 0) == 7 && armed > 0); /* apps on Manual: scan armed (no SMB share) */
     freeArray();
+    gone[BDM_MODE] = 1; /* the stick is pulled: its rows leave with its tab, though the list is kept */
+    assert(store.gatherAllGames(LIB_VIEW_ISO, NULL, 0) == 1 && find("Ico", FAV_KIND_ISO) >= 0 && find("Ico (USB Games)", FAV_KIND_ISO) < 0);
+    freeArray();
+    gone[BDM_MODE] = 0;
     usb.enabled = hdd.enabled = smb.enabled = 0;
     assert(store.gatherAllGames(LIB_VIEW_ALL, NULL, 0) == 0 && store.array_ == NULL);
     return 0;
