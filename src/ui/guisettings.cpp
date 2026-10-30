@@ -27,6 +27,7 @@
 #include "include/themes.h"
 #include "include/themeviews.h"
 #include "include/favsupport.h"
+#include "include/host.h" // host::app().initSupport -- the app layer starts the All Games page
 #include "include/gamesource.h" // gsOf -- the Favourites tab names itself (All Games) // gFAVStartMode -- Favourites Start Mode row
 #include "include/pad.h"
 #include "include/sound.h" // sfxGetPlayDiag/sfxGetDropDiag -- SFX RPC cost + silent-drop counters for the debug HUD
@@ -379,7 +380,7 @@ static void guiApplyAllGamesChange(void)
     // The Game Sources apply did this already through applyConfig(..., 0); the Interface (Library)
     // apply runs applyConfig(..., 1), which skips every device, so without this All Games had no page
     // to open when Favourites was Off, and turning it off left a started Favourites page on screen.
-    initSupport(favGetObject(0), FAV_MODE, 0);
+    host::app().initSupport(favGetObject(0), FAV_MODE, 0);
 
     item_list_t *favList = favGetObject(0);
     opl_io_module_t *fav = favList != NULL ? static_cast<opl_io_module_t *>(favList->owner) : NULL;
