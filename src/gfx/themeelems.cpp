@@ -1607,6 +1607,11 @@ void drawMenuIcon(struct menu_list *menu, struct submenu_list *item, config_set_
 {
     if (thmElemSkipsDevice(elem, menu->item->icon_id))
         return; // devices= filter: not this page's element
+    // The All Games page is every device at once: the Favourites star (or any one device's icon)
+    // would say it is one of them, so it draws no page icon.
+    const item_list_t *support = static_cast<const item_list_t *>(menu->item->userdata);
+    if (gAllGames && support != NULL && support->mode == FAV_MODE)
+        return;
     GSTEXTURE *menuIconTex = thmGetTexture(menu->item->icon_id);
     if (menuIconTex && menuIconTex->Mem)
         rmDrawPixmap(menuIconTex, elem->posX, elem->posY, elem->aligned, elem->width, elem->height, elem->scaled, gDefaultCol, 0);
@@ -1619,7 +1624,9 @@ int menuItemShown(const menu_item_t *item)
     if (!gAllGames)
         return 1;
     // A device still on Manual keeps its tab so it can be started; once started, its games are on
-    // the All Games page. A network share picker stays too: it lists shares, not games.
+    // the All Games page. A network share picker stays too: it lists shares, not games. The Apps
+    // page follows the same rule: started apps are gathered into the list (the APP stop of its L3
+    // ring), so a second page of them would only repeat it.
     const item_list_t *support = static_cast<const item_list_t *>(item->userdata);
     if (support == NULL || !support->enabled)
         return 1;
@@ -1630,6 +1637,7 @@ int menuItemShown(const menu_item_t *item)
         case MMCE_MODE:
         case UDPFS_MODE:
         case HTTP_MODE:
+        case APP_MODE:
             return 0;
         case ETH_MODE:
             return gPCShareName[0] == '\0';

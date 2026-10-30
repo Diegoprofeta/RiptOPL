@@ -474,6 +474,8 @@ reshow_device:
             guiApplyAllGamesChange();
         else if (previousShowHidden != gShowHidden)
             guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
+        else if (gAllGames)
+            loadFavourites(); // a source switched Off or on: All Games drops or gathers its rows
     }
 }
 
@@ -2624,6 +2626,8 @@ reshow_sources:
             guiApplyAllGamesChange();
         else if (previousShowHidden != gShowHidden)
             guiRefreshCfgTitles(); // rebuilds every game list, Favourites last
+        else if (gAllGames)
+            loadFavourites(); // a source switched Off or on: All Games drops or gathers its rows
     }
 
     gSettingsShell.endDialog();
@@ -3123,6 +3127,8 @@ void SettingsShell::restoreSourceState()
         guiApplyAllGamesChange();
     else if (previousShowHidden != gShowHidden)
         guiRefreshCfgTitles();
+    else if (gAllGames)
+        loadFavourites(); // a source switched Off or on: All Games drops or gathers its rows
 }
 
 int SettingsShell::promptSave(void)
