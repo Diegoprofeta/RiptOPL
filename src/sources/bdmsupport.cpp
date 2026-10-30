@@ -28,6 +28,7 @@
 #include "include/cheatman.h"
 #include "include/sound.h"
 #include "include/bdmevent.h"
+#include "include/favsupport.h" // loadFavourites -- a hidden page leaves All Games
 #include "include/gamesource.h"
 #include "modules/iopcore/common/cdvd_config.h"
 
@@ -1683,6 +1684,10 @@ int BdmSource::needsUpdate(item_list_t *itemList)
         if (bdmTransportEnabled(pDeviceData->bdmDeviceType) == 0) {
             pOwner->menuItem.visible = 0;
             host::app().moduleUpdateMenu(itemList->mode, 0, 0);
+            // All Games may have gathered this page's rows while it was still shown (a Game Sources
+            // apply queues its rebuild before this poll runs), so ask for the list again now it is hidden.
+            if (gAllGames)
+                loadFavourites();
         }
     }
 
