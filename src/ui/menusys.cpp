@@ -1422,6 +1422,12 @@ void menuAppendItem(menu_item_t *item)
     SignalSema(menuListSemaId);
 }
 
+static int menuIsFavPage(const menu_list_t *page)
+{
+    const item_list_t *support = page != NULL && page->item != NULL ? static_cast<const item_list_t *>(page->item->userdata) : NULL;
+    return support != NULL && support->mode == FAV_MODE;
+}
+
 static void refreshMenuPosition(void)
 {
     // Returning from Start/menu/settings must retain the page the user paused on. The old helper
@@ -1438,14 +1444,14 @@ static void refreshMenuPosition(void)
     }
 
     // The retained page is no longer usable. With All Games on that is usually a device tab that
-    // just stepped aside, so go to the All Games page; otherwise the first visible page.
-    if (gAllGames) {
-        for (cur = menu; cur != NULL; cur = cur->next) {
-            item_list_t *support = cur->item != NULL ? static_cast<item_list_t *>(cur->item->userdata) : NULL;
-            if (support != NULL && support->mode == FAV_MODE && menuItemShown(cur->item)) {
-                selected_item = cur;
-                return;
-            }
+    // just stepped aside, so go to the All Games page. With it off it is usually the Favourites page
+    // All Games left behind, so go to the startup page, as a boot would; otherwise the first visible.
+    int target = gAllGames ? FAV_MODE : (menuIsFavPage(selected_item) ? gDefaultDevice : -1);
+    for (cur = menu; cur != NULL; cur = cur->next) {
+        item_list_t *support = cur->item != NULL ? static_cast<item_list_t *>(cur->item->userdata) : NULL;
+        if (support != NULL && support->mode == target && menuItemShown(cur->item)) {
+            selected_item = cur;
+            return;
         }
     }
     cur = menu;
@@ -2536,8 +2542,12 @@ static void menuHandleViewHold(int viewPending)
 
 void menuHandleInputMain()
 {
-    // A device tab steps aside once All Games holds its games; never leave the user on it.
-    if (gAllGames && selected_item != NULL && !menuItemShown(selected_item->item))
+    // A device tab steps aside once All Games holds its games; never leave the user on it. Turning
+    // All Games off can hide the page the user is on too: the Favourites page, when its own start
+    // mode is Off. A hidden Favourites page never comes back by itself (only Settings shows it), so
+    // leave it as well. Device tabs are left alone with All Games off: a BDM page hides for a poll
+    // or two during a settings apply or a stall and comes back, and moving the user then is #806.
+    if (selected_item != NULL && !menuItemShown(selected_item->item) && (gAllGames || menuIsFavPage(selected_item)))
         refreshMenuPosition();
     item_list_t *support = selected_item != NULL && selected_item->item != NULL ? static_cast<item_list_t *>(selected_item->item->userdata) : NULL;
     int viewPending = support != NULL && libViewPending(support->mode);
