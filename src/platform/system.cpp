@@ -26,7 +26,6 @@ constexpr int SYS_DISC_NODISC_MS = 2000;
 #include "include/host.h"
 #include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/opl.h"
-#include "include/menuwatch.h" // bootTrace: diagnostic builds print each IOP reset step
 #include "include/gui.h"
 #include "include/lang.h"       // _l(_STR_...) -- Neutrino preflight abort toasts
 #include "include/launchdiag.h" // UDPBD hang-triage stage markers (gated on gLaunchDiag)
