@@ -1134,6 +1134,7 @@ void reset(void)
     mmceIopWasReset();
     udpfsIopWasReset();
 
+    bootTrace("memory card library");
     mcInit(MC_TYPE_XMC);
 }
 
@@ -1943,6 +1944,7 @@ int main(int argc, char *argv[])
     sysInitDECI2();
 #endif
 
+    bootTrace("main() started");
     LOG_INIT();
     PREINIT_LOG("OPL GUI start!\n");
 
@@ -1950,6 +1952,7 @@ int main(int argc, char *argv[])
 
     // reset, load modules
     reset();
+    bootTrace("Deckard settings");
     ResetDeckardXParams();
     menuWatchStart(); // diagnostic builds: report a menu that stops drawing (needs the IOP that reset() set up)
     // Diagnostic builds: from here each boot stage shows its own colour if the boot stops in it.

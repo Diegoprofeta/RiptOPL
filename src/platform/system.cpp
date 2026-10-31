@@ -26,6 +26,7 @@ constexpr int SYS_DISC_NODISC_MS = 2000;
 #include "include/host.h"
 #include "include/diaglog.h" // the hardware log, DIAG.TXT (RIPPS2 build 115)
 #include "include/opl.h"
+#include "include/menuwatch.h" // bootTrace: diagnostic builds print each IOP reset step
 #include "include/gui.h"
 #include "include/lang.h"       // _l(_STR_...) -- Neutrino preflight abort toasts
 #include "include/launchdiag.h" // UDPBD hang-triage stage markers (gated on gLaunchDiag)
@@ -277,6 +278,7 @@ void sysReset(int modload_mask)
 {
     static int sInitialBoot = 1;
 
+    bootTrace("IOP reset: start");
     if (!sInitialBoot) {
 #ifdef PADEMU
         ds34usb_reset();
@@ -293,6 +295,7 @@ void sysReset(int modload_mask)
     }
     sInitialBoot = 0;
 
+    bootTrace("IOP reset: RPC");
     SifInitRpc(0);
 
 #ifdef _DTL_T10000
@@ -303,6 +306,7 @@ void sysReset(int modload_mask)
     while (!SifIopRebootBuffer(&deci2_img, size_deci2_img))
         ;
 #else
+    bootTrace("IOP reset: reboot");
     while (!SifIopReset("", 0))
         ;
 #endif
@@ -322,14 +326,17 @@ void sysReset(int modload_mask)
     dev9InitCount = 0;
     // An IOP reset does not prove the PC CARD power registers were restored, so CF ownership
     // survives it until an explicit release; NBD refuses teardown while owned.
+    bootTrace("IOP reset: wait for IOP");
     while (!SifIopSync())
         ;
 
+    bootTrace("IOP reset: RPC again, disc library");
     SifInitRpc(0);
     SifSetCmdBuffer(OplSifCmdbuffer, OPL_SIF_CMD_BUFF_SIZE);
     sceCdInit(SCECdINoD);
 
     // init loadfile & iopheap services
+    bootTrace("IOP reset: module loader");
     SifLoadFileInit();
     SifInitIopHeap();
 
@@ -346,24 +353,31 @@ void sysReset(int modload_mask)
     memset((void *)&g_sysLoadedModBuffer[0], 0, MAX_MODULES * 4);
 
     // load modules
+    bootTrace("load IOMANX");
     LOG("[IOMANX]:\n");
     sysLoadModuleBuffer(&iomanx_irx, size_iomanx_irx, 0, NULL);
+    bootTrace("load FILEXIO");
     LOG("[FILEXIO]:\n");
     sysLoadModuleBuffer(&filexio_irx, size_filexio_irx, 0, NULL);
 
+    bootTrace("load SIO2MAN");
     LOG("[SIO2MAN]:\n");
     sysLoadModuleBuffer(&sio2man_irx, size_sio2man_irx, 0, NULL);
 
     if (modload_mask & SYS_LOAD_MC_MODULES) {
+        bootTrace("load MCMAN");
         LOG("[MCMAN]:\n");
         sysLoadModuleBuffer(&mcman_irx, size_mcman_irx, 0, NULL);
+        bootTrace("load MCSERV");
         LOG("[MCSERV]:\n");
         sysLoadModuleBuffer(&mcserv_irx, size_mcserv_irx, 0, NULL);
     }
 
+    bootTrace("load PADMAN");
     LOG("[PADMAN]:\n");
     sysLoadModuleBuffer(&padman_irx, size_padman_irx, 0, NULL);
 
+    bootTrace("load POWEROFF");
     LOG("[POWEROFF]:\n");
     sysLoadModuleBuffer(&poweroff_irx, size_poweroff_irx, 0, NULL);
 
@@ -382,19 +396,24 @@ void sysReset(int modload_mask)
       the fork does it right here. Both halves of that contract now match the fork. Do not move it
       back into bdmLoadModules() without also removing the fork-parity claim on bdmsupport.c.
     */
+    bootTrace("load USBD");
     LOG("[USBD]:\n");
     sysLoadModuleBuffer(&usbd_irx, size_usbd_irx, 0, NULL);
 
     if (modload_mask & SYS_LOAD_ISOFS_MODULE) {
+        bootTrace("load ISOFS");
         LOG("[ISOFS]:\n");
         sysLoadModuleBuffer(&isofs_irx, size_isofs_irx, 0, NULL);
     }
 
+    bootTrace("load GENVMC");
     LOG("[GENVMC]:\n");
     sysLoadModuleBuffer(&genvmc_irx, size_genvmc_irx, 0, NULL);
 
+    bootTrace("load LIBSD");
     LOG("[LIBSD]:\n");
     sysLoadModuleBuffer(&libsd_irx, size_libsd_irx, 0, NULL);
+    bootTrace("load AUDSRV");
     LOG("[AUDSRV]:\n");
     sysLoadModuleBuffer(&audsrv_irx, size_audsrv_irx, 0, NULL);
 
@@ -405,8 +424,10 @@ void sysReset(int modload_mask)
     ds34bt_deinit();
 
     if (modload_mask & SYS_LOAD_USB_MODULES) {
+        bootTrace("load DS34_USB");
         LOG("[DS34_USB]:\n");
         sysLoadModuleBuffer(&ds34usb_irx, size_ds34usb_irx, 4, (char *)&ds3pads);
+        bootTrace("load DS34_BT");
         LOG("[DS34_BT]:\n");
         sysLoadModuleBuffer(&ds34bt_irx, size_ds34bt_irx, 4, (char *)&ds3pads);
 
