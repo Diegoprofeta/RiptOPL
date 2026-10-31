@@ -7,6 +7,7 @@
 #include "include/opl.h"
 #include "include/gui.h"
 #include "include/guiint.h"
+#include "include/guiruntime.h"
 #include "include/guisplash.h"
 #include "include/guiscreens.h"
 #include "include/renderman.h"
@@ -118,6 +119,9 @@ void BootSplash::renderScreen()
     guiEndFrame();
 }
 
+// The longest the greeting waits for the drive that holds the saved theme (RIPPS2 build 125 uses 6 s)
+#define THEME_HOLD_MS 6000
+
 void BootSplash::run()
 {
     int greetingAlpha = 0x80;
@@ -130,6 +134,10 @@ void BootSplash::run()
     clock_t tFadeStart = 0;
     clock_t tFadeDelay = 0;
     int tFadeArmed = 0;
+    // RIPPS2 build 125 (AK): a saved disk theme whose drive is not up yet keeps the greeting on screen, so the built-in
+    // theme does not show for a moment before the saved one replaces it. Bounded: at most THEME_HOLD_MS after init.
+    clock_t tInitDone = 0;
+    int tInitSeen = 0;
 
     // oplIsBootInProgress() can become false while background startup work is still queued. That
     // is correct for runtime overlays, but the animated greeting owns the entire intro lifecycle.
@@ -162,7 +170,14 @@ void BootSplash::run()
             tFadeArmed = 1;
         }
 
-        if (guiInitComplete() && (clock() - tFadeStart) >= tFadeDelay)
+        if (guiInitComplete() && !tInitSeen) {
+            tInitDone = clock();
+            tInitSeen = 1;
+        }
+        const bool themeHold = greetingAlpha == 0x80 && tInitSeen && thmSavedThemePending() &&
+                               (clock() - tInitDone) < (clock_t)THEME_HOLD_MS * (CLOCKS_PER_SEC / 1000);
+
+        if (guiInitComplete() && (clock() - tFadeStart) >= tFadeDelay && !themeHold)
             greetingAlpha -= 2;
 
         if (greetingAlpha <= 0)
@@ -175,6 +190,11 @@ void BootSplash::run()
         guiEndFrame();
 
         gScreens.dispatchInput();
+
+        // While the greeting waits for the saved theme, run the menu update hook as the main loop would: a drive that
+        // comes up late is only picked up there (BdmGeneration), so without it the hold could never see the theme.
+        if (themeHold)
+            gGui.runFrameHook();
     }
     active_ = false;
 }
