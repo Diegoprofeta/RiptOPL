@@ -198,6 +198,7 @@ int gNeutrinoElfArg;         // default-on (settings key only, no UI): auto-emit
 int gDefaultGameView;
 int gAppsDisplay;
 int gCfgTitlesInLists;
+int gPs1Duplicates; // PS1_DUP_*: a game both as a POPSTARTER VCD and an Ember image shows once or twice
 int gGameTypeLabels;
 int gEmberDisplay;
 int gEmberTiming;
@@ -1273,6 +1274,7 @@ void deinitEx(int exception, int modeSelected, int modeSelected2)
     fntEnd();
     thmEnd();
     rmEnd();
+    menuWatchStop(); // diagnostic builds: no VBlank handler or exception hooks survive the handoff
     configEnd();
     if (gLaunchDiag)
         launchDiagMark(8); // deinitEx finished -- sysLaunchNeutrino runs next
@@ -1351,6 +1353,7 @@ void deinit(int exception, int modeSelected)
     fntEnd();
     thmEnd();
     rmEnd();
+    menuWatchStop(); // diagnostic builds: no VBlank handler or exception hooks survive the handoff
     configEnd();
 }
 
