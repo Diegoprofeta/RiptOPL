@@ -38,7 +38,8 @@ A heartfelt thank you to developers who have contributed pull requests directly 
 <br>
 Based on Open PS2 Loader · Copyright 2013, [Ifcaro](https://github.com/ifcaro) & [jimmikaelkael](https://github.com/jimmikaelkael)<br>
 Licensed under Academic Free License version 3.0<br>
-Review the LICENSE file for further details.<br><br>
+Review the LICENSE file for further details.<br>
+**[→ Full credits: every upstream author and contributor](#acknowledgements)**<br><br>
 
 [![CI](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/ps2build.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/ps2build.yml)
 [![Format](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/check-format.yml/badge.svg?branch=rebuild/main)](https://github.com/NathanNeurotic/RiptOPL/actions/workflows/check-format.yml)
